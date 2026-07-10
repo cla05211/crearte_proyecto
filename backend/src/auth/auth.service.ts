@@ -5,43 +5,21 @@ import { BehaviorSubject } from 'rxjs';
 
 @Injectable()
 export class AuthService {
-    usuarioActual: User | null = null;
-    sesionIniciada = new BehaviorSubject<boolean>(false);
-    sesionIniciadaObservable = this.sesionIniciada.asObservable();
+  constructor(private sb: SupabaseService) {}
 
-  constructor(private sb: SupabaseService) 
+  async crearCuenta(correo: string, contraseña: string) 
   {
-    sb.supabase.auth.onAuthStateChange((event, session)=>
-        {
-            console.log(event,session);
-            if(session)
-            {
-                this.usuarioActual = session.user
-                this.sesionIniciada.next(true);
-            }
-            else
-            {
-                this.usuarioActual = null
-                this.sesionIniciada.next(false);
-            }
-        })
-   }
-
-  //Crear cuenta
-  async CrearCuenta(correo:string, contraseña:string)
-    {
-        return await this.sb.supabase.auth.signUp({email:correo, password:contraseña});
-    }
-  //Iniciar Sesion
-  async IniciarSesion(correo:string, contraseña:string)
-    {
-    return await this.sb.supabase.auth.signInWithPassword({email:correo, password:contraseña});
-    }
-  //Cerrar Sesion
-  async CerrarSesion()
-  {
-  const {error} = await this.sb.supabase.auth.signOut({});
+    return await this.sb.supabase.auth.signUp({ email: correo, password: contraseña });
   }
-  //Saber si hay usuario logueado
-}
 
+  // Iniciar sesión -> Supabase devuelve access_token y refresh_token
+  async iniciarSesion(correo: string, contraseña: string) {
+    return await this.sb.supabase.auth.signInWithPassword({ email: correo, password: contraseña });
+  }
+
+  async obtenerUsuarioPorToken(token: string) {
+    const { data, error } = await this.sb.supabase.auth.getUser(token);
+    if (error) return null;
+    return data.user;
+  }
+}

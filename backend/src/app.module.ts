@@ -12,6 +12,6 @@ import { AuthModule } from './auth/auth.module';
       isGlobal: true,
     }), SupabaseModule, AuthModule,],
   controllers: [AppController],
-  providers: [AppService, SupabaseService, AuthService],
+  providers: [AppService],
 })
 export class AppModule {}
