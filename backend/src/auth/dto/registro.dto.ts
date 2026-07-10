@@ -4,5 +4,5 @@ export class RegistroDto
     contraseña!:string;
     nombre!: string;
     apellido!: string;
-    tipo_usuario!: string;
+    rol!: string;
 }

@@ -14,9 +14,11 @@ export class AuthController
         return await this.auth.iniciarSesion(body.correo, body.contraseña)
     } 
 
+    @Post('registro')
     async registrar(@Body() body: RegistroDto)
     {
-        return await this.auth.crearCuenta(body.correo, body.contraseña)
+        return await this.auth.registrar(body)
     }
+
 
 }
