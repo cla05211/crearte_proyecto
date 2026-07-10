@@ -3,5 +3,5 @@ export class GuardarUsuarioDTO
     nombre!: string;
     apellido!: string;
     rol!: string;
-    auth_id!:string;
+    id_auth!:string;
 }

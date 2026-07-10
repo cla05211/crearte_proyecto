@@ -18,7 +18,7 @@ export class AuthService {
     nombre: dto.nombre,
     apellido: dto.apellido,
     rol: dto.rol,
-    auth_id: auth_id,
+    id_auth: auth_id,
     };
     
     return await this.usuarioService.guardarUsuario(usuarioDto)
