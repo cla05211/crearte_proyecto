@@ -11,6 +11,13 @@ export class UsuariosService {
 
     async guardarUsuario(dto: GuardarUsuarioDTO)
     {
-        return await this.sb.supabase.from('usuarios').insert(dto)
+         console.log('DTO recibido:', dto);
+            const resultado = await this.sb.supabase
+        .from('usuarios')
+        .insert(dto);
+
+    console.log('Resultado Supabase:', resultado);
+
+    return resultado;
     }
 }

@@ -1,1 +1,29 @@
-<p>login works!</p>
+<h1>LOGIN</h1>
+
+<form [formGroup]="formularioLogin">
+  <label for="correo">Correo:</label>
+  <input type="email" id="correo" formControlName="correo" />
+  <div *ngIf="verficarCampo('correo') as error">
+        <small>{{ error }}</small>
+    </div>
+
+  <label for="contraseña">Contraseña:</label>
+  
+
+  <input
+    [type]="verClave ? 'text' : 'password'"
+    id="contraseña"
+    formControlName="contraseña"
+  />
+
+  <i
+    class="fas"
+    [ngClass]="verClave ? 'fa fa-eye' : 'fa fa-eye-slash'"
+    (click)="toggleClave()"
+  ></i>
+  <div *ngIf="verficarCampo('contraseña') as error">
+        <small>{{ error }}</small>
+    </div>
+
+  <button (click)="iniciarSesion()">INGRESAR</button>
+</form>

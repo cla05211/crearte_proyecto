@@ -5,9 +5,12 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class SupabaseService 
 {
-     supabase: SupabaseClient<any, "public", any>;
+  supabase: SupabaseClient<any, "public", any>;
   constructor(private configService: ConfigService) 
-        {
-          this.supabase = createClient(configService.get<string>('SUPABASE_URL')!, configService.get<string>('SUPABASE_SERVICE_ROLE_KEY')!,);
-      }
+  {
+    const url = configService.get<string>('SUPABASE_URL');
+    const key = configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+    
+    this.supabase = createClient(url!, key!);
+  }
 }
