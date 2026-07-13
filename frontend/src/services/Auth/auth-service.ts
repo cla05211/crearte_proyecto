@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 
-
 @Injectable({
   providedIn: 'root',
 })
@@ -18,4 +17,10 @@ export class AuthService
 			contraseña: contraseña
 		});
   }  
+
+  guardarSesion(sesion:any)
+  {
+    localStorage.setItem('token_acceso', sesion.access_token);
+    localStorage.setItem('token_refresh', sesion.refresh_token);
+  }
 }

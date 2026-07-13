@@ -41,6 +41,7 @@ export class Login
           if (control.hasError('required')) {mensaje = 'Este campo es obligatorio.'};
           if (control.hasError('email')) {mensaje = 'Debe ser un correo válido.'};
           if (control.hasError('pattern')) {mensaje = 'Formato inválido.'};
+          if (control.hasError('minlength')) {mensaje = 'El dato ingresado es muy corto.'};
         }
         return mensaje;
     }
