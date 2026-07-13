@@ -38,7 +38,6 @@ export class AuthService {
       }
   }
 
-  // Iniciar sesión -> Supabase devuelve access_token y refresh_token
   async iniciarSesion(correo: string, contraseña: string) {
     return await this.sb.supabase.auth.signInWithPassword({ email: correo, password: contraseña });
   }
