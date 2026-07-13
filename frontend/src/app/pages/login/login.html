@@ -1,29 +1,75 @@
-<h1>LOGIN</h1>
+<main class="login-page">
+  <section class="login-card" aria-labelledby="login-title">
+    <aside class="brand-panel" aria-label="Crearte, buzos de egresados">
+      <div class="brand-shape brand-shape--top"></div>
+      <div class="brand-content">
+        <img
+          class="brand-logo"
+          src="/crearte-logo.png"
+          alt="Crearte, 10 años"
+        />
+        <p class="brand-tagline">Diseñamos recuerdos para llevar puestos.</p>
+      </div>
+      <div class="brand-shape brand-shape--bottom"></div>
+    </aside>
 
-<form [formGroup]="formularioLogin">
-  <label for="correo">Correo:</label>
-  <input type="email" id="correo" formControlName="correo" />
-  <div *ngIf="verficarCampo('correo') as error">
-        <small>{{ error }}</small>
+    <div class="form-panel">
+      <div class="form-heading">
+        <span class="eyebrow">Acceso al sistema</span>
+        <h1 id="login-title">Iniciar sesión</h1>
+        <p>Ingresá tus datos para continuar.</p>
+      </div>
+
+      <form [formGroup]="formularioLogin" class="login-form">
+        <div class="field-group">
+          <label for="correo">Email</label>
+          <input
+            type="email"
+            id="correo"
+            formControlName="correo"
+            autocomplete="email"
+            placeholder="nombre@correo.com"
+          />
+          <div *ngIf="verficarCampo('correo') as error" class="field-error">
+            <small>{{ error }}</small>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="label-row">
+            <label for="contraseña">Contraseña</label>
+            <a class="forgot-link" href="#">¿Olvidaste tu contraseña?</a>
+          </div>
+          <div class="password-field">
+            <input
+              [type]="verClave ? 'text' : 'password'"
+              id="contraseña"
+              formControlName="contraseña"
+              autocomplete="current-password"
+              placeholder="Ingresá tu contraseña"
+            />
+            <button
+              class="password-toggle"
+              type="button"
+              [attr.aria-label]="verClave ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              (click)="toggleClave()"
+            >
+              <i
+                class="fas"
+                [ngClass]="verClave ? 'fa fa-eye' : 'fa fa-eye-slash'"
+                aria-hidden="true"
+              ></i>
+            </button>
+          </div>
+          <div *ngIf="verficarCampo('contraseña') as error" class="field-error">
+            <small>{{ error }}</small>
+          </div>
+        </div>
+
+        <button class="submit-button" type="button" (click)="iniciarSesion()">
+          Ingresar
+        </button>
+      </form>
     </div>
-
-  <label for="contraseña">Contraseña:</label>
-  
-
-  <input
-    [type]="verClave ? 'text' : 'password'"
-    id="contraseña"
-    formControlName="contraseña"
-  />
-
-  <i
-    class="fas"
-    [ngClass]="verClave ? 'fa fa-eye' : 'fa fa-eye-slash'"
-    (click)="toggleClave()"
-  ></i>
-  <div *ngIf="verficarCampo('contraseña') as error">
-        <small>{{ error }}</small>
-    </div>
-
-  <button (click)="iniciarSesion()">INGRESAR</button>
-</form>
+  </section>
+</main>
