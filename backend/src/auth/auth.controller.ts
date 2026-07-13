@@ -8,7 +8,7 @@ export class AuthController
 {
     constructor(private auth: AuthService){}
 
-    @Post()
+    @Post('login')
     async login(@Body() body: LoginDto)
     {
         return await this.auth.iniciarSesion(body.correo, body.contraseña)
@@ -19,6 +19,4 @@ export class AuthController
     {
         return await this.auth.registrar(body)
     }
-
-
 }

@@ -11,6 +11,10 @@ export class SupabaseService
     const url = configService.get<string>('SUPABASE_URL');
     const key = configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
     
-    this.supabase = createClient(url!, key!);
-  }
+    this.supabase = createClient(url!, key!, {
+      auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      },});
+      }
 }

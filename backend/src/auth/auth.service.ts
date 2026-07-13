@@ -27,7 +27,7 @@ export class AuthService {
 
   async guardarAuth(dto: RegistroDto): Promise<string>
   {
-     const {data, error} = await this.sb.supabase.auth.signUp({ email: dto.correo, password: dto.contraseña });
+     const {data, error} = await this.sb.supabase.auth.admin.createUser({ email: dto.correo, password: dto.contraseña });
      if(error || !data.user)
       {
          throw error ?? new Error('No se pudo crear el usuario');
