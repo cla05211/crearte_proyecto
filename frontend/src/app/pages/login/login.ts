@@ -59,7 +59,7 @@ export class Login
             try
             {
                 const data:any = await firstValueFrom (this.auth.login(correo,contraseña));
-                this.auth.guardarSesion(data.session)
+                this.auth.guardarSesion(data.data.session)
                 this.router.navigate(['/home']);
             }
             catch (error)
