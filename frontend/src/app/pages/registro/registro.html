@@ -1,0 +1,24 @@
+<form [formGroup]="formularioRegistro">
+<input type="email" formControlName="correo" placeholder="Correo Electrónico" />
+<div *ngIf="verficarCampo('correo') as error">
+<input type="password" formControlName="contraseña" placeholder="Contraseña" />
+<div *ngIf="verficarCampo('contraseña') as error">
+<input type="text" formControlName="nombre" placeholder="Nombre" />
+<div *ngIf="verficarCampo('nombre') as error">
+<label for="rol">Rol</label>
+
+<select id="rol" formControlName="rol">
+    <option [ngValue]="null" disabled>
+        Seleccione un rol
+    </option>
+
+    @for (rol of roles; track rol.rol) {
+        <option [value]="rol.rol">
+            {{ rol.nombre_rol }}
+        </option>
+    }
+</select>
+
+@if (verficarCampo('rol')) {
+    <small>{{ verficarCampo('rol') }}</small>
+}

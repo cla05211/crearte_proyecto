@@ -7,12 +7,16 @@ import { AuthService } from './auth/auth.service';
 import { SupabaseModule } from './supabase/supabase.module';
 import { AuthModule } from './auth/auth.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
+import { RolesController } from './roles/roles.controller';
+import { RolesModule } from './roles/roles.module';
+import { RolesService } from './roles/roles.service';
+
 
 @Module({
   imports: [ConfigModule.forRoot({
       isGlobal: true,
-    }), SupabaseModule, AuthModule, UsuariosModule,],
-  controllers: [AppController],
-  providers: [AppService],
+    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule,],
+  controllers: [AppController, RolesController],
+  providers: [AppService, RolesService],
 })
 export class AppModule {}

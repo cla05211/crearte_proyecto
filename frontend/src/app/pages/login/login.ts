@@ -3,7 +3,7 @@ import{ FormsModule, FormControl, FormGroup, Validators, ReactiveFormsModule } f
 import { Router } from '@angular/router';
 import { CommonModule, SlicePipe } from '@angular/common';
 import { Injectable, inject } from '@angular/core';
-import { AuthService } from '../../../services/Auth/auth-service';
+import { AuthService } from '../../services/Auth/auth-service';
 import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';

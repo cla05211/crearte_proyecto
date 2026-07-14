@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../environments/environment';
+import { environment } from '../../../environments/environment.development';
+import { RegistroDto } from './dto/registro.interface';
 
 @Injectable({
   providedIn: 'root',
@@ -17,6 +18,11 @@ export class AuthService
 			contraseña: contraseña
 		});
   }  
+
+  registrar(dto: RegistroDto)
+  {
+    return this.http.post((`${environment.apiUrl}/auth/registro`), dto)
+  }
 
   guardarSesion(sesion:any)
   {

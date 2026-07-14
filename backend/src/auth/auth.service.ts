@@ -13,7 +13,6 @@ export class AuthService {
   async registrar(dto: RegistroDto) 
   {
     var auth_id = await this.guardarAuth(dto);
-    console.log(this.sb.supabase);
 
     const usuarioDto: GuardarUsuarioDTO = {
     nombre: dto.nombre,
