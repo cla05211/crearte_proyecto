@@ -20,7 +20,7 @@ export class AuthService
 
   guardarSesion(sesion:any)
   {
-    localStorage.setItem('token_acceso', sesion.access_token);
+    localStorage.setItem('access_token', sesion.access_token);
     localStorage.setItem('token_refresh', sesion.refresh_token);
   }
 }

@@ -58,7 +58,8 @@ export class Login
             const contraseña = String(this.formularioLogin.get('contraseña')?.value);
             try
             {
-                const data = await firstValueFrom (this.auth.login(correo,contraseña));
+                const data:any = await firstValueFrom (this.auth.login(correo,contraseña));
+                this.auth.guardarSesion(data.session)
                 this.router.navigate(['/home']);
             }
             catch (error)
