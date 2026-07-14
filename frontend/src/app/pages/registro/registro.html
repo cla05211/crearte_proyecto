@@ -1,24 +1,109 @@
-<form [formGroup]="formularioRegistro">
-<input type="email" formControlName="correo" placeholder="Correo Electrónico" />
-<div *ngIf="verficarCampo('correo') as error">
-<input type="password" formControlName="contraseña" placeholder="Contraseña" />
-<div *ngIf="verficarCampo('contraseña') as error">
-<input type="text" formControlName="nombre" placeholder="Nombre" />
-<div *ngIf="verficarCampo('nombre') as error">
-<label for="rol">Rol</label>
+<main class="registro-page">
+  <section class="registro-card" aria-labelledby="registro-title">
+    <aside class="brand-panel" aria-label="Crearte, buzos de egresados">
+      <div class="brand-shape brand-shape--top"></div>
+      <div class="brand-content">
+        <img
+          class="brand-logo"
+          src="/crearte-logo.png"
+          alt="Crearte, 10 años"
+        />
+        <p class="brand-tagline">Diseñamos recuerdos para llevar puestos.</p>
+      </div>
+      <div class="brand-shape brand-shape--bottom"></div>
+    </aside>
 
-<select id="rol" formControlName="rol">
-    <option [ngValue]="null" disabled>
-        Seleccione un rol
-    </option>
+    <div class="form-panel">
+      <div class="form-heading">
+        <span class="ds-eyebrow">Creá tu cuenta</span>
+        <h1 id="registro-title" class="ds-heading-1">Registrarse</h1>
+        <p class="ds-text-muted">Completá tus datos para comenzar.</p>
+      </div>
 
-    @for (rol of roles; track rol.rol) {
-        <option [value]="rol.rol">
-            {{ rol.nombre_rol }}
-        </option>
-    }
-</select>
+      <form [formGroup]="formularioRegistro" class="registro-form">
+        <div class="ds-field">
+          <label class="ds-label" for="correo">Correo electrónico</label>
+          <input
+            class="ds-input"
+            id="correo"
+            type="email"
+            formControlName="correo"
+            autocomplete="email"
+            placeholder="nombre@correo.com"
+          />
+          <div *ngIf="verficarCampo('correo') as error" class="ds-field__error">
+            <small>{{ error }}</small>
+          </div>
+        </div>
 
-@if (verficarCampo('rol')) {
-    <small>{{ verficarCampo('rol') }}</small>
-}
+        <div class="ds-field">
+          <label class="ds-label" for="contraseña">Contraseña</label>
+          <input
+            class="ds-input"
+            id="contraseña"
+            type="password"
+            formControlName="contraseña"
+            autocomplete="new-password"
+            placeholder="Ingresá tu contraseña"
+          />
+          <div *ngIf="verficarCampo('contraseña') as error" class="ds-field__error">
+            <small>{{ error }}</small>
+          </div>
+        </div>
+
+        <div class="name-fields">
+          <div class="ds-field">
+            <label class="ds-label" for="nombre">Nombre</label>
+            <input
+              class="ds-input"
+              id="nombre"
+              type="text"
+              formControlName="nombre"
+              autocomplete="given-name"
+              placeholder="Tu nombre"
+            />
+            <div *ngIf="verficarCampo('nombre') as error" class="ds-field__error">
+              <small>{{ error }}</small>
+            </div>
+          </div>
+
+          <div class="ds-field">
+            <label class="ds-label" for="apellido">Apellido</label>
+            <input
+              class="ds-input"
+              id="apellido"
+              type="text"
+              formControlName="apellido"
+              autocomplete="family-name"
+              placeholder="Tu apellido"
+            />
+            <div *ngIf="verficarCampo('apellido') as error" class="ds-field__error">
+              <small>{{ error }}</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="ds-field">
+          <label class="ds-label" for="rol">Rol</label>
+          <select class="ds-select" id="rol" formControlName="rol">
+            <option [ngValue]="null" disabled>Seleccioná un rol</option>
+            @for (rol of roles; track rol.rol) {
+              <option [value]="rol.rol">{{ rol.nombre_rol }}</option>
+            }
+          </select>
+          @if (verficarCampo('rol')) {
+            <small class="ds-field__error">{{ verficarCampo('rol') }}</small>
+          }
+        </div>
+
+        <button class="ds-button ds-button--large ds-button--full" type="button" (click)="registrar()">
+          Crear cuenta
+        </button>
+
+        <p class="account-prompt">
+          ¿Ya tienes una cuenta? <a class="account-link" routerLink="/login">Iniciar Sesión</a>
+        </p>
+      </form>
+    </div>
+  </section>
+</main>

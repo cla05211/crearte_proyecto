@@ -1,16 +1,16 @@
 import { Component } from '@angular/core';
 import{ FormsModule, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CommonModule, SlicePipe } from '@angular/common';
 import { Injectable, inject } from '@angular/core';
 import { AuthService } from '../../services/Auth/auth-service';
-import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
+import { NotificationService } from '../../shared/notifications/notification.service';
 
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [RouterLink, CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
@@ -19,6 +19,7 @@ export class Login
   verClave: boolean = false;
   auth = inject(AuthService)
   router = inject(Router)
+  notificaciones = inject(NotificationService)
 
   toggleClave(): void 
     {
@@ -48,6 +49,7 @@ export class Login
 
     async iniciarSesion()
     {
+        console.log("HOLA");
         if (this.formularioLogin.invalid) 
         {
             this.formularioLogin.markAllAsTouched();
@@ -59,34 +61,39 @@ export class Login
             try
             {
                 const data:any = await firstValueFrom (this.auth.login(correo,contraseña));
+                console.log (data);
+                
+                if (data.error)
+                {
+                    if (data.error.message.includes('Invalid login credentials'))
+                    {
+                        this.notificaciones.warning({
+                            title: 'Usuario no registrado',
+                            description: 'El correo ingresado no se encuentra registrado.',
+                        });
+                    }
+                    else
+                    {
+                        this.notificaciones.warning({
+                            title: 'Error',
+                            description: 'Lo sentimos, ha ocurrido un error inesperado.',
+                        });
+                    }
+
+                    return;
+                }
+
                 this.auth.guardarSesion(data.data.session)
                 this.router.navigate(['/home']);
             }
             catch (error)
             {
-                if (error instanceof HttpErrorResponse) 
-                {
-                    console.log(error);
-                    const mensaje = error.message.toLowerCase();
-                    if (mensaje.includes('invalid login credentials')) 
-                    {
-                        Swal.fire({
-                        icon: 'warning',
-                        title: 'Usuario no registrado',
-                        text: 'El correo ingresado no se encuentra registrado.',
-                        confirmButtonText: 'Entendido',
-                        });
-                    }
-                    else
-                    {
-                        Swal.fire({
-                        icon: 'warning',
-                        title: 'Error',
-                        text: 'Lo sentimos, ha ocurrido un error inesperado.',
-                        confirmButtonText: 'Entendido',
-                        });
-                    }
-                }
+                console.log(error);
+
+                this.notificaciones.error({
+                title: 'Error',
+                description: 'No se pudo iniciar sesión.',
+                });
             }
         }
     }

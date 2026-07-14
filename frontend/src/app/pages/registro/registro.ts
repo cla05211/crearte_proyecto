@@ -1,18 +1,18 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/Auth/auth-service';
-import { Router } from '@angular/router';
-import Swal from 'sweetalert2';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import{ FormsModule, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms'
 import { RegistroDto } from '../../services/Auth/dto/registro.interface';
 import { RolDto } from '../../services/roles/dto/rol.dto';
 import { RolService } from '../../services/roles/rol-service';
+import { NotificationService } from '../../shared/notifications/notification.service';
 
 @Component({
   selector: 'app-registro',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [RouterLink, CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './registro.html',
   styleUrl: './registro.css',
 })
@@ -21,6 +21,7 @@ export class Registro {
     auth = inject(AuthService)
     router = inject(Router)
     rolService = inject(RolService);
+    notificaciones = inject(NotificationService);
     rolSeleccionado: number | null = null;
     roles: RolDto[] = [];
 
@@ -91,20 +92,16 @@ export class Registro {
                             const mensaje = error.message.toLowerCase();
                             if (mensaje.includes('user already registered')) 
                             {
-                                Swal.fire({
-                                icon: 'warning',
+                                this.notificaciones.warning({
                                 title: 'Usuario no registrado',
-                                text: 'Ya existe una cuenta con ese correo electrónico.',
-                                confirmButtonText: 'Entendido',
+                                description: 'Ya existe una cuenta con ese correo electrónico.',
                                 });
                             }
                             else
                             {
-                                Swal.fire({
-                                icon: 'warning',
+                                this.notificaciones.warning({
                                 title: 'Error',
-                                text: 'Lo sentimos, ha ocurrido un error inesperado.',
-                                confirmButtonText: 'Entendido',
+                                description: 'Lo sentimos, ha ocurrido un error inesperado.',
                                 });
                             }
                         }

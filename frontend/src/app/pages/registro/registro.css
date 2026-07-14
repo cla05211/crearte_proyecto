@@ -1,0 +1,221 @@
+:host {
+  display: block;
+  min-height: 100svh;
+}
+
+.registro-page {
+  align-items: center;
+  background-color: var(--color-primary-100);
+  display: flex;
+  justify-content: center;
+  min-height: 100svh;
+  overflow: hidden;
+  padding: var(--space-8) var(--space-5);
+  position: relative;
+}
+
+.registro-page::before,
+.registro-page::after {
+  background-color: var(--color-primary-200);
+  border-radius: 50%;
+  content: '';
+  position: absolute;
+  z-index: 0;
+}
+
+.registro-page::before {
+  height: 360px;
+  left: -160px;
+  top: -145px;
+  width: 360px;
+}
+
+.registro-page::after {
+  bottom: -190px;
+  height: 390px;
+  right: -160px;
+  width: 390px;
+}
+
+.registro-card {
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  display: grid;
+  grid-template-columns: minmax(290px, 0.88fr) minmax(400px, 1.12fr);
+  max-width: 980px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  z-index: 1;
+}
+
+.brand-panel {
+  align-items: center;
+  background-color: var(--color-primary-700);
+  color: var(--color-surface);
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  padding: var(--space-12) 38px;
+  position: relative;
+}
+
+.brand-content {
+  position: relative;
+  text-align: center;
+  z-index: 1;
+}
+
+.brand-logo {
+  display: block;
+  height: auto;
+  margin: 0 auto 30px;
+  max-width: 190px;
+  width: 100%;
+}
+
+.brand-tagline {
+  font-size: 1.05rem;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.01em;
+  line-height: 1.55;
+  margin: 0 auto;
+  max-width: 205px;
+}
+
+.brand-shape {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 42% 58% 55% 45%;
+  position: absolute;
+}
+
+.brand-shape--top {
+  height: 235px;
+  right: -105px;
+  top: -75px;
+  transform: rotate(25deg);
+  width: 235px;
+}
+
+.brand-shape--bottom {
+  bottom: -100px;
+  height: 195px;
+  left: -92px;
+  transform: rotate(-20deg);
+  width: 195px;
+}
+
+.form-panel {
+  padding: 48px 62px;
+}
+
+.form-heading,
+.registro-form {
+  margin-inline: auto;
+  max-width: 390px;
+  width: 100%;
+}
+
+.form-heading {
+  margin-bottom: 30px;
+}
+
+.form-heading .ds-eyebrow {
+  display: block;
+  margin-bottom: 11px;
+}
+
+.form-heading .ds-heading-1 {
+  letter-spacing: -0.04em;
+  margin-bottom: 11px;
+}
+
+.form-heading p {
+  font-size: 0.96rem;
+  margin: 0;
+}
+
+.registro-form {
+  display: grid;
+  gap: 18px;
+}
+
+.name-fields {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ds-field__error small {
+  font-size: inherit;
+}
+
+.account-prompt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  margin: 2px 0 0;
+  text-align: center;
+}
+
+.account-link {
+  color: var(--color-primary-700);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+
+.account-link:hover {
+  text-decoration: underline;
+}
+
+.account-link:focus-visible {
+  outline: 2px solid var(--color-primary-700);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .registro-page {
+    align-items: flex-start;
+    padding: 20px;
+  }
+
+  .registro-card {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-panel {
+    min-height: 220px;
+    padding: 30px;
+  }
+
+  .brand-logo {
+    margin-bottom: 15px;
+    max-width: 130px;
+  }
+
+  .brand-tagline {
+    font-size: 0.9rem;
+    max-width: none;
+  }
+
+  .form-panel {
+    padding: 42px 30px;
+  }
+}
+
+@media (max-width: 430px) {
+  .registro-page {
+    padding: 0;
+  }
+
+  .registro-card {
+    min-height: 100svh;
+  }
+
+  .form-panel {
+    padding: 36px 22px;
+  }
+
+  .name-fields {
+    grid-template-columns: 1fr;
+  }
+}
