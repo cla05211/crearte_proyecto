@@ -27,7 +27,7 @@ export class AuthService {
 
   async guardarAuth(dto: RegistroDto): Promise<string>
   {
-     const {data, error} = await this.sb.supabase.auth.admin.createUser({ email: dto.correo, password: dto.contraseña });
+     const {data, error} = await this.sb.supabase.auth.admin.createUser({ email: dto.correo, password: dto.contraseña, email_confirm: true, });
      if(error || !data.user)
       {
          throw error ?? new Error('No se pudo crear el usuario');
@@ -47,9 +47,4 @@ export class AuthService {
     return await this.sb.supabase.from("usuarios").insert({nombre, apellido, rol})
   }
 
-  async obtenerUsuarioPorToken(token: string) {
-    const { data, error } = await this.sb.supabase.auth.getUser(token);
-    if (error) return null;
-    return data.user;
-  }
 }
