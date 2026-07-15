@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {LoginDto} from './dto/login.dto';
 import { RegistroDto } from './dto/registro.dto';
@@ -27,4 +27,5 @@ export class AuthController
     {
         return req.user.email; 
     }
+
 }

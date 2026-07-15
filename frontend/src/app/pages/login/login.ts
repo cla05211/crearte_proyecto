@@ -29,7 +29,7 @@ export class Login
     formularioLogin = new FormGroup
     ({
         correo: new FormControl('',[Validators.required,Validators.email]),
-        contraseña: new FormControl('',[Validators.required, Validators.minLength(5),Validators.pattern('^[A-Za-z0-9]+$')])
+        contraseña: new FormControl('',[Validators.required, Validators.minLength(5),Validators.pattern('^[A-Za-z0-9Ññ]+$')])
     })
 
     verficarCampo(controlName: string): string | null 
@@ -60,40 +60,36 @@ export class Login
             try
             {
                 const data:any = await firstValueFrom (this.auth.login(correo,contraseña));
-                console.log (data);
-                
-                if (data.error)
-                {
-                    if (data.error.message.includes('Invalid login credentials'))
-                    {
-                        this.notificaciones.warning({
-                            title: 'Usuario no registrado',
-                            description: 'El correo ingresado no se encuentra registrado.',
-                        });
-                    }
-                    else
-                    {
-                        this.notificaciones.warning({
-                            title: 'Error',
-                            description: 'Lo sentimos, ha ocurrido un error inesperado.',
-                        });
-                    }
-
-                    return;
-                }
-
                 this.auth.guardarSesion(data.data.session)
                 this.router.navigate(['/home']);
-            }
-            catch (error)
+            }    
+            catch (err: any) 
             {
-                console.log(error);
+                const code = err?.error?.code; //Este es el data.error del back
 
-                this.notificaciones.error({
-                title: 'Error',
-                description: 'No se pudo iniciar sesión.',
-                });
+                if (code === 'INVALID_CREDENTIALS')
+                {
+                    this.notificaciones.warning({
+                        title: 'Usuario no registrado',
+                        description: 'El correo ingresado no se encuentra registrado.',
+                    });
+                }
+                else if (code === 'PENDING_APPROVAL')
+                {
+                    this.notificaciones.warning({
+                        title: 'Usuario pendiente de aprobación',
+                        description: 'El correo ingresado se encuentra pendiente de aprobación.',
+                    });
+                }
+                else
+                {
+                    this.notificaciones.warning({
+                        title: 'Error',
+                        description: 'Lo sentimos, ha ocurrido un error inesperado.',
+                    });
+                }
             }
+        
         }
     }
 }

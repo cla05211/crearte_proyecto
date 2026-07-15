@@ -5,6 +5,7 @@ import { BehaviorSubject } from 'rxjs';
 import { RegistroDto } from './dto/registro.dto';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
 import { GuardarUsuarioDTO } from 'src/usuarios/dto/guardarUsuario.dto';
+import { UnauthorizedException } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
@@ -38,12 +39,44 @@ export class AuthService {
   }
 
   async iniciarSesion(correo: string, contraseña: string) {
-    return await this.sb.supabase.auth.signInWithPassword({ email: correo, password: contraseña });
+    const{data,error} = await this.sb.supabase.auth.signInWithPassword({ email: correo, password: contraseña });
+    if (error) 
+    {
+        throw new UnauthorizedException({
+        code: 'INVALID_CREDENTIALS',
+        message: error.message,
+        });
   }
 
-  async guardarUsuario(nombre:string, apellido:string, rol:string)
+    const aprobado = await this.comprobarAprobado(data.user.id)
+
+    if(!aprobado)
+    {
+        console.log("Pendiente de aprobacion")
+        this.sb.supabase.auth.signOut();
+        throw new UnauthorizedException({
+        code: 'PENDING_APPROVAL',
+        message: 'Usuario pendiente de aprobación.',
+        });
+    }
+  }
+
+  async comprobarAprobado(authId: string):Promise <boolean>
+  { 
+    const {data,error} = await this.sb.supabase.from("usuarios").select('aprobado').eq('id_auth', authId).single();
+
+    if(error)
+    {
+        throw error;
+    }
+    
+    return data.aprobado;
+  }
+
+    async guardarUsuario(nombre:string, apellido:string, rol:string)
   {
     return await this.sb.supabase.from("usuarios").insert({nombre, apellido, rol})
   }
+
 
 }
