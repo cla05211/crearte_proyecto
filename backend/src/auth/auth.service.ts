@@ -31,6 +31,7 @@ export class AuthService {
         const {data, error} = await this.sb.supabase.auth.admin.createUser({ email: dto.correo, password: dto.contraseña, email_confirm: true, });
         if(error)
         {
+            console.log (error);
             switch (error.code) 
             {
                 case 'user_already_exists':

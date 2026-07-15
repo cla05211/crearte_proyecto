@@ -10,13 +10,15 @@ import { UsuariosModule } from './usuarios/usuarios.module';
 import { RolesController } from './roles/roles.controller';
 import { RolesModule } from './roles/roles.module';
 import { RolesService } from './roles/roles.service';
+import { PermisosService } from './permisos/permisos.service';
+import { PermisosModule } from './permisos/permisos.module';
 
 
 @Module({
   imports: [ConfigModule.forRoot({
       isGlobal: true,
-    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule,],
+    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, PermisosModule,],
   controllers: [AppController, RolesController],
-  providers: [AppService, RolesService],
+  providers: [AppService, RolesService, PermisosService],
 })
 export class AppModule {}

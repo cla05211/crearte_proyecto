@@ -9,6 +9,7 @@ import { RegistroDto } from '../../services/Auth/dto/registro.interface';
 import { RolDto } from '../../services/roles/dto/rol.dto';
 import { RolService } from '../../services/roles/rol-service';
 import { NotificationService } from '../../shared/notifications/notification.service';
+import { ChangeDetectorRef } from '@angular/core';
 
 @Component({
   selector: 'app-registro',
@@ -21,14 +22,23 @@ export class Registro {
     auth = inject(AuthService)
     router = inject(Router)
     rolService = inject(RolService);
+    cd = inject(ChangeDetectorRef)
     notificaciones = inject(NotificationService);
     rolSeleccionado: number | null = null;
-    roles: RolDto[] = [];
+    rolesSupabase: RolDto[] = [];
+    rolesFiltrados: RolDto[] = [];
 
     async ngOnInit() {
         try 
         {
-            this.roles = await firstValueFrom(this.rolService.obtenerRoles());
+            this.rolesSupabase = await firstValueFrom(this.rolService.obtenerRoles());
+
+            this.rolesFiltrados = this.rolesSupabase.filter(
+            rol => rol.nombre_rol !== "Administrador" &&
+                    rol.nombre_rol !== "Cliente"
+            );
+
+            this.cd.detectChanges();
         } 
         catch (error) 
         {
@@ -39,7 +49,7 @@ export class Registro {
   formularioRegistro = new FormGroup
     ({
         correo: new FormControl('',[Validators.required,Validators.email]),
-        contraseña: new FormControl('',[Validators.required, Validators.minLength(6),Validators.pattern('^[A-Za-z0-9ÁÉÍÓÚáéíóúÑñÜü]+$')]),
+        contraseña: new FormControl('',[Validators.required, Validators.minLength(6),Validators.pattern('^[A-Za-z0-9Ññ]+$')]),
         nombre: new FormControl('',[Validators.required, Validators.minLength(3),Validators.pattern('^[A-Za-zÁÉÍÓÚáéíóúÑñÜü]+$')]),
         apellido: new FormControl('',[Validators.required, Validators.minLength(3),Validators.pattern('^[A-Za-zÁÉÍÓÚáéíóúÑñÜü]+$')]),
         rol: new FormControl(null, Validators.required)
@@ -56,6 +66,7 @@ export class Registro {
           if (control.hasError('email')) {mensaje = 'Debe ser un correo válido.'};
           if (control.hasError('minlength')) {mensaje = 'El dato ingresado es muy corto.'};
           if (control.hasError('maxlength')) {mensaje = 'El dato ingresado es muy largo.'};
+            if (control.hasError('pattern')) {mensaje = 'Formato inválido.'};
         }
         return mensaje;
     }
@@ -80,9 +91,11 @@ export class Registro {
             try
             {
                 const data:any = await firstValueFrom (this.auth.registrar(dto));
-                const logindata:any = await firstValueFrom (this.auth.login(dto.correo,dto.contraseña));
-                this.auth.guardarSesion(logindata.data.session)
-                this.router.navigate(['/home']);
+                this.notificaciones.success({
+                    title: 'Cuenta creada',
+                    description: 'Tu cuenta fue registrada correctamente. Iniciá sesión para continuar.',
+                    });
+                this.router.navigate(['/login']);
             }
             catch (err:any)
             {
@@ -105,6 +118,7 @@ export class Registro {
             }
         }
     }
+
 }
 
 

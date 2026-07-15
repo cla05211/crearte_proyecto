@@ -87,7 +87,7 @@
           <label class="ds-label" for="rol">Rol</label>
           <select class="ds-select" id="rol" formControlName="rol">
             <option [ngValue]="null" disabled>Seleccioná un rol</option>
-            @for (rol of roles; track rol.rol) {
+            @for (rol of rolesFiltrados; track rol.rol) {
               <option [value]="rol.rol">{{ rol.nombre_rol }}</option>
             }
           </select>
