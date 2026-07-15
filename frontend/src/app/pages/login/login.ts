@@ -29,7 +29,7 @@ export class Login
     formularioLogin = new FormGroup
     ({
         correo: new FormControl('',[Validators.required,Validators.email]),
-        contraseña: new FormControl('',[Validators.required, Validators.minLength(5),Validators.pattern('^[A-Za-zÁÉÍÓÚáéíóúÑñÜü]+$')])
+        contraseña: new FormControl('',[Validators.required, Validators.minLength(5),Validators.pattern('^[A-Za-z0-9]+$')])
     })
 
     verficarCampo(controlName: string): string | null 
@@ -49,7 +49,6 @@ export class Login
 
     async iniciarSesion()
     {
-        console.log("HOLA");
         if (this.formularioLogin.invalid) 
         {
             this.formularioLogin.markAllAsTouched();
