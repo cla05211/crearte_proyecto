@@ -6,6 +6,7 @@ import { RegistroDto } from './dto/registro.dto';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
 import { GuardarUsuarioDTO } from 'src/usuarios/dto/guardarUsuario.dto';
 import { UnauthorizedException } from '@nestjs/common';
+import { ConflictException, BadRequestException, HttpException } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
@@ -25,18 +26,28 @@ export class AuthService {
     return await this.usuarioService.guardarUsuario(usuarioDto)
   }
 
-  async guardarAuth(dto: RegistroDto): Promise<string>
-  {
-     const {data, error} = await this.sb.supabase.auth.admin.createUser({ email: dto.correo, password: dto.contraseña, email_confirm: true, });
-     if(error || !data.user)
-      {
-         throw error ?? new Error('No se pudo crear el usuario');
-      }
-    else
-      {
+    async guardarAuth(dto: RegistroDto): Promise<string>
+    {
+        const {data, error} = await this.sb.supabase.auth.admin.createUser({ email: dto.correo, password: dto.contraseña, email_confirm: true, });
+        if(error)
+        {
+            switch (error.code) 
+            {
+                case 'user_already_exists':
+                    throw new ConflictException({
+                        code: 'USER_ALREADY_EXISTS',
+                        message: 'Ya existe una cuenta registrada con ese correo.',
+                    });
+                default:
+                    throw new BadRequestException({
+                        code: 'SIGNUP_ERROR',
+                        message: error.message,
+                    });
+            }
+        }
+
         return data.user.id;
-      }
-  }
+    }
 
   async iniciarSesion(correo: string, contraseña: string) {
     const{data,error} = await this.sb.supabase.auth.signInWithPassword({ email: correo, password: contraseña });
@@ -46,7 +57,7 @@ export class AuthService {
         code: 'INVALID_CREDENTIALS',
         message: error.message,
         });
-  }
+    }
 
     const aprobado = await this.comprobarAprobado(data.user.id)
 

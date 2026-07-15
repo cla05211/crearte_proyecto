@@ -71,7 +71,7 @@ export class Login
                 {
                     this.notificaciones.warning({
                         title: 'Usuario no registrado',
-                        description: 'El correo ingresado no se encuentra registrado.',
+                        description: 'El correo ingresado no se encuentra registrado o la contraseña es incorrecta.',
                     });
                 }
                 else if (code === 'PENDING_APPROVAL')

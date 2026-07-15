@@ -63,50 +63,48 @@ export class Registro {
     async registrar()
     {
         if (this.formularioRegistro.invalid) 
+        {
+            this.formularioRegistro.markAllAsTouched();
+        }
+        else
+        {
+            const dto: RegistroDto =
+            {
+                correo: String(this.formularioRegistro.get('correo')?.value),
+                contraseña: String(this.formularioRegistro.get('contraseña')?.value),
+                nombre: String(this.formularioRegistro.get('nombre')?.value),
+                apellido: String(this.formularioRegistro.get('apellido')?.value),
+                rol: Number(this.formularioRegistro.get('rol')?.value)
+            }
+
+            try
+            {
+                const data:any = await firstValueFrom (this.auth.registrar(dto));
+                const logindata:any = await firstValueFrom (this.auth.login(dto.correo,dto.contraseña));
+                this.auth.guardarSesion(logindata.data.session)
+                this.router.navigate(['/home']);
+            }
+            catch (err:any)
+            {
+                const code = err?.error?.code; //Este es el data.error del back
+
+                if (code === 'USER_ALREADY_EXISTS') 
                 {
-                    this.formularioRegistro.markAllAsTouched();
+                    this.notificaciones.warning({
+                    title: 'Correo ya registrado',
+                    description: 'Ya existe una cuenta con ese correo electrónico.',
+                    });
                 }
                 else
                 {
-                    const dto: RegistroDto =
-                    {
-                        correo: String(this.formularioRegistro.get('correo')?.value),
-                        contraseña: String(this.formularioRegistro.get('contraseña')?.value),
-                        nombre: String(this.formularioRegistro.get('nombre')?.value),
-                        apellido: String(this.formularioRegistro.get('apellido')?.value),
-                        rol: Number(this.formularioRegistro.get('rol')?.value)
-                    }
-
-                    try
-                    {
-                        const data:any = await firstValueFrom (this.auth.registrar(dto));
-                        const logindata:any = await firstValueFrom (this.auth.login(dto.correo,dto.contraseña));
-                        this.auth.guardarSesion(logindata.data.session)
-                        this.router.navigate(['/home']);
-                    }
-                    catch (error)
-                    {
-                        if (error instanceof HttpErrorResponse) 
-                        {
-                            console.log(error);
-                            const mensaje = error.message.toLowerCase();
-                            if (mensaje.includes('user already registered')) 
-                            {
-                                this.notificaciones.warning({
-                                title: 'Usuario no registrado',
-                                description: 'Ya existe una cuenta con ese correo electrónico.',
-                                });
-                            }
-                            else
-                            {
-                                this.notificaciones.warning({
-                                title: 'Error',
-                                description: 'Lo sentimos, ha ocurrido un error inesperado.',
-                                });
-                            }
-                        }
-                    }
+                    this.notificaciones.warning({
+                    title: 'Error',
+                    description: 'Lo sentimos, ha ocurrido un error inesperado.',
+                    });
                 }
+            }
+        }
     }
-
 }
+
+
