@@ -7,10 +7,11 @@ import { UsuariosService } from 'src/usuarios/usuarios.service';
 import { GuardarUsuarioDTO } from 'src/usuarios/dto/guardarUsuario.dto';
 import { UnauthorizedException } from '@nestjs/common';
 import { ConflictException, BadRequestException, HttpException } from '@nestjs/common';
+import { PermisosService } from 'src/permisos/permisos.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private sb: SupabaseService, private usuarioService: UsuariosService) {}
+  constructor(private sb: SupabaseService, private usuarioService: UsuariosService, private permisosService: PermisosService) {}
 
   async registrar(dto: RegistroDto) 
   {
@@ -31,7 +32,7 @@ export class AuthService {
         const {data, error} = await this.sb.supabase.auth.admin.createUser({ email: dto.correo, password: dto.contraseña, email_confirm: true, });
         if(error)
         {
-            console.log (error);
+            console.log (error)
             switch (error.code) 
             {
                 case 'user_already_exists':
@@ -50,7 +51,8 @@ export class AuthService {
         return data.user.id;
     }
 
-  async iniciarSesion(correo: string, contraseña: string) {
+  async iniciarSesion(correo: string, contraseña: string) 
+  {
     const{data,error} = await this.sb.supabase.auth.signInWithPassword({ email: correo, password: contraseña });
     if (error) 
     {
@@ -64,13 +66,22 @@ export class AuthService {
 
     if(!aprobado)
     {
-        console.log("Pendiente de aprobacion")
         this.sb.supabase.auth.signOut();
         throw new UnauthorizedException({
         code: 'PENDING_APPROVAL',
         message: 'Usuario pendiente de aprobación.',
         });
     }
+    
+    const usuario = await this.usuarioService.obtenerUsuarioPorIdAuth(data.user.id);
+    const permisos = this.obtenerPermisos(usuario.rol);
+
+    return {session: data.session, usuario, permisos};
+  }
+
+  async obtenerPermisos(rol:number)
+  {
+    return this.permisosService.obtenerPermisosRol(rol);
   }
 
   async comprobarAprobado(authId: string):Promise <boolean>
