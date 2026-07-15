@@ -74,7 +74,7 @@ export class AuthService {
     }
     
     const usuario = await this.usuarioService.obtenerUsuarioPorIdAuth(data.user.id);
-    const permisos = this.obtenerPermisos(usuario.rol);
+    const permisos = await this.obtenerPermisos(usuario.rol);
 
     return {session: data.session, usuario, permisos};
   }
