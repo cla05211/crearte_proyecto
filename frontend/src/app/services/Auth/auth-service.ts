@@ -7,6 +7,7 @@ import { Session } from '@supabase/supabase-js';
 import { Permiso } from '../../../interfaces/permiso';
 import { tap } from 'rxjs';
 import { respuestaLogin } from './dto/respuestaLogin';
+import { PermisosService } from '../permisos/permisos';
 
 @Injectable({
   providedIn: 'root',
@@ -14,9 +15,9 @@ import { respuestaLogin } from './dto/respuestaLogin';
 export class AuthService 
 {
   http = inject(HttpClient);
+  permisosService = inject(PermisosService);
   session?: Session;
   usuario?: Usuario;
-  permisos: Permiso[] = [];
 
   login(correo: string, contraseña:string)
   {
@@ -28,15 +29,10 @@ export class AuthService
     .pipe(
       tap(respuesta => {
         this.usuario = respuesta.usuario;
-        this.permisos = respuesta.permisos;
         this.session = respuesta.session;
 
+        this.permisosService.guardarPermisos(respuesta.permisos);
         this.guardarSesion();
-        console.log(this.usuario);
-        console.log("Permisos");
-        console.log(this.permisos);
-        console.log("Sesion");
-        console.log(this.session);
       })
     );
   }
@@ -53,6 +49,7 @@ export class AuthService
     {
     localStorage.setItem('access_token', this.session!.access_token);
     localStorage.setItem('token_refresh', this.session!.refresh_token);
+    localStorage.setItem('permisos', JSON.stringify(this.permisos));
     }
     catch(err)
     {
