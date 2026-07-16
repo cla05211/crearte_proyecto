@@ -6,16 +6,16 @@ import { Permiso } from '../../../interfaces/permiso';
 })
 export class PermisosService 
 {
-    private permisos: Permiso[] = [];
+    private permisos: string[] = [];
 
-    guardarPermisos(permisos: Permiso[]) 
+    guardarPermisos(permisos: string[]) 
     {
         this.permisos = permisos;
         localStorage.setItem('permisos', JSON.stringify(permisos));
     }
 
 
-    cargarPermisos(): Permiso[] 
+    cargarPermisos(): string[] 
     {
         if (this.permisos.length === 0) 
         {
@@ -30,7 +30,7 @@ export class PermisosService
 
     tienePermiso(nombre: string): boolean 
     {
-        return this.cargarPermisos().some(p => p.nombre === nombre);
+        return this.cargarPermisos().includes(nombre);
     }
 
     limpiar() 

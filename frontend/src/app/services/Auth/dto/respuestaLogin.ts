@@ -5,5 +5,5 @@ import { Permiso } from "../../../../interfaces/permiso";
 export interface respuestaLogin {
     session: Session;
     usuario: Usuario;
-    permisos: Permiso[];
+    permisos: string[];
 }

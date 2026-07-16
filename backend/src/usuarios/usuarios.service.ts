@@ -4,6 +4,8 @@ import { SupabaseClient, User } from '@supabase/supabase-js';
 import { BehaviorSubject } from 'rxjs';
 import { GuardarUsuarioDTO } from './dto/guardarUsuario.dto';
 import { InternalServerErrorException } from '@nestjs/common';
+import { UsuarioDTO } from './dto/Usuario.dto';
+import { UsuarioSupabaseDTO } from './dto/usuarioSupabase.dto';
 
 @Injectable()
 export class UsuariosService {
@@ -35,5 +37,31 @@ export class UsuariosService {
         }
 
         return data;
+    }
+
+    async obtenerUsuarios():Promise<UsuarioDTO[]>
+    {
+        const { data, error } = await this.sb.supabase
+            .from('usuarios')
+            .select(`
+                nombre,
+                apellido,
+                aprobado,
+                roles (
+                    nombre_rol
+                )
+            `)
+            .returns<UsuarioSupabaseDTO[]>();
+
+        if (error) {
+            throw new Error(error.message);
+        }
+
+        return data.map(u => ({
+            nombre: u.nombre,
+            apellido: u.apellido,
+            aprobado: u.aprobado,
+            rol: u.roles.nombre_rol
+        }));
     }
 }

@@ -9,7 +9,7 @@ export const PermisosGuard: CanActivateFn = (route) => {
   const permisosService = inject(PermisosService);
 
   const permisoRequerido = route.data['permiso'] as string;
-  if (permisoRequerido && permisosService.tienePermiso(permisoRequerido)) 
+  if (permisoRequerido && !permisosService.tienePermiso(permisoRequerido)) 
   {
     router.navigate(['/home']);
     return false;

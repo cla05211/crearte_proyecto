@@ -30,11 +30,13 @@ export class AuthService
     })
     .pipe(
       tap(respuesta => {
+          console.log("Respuesta completa:", respuesta);
         this.usuario = respuesta.usuario;
         this.session = respuesta.session;
 
         this.permisosService.guardarPermisos(respuesta.permisos);
         this.guardarSesion();
+        console.log(localStorage.getItem('permisos'))
       })
     );
   }
@@ -51,6 +53,8 @@ export class AuthService
     {
     localStorage.setItem('access_token', this.session!.access_token);
     localStorage.setItem('token_refresh', this.session!.refresh_token);
+    localStorage.setItem('usuario', JSON.stringify(this.usuario));
+    console.log(localStorage.getItem('usuario'))
     }
     catch(err)
     {
