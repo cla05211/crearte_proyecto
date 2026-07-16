@@ -31,7 +31,12 @@ export class AuthService
         this.permisos = respuesta.permisos;
         this.session = respuesta.session;
 
-        this.guardarSesion(respuesta.session);
+        this.guardarSesion();
+        console.log(this.usuario);
+        console.log("Permisos");
+        console.log(this.permisos);
+        console.log("Sesion");
+        console.log(this.session);
       })
     );
   }
@@ -42,9 +47,16 @@ export class AuthService
     return this.http.post((`${environment.apiUrl}/auth/registro`), dto)
   }
 
-  guardarSesion(sesion:any)
+  guardarSesion()
   {
-    localStorage.setItem('access_token', sesion.access_token);
-    localStorage.setItem('token_refresh', sesion.refresh_token);
+    try
+    {
+    localStorage.setItem('access_token', this.session!.access_token);
+    localStorage.setItem('token_refresh', this.session!.refresh_token);
+    }
+    catch(err)
+    {
+      console.log(err);
+    }
   }
 }
