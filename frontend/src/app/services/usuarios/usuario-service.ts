@@ -17,7 +17,7 @@ export class UsuarioService
 
   eliminarUsuario()
   {
-
+    
   }
 
   traerUsuarios()

@@ -20,4 +20,10 @@ export class Usuarios
       console.log(usuarios);
     });
   }
+  
+  async eliminarUsuario()
+  {
+    this.usuariosService.eliminarUsuario()
+    .subscribe();
+  }
 }
