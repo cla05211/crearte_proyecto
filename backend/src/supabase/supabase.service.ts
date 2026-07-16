@@ -6,15 +6,24 @@ import { ConfigService } from '@nestjs/config';
 export class SupabaseService 
 {
   supabase: SupabaseClient<any, "public", any>;
+  supabaseAuth: SupabaseClient<any, "public", any>;
+
   constructor(private configService: ConfigService) 
   {
     const url = configService.get<string>('SUPABASE_URL');
-    const key = configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+    const serviceKey = configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+    const anonKey = configService.get<string>('SUPABASE_ANON_KEY')
     
-    this.supabase = createClient(url!, key!, {
+    this.supabase = createClient(url!, serviceKey!, {
       auth: {
       autoRefreshToken: false,
       persistSession: false,
       },});
-      }
+
+    this.supabaseAuth = createClient(url!, anonKey!, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },});
+  }
 }

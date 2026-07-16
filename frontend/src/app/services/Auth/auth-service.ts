@@ -8,6 +8,7 @@ import { Permiso } from '../../../interfaces/permiso';
 import { tap } from 'rxjs';
 import { respuestaLogin } from './dto/respuestaLogin';
 import { PermisosService } from '../permisos/permisos';
+import { Router, RouterLink } from '@angular/router';
 
 @Injectable({
   providedIn: 'root',
@@ -16,6 +17,7 @@ export class AuthService
 {
   http = inject(HttpClient);
   permisosService = inject(PermisosService);
+  router = inject(Router);
   session?: Session;
   usuario?: Usuario;
 
@@ -49,11 +51,25 @@ export class AuthService
     {
     localStorage.setItem('access_token', this.session!.access_token);
     localStorage.setItem('token_refresh', this.session!.refresh_token);
-    localStorage.setItem('permisos', JSON.stringify(this.permisos));
     }
     catch(err)
     {
       console.log(err);
     }
   }
+
+  cerrarSesion()
+  {
+    return this.http
+    .post(`${environment.apiUrl}/auth/salir`, {})
+    .pipe(
+      tap(() => {
+        this.permisosService.limpiar();
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('token_refresh');
+
+        this.router.navigate(['/login']);})
+    );
+  }
+  
 }

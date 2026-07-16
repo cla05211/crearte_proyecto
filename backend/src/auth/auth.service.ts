@@ -53,9 +53,11 @@ export class AuthService {
 
   async iniciarSesion(correo: string, contraseña: string) 
   {
-    const{data,error} = await this.sb.supabase.auth.signInWithPassword({ email: correo, password: contraseña });
+    console.log("Iniciando sesion")
+    const{data,error} = await this.sb.supabaseAuth.auth.signInWithPassword({ email: correo, password: contraseña });
     if (error) 
     {
+      console.log("error")
         throw new UnauthorizedException({
         code: 'INVALID_CREDENTIALS',
         message: error.message,
@@ -66,6 +68,7 @@ export class AuthService {
 
     if(!aprobado)
     {
+      console.log("error")
         this.sb.supabase.auth.signOut();
         throw new UnauthorizedException({
         code: 'PENDING_APPROVAL',
@@ -74,14 +77,25 @@ export class AuthService {
     }
     
     const usuario = await this.usuarioService.obtenerUsuarioPorIdAuth(data.user.id);
-    const permisos = await this.obtenerPermisos(usuario.rol);
+    console.log("usuario.rol:", usuario.rol, "tipo:", typeof usuario.rol);
+    const permisos = await this.permisosService.obtenerPermisosRol(usuario.rol);
+    console.log("permisos obtenidos:", permisos);
 
     return {session: data.session, usuario, permisos};
   }
 
-  async obtenerPermisos(rol:number)
+  async cerrarSesion()
   {
-    return this.permisosService.obtenerPermisosRol(rol);
+    console.log("Entre a la funcion del back");
+    const { error } = await this.sb.supabase.auth.signOut();
+    if (error) 
+    {
+      console.log("error");
+        throw new BadRequestException({
+        code: 'SIGNOUT_ERROR',
+        message: error.message,
+        });
+    }
   }
 
   async comprobarAprobado(authId: string):Promise <boolean>

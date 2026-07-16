@@ -21,11 +21,16 @@ export class AuthController
         return await this.auth.registrar(body)
     }
 
+    @Post('salir')
+    async cerrarSesion()
+    {
+        return await this.auth.cerrarSesion();
+    }
+
     @Get('perfil')
     @UseGuards(AuthGuard)
     async obtenerPerfil(@Req() req: any) 
     {
         return req.user.email; 
     }
-
 }
