@@ -54,11 +54,7 @@
               [attr.aria-label]="verClave ? 'Ocultar contraseña' : 'Mostrar contraseña'"
               (click)="toggleClave()"
             >
-              <i
-                class="fas"
-                [ngClass]="verClave ? 'fa fa-eye' : 'fa fa-eye-slash'"
-                aria-hidden="true"
-              ></i>
+              <fa-icon [icon]="verClave ? faEyeSlash : faEye"></fa-icon>
             </button>
           </div>
           <div *ngIf="verficarCampo('contraseña') as error" class="field-error">

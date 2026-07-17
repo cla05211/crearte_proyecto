@@ -7,19 +7,23 @@ import { AuthService } from '../../services/Auth/auth-service';
 import { firstValueFrom } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { NotificationService } from '../../shared/notifications/notification.service';
+import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
+import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 
 @Component({
   selector: 'app-login',
-  imports: [RouterLink, CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [RouterLink, CommonModule, FormsModule, ReactiveFormsModule, FontAwesomeModule],
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
 export class Login 
 {
-  verClave: boolean = false;
-  auth = inject(AuthService)
-  router = inject(Router)
-  notificaciones = inject(NotificationService)
+    faEye = faEye;
+    faEyeSlash = faEyeSlash;
+    verClave: boolean = false;
+    auth = inject(AuthService)
+    router = inject(Router)
+    notificaciones = inject(NotificationService)
 
   toggleClave(): void 
     {

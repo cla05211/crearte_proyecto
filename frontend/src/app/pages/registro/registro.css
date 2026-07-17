@@ -60,6 +60,7 @@
   position: relative;
 }
 
+
 .brand-content {
   position: relative;
   text-align: center;
@@ -218,4 +219,38 @@
   .name-fields {
     grid-template-columns: 1fr;
   }
+  .password-field {
+  position: relative;
+}
+
+.password-field .ds-input {
+  width: 100%;
+  padding-right: 44px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #690446;
+  padding: 0;
+}
+
+.password-toggle:hover {
+  opacity: 0.75;
+}
+
+.password-toggle fa-icon {
+  font-size: 18px;
+}
+  
 }

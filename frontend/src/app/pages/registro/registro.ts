@@ -10,14 +10,19 @@ import { RolDto } from '../../services/roles/dto/rol.dto';
 import { RolService } from '../../services/roles/rol-service';
 import { NotificationService } from '../../shared/notifications/notification.service';
 import { ChangeDetectorRef } from '@angular/core';
+import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
+import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 
 @Component({
   selector: 'app-registro',
-  imports: [RouterLink, CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [RouterLink, CommonModule, FormsModule, ReactiveFormsModule, FontAwesomeModule],
   templateUrl: './registro.html',
   styleUrl: './registro.css',
 })
 export class Registro {
+
+    faEye = faEye;
+    faEyeSlash = faEyeSlash;
     verClave: boolean = false;
     auth = inject(AuthService)
     router = inject(Router)
@@ -44,6 +49,11 @@ export class Registro {
         {
             console.error(error);
         }
+    }
+    
+    toggleClave(): void 
+    {
+    this.verClave = !this.verClave;
     }
   
   formularioRegistro = new FormGroup

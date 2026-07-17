@@ -338,4 +338,30 @@ input:focus {
     flex-direction: column;
     gap: 5px;
   }
+
+  .password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #690446;
+  padding: 0;
+}
+
+.password-toggle:hover {
+  opacity: 0.75;
+}
+
+.password-toggle fa-icon {
+  font-size: 18px;
+}
 }
