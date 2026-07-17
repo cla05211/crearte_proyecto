@@ -109,6 +109,66 @@
   overflow: hidden;
 }
 
+.filter-bar {
+  align-items: center;
+  background: #fbf7f9;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+}
+
+.filter-bar__label {
+  color: var(--color-text-strong);
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.filter-bar p {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  margin: var(--space-1) 0 0;
+}
+
+.sector-filter { position: relative; }
+
+.sector-filter select {
+  appearance: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-primary-300);
+  border-radius: var(--radius-md);
+  color: var(--color-primary-700);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  min-height: 2.6rem;
+  outline: 0;
+  padding: 0 var(--space-10) 0 var(--space-3);
+}
+
+.sector-filter select:focus { border-color: var(--color-primary-700); box-shadow: var(--focus-ring); }
+.sector-filter svg { fill: none; height: 1rem; pointer-events: none; position: absolute; right: var(--space-3); stroke: var(--color-primary-700); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; top: calc(50% - 0.5rem); width: 1rem; }
+
+.filtered-empty-state {
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+}
+
+.filtered-empty-state h2 { color: var(--color-text-strong); font-size: var(--font-size-lg); margin: 0; }
+.filtered-empty-state p { color: var(--color-text-muted); font-size: var(--font-size-sm); margin: var(--space-2) 0 0; }
+
+.sr-only {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
 .table-wrapper { overflow-x: auto; }
 
 .users-table {
@@ -288,6 +348,7 @@
   .users-table { min-width: 38rem; }
   .users-table th,
   .users-table td { padding: var(--space-4); }
+  .filter-bar { padding: var(--space-4); }
 }
 
 @media (max-width: 440px) {
@@ -295,6 +356,8 @@
   .users-header__count-number { height: 2.75rem; width: 2.75rem; }
   .users-header__count { font-size: 0.63rem; }
   .loading-state { align-items: center; flex-direction: column; text-align: center; }
+  .filter-bar { align-items: stretch; flex-direction: column; }
+  .sector-filter select { width: 100%; }
   .delete-button span { display: none; }
   .delete-button { padding: 0.4rem; }
 }

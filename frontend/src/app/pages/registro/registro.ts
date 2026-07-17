@@ -93,7 +93,7 @@ export class Registro {
                 const data:any = await firstValueFrom (this.auth.registrar(dto));
                 this.notificaciones.success({
                     title: 'Cuenta creada',
-                    description: 'Tu cuenta fue registrada correctamente. Iniciá sesión para continuar.',
+                    description: 'Tu cuenta fue registrada correctamente. Queda pendiente de la aprobación del administrador.',
                     });
                 this.router.navigate(['/login']);
             }

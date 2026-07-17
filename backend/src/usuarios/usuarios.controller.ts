@@ -1,9 +1,10 @@
-import { Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
 import { Req } from '@nestjs/common';
 import { UsuariosService } from './usuarios.service';
+import { ModificarAprobacionDTO } from './dto/modificarAprobacion.dto';
 
 @Controller('usuarios')
 export class UsuariosController 
@@ -21,9 +22,9 @@ export class UsuariosController
     @Post('aprobacion')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_usuarios')
-    async modificarAprobacion(id:number, aprobado:boolean)
+    async modificarAprobacion(@Body() dto: ModificarAprobacionDTO)
     {
-        return this.usuariosService.modificarAprobado(id,aprobado);
+        return this.usuariosService.modificarAprobado(dto.id, dto.aprobado);
     }
 
     @Delete(':id')

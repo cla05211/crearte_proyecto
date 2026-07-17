@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Inject, inject } from '@angular/core';
 import { UsuarioService } from '../../services/usuarios/usuario-service';
@@ -17,9 +17,19 @@ export class Usuarios
 {
   usuariosService = inject(UsuarioService);
   confirmationService = inject(ConfirmationService);
-  usuarios: UsuarioRespuestaGet[] = [];
-  cargando = false;
-  empleados: UsuarioRespuestaGet[] = [];
+  usuarios = signal<UsuarioRespuestaGet[]>([]);
+  empleados = signal<UsuarioRespuestaGet[]>([]);
+  sectorSeleccionado = signal('');
+  sectores = computed(() =>
+    [...new Set(this.empleados().map(usuario => usuario.rol))].sort()
+  );
+  empleadosFiltrados = computed(() => {
+    const sector = this.sectorSeleccionado();
+    return sector
+      ? this.empleados().filter(usuario => usuario.rol === sector)
+      : this.empleados();
+  });
+  cargando = signal(false);
   auth = inject(AuthService);
 
   ngOnInit(): void
@@ -31,9 +41,12 @@ export class Usuarios
   {
     this.usuariosService.modificarAprobadoUsuario(id, aprobado).subscribe({
       next: () => {
-        const usuario = this.usuarios.find(u => u.id === id);
-        if (usuario) 
-        {usuario.aprobado = aprobado;}
+        this.usuarios.update(lista =>
+          lista.map(u => u.id === id ? { ...u, aprobado } : u)
+        );
+        this.empleados.update(lista =>
+          lista.map(u => u.id === id ? { ...u, aprobado } : u)
+        );
       },
       error: () => {
         console.log("Error");
@@ -44,19 +57,16 @@ export class Usuarios
   obtenerUsuarios():void
   {
     console.log("Obteniendo");
-    this.cargando = true;
+    this.cargando.set(true);
     this.usuariosService.traerUsuarios().subscribe({
       next: (usuarios) => {
-        console.log("Obtenidos");
-        this.usuarios = usuarios;
-        this.empleados = usuarios.filter(u => u.rol !== "Cliente");
-        this.cargando = false;
-          console.log(this.cargando);
-
+        this.usuarios.set(usuarios);
+        this.empleados.set(usuarios.filter(u => u.rol !== "Cliente" && u.id !== this.auth.usuario?.id));
+        this.cargando.set(false);
       },
       error: () => {
         console.log("Error obteniendo");
-        this.cargando = false;
+        this.cargando.set(false);
       }
     });
   }
@@ -73,9 +83,9 @@ export class Usuarios
     try 
     {
       await firstValueFrom(this.usuariosService.eliminarUsuario(idUsuario));
-      this.usuarios = this.usuarios.filter(u => u.id !== idUsuario);
-      this.empleados = this.empleados.filter(u => u.id !== idUsuario);
-    } 
+      this.usuarios.update(lista => lista.filter(u => u.id !== idUsuario));
+      this.empleados.update(lista => lista.filter(u => u.id !== idUsuario));
+    }
     catch 
     {
       console.log("Error");
@@ -83,4 +93,3 @@ export class Usuarios
   }
 
  }
-

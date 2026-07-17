@@ -104,6 +104,8 @@ export class UsuariosService {
 
     async modificarAprobado(id: number, aprobado:boolean)
     {
+        console.log (id)
+        console.log(aprobado);
         const { data, error } = await this.sb.supabase
         .from('usuarios')
         .update({ aprobado })
@@ -113,6 +115,7 @@ export class UsuariosService {
 
         if (error) 
         {
+            console.log(error);
             throw new InternalServerErrorException('No se pudo actualizar el usuario');
         }
 

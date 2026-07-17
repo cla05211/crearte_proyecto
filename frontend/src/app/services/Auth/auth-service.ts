@@ -21,6 +21,11 @@ export class AuthService
   session?: Session;
   usuario?: Usuario;
 
+  constructor()
+  {
+    this.cargarUsuarioDesdeStorage();
+  }
+
   login(correo: string, contraseña:string)
   {
     return this.http
@@ -40,7 +45,6 @@ export class AuthService
       })
     );
   }
-
 
   registrar(dto: RegistroDto)
   {
@@ -74,6 +78,22 @@ export class AuthService
 
         this.router.navigate(['/login']);})
     );
+  }
+
+  cargarUsuarioDesdeStorage(): void
+  {
+    try
+    {
+      const usuarioGuardado = localStorage.getItem('usuario');
+      if (usuarioGuardado)
+      {
+        this.usuario = JSON.parse(usuarioGuardado);
+      }
+    }
+    catch(err)
+    {
+      console.log(err);
+    }
   }
   
 }
