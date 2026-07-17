@@ -4,4 +4,5 @@ export class GuardarUsuarioDTO
     apellido!: string;
     rol!: number;
     id_auth!:string;
+    aprobado?: boolean;
 }

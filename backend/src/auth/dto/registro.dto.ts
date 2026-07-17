@@ -5,4 +5,5 @@ export class RegistroDto
     nombre!: string;
     apellido!: string;
     rol!: number;
+    aprobado?: boolean;
 }

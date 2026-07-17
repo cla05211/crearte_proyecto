@@ -22,6 +22,7 @@ export class AuthService {
     apellido: dto.apellido,
     rol: dto.rol,
     id_auth: auth_id,
+    aprobado: dto.rol == 6,
     };
     
     return await this.usuarioService.guardarUsuario(usuarioDto)
