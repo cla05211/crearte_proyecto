@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Inject, inject } from '@angular/core';
 import { UsuarioService } from '../../services/usuarios/usuario-service';
 import { firstValueFrom } from 'rxjs';
@@ -8,7 +9,7 @@ import { AuthService } from '../../services/Auth/auth-service';
 
 @Component({
   selector: 'app-usuarios',
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './usuarios.html',
   styleUrl: './usuarios.css',
 })
@@ -23,8 +24,7 @@ export class Usuarios
 
   ngOnInit(): void
   {
-    this.obtenerUsuarios();
-    this.empleados = this.usuarios.filter(u => u.rol !== "Cliente");
+    this.obtenerUsuarios()
   }
 
   modificarAprobadoUsuario(id: number, aprobado: boolean): void
@@ -43,13 +43,19 @@ export class Usuarios
 
   obtenerUsuarios():void
   {
+    console.log("Obteniendo");
     this.cargando = true;
     this.usuariosService.traerUsuarios().subscribe({
       next: (usuarios) => {
+        console.log("Obtenidos");
         this.usuarios = usuarios;
+        this.empleados = usuarios.filter(u => u.rol !== "Cliente");
         this.cargando = false;
+          console.log(this.cargando);
+
       },
       error: () => {
+        console.log("Error obteniendo");
         this.cargando = false;
       }
     });
@@ -68,6 +74,7 @@ export class Usuarios
     {
       await firstValueFrom(this.usuariosService.eliminarUsuario(idUsuario));
       this.usuarios = this.usuarios.filter(u => u.id !== idUsuario);
+      this.empleados = this.empleados.filter(u => u.id !== idUsuario);
     } 
     catch 
     {

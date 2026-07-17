@@ -1,4 +1,94 @@
-<p>Usuarios works!</p>
-<button class="submit-button" type="button" (click)="obtenerUsuarios()">
-    Obtener Usuarios
-</button>
+<p>{{ cargando }}</p>
+<main class="users-page">
+  <div class="users-page__shape users-page__shape--left" aria-hidden="true"></div>
+  <div class="users-page__shape users-page__shape--right" aria-hidden="true"></div>
+
+  <section class="users-container" aria-labelledby="users-title">
+    <header class="users-header">
+      <div>
+        <span class="users-header__eyebrow">Equipo Crearte</span>
+        <h1 id="users-title">Usuarios</h1>
+        <p>Gestioná las personas que hacen posible cada diseño.</p>
+      </div>
+
+      <div class="users-header__count" aria-label="Cantidad de empleados">
+        <span class="users-header__count-number">{{ empleados.length }}</span>
+        <span>empleados</span>
+      </div>
+    </header>
+
+    <section class="users-card" aria-label="Listado de empleados">
+      @if (cargando) {
+        <div class="loading-state" role="status" aria-live="polite">
+          <span class="loading-state__spinner" aria-hidden="true"></span>
+          <div>
+            <h2>Cargando al equipo</h2>
+            <p>Estamos preparando la lista de empleados.</p>
+          </div>
+        </div>
+      } @else if (empleados.length === 0) {
+        <div class="empty-state">
+          <div class="empty-state__illustration" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <h2>No hay empleados registrados.</h2>
+          <p>Cuando se sume alguien al equipo, lo vas a ver acá.</p>
+        </div>
+      } @else {
+        <div class="table-wrapper">
+          <table class="users-table">
+            <caption>Empleados registrados en Crearte</caption>
+            <thead>
+              <tr>
+                <th scope="col">Nombre</th>
+                <th scope="col">Apellido</th>
+                <th scope="col">Sector</th>
+                <th scope="col" class="users-table__approval-heading">Aprobado</th>
+                <th scope="col" class="users-table__actions-heading">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (usuario of empleados; track usuario.id) {
+                <tr>
+                  <td data-label="Nombre">
+                    <span class="employee-name">{{ usuario.nombre }}</span>
+                  </td>
+                  <td data-label="Apellido">{{ usuario.apellido }}</td>
+                  <td data-label="Sector">
+                    <span class="role-badge">{{ usuario.rol }}</span>
+                  </td>
+                  <td data-label="Aprobado" class="users-table__approval-cell">
+                    <label class="approval-control">
+                      <input
+                        type="checkbox"
+                        [checked]="usuario.aprobado"
+                        (change)="modificarAprobadoUsuario(usuario.id, $any($event.target).checked)"
+                        [attr.aria-label]="'Cambiar aprobación de ' + usuario.nombre + ' ' + usuario.apellido"
+                      />
+                      <span class="approval-control__track" aria-hidden="true"></span>
+                      <span class="approval-control__text">{{ usuario.aprobado ? 'Sí' : 'No' }}</span>
+                    </label>
+                  </td>
+                  <td data-label="Acciones" class="users-table__actions-cell">
+                    <button
+                      class="delete-button"
+                      type="button"
+                      (click)="eliminarUsuario(usuario.id)"
+                      [attr.aria-label]="'Eliminar a ' + usuario.nombre + ' ' + usuario.apellido"
+                      title="Eliminar usuario"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" />
+                      </svg>
+                      <span>Eliminar</span>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </section>
+</main>
