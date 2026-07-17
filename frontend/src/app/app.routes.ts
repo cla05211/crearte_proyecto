@@ -8,6 +8,6 @@ export const routes: Routes =
      {path: "registro", loadComponent: ()=> import ('./pages/registro/registro') .then ((archivo) => archivo.Registro)},
      {path: "home", loadComponent: ()=> import ('./pages/home/home') .then ((archivo) => archivo.Home), canActivate: [LogueadoGuard]},
      {path: "usuarios", loadComponent: ()=> import ('./pages/usuarios/usuarios') .then ((archivo) => archivo.Usuarios), canActivate: [LogueadoGuard, PermisosGuard], data: {permiso: 'ver_usuarios'}},
-     {path: "resetear-contraseña", loadComponent: ()=> import ('./pages/olvido-clave/olvido-clave') .then ((archivo) => archivo.OlvidoClave)},
+     {path: "resetear-clave", loadComponent: ()=> import ('./pages/olvido-clave/olvido-clave') .then ((archivo) => archivo.OlvidoClave)},
      {path: "", redirectTo: "home", pathMatch: 'full'},
 ];

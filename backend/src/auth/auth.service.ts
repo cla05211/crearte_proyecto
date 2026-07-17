@@ -8,10 +8,11 @@ import { GuardarUsuarioDTO } from 'src/usuarios/dto/guardarUsuario.dto';
 import { UnauthorizedException } from '@nestjs/common';
 import { ConflictException, BadRequestException, HttpException } from '@nestjs/common';
 import { PermisosService } from 'src/permisos/permisos.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
-  constructor(private sb: SupabaseService, private usuarioService: UsuariosService, private permisosService: PermisosService) {}
+  constructor(private sb: SupabaseService, private usuarioService: UsuariosService, private permisosService: PermisosService, private configService: ConfigService) {}
 
   async registrar(dto: RegistroDto) 
   {
@@ -112,9 +113,19 @@ export class AuthService {
     return await this.sb.supabase.from("usuarios").insert({nombre, apellido, rol})
   }
 
-  async resetearContraseña(correo:string)
+  async resetearClave(correo:string)
   {
-    const redirigir = `${window.location.origin}/resetear-contrasela`;
-    this.sb.supabase.auth.resetPasswordForEmail(correo, {redirectTo: redirigir});
+    const redirigir = `${this.configService.getOrThrow<string>('FRONTEND_URL')}/auth/resetear-clave`;
+
+    const { error } = await this.sb.supabase.auth.resetPasswordForEmail(correo, {
+      redirectTo: redirigir,
+    });
+
+    if (error) 
+    {
+      throw new BadRequestException(error.message);
+    }
+
+    return {mensaje: 'Se ha enviado un enlace para restablecer la contraseña al correo ingresado'};
   }
 }

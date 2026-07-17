@@ -34,9 +34,9 @@ export class AuthController
         return req.user.email; 
     }
 
-    @Post('contraseña/:correo')
-    async resetearContraseña(@Param('correo')correo: string)
+    @Post('clave/:correo')
+    async resetearClave(@Param('correo')correo: string)
     {
-        return this.auth.resetearContraseña(correo);
+        return this.auth.resetearClave(correo);
     }
 }

@@ -96,9 +96,9 @@ export class AuthService
     }
   }
   
-  resetearContraseña(correo:string)
+  resetearClave(correo:string)
   {
-    return this.http.post(`${environment.apiUrl}/auth/contraseña/${correo}`, {});
+    return this.http.post(`${environment.apiUrl}/auth/clave/${correo}`, {});
   }
 
 }
