@@ -17,11 +17,11 @@ export class OlvidoClave
   notificaciones = inject(NotificationService)
   router = inject (Router)
 
-  async resetearClave(correo:string)
+  async enviarEnlaceClave(correo:string)
   {
     try 
     {
-      const data: any = await firstValueFrom(this.auth.resetearClave(correo));
+      const data: any = await firstValueFrom(this.auth.enviarEnlaceClave(correo));
 
       if(data.mensaje)
       {

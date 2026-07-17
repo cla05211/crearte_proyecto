@@ -96,9 +96,14 @@ export class AuthService
     }
   }
   
-  resetearClave(correo:string)
+  enviarEnlaceClave(correo:string)
   {
-    return this.http.post(`${environment.apiUrl}/auth/clave/${correo}`, {});
+    return this.http.post(`${environment.apiUrl}/auth/olvido-clave/${correo}`, {});
+  }
+
+  resetearClave(clave:string, accessToken:string, refreshToken:string)
+  {
+    return this.http.post(`${environment.apiUrl}/auth/resetear-clave`, {clave, accessToken, refreshToken});
   }
 
 }

@@ -9,6 +9,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConflictException, BadRequestException, HttpException } from '@nestjs/common';
 import { PermisosService } from 'src/permisos/permisos.service';
 import { ConfigService } from '@nestjs/config';
+import { ResetearClaveDto } from './dto/resetearClave.dto';
 
 @Injectable()
 export class AuthService {
@@ -113,10 +114,9 @@ export class AuthService {
     return await this.sb.supabase.from("usuarios").insert({nombre, apellido, rol})
   }
 
-  async resetearClave(correo:string)
+  async enviarEnlaceClave(correo:string)
   {
-    const redirigir = `${this.configService.getOrThrow<string>('FRONTEND_URL')}/auth/resetear-clave`;
-
+    const redirigir = `${this.configService.getOrThrow<string>('FRONTEND_URL')}/resetear-clave`;
     const { error } = await this.sb.supabase.auth.resetPasswordForEmail(correo, {
       redirectTo: redirigir,
     });
@@ -127,5 +127,30 @@ export class AuthService {
     }
 
     return {mensaje: 'Se ha enviado un enlace para restablecer la contraseña al correo ingresado'};
+  }
+
+  async resetearClave(dto:ResetearClaveDto)
+  {
+    const { error: sessionError } = await this.sb.supabase.auth.setSession({
+      access_token: dto.accessToken,
+      refresh_token: dto.refreshToken
+    });
+
+    if(sessionError)
+    {
+      throw new BadRequestException(sessionError.message);
+    }
+
+    const { error } =
+      await this.sb.supabase.auth.updateUser({
+        password: dto.clave
+      });
+
+    if(error)
+    {
+      throw new BadRequestException(error.message);
+    }
+
+    return { mensaje: 'Contraseña restablecida'};
   }
 }

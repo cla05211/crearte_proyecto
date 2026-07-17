@@ -17,28 +17,26 @@
       <div class="form-heading">
         <span class="eyebrow">Recuperar acceso</span>
         <h1 id="forgot-password-title">¿Olvidaste tu contraseña?</h1>
-        <p>Ingresá tu correo electrónico y te enviaremos las instrucciones para restablecerla.</p>
+        <p>Ingresá una nueva contraseña para restablecerla.</p>
       </div>
 
       <form
         class="forgot-password-form"
-        (submit)="enviarEnlaceClave(correo.value); $event.preventDefault()"
+        (submit)="resetearClave(clave.value); $event.preventDefault()"
       >
         <div class="field-group">
-          <label for="correo">Email</label>
+          <label for="clave">Nueva contraseña</label>
           <input
-            #correo
-            type="email"
-            id="correo"
-            name="correo"
-            autocomplete="email"
-            placeholder="nombre@correo.com"
+            #clave
+            id="clave"
+            name="clave"
+            autocomplete="Contraseña"
             required
           />
         </div>
 
         <button class="submit-button" type="submit">
-          Enviar instrucciones
+          Enviar
         </button>
       </form>
 

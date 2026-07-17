@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import {LoginDto} from './dto/login.dto';
 import { RegistroDto } from './dto/registro.dto';
 import { AuthGuard } from './guards/auth.guard';
+import { ResetearClaveDto } from './dto/resetearClave.dto';
 
 @Controller('auth')
 export class AuthController 
@@ -34,9 +35,17 @@ export class AuthController
         return req.user.email; 
     }
 
-    @Post('clave/:correo')
-    async resetearClave(@Param('correo')correo: string)
+    @Post('olvido-clave/:correo')
+    async enviarEnlaceClave(@Param('correo')correo: string)
     {
-        return this.auth.resetearClave(correo);
+        return this.auth.enviarEnlaceClave(correo);
     }
+
+    @Post('resetear-clave')
+    async resetearClave(@Body() dto:ResetearClaveDto)
+    {
+        return this.auth.resetearClave(dto);
+    }
+
+
 }
