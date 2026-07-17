@@ -44,6 +44,8 @@ export class UsuariosService {
         const { data, error } = await this.sb.supabase
             .from('usuarios')
             .select(`
+                id,
+                id_auth,
                 nombre,
                 apellido,
                 aprobado,
@@ -58,6 +60,8 @@ export class UsuariosService {
         }
 
         return data.map(u => ({
+            id: u.id,
+            idAuth: u.idAuth,
             nombre: u.nombre,
             apellido: u.apellido,
             aprobado: u.aprobado,
@@ -93,6 +97,23 @@ export class UsuariosService {
         if (errorAuth) 
         {
             throw new InternalServerErrorException('No se pudo eliminar la cuenta');
+        }
+
+        return data;
+    }
+
+    async modificarAprobado(id: number, aprobado:boolean)
+    {
+        const { data, error } = await this.sb.supabase
+        .from('usuarios')
+        .update({ aprobado })
+        .eq('id', id)
+        .select()
+        .single();
+
+        if (error) 
+        {
+            throw new InternalServerErrorException('No se pudo actualizar el usuario');
         }
 
         return data;

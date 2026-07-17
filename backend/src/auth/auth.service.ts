@@ -32,20 +32,19 @@ export class AuthService {
         const {data, error} = await this.sb.supabase.auth.admin.createUser({ email: dto.correo, password: dto.contraseña, email_confirm: true, });
         if(error)
         {
-            console.log (error)
-            switch (error.code) 
-            {
-                case 'user_already_exists':
-                    throw new ConflictException({
-                        code: 'USER_ALREADY_EXISTS',
-                        message: 'Ya existe una cuenta registrada con ese correo.',
-                    });
-                default:
-                    throw new BadRequestException({
-                        code: 'SIGNUP_ERROR',
-                        message: error.message,
-                    });
-            }
+          switch (error.code) 
+          {
+            case 'user_already_exists':
+              throw new ConflictException({
+                  code: 'USER_ALREADY_EXISTS',
+                  message: 'Ya existe una cuenta registrada con ese correo.',
+              });
+            default:
+              throw new BadRequestException({
+                  code: 'SIGNUP_ERROR',
+                  message: error.message,
+              });
+          }
         }
 
         return data.user.id;
@@ -53,7 +52,6 @@ export class AuthService {
 
   async iniciarSesion(correo: string, contraseña: string) 
   {
-    console.log("Iniciando sesion")
     const{data,error} = await this.sb.supabaseAuth.auth.signInWithPassword({ email: correo, password: contraseña });
     if (error) 
     {
@@ -77,9 +75,7 @@ export class AuthService {
     }
     
     const usuario = await this.usuarioService.obtenerUsuarioPorIdAuth(data.user.id);
-    console.log("usuario.rol:", usuario.rol, "tipo:", typeof usuario.rol);
     const permisos = await this.permisosService.obtenerPermisosRol(usuario.rol);
-    console.log("permisos obtenidos:", permisos);
 
     return {session: data.session, usuario, permisos};
   }

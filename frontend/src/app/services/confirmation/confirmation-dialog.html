@@ -1,0 +1,32 @@
+@if (confirmationService.currentConfirmation(); as confirmation) {
+  <div
+    class="confirmation-overlay"
+    (click)="closeFromOverlay($event)"
+  >
+    <section
+      class="confirmation-dialog ds-card"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="'confirmation-title-' + confirmation.id"
+      [attr.aria-describedby]="'confirmation-description-' + confirmation.id"
+    >
+      <div class="confirmation-dialog__content">
+        <h2 class="ds-heading-3" [id]="'confirmation-title-' + confirmation.id">
+          {{ confirmation.title }}
+        </h2>
+        <p class="confirmation-dialog__description" [id]="'confirmation-description-' + confirmation.id">
+          {{ confirmation.description }}
+        </p>
+      </div>
+
+      <div class="confirmation-dialog__actions">
+        <button class="ds-button ds-button--secondary" type="button" (click)="close(false)">
+          Cancelar
+        </button>
+        <button class="ds-button" type="button" (click)="close(true)">
+          Aceptar
+        </button>
+      </div>
+    </section>
+  </div>
+}

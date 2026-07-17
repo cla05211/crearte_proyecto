@@ -1,5 +1,7 @@
 export interface UsuarioSupabaseDTO
 {
+    id:number;
+    idAuth: string;
     nombre: string;
     apellido: string;
     aprobado: boolean;

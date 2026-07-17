@@ -1,5 +1,7 @@
 export interface UsuarioRespuestaGet 
 {
+    id: number;
+    idAuth:string;
     nombre: string;
     apellido: string;
     rol: string;

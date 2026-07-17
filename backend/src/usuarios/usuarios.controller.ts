@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
@@ -16,6 +16,14 @@ export class UsuariosController
     async obtenerUsuarios(@Req() req: any) 
     {
         return this.usuariosService.obtenerUsuarios();
+    }
+
+    @Post('aprobacion')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_usuarios')
+    async modificarAprobacion(id:number, aprobado:boolean)
+    {
+        return this.usuariosService.modificarAprobado(id,aprobado);
     }
 
     @Delete(':id')
