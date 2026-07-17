@@ -112,5 +112,9 @@ export class AuthService {
     return await this.sb.supabase.from("usuarios").insert({nombre, apellido, rol})
   }
 
-
+  async resetearContraseña(correo:string)
+  {
+    const redirigir = `${window.location.origin}/resetear-contrasela`;
+    this.sb.supabase.auth.resetPasswordForEmail(correo, {redirectTo: redirigir});
+  }
 }
