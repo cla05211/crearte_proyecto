@@ -17,13 +17,13 @@ import { PedidosController } from './pedidos/pedidos.controller';
 import { PedidosModule } from './pedidos/pedidos.module';
 import { GestionPedidosService } from './gestion-pedidos/gestion-pedidos.service';
 import { GestionPedidosModule } from './gestion-pedidos/gestion-pedidos.module';
-import { ColegiosService } from './colegios/colegios-service.service';
+import { ColegiosService } from './colegios/colegios.service';
 import { ProductosPedidoService } from './productos-pedido/productos-pedido-service.service';
 import { PadreResponsableService } from './padre-responsable/padre-responsable-service.service';
-import { AlumnoResponsableService } from './alumno-responsable/alumno-responsable-service.service';
+import { AlumnoResponsableService } from './alumno-responsable/alumno-responsable.service';
 import { PagosService } from './pagos/pagos.service';
 import { GruposService } from './grupos/grupos.service';
-import { MovimientosService } from './movimientos/movimientos.service';
+import { CuentaCorrienteService } from './cuenta-corriente/CuentaCorriente.service';
 import { DocumentosService } from './documentos/documentos.service';
 import { CuotasService } from './cuotas/cuotas.service';
 
@@ -33,6 +33,6 @@ import { CuotasService } from './cuotas/cuotas.service';
       isGlobal: true,
     }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, PermisosModule, PedidosModule, GestionPedidosModule,],
   controllers: [AppController, RolesController, PedidosController],
-  providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService, ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, MovimientosService, DocumentosService, CuotasService],
+  providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService, ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, DocumentosService, CuotasService],
 })
 export class AppModule {}

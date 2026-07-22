@@ -1,4 +1,4 @@
-export class padreResponsableDTO
+export class PadreResponsableDTO
 {
     id_grupo!: number
     nombre!: string;

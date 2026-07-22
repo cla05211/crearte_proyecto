@@ -1,20 +1,20 @@
 import { Injectable } from '@nestjs/common';
-import { SupabaseService } from 'src/supabase/supabase.service';
-import { PadreResponsableDTO } from './dto/padreResponsable.dto';
 import { BadRequestException } from '@nestjs/common';
+import { SupabaseService } from 'src/supabase/supabase.service';
+import { alumnoResponsableDTO } from './dto/alumnoResponsable.dto';
 
 @Injectable()
-export class PadreResponsableService 
+export class AlumnoResponsableService 
 {
     constructor(private sb: SupabaseService){}
 
-    async crearPadresResponsables(padres: PadreResponsableDTO[])
+    async crearAlumnosResponsables(alumnos: alumnoResponsableDTO[])
     {
         var mensaje = "Exito";
 
         const { data, error } = await this.sb.supabase
-        .from('padres_responsables')
-        .insert(padres)
+        .from('alumnos_responsables')
+        .insert(alumnos)
 
         if (error) 
         {

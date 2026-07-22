@@ -1,26 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { CuotaDTO } from './dto/cuota.dto';
+import { MovimientoDTO } from './dto/movimiento.dto';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { BadRequestException } from '@nestjs/common';
 
 @Injectable()
-export class CuotasService 
+export class CuentaCorrienteService 
 {
     constructor(private sb: SupabaseService){}
 
-    async crearCuota(dto:CuotaDTO)
+    async crearMovimiento(dto:MovimientoDTO)
     {
         const {data,error} = await this.sb.supabase
-            .from('colegios')
-            .insert(dto)
-            .select('id')
-            .single();
-
+            .from('movimientos')
+            .insert(dto);
+        
         if (error) 
         {
             throw new BadRequestException(error.message);
-        }
-
-        return data.id;        
+        }            
     }
 }

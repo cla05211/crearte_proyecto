@@ -11,10 +11,10 @@ export class GestionPedidosController
     constructor(private gestionService: GestionPedidosService){}
 
     @Post ('crear-pedido')
-    @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('crear_pedido')
+    //@UseGuards(AuthGuard,PermisosGuard)
+    //@RequierePermiso('crear_pedido')
     async crearPedido(@Body() dto: CrearPedidoDTO)
     {
-        this.gestionService.crearPedido();
+        this.gestionService.crearPedido(dto);
     }
 }

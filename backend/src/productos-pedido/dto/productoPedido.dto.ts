@@ -1,4 +1,4 @@
-export class productoPedidoDTO
+export class ProductoPedidoDTO
 {
     id_pedido!: number;
     id_producto_original!: number;

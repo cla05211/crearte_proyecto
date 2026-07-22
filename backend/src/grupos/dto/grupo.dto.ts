@@ -1,6 +1,6 @@
 export class GrupoDTO
 {
-    colegio_id!: number;
+    id_colegio!: number;
     orientacion!: string;
     turno!: string;
     nivel!: string;
