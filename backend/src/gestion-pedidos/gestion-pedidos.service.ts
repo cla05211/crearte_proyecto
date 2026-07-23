@@ -26,27 +26,34 @@ export class GestionPedidosService
 
     async crearPedido(dto:CrearPedidoDTO)
     {
-        console.log("Iniciando pedido");
+        //Colegio
         const id_colegio = await this.colegios.crearColegio(dto.colegioDTO);
-        dto.grupoDTO.id_colegio = id_colegio;
         
+        //Grupo
+        dto.grupoDTO.id_colegio = id_colegio;
         const id_grupo = await this.grupos.crearGrupo(dto.grupoDTO)
-
+        
+        //Pedido
         dto.pedidoDTO.id_grupo = id_grupo;
         const id_pedido = await this.pedidos.crearPedido(dto.pedidoDTO);
 
+        //Productos Pedido
         dto.productosPedidoDTO.forEach((productoPedido: ProductoPedidoDTO) => {productoPedido.id_pedido = id_pedido});
         await this.productosPedido.crearPedido(dto.productosPedidoDTO) 
 
+        //Padres
         dto.padresResponsablesDTO.forEach((padreResponsable: PadreResponsableDTO) => {padreResponsable.id_grupo = id_grupo});
         await this.padres.crearPadresResponsables(dto.padresResponsablesDTO);
 
+        //Alumnos
         dto.alumnosResponsablesDTO.forEach((alumnoResponsable: alumnoResponsableDTO) => {alumnoResponsable.id_grupo = id_grupo});
         await this.alumnos.crearAlumnosResponsables(dto.alumnosResponsablesDTO);
 
+        //Pago
         dto.pagoDTO.id_pedido = id_pedido;
         const id_pago = await this.pagos.crearPago(dto.pagoDTO);
 
+        //Documento
         if (Array.isArray(dto.documentoDTO))
         {
             dto.documentoDTO.forEach((documento: DocumentoDTO) => {documento.id_grupo = id_grupo})
@@ -62,9 +69,14 @@ export class GestionPedidosService
             await this.documentos.subirDocumentoPago({id_pago: id_pago, id_documento: id_documento});
         }
 
+        //Movimiento
         dto.movimientoDTO.id_grupo = id_grupo;
         await this.cuentaCorriente.crearMovimiento(dto.movimientoDTO)
-        
-       
+
+        //Cuotas
+        dto.primerCuota.id_pedido = id_pedido;
+        await this.cuotas.crearCuotas(dto.primerCuota, dto.nroCuotas);
     }
+
+
 }

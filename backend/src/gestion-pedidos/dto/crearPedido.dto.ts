@@ -7,6 +7,7 @@ import { PadreResponsableDTO } from "src/padre-responsable/dto/padreResponsable.
 import { PagoDTO } from "src/pagos/dto/pago.dto";
 import { PedidoDTO } from "src/pedidos/dto/pedido.dto";
 import { ProductoPedidoDTO } from "src/productos-pedido/dto/ProductoPedido.dto";
+import { CuotaInicioVentaDTO } from "src/cuotas/dto/cuotaInicioVenta.dto";
 
 export class CrearPedidoDTO
 {
@@ -19,4 +20,6 @@ export class CrearPedidoDTO
     pagoDTO!: PagoDTO;
     movimientoDTO!: MovimientoDTO;
     documentoDTO!: DocumentoDTO | DocumentoDTO[];
+    primerCuota!: CuotaInicioVentaDTO;
+    nroCuotas!: number;
 }

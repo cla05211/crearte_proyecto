@@ -69,7 +69,6 @@ export class AuthService {
 
     if(!aprobado)
     {
-      console.log("error")
         this.sb.supabase.auth.signOut();
         throw new UnauthorizedException({
         code: 'PENDING_APPROVAL',
