@@ -32,7 +32,7 @@ export class CuotasService
         for (let index = 1; index < nroCuotas; index++) 
         {
             var nuevaCuota: CuotaInicioVentaDTO = {...primerCuota, fecha_vencimiento: new Date(primerCuota.fecha_vencimiento)};
-            nuevaCuota.numero = index + 1;  
+            nuevaCuota.numero = index + 2;  
             nuevaCuota.fecha_vencimiento = this.acomodarFecha(primerCuota.fecha_vencimiento, index);
 
             cuotas.push(nuevaCuota);

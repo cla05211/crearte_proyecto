@@ -56,7 +56,6 @@ export class Usuarios
 
   obtenerUsuarios():void
   {
-    console.log("Obteniendo");
     this.cargando.set(true);
     this.usuariosService.traerUsuarios().subscribe({
       next: (usuarios) => {
