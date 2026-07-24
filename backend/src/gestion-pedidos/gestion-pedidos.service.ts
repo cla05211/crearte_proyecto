@@ -14,6 +14,8 @@ import { DocumentoDTO } from 'src/documentos/dto/documento.dto';
 import { PagosService } from 'src/pagos/pagos.service';
 import { CuentaCorrienteService } from 'src/cuenta-corriente/CuentaCorriente.service';
 import { CuotasService } from 'src/cuotas/cuotas.service';
+import { SupabaseService } from 'src/supabase/supabase.service';
+import { BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class GestionPedidosService 
@@ -22,60 +24,22 @@ export class GestionPedidosService
         private pedidos:PedidosService, private productosPedido: ProductosPedidoService,
         private padres:PadreResponsableService, private alumnos:AlumnoResponsableService,
         private documentos:DocumentosService, private pagos:PagosService, private cuentaCorriente: CuentaCorrienteService,
-        private cuotas: CuotasService){}
+        private cuotas: CuotasService, private sb: SupabaseService){}
 
     async crearPedido(dto:CrearPedidoDTO)
     {
-        //Colegio
-        const id_colegio = await this.colegios.crearColegio(dto.colegioDTO);
-        
-        //Grupo
-        dto.grupoDTO.id_colegio = id_colegio;
-        const id_grupo = await this.grupos.crearGrupo(dto.grupoDTO)
-        
-        //Pedido
-        dto.pedidoDTO.id_grupo = id_grupo;
-        const id_pedido = await this.pedidos.crearPedido(dto.pedidoDTO);
-
-        //Productos Pedido
-        dto.productosPedidoDTO.forEach((productoPedido: ProductoPedidoDTO) => {productoPedido.id_pedido = id_pedido});
-        await this.productosPedido.crearPedido(dto.productosPedidoDTO) 
-
-        //Padres
-        dto.padresResponsablesDTO.forEach((padreResponsable: PadreResponsableDTO) => {padreResponsable.id_grupo = id_grupo});
-        await this.padres.crearPadresResponsables(dto.padresResponsablesDTO);
-
-        //Alumnos
-        dto.alumnosResponsablesDTO.forEach((alumnoResponsable: alumnoResponsableDTO) => {alumnoResponsable.id_grupo = id_grupo});
-        await this.alumnos.crearAlumnosResponsables(dto.alumnosResponsablesDTO);
-
-        //Pago
-        dto.pagoDTO.id_pedido = id_pedido;
-        const id_pago = await this.pagos.crearPago(dto.pagoDTO);
-
-        //Documento
-        if (Array.isArray(dto.documentoDTO))
+        const { data, error } = await this.sb.supabase.rpc(
+        'crear_pedido_completo',
         {
-            dto.documentoDTO.forEach((documento: DocumentoDTO) => {documento.id_grupo = id_grupo})
+            payload: dto
         }
-        else
-        {
-            dto.documentoDTO.id_grupo = id_grupo;
-        }
-        const ids_documentos = await this.documentos.subirDocumento(dto.documentoDTO);
+            );
 
-        for (const id_documento of ids_documentos)
-        {
-            await this.documentos.subirDocumentoPago({id_pago: id_pago, id_documento: id_documento});
+        if (error) {
+            throw new BadRequestException(error.message);
         }
 
-        //Movimiento
-        dto.movimientoDTO.id_grupo = id_grupo;
-        await this.cuentaCorriente.crearMovimiento(dto.movimientoDTO)
-
-        //Cuotas
-        dto.primerCuota.id_pedido = id_pedido;
-        await this.cuotas.crearCuotas(dto.primerCuota, dto.nroCuotas);
+        return data;
     }
 
 

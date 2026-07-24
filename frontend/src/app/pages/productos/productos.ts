@@ -104,4 +104,6 @@ export class Productos
         }
         }); 
     }
+
+    //Faltan las de modificar y todo lo que es html
 }

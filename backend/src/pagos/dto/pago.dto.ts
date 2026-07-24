@@ -5,4 +5,5 @@ export class PagoDTO
     tipo_pago!: string;
     monto!: number;
     motivo!: string;
+    fecha!: Date;
 }

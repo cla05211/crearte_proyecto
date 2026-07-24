@@ -14,6 +14,7 @@ import { PagosService } from 'src/pagos/pagos.service';
 import { DocumentosService } from 'src/documentos/documentos.service';
 import { CuentaCorrienteService } from 'src/cuenta-corriente/CuentaCorriente.service';
 import { CuotasService } from 'src/cuotas/cuotas.service';
+import { SupabaseService } from 'src/supabase/supabase.service';
 
 @Module({
   imports: [SupabaseModule, PermisosModule],
@@ -21,6 +22,6 @@ import { CuotasService } from 'src/cuotas/cuotas.service';
   providers: [GestionPedidosService, UsuariosService, ColegiosService, 
             GruposService, PedidosService, ProductosPedidoService, PadreResponsableService,
             AlumnoResponsableService, PagosService, DocumentosService, PagosService, CuentaCorrienteService,
-            CuotasService],
+            CuotasService, SupabaseService],
 })
 export class GestionPedidosModule {}
