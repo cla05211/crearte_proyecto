@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
@@ -23,6 +23,13 @@ export class ProductosController
     async obtenerAgregados(@Req() req: any) 
     {
         return this.productosService.obtenerAgregados();
+    }  
+
+    @Get('/precio-beneficio')
+    @UseGuards(AuthGuard,PermisosGuard)
+    async obtenerPrecioBeneficio(@Query('idProducto') idProducto: number, @Query('cantidad') cantidad: number, @Query('cuotas') cuotas: number,) 
+    {
+        return this.productosService.obtenerPreciosBeneficios(idProducto, cantidad, cuotas);
     }  
 
     @Post ('')

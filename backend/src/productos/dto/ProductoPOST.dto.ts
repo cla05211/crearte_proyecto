@@ -3,7 +3,7 @@ export class ProductoPostDTO
     cantidad_desde!: number;
     cantidad_hasta!: number;
     cuotas!: number;
-    seña!: number;
+    valor_senia!: number;
     valor_cuota!: number;
     beneficio!:string | null;
     id_producto!: number;

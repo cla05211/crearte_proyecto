@@ -5,6 +5,7 @@ import { AgregadoDBDTO } from './dto/Agregado.dto';
 import { ProductoPostDTO } from './dto/ProductoPOST.dto';
 import { AgregadoPostDTO } from './dto/AgregadoPost.dto';
 import { InternalServerErrorException } from '@nestjs/common';
+import { PreciosBeneficiosResponseDTO } from './dto/PreciosBeneficiosResponse.dto';
 
 @Injectable()
 export class ProductosService 
@@ -145,5 +146,21 @@ export class ProductosService
         return data as AgregadoDBDTO;
     }
 
-    //
+    async obtenerPreciosBeneficios(producto: number, cantidad:number, cuotas:number): Promise<PreciosBeneficiosResponseDTO | null>
+    {
+        const { data, error } = await this.sb.supabase
+        .from('precios_productos')
+        .select('valor_senia, valor_cuota, beneficio')
+        .eq('cuotas', cuotas)
+        .eq('id_producto', producto)
+        .lte('cantidad_desde', cantidad)
+        .gte('cantidad_hasta', cantidad)
+        .maybeSingle();
+
+        if (error) {
+            throw new Error(error.message);
+        }
+
+        return data as PreciosBeneficiosResponseDTO | null;
+    }
 }

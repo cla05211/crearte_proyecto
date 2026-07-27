@@ -56,7 +56,11 @@ export class GestionPedidosService
             productos_pedidos(*),
             cuotas(id)
         `)
-        .eq("estado_general", "Venta realizada");
+        .eq("estado_general", "Venta realizada") 
+        .order("created_at", {
+            referencedTable: "grupos",
+            ascending: false,
+            });
 
         if (error) 
         {

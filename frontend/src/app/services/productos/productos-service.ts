@@ -1,11 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { ProductoConPrecioResponseDTO } from './dto/ProdcutoConPrecioResponse';
+import { ProductoConPrecioResponseDTO } from './dto/ProductoConPrecioResponse';
 import { environment } from '../../../environments/environment.development';
 import { Observable } from 'rxjs';
 import { AgregadoDBDTO } from './dto/agregadoDB.dto';
 import { ProductoPostDTO } from './dto/productoPOST.dto';
 import { AgregadoPOSTDTO } from './dto/agregadoPOST.dto';
+import { PreciosBeneficiosResponseDTO } from './dto/PreciosBeneficiosResponse.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -42,5 +43,17 @@ export class ProductosService
     eliminarAgregado(id:number)
     {
         return this.http.delete(`${environment.apiUrl}/agregado/${id}`);
+    }
+
+    obtenerPrecioBeneficioProducto(producto: number, cuotas:number, cantidad:number)
+    {
+        return this.http.get<PreciosBeneficiosResponseDTO>(`${environment.apiUrl}/productos/precio-beneficio`,{
+            params:
+            {
+                idProducto: producto,
+                cantidad: cantidad,
+                cuotas: cuotas
+            }
+        });
     }
 }

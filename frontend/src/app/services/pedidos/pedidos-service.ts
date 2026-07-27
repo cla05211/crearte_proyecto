@@ -2,6 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { CrearPedidoDTO } from './dto/crearPedidoPost.dto';
 import { environment } from '../../../environments/environment.development';
+import { PedidoResponseVentas } from './dto/PedidoResponseVentas.dto';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -15,8 +17,8 @@ export class PedidosService
     return this.http.post<CrearPedidoDTO>((`${environment.apiUrl}/gestion-pedidos/crear-pedido`), pedido);
   }
 
-  obtenerPedidos()
+  obtenerPedidos(): Observable<PedidoResponseVentas[]>
   {
-    return this.http.get((`${environment.apiUrl}/gestion-pedidos`));
+    return this.http.get<PedidoResponseVentas[]>(`${environment.apiUrl}/gestion-pedidos`);
   }
 }

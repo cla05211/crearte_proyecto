@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { JsonPipe } from '@angular/common';
-import { ProductoDBDTO } from '../../services/productos/dto/ProdcutoConPrecioResponse';
+import { ProductoDBDTO } from '../../services/productos/dto/ProductoConPrecioResponse';
 import { Inject, inject } from '@angular/core';
 import { ProductosService } from '../../services/productos/productos-service';
 import { AgregadoDBDTO } from '../../services/productos/dto/agregadoDB.dto';
