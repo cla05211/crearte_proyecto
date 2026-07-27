@@ -1,4 +1,4 @@
-import { Component, inject, signal, effect} from '@angular/core';
+import { Component, inject, signal, effect, computed} from '@angular/core';
 import { CrearPedidoDTO } from '../../services/pedidos/dto/crearPedidoPost.dto';
 import { PedidosService } from '../../services/pedidos/pedidos-service';
 import { Productos } from '../productos/productos';
@@ -6,11 +6,14 @@ import { ProductoConPrecioResponseDTO } from '../../services/productos/dto/Produ
 import { ProductosService } from '../../services/productos/productos-service';
 import { AgregadoDBDTO } from '../../services/productos/dto/agregadoDB.dto';
 import { PedidoResponseVentas } from '../../services/pedidos/dto/PedidoResponseVentas.dto';
+import { faL } from '@fortawesome/free-solid-svg-icons';
+import { map } from 'rxjs';
+import { ProductoSeleccionado } from './interfaces/ProductoSeleccionado';
 
 
 @Component({
   selector: 'app-ventas',
-  imports: [effect],
+  imports: [],
   templateUrl: './ventas.html',
   styleUrl: './ventas.css',
 })
@@ -19,8 +22,8 @@ export class Ventas
   pedidosService = inject(PedidosService);
   productosService = inject(ProductosService);
   ventas = signal<PedidoResponseVentas[]>([]);
-  productos = signal<ProductoConPrecioResponseDTO[]>([]);
-  agregados = signal<AgregadoDBDTO[]>([]);
+  productosDisponibles = signal<ProductoConPrecioResponseDTO[]>([]);
+  agregadosDisponibles = signal<AgregadoDBDTO[]>([]);
   nuevoPedido: null | CrearPedidoDTO = null;
   cargando = signal(false);
   id_producto = signal<number | null>(null);
@@ -29,6 +32,8 @@ export class Ventas
   valor_cuota = signal<number | null>(null);
   valor_senia = signal<number | null>(null);
   beneficio = signal<string |null>(null);
+  productoActual = signal<ProductoSeleccionado | null>(null);
+  productosSeleccionados = signal<ProductoSeleccionado[]>([]);
 
   constructor()
   {
@@ -56,29 +61,38 @@ export class Ventas
   ngOnInit(): void
   {
     this.obtenerVentas();
-    this.obtenerProductos();
-    this.obtenerAgregados();
+    this.obtenerProductosDisponibles();
+    this.obtenerAgregadosDisponibles();
   }
 
-
-  obtenerProductos()
+  obtenerProductosDisponibles()
   {
     this.productosService.obtenerProductos().subscribe({
       next: (productos) => 
         {
-          this.productos.set(productos);
+          this.productosDisponibles.set(productos);
         }
     })
   }
 
-  obtenerAgregados()
+  obtenerAgregadosDisponibles()
   {
     this.productosService.obtenerAgregados().subscribe({
       next: (agregados) => 
         {
-          this.agregados.set(agregados);
+          this.agregadosDisponibles.set(agregados);
         }
     })
+  }
+
+  agregarProducto()
+  {
+    //aca se crea el ProductoSeleccionado
+
+    if(this.productoActual != null)
+    {
+      this.productosSeleccionados.update(lista => [...lista, this.productoActual]);
+    }
   }
 
   async obtenerVentas()
@@ -93,8 +107,11 @@ export class Ventas
     })
   }
 
+
+
   async agregarVenta()
   {
-    await this.pedidosService.agregarPedido(this.nuevoPedido);
+    this.pedidosService.agregarPedido(this.nuevoPedido!).subscribe();;
   }
+     
 }
