@@ -9,6 +9,7 @@ export const routes: Routes =
      {path: "home", loadComponent: ()=> import ('./pages/home/home') .then ((archivo) => archivo.Home), canActivate: [LogueadoGuard]},
      {path: "usuarios", loadComponent: ()=> import ('./pages/usuarios/usuarios') .then ((archivo) => archivo.Usuarios), canActivate: [LogueadoGuard, PermisosGuard], data: {permiso: 'ver_usuarios'}},
      {path: "productos", loadComponent: ()=> import ('./pages/productos/productos') .then ((archivo) => archivo.Productos), canActivate: [LogueadoGuard, PermisosGuard], data: {permiso: 'ver_productos'}},
+     {path: "ventas", loadComponent: ()=> import ('./pages/ventas/ventas') .then ((archivo) => archivo.Ventas), canActivate: [LogueadoGuard, PermisosGuard], data: {permiso: 'crear_pedido'}},
      {path: "olvido-clave", loadComponent: ()=> import ('./pages/olvido-clave/olvido-clave') .then ((archivo) => archivo.OlvidoClave)},
      {path: "resetear-clave", loadComponent: ()=> import ('./pages/resetear-clave/resetear-clave') .then ((archivo) => archivo.ResetearClave)},
      {path: "", redirectTo: "home", pathMatch: 'full'},

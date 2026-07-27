@@ -1,10 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { ProductoDBDTO } from './dto/productoDB.dto';
+import { ProductoConPrecioResponseDTO } from './dto/ProdcutoConPrecioResponse';
 import { environment } from '../../../environments/environment.development';
 import { Observable } from 'rxjs';
 import { AgregadoDBDTO } from './dto/agregadoDB.dto';
-import { ProductoPOSTDTO } from './dto/productoPOST.dto';
+import { ProductoPostDTO } from './dto/productoPOST.dto';
 import { AgregadoPOSTDTO } from './dto/agregadoPOST.dto';
 
 @Injectable({
@@ -14,9 +14,9 @@ export class ProductosService
 {
     http = inject(HttpClient);
 
-    obtenerProductos(): Observable<ProductoDBDTO[]>
+    obtenerProductos(): Observable<ProductoConPrecioResponseDTO[]>
     {
-        return this.http.get<ProductoDBDTO[]>(`${environment.apiUrl}/productos`);
+        return this.http.get<ProductoConPrecioResponseDTO[]>(`${environment.apiUrl}/productos`);
     }
 
     obtenerAgregados(): Observable<AgregadoDBDTO[]>
@@ -24,9 +24,9 @@ export class ProductosService
         return this.http.get<AgregadoDBDTO[]>(`${environment.apiUrl}/productos/agregados`);
     }   
 
-    agregarProducto(producto:ProductoPOSTDTO): Observable<ProductoDBDTO>
+    agregarProducto(producto:ProductoPostDTO): Observable<ProductoConPrecioResponseDTO>
     {
-        return this.http.post<ProductoDBDTO>((`${environment.apiUrl}/productos`), producto)
+        return this.http.post<ProductoConPrecioResponseDTO>((`${environment.apiUrl}/productos`), producto)
     }
 
     agregarAgregado(agregado: AgregadoPOSTDTO)

@@ -1,4 +1,4 @@
-import { Controller, Post, UseGuards, Body } from '@nestjs/common';
+import { Controller, Post, UseGuards, Body, Get } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
@@ -16,5 +16,13 @@ export class GestionPedidosController
     async crearPedido(@Body() dto: CrearPedidoDTO)
     {
         this.gestionService.crearPedido(dto);
+    }
+
+    @Get ('')
+    //@UseGuards(AuthGuard,PermisosGuard)
+    //@RequierePermiso('crear_pedido')
+    async obtenerPedidosVentas()
+    {
+        this.gestionService.obtenerPedidosVentas();
     }
 }

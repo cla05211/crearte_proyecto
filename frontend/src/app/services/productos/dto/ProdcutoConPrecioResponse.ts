@@ -1,12 +1,12 @@
-export interface ProductoPostDTO
+export interface ProductoConPrecioResponseDTO
 {
+    id_producto_precio: number; 
     cantidad_desde: number;
     cantidad_hasta: number;
     cuotas: number;
     seña: number;
     valor_cuota: number;
     beneficio:string | null;
-    id_producto: number;
     nombre: string;
     descripcion:string;
 }

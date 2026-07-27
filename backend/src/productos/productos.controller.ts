@@ -30,7 +30,7 @@ export class ProductosController
     //@RequierePermiso('ver_productos')
     async agregarProducto(@Body() dto: ProductoPostDTO)
     {
-        this.productosService.agregarProducto(dto);
+        this.productosService.agregarProductoPrecio(dto);
     }
 
     @Post ('/agregado')
@@ -39,22 +39,6 @@ export class ProductosController
     async agregarAgregado(@Body() dto: AgregadoPostDTO)
     {
         this.productosService.agregarAgregado(dto);
-    }
-
-    @Delete ('/:id')
-    //@UseGuards(AuthGuard,PermisosGuard)
-    //@RequierePermiso('ver_productos')
-    async eliminarProducto(@Param('id')id: number)
-    {
-        return this.productosService.eliminarProducto(id);
-    }
-
-    @Delete ('/agregado/:id')
-    //@UseGuards(AuthGuard,PermisosGuard)
-    //@RequierePermiso('ver_productos')
-    async eliminarAgregado(@Param('id')id: number)
-    {
-        return this.productosService.eliminarAgregado(id);
     }
 }
 

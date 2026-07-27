@@ -16,6 +16,7 @@ import { CuentaCorrienteService } from 'src/cuenta-corriente/CuentaCorriente.ser
 import { CuotasService } from 'src/cuotas/cuotas.service';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { BadRequestException } from '@nestjs/common';
+import { PedidoResponseVentas } from './dto/PedidoResponseVentas.dto';
 
 @Injectable()
 export class GestionPedidosService 
@@ -40,6 +41,37 @@ export class GestionPedidosService
         }
 
         return data;
+    }
+
+    async obtenerPedidosVentas():Promise<PedidoResponseVentas[]>
+    {
+        const { data, error } = await this.sb.supabase
+        .from("pedidos")
+        .select(`
+            *,
+            grupos(
+                *,
+                colegios(*)
+            ),
+            productos_pedidos(*),
+            cuotas(id)
+        `)
+        .eq("estado_general", "Venta realizada");
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }
+
+        const pedidosVentas: PedidoResponseVentas[] = data.map(pedido => ({
+            colegioDTO: pedido.grupos.colegios,
+            grupoDTO: pedido.grupos,
+            pedidoDTO: pedido,
+            productosPedidoDTO: pedido.productos_pedidos,
+            nroCuotas: pedido.cuotas.length
+        }));
+
+        return pedidosVentas;
     }
 
 
