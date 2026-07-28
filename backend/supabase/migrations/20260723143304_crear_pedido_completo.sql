@@ -59,7 +59,7 @@ begin
  
   -- Pedido
   insert into pedidos (
-    id_grupo, talles, envio_gratis, seña, observaciones, estado_general,
+    id_grupo, talles, envio_gratis, senia, observaciones, estado_general,
     fecha_aprobacion_boceto, fecha_aprobacion_talles, colores,
     cantidad_hermanos, porcentaje_descuento_hermanos, id_vendedora,
     buzo_campera, chomba_remera, estado_boceto, estado_talles, id_diseñadora,
@@ -69,7 +69,7 @@ begin
     id_grupo,
     payload->'pedidoDTO'->>'talles',
     (payload->'pedidoDTO'->>'envio_gratis')::boolean,
-    payload->'pedidoDTO'->>'seña',
+    payload->'pedidoDTO'->>'senia',
     payload->'pedidoDTO'->>'observaciones',
     payload->'pedidoDTO'->>'estado_general',
     (payload->'pedidoDTO'->>'fecha_aprobacion_boceto')::date,
@@ -91,14 +91,14 @@ begin
   for producto in select * from jsonb_array_elements(payload->'productosPedidoDTO')
   loop
     insert into productos_pedidos (
-      id_pedido, id_producto_original, cantidad, descripcion, valor_seña, valor_cuota, beneficio
+      id_pedido, id_producto_original, cantidad, descripcion, valor_senia, valor_cuota, beneficio
     )
     values (
       id_pedido,
       (producto->>'id_producto_original')::bigint,
       (producto->>'cantidad')::int,
       producto->>'descripcion',
-      (producto->>'valor_seña')::real,
+      (producto->>'valor_senia')::real,
       (producto->>'valor_cuota')::real,
       producto->>'beneficio'
     );

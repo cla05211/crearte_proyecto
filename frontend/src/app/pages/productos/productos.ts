@@ -1,10 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { JsonPipe } from '@angular/common';
-import { ProductoDBDTO } from '../../services/productos/dto/ProductoConPrecioResponse';
+import { ProductoConPrecioResponseDTO } from '../../services/productos/dto/ProductoConPrecioResponse';
 import { Inject, inject } from '@angular/core';
 import { ProductosService } from '../../services/productos/productos-service';
 import { AgregadoDBDTO } from '../../services/productos/dto/agregadoDB.dto';
-import { ProductoPOSTDTO } from '../../services/productos/dto/productoPOST.dto';
+import { ProductoPostDTO } from '../../services/productos/dto/productoPOST.dto';
 import { AgregadoPOSTDTO } from '../../services/productos/dto/agregadoPOST.dto';
 
 @Component({
@@ -16,7 +16,7 @@ import { AgregadoPOSTDTO } from '../../services/productos/dto/agregadoPOST.dto';
 export class Productos 
 {
     productosService = inject(ProductosService);
-    productos = signal<ProductoDBDTO[]>([]);
+    productos = signal<ProductoConPrecioResponseDTO[]>([]);
     agregados = signal<AgregadoDBDTO[]>([]);
     cargando = signal(false);
 
@@ -39,7 +39,7 @@ export class Productos
         })
     }
 
-    agregarProducto(producto: ProductoPOSTDTO)
+    agregarProducto(producto: ProductoPostDTO)
     {
         this.productosService.agregarProducto(producto).subscribe({
         next: (productoAgregado) => 
@@ -79,7 +79,7 @@ export class Productos
         next: () => 
         {
             this.productos.update(productos => 
-                productos.filter(p => p.id != idProducto)
+                productos.filter(p => p.id_producto != idProducto)
             );
         },
         error: (err) => 

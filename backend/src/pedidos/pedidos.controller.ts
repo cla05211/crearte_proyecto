@@ -12,6 +12,6 @@ export class PedidosController
     @RequierePermiso('crear_pedido')
     async crearPedido()
     {
-        this.crearPedido();
+        return await this.crearPedido();
     }
 }

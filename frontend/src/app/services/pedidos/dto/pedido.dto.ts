@@ -8,8 +8,8 @@ export interface PedidoDTO
     seña: string;
     observaciones: string;
     estado_general: string;
-    fecha_aprobacion_boceto:string;
-    fecha_aprobacion_talles: string;
+    fecha_aprobacion_boceto:string|null;
+    fecha_aprobacion_talles: string|null;
     colores: string;
     cantidad_hermanos: number;
     porcentaje_descuento_hermanos: number;

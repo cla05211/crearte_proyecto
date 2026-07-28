@@ -15,7 +15,7 @@ export class GestionPedidosController
     //@RequierePermiso('crear_pedido')
     async crearPedido(@Body() dto: CrearPedidoDTO)
     {
-        this.gestionService.crearPedido(dto);
+        return await this.gestionService.crearPedido(dto);
     }
 
     @Get ('')
@@ -23,6 +23,6 @@ export class GestionPedidosController
     //@RequierePermiso('crear_pedido')
     async obtenerPedidosVentas()
     {
-        this.gestionService.obtenerPedidosVentas();
+        return await this.gestionService.obtenerPedidosVentas();
     }
 }

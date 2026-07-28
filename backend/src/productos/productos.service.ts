@@ -56,11 +56,11 @@ export class ProductosService
         }
 
         const producto: ProductoConPrecioResponseDTO = {
-            id_producto_precio: data.id_producto,
+            id_producto: data.id_producto,
             cantidad_desde: data.cantidad_desde,
             cantidad_hasta: data.cantidad_hasta,
             cuotas: data.cuotas,
-            seña: data.seña,
+            valor_senia: data.seña,
             valor_cuota: data.valor_cuota,
             beneficio: data.beneficio,
             nombre: data.productos.nombre,
@@ -102,7 +102,7 @@ export class ProductosService
             cantidad_desde: producto.cantidad_desde,
             cantidad_hasta: producto.cantidad_hasta,
             cuotas: producto.cuotas,
-            seña: producto.seña,
+            valor_senia: producto.valor_senia,
             valor_cuota: producto.valor_cuota,
             beneficio: producto.beneficio,
         })
@@ -117,11 +117,11 @@ export class ProductosService
         }
 
         const nuevoProducto: ProductoConPrecioResponseDTO = {
-        id_producto_precio: dataProductoPrecio!.id_producto,
+        id_producto: dataProductoPrecio!.id_producto,
         cantidad_desde: dataProductoPrecio!.cantidad_desde,
         cantidad_hasta: dataProductoPrecio!.cantidad_hasta,
         cuotas: dataProductoPrecio!.cuotas,
-        seña: dataProductoPrecio!.seña,
+        valor_senia: dataProductoPrecio!.seña,
         valor_cuota: dataProductoPrecio!.valor_cuota,
         beneficio: dataProductoPrecio!.beneficio,
         nombre: dataProductoPrecio!.productos.nombre,

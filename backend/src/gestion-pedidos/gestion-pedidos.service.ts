@@ -29,6 +29,7 @@ export class GestionPedidosService
 
     async crearPedido(dto:CrearPedidoDTO)
     {
+        console.log(dto);
         const { data, error } = await this.sb.supabase.rpc(
         'crear_pedido_completo',
         {

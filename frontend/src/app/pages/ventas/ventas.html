@@ -1,1 +1,495 @@
-  
+<main class="ventas-page">
+  <section class="ds-container ventas-container">
+    <header class="ventas-header">
+      <div>
+        <span class="ds-eyebrow">Gestión comercial</span>
+        <h1 class="ds-heading-1">Ventas</h1>
+        <p class="ds-text-muted">Pedidos confirmados, organizados por promoción.</p>
+      </div>
+      <button type="button" class="ds-button" (click)="abrirFormulario()">Nueva venta</button>
+    </header>
+
+    @if (error() && !vistaFormulario()) {
+      <div class="ds-alert ds-alert--danger">{{ error() }}</div>
+    }
+    @if (cargando()) {
+      <div class="ds-card state-card">Cargando ventas…</div>
+    } @else {
+      @for (seccion of ventasPorPromo(); track seccion.promo) {
+        <section class="promo-section" [attr.aria-labelledby]="'promo-' + seccion.promo">
+          <div class="promo-section__heading">
+            <h2 id="promo-{{ seccion.promo }}">Promo {{ seccion.promo }}</h2>
+            <span class="ds-badge"
+              >{{ seccion.ventas.length }} venta{{ seccion.ventas.length === 1 ? '' : 's' }}</span
+            >
+          </div>
+          @if (seccion.ventas.length === 0) {
+            <div class="ds-card empty-sales">Todavía no hay ventas para esta promoción.</div>
+          } @else {
+            <div class="ds-table-wrapper">
+              <table class="ds-table sales-table">
+                <thead>
+                  <tr>
+                    <th>Colegio</th>
+                    <th>Nivel</th>
+                    <th>Ubicación</th>
+                    <th>Prendas</th>
+                    <th>Pedido</th>
+                    <th>Plan de pago</th>
+                    <th>Seña total</th>
+                    <th>Cuota total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (
+                    venta of seccion.ventas;
+                    track venta.pedidoDTO.id_grupo;
+                    let indice = $index
+                  ) {
+                    <tr>
+                      <td data-label="Colegio">
+                        <button
+                          class="table-link"
+                          type="button"
+                          (click)="toggleVenta(venta.pedidoDTO.id_grupo)"
+                        >
+                          {{ venta.colegioDTO.nombre }}
+                        </button>
+                        @if (estaVentaExpandida(venta.pedidoDTO.id_grupo)) {
+                          <div class="table-details">
+                            Orientación: {{ venta.grupoDTO.orientacion }}<br />Turno:
+                            {{ venta.grupoDTO.turno }}
+                          </div>
+                        }
+                      </td>
+                      <td data-label="Nivel">
+                        <span class="ds-badge">{{ venta.grupoDTO.nivel }}</span>
+                      </td>
+                      <td data-label="Ubicación">
+                        {{ venta.colegioDTO.localidad }}, {{ venta.colegioDTO.provincia }}
+                      </td>
+                      <td data-label="Prendas">
+                        {{ venta.pedidoDTO.chomba_remera }}<br />{{ venta.pedidoDTO.buzo_campera }}
+                      </td>
+                      <td data-label="Pedido">
+                        <button
+                          class="table-link"
+                          type="button"
+                          (click)="togglePedido(venta.pedidoDTO.id_grupo)"
+                        >
+                          {{ venta.productosPedidoDTO.length }} producto{{
+                            venta.productosPedidoDTO.length === 1 ? '' : 's'
+                          }}
+                        </button>
+                        @if (estaPedidoExpandido(venta.pedidoDTO.id_grupo)) {
+                          <ul class="product-list">
+                            @for (producto of venta.productosPedidoDTO; track $index) {
+                              <li>
+                                <strong>{{ nombreProducto(producto.id_producto_original) }}</strong
+                                ><span>{{ producto.descripcion }}</span
+                                ><span
+                                  >{{ producto.cantidad }} unidades · Seña
+                                  {{ producto.valor_senia | currency:'ARS':'symbol-narrow':'1.0-0' }}
+                                  · Cuota
+                                  {{
+                                    producto.valor_cuota
+                                      | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
+                                  }}</span
+                                >
+                                @if (producto.beneficio) {
+                                  <span>Beneficio: {{ producto.beneficio }}</span>
+                                }
+                              </li>
+                            }
+                          </ul>
+                        }
+                      </td>
+                      <td data-label="Plan de pago">{{ venta.nroCuotas }} cuotas</td>
+                      <td data-label="Seña total">
+                        {{ totalSeniaVenta(venta) | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}
+                      </td>
+                      <td data-label="Cuota total">
+                        {{ totalCuotaVenta(venta) | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      }
+    }
+  </section>
+
+  @if (vistaFormulario()) {
+    <div class="modal-backdrop" role="presentation">
+      <section class="sale-modal" role="dialog" aria-modal="true" aria-labelledby="sale-title">
+        <header class="sale-modal__header">
+          <div>
+            <span class="ds-eyebrow">Nueva venta</span>
+            <h2 id="sale-title" class="ds-heading-2">Cargar pedido</h2>
+          </div>
+          <button
+            class="close-button"
+            type="button"
+            (click)="cerrarFormulario()"
+            aria-label="Cerrar"
+          >
+            ×
+          </button>
+        </header>
+        <ol class="wizard-steps" aria-label="Pasos del formulario">
+          @for (numero of [1, 2, 3, 4, 5, 6]; track numero) {
+            <li [class.is-active]="paso() === numero" [class.is-done]="paso() > numero">
+              <button type="button" (click)="irAPaso(numero)">{{ numero }}</button>
+            </li>
+          }
+        </ol>
+        @if (error()) {
+          <div class="ds-alert ds-alert--danger">{{ error() }}</div>
+        }
+        <div class="wizard-content">
+          @if (paso() === 1) {
+            <div class="form-grid">
+              <h3>Grupo y colegio</h3>
+              <label class="ds-field"
+                ><span class="ds-label">Nombre del colegio *</span
+                ><input class="ds-input" [(ngModel)]="colegio.nombre" /></label
+              ><label class="ds-field"
+                ><span class="ds-label">Localidad *</span
+                ><input class="ds-input" [(ngModel)]="colegio.localidad" /></label
+              ><label class="ds-field"
+                ><span class="ds-label">Provincia *</span
+                ><input class="ds-input" [(ngModel)]="colegio.provincia" /></label
+              ><label class="ds-field"
+                ><span class="ds-label">Promo *</span
+                ><select class="ds-select" [(ngModel)]="grupo.promo">
+                  <option [value]="anioActual">{{ anioActual }}</option>
+                  <option [value]="anioActual + 1">{{ anioActual + 1 }}</option>
+                </select></label
+              ><label class="ds-field"
+                ><span class="ds-label">Orientación *</span
+                ><input class="ds-input" [(ngModel)]="grupo.orientacion" /></label
+              ><label class="ds-field"
+                ><span class="ds-label">Turno *</span
+                ><input class="ds-input" [(ngModel)]="grupo.turno" /></label
+              ><label class="ds-field"
+                ><span class="ds-label">Nivel *</span
+                ><input class="ds-input" [(ngModel)]="grupo.nivel" /></label
+              ><label class="ds-field"
+                ><span class="ds-label">Cantidad de egresados *</span
+                ><input
+                  class="ds-input"
+                  type="number"
+                  min="1"
+                  [(ngModel)]="grupo.cantidad_egresados"
+              /></label>
+            </div>
+          }
+          @if (paso() === 2) {
+            <div class="form-grid">
+              <h3>Alumnos responsables</h3>
+              <p class="form-intro">Ingresá los datos de dos alumnos responsables.</p>
+              @for (alumno of alumnosResponsables; track $index; let i = $index) {
+                <fieldset>
+                  <legend>Alumno responsable {{ i + 1 }}</legend>
+                  <label class="ds-field"
+                    ><span class="ds-label">Nombre *</span
+                    ><input class="ds-input" [(ngModel)]="alumno.nombre" /></label
+                  ><label class="ds-field"
+                    ><span class="ds-label">Apellido *</span
+                    ><input class="ds-input" [(ngModel)]="alumno.apellido" /></label
+                  ><label class="ds-field"
+                    ><span class="ds-label">Nro. de teléfono *</span
+                    ><input class="ds-input" [(ngModel)]="alumno.telefono"
+                  /></label>
+                </fieldset>
+              }
+            </div>
+          }
+          @if (paso() === 3) {
+            <div class="form-grid">
+              <h3>Padres responsables</h3>
+              <p class="form-intro">El mail se solicita únicamente para el primer responsable.</p>
+              @for (padre of padresResponsables; track $index; let i = $index) {
+                <fieldset>
+                  <legend>Padre/madre responsable {{ i + 1 }}</legend>
+                  <label class="ds-field"
+                    ><span class="ds-label">Nombre *</span
+                    ><input class="ds-input" [(ngModel)]="padre.nombre" /></label
+                  ><label class="ds-field"
+                    ><span class="ds-label">Apellido *</span
+                    ><input class="ds-input" [(ngModel)]="padre.apellido" /></label
+                  ><label class="ds-field"
+                    ><span class="ds-label">Nro. de teléfono *</span
+                    ><input class="ds-input" [(ngModel)]="padre.telefono" /></label
+                  ><label class="ds-field"
+                    ><span class="ds-label">DNI *</span
+                    ><input class="ds-input" [(ngModel)]="padre.dni"
+                  /></label>
+                  @if (i === 0) {
+                    <label class="ds-field"
+                      ><span class="ds-label">Mail *</span
+                      ><input class="ds-input" type="email" [(ngModel)]="padre.mail"
+                    /></label>
+                  }
+                </fieldset>
+              }
+            </div>
+          }
+          @if (paso() === 4) {
+            <div class="product-step">
+              <h3>Productos del pedido</h3>
+              <div class="product-editor">
+                <label class="ds-field"
+                  ><span class="ds-label">Producto</span
+                  ><select
+                    class="ds-select"
+                    [(ngModel)]="productoEnEdicion.idProducto"
+                    (change)="calcularProducto()"
+                  >
+                    <option [ngValue]="0">Seleccioná un producto</option>
+                    @for (producto of productosParaElegir(); track producto.nombre) {
+                      <option [ngValue]="idProducto(producto)">{{ producto.nombre }}</option>
+                    }
+                  </select></label
+                ><label class="ds-field"
+                  ><span class="ds-label">Cantidad de alumnos</span
+                  ><input
+                    class="ds-input"
+                    type="number"
+                    min="1"
+                    [(ngModel)]="productoEnEdicion.cantidad"
+                    (change)="calcularProducto()" /></label
+                ><label class="ds-field"
+                  ><span class="ds-label">Plan de cuotas</span
+                  ><input
+                    class="ds-input"
+                    type="number"
+                    min="1"
+                    [(ngModel)]="productoEnEdicion.cuotas"
+                    (change)="calcularProducto()"
+                /></label>
+                <div class="agregados">
+                  <span class="ds-label">Agregados</span>
+                  @for (agregado of agregadosIndividuales(); track agregado.id) {
+                    <label
+                      ><input
+                        type="checkbox"
+                        [checked]="productoEnEdicion.agregados.includes(agregado.id)"
+                        (change)="cambiarAgregado(agregado.id, $any($event.target).checked)"
+                      />
+                      {{ agregado.agregado }}
+                      <small
+                        >+{{ agregado.precio | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</small
+                      ></label
+                    >
+                  }
+                </div>
+                @if (productoCalculado(); as producto) {
+                  <div class="price-preview">
+                    <strong>{{ producto.nombre }}</strong
+                    ><span>{{ producto.descripcion }}</span
+                    ><span
+                      >Seña individual:
+                      {{ producto.valorSenia | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }} ·
+                      Cuota individual:
+                      {{ producto.valorCuota | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</span
+                    ><span
+                      >Totales:
+                      {{
+                        producto.valorSenia * producto.cantidad
+                          | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
+                      }}
+                      de seña ·
+                      {{
+                        producto.valorCuota * producto.cantidad
+                          | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
+                      }}
+                      por cuota</span
+                    ><button
+                      class="ds-button ds-button--small"
+                      type="button"
+                      (click)="agregarProductoAlCarrito()"
+                    >
+                      Agregar al pedido
+                    </button>
+                  </div>
+                }
+              </div>
+              @if (bandera(); as itemBandera) {
+                <label class="flag-option"
+                  ><input type="checkbox" [(ngModel)]="banderaSeleccionada" />
+                  {{ itemBandera.agregado }}
+                  <span
+                    >+{{
+                      itemBandera.precio | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
+                    }}
+                    total</span
+                  ></label
+                >
+              }
+              <div class="cart">
+                <h4>Pedido</h4>
+                @for (producto of carrito(); track $index; let i = $index) {
+                  <div class="cart__row">
+                    <div>
+                      <strong>{{ producto.nombre }}</strong
+                      ><span>{{ producto.cantidad }} alumnos · {{ producto.cuotas }} cuotas</span
+                      ><span
+                        >Seña
+                        {{
+                          producto.valorSenia * producto.cantidad
+                            | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
+                        }}
+                        · Cuotas
+                        {{
+                          producto.valorCuota * producto.cantidad
+                            | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
+                        }}</span
+                      >
+                    </div>
+                    <button
+                      type="button"
+                      class="ds-button ds-button--ghost ds-button--small"
+                      (click)="quitarProducto(i)"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                }
+                @if (!carrito().length) {
+                  <p class="ds-text-muted">Aún no agregaste productos.</p>
+                }
+              </div>
+            </div>
+          }
+          @if (paso() === 5) {
+            <div class="form-grid">
+              <h3>Detalles del pedido</h3>
+              <label class="ds-field"
+                ><span class="ds-label">Buzo/Campera *</span
+                ><select class="ds-select" [(ngModel)]="detallePedido.buzo_campera">
+                  <option value="">Seleccioná una opción</option>
+                  <option>Campera</option>
+                  <option>Buzo</option>
+                </select></label
+              ><label class="ds-field"
+                ><span class="ds-label">Chomba/Remera *</span
+                ><select class="ds-select" [(ngModel)]="detallePedido.chomba_remera">
+                  <option value="">Seleccioná una opción</option>
+                  <option>Chomba</option>
+                  <option>Remera</option>
+                </select></label
+              ><label class="ds-field"
+                ><span class="ds-label">Talles *</span
+                ><select class="ds-select" [(ngModel)]="detallePedido.talles">
+                  <option value="">Seleccioná una opción</option>
+                  <option>Digital</option>
+                  <option>Presencial</option>
+                </select></label
+              ><label class="ds-field"
+                ><span class="ds-label">Colores elegidos</span
+                ><input class="ds-input" [(ngModel)]="detallePedido.colores" /></label
+              ><label class="ds-field"
+                ><span class="ds-label">Cantidad de hermanos</span
+                ><input
+                  class="ds-input"
+                  type="number"
+                  min="0"
+                  [(ngModel)]="detallePedido.cantidad_hermanos" /></label
+              ><label class="ds-field"
+                ><span class="ds-label">Descuento por hermano (%)</span
+                ><input
+                  class="ds-input"
+                  type="number"
+                  min="0"
+                  [(ngModel)]="detallePedido.porcentaje_descuento_hermanos" /></label
+              ><label class="check-field"
+                ><input type="checkbox" [(ngModel)]="detallePedido.envio_gratis" /> Envío
+                gratis</label
+              ><label class="check-field"
+                ><input type="checkbox" [(ngModel)]="detallePedido.recursoAdicional" /> Adjuntar
+                recurso adicional (URL temporal)</label
+              ><label class="ds-field form-grid__full"
+                ><span class="ds-label">Observaciones</span
+                ><textarea class="ds-textarea" [(ngModel)]="detallePedido.observaciones"></textarea>
+              </label>
+            </div>
+          }
+          @if (paso() === 6) {
+            <div class="payment-step">
+              <h3>Seña y primera cuota</h3>
+              <label class="ds-field"
+                ><span class="ds-label">Comprobante de seña</span
+                ><input class="ds-input" type="file" accept="image/*" /><span class="ds-field__help"
+                  >Se usará una URL temporal hasta que esté disponible Storage.</span
+                ></label
+              ><label class="ds-field"
+                ><span class="ds-label">Fecha de pago de la seña *</span
+                ><input
+                  class="ds-input"
+                  type="date"
+                  [(ngModel)]="pago.fechaSenia"
+                  (change)="actualizarFechaPrimeraCuota()" /></label
+              ><label class="ds-field"
+                ><span class="ds-label">Vencimiento de la primera cuota *</span
+                ><input class="ds-input" type="date" [(ngModel)]="pago.fechaPrimeraCuota"
+              /></label>
+              <div class="totals-card">
+                <span
+                  >Seña total
+                  <strong>{{
+                    totalSenia() | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
+                  }}</strong></span
+                ><span
+                  >Total por cuota
+                  <strong>{{
+                    totalCuotas() | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
+                  }}</strong></span
+                ><span
+                  >Cuota por alumno
+                  <strong>{{
+                    cuotaPorAlumno() | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
+                  }}</strong></span
+                >
+                @if (descuentoCuotas()) {
+                  <span
+                    >Descuento hermanos
+                    <strong
+                      >-{{
+                        descuentoCuotas() | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
+                      }}</strong
+                    ></span
+                  >
+                }
+              </div>
+            </div>
+          }
+        </div>
+        <footer class="wizard-actions">
+          <button
+            type="button"
+            class="ds-button ds-button--secondary"
+            (click)="paso() === 1 ? cerrarFormulario() : anteriorPaso()"
+          >
+            {{ paso() === 1 ? 'Cancelar' : 'Anterior' }}
+          </button>
+          @if (paso() < 6) {
+            <button type="button" class="ds-button" (click)="siguientePaso()">Continuar</button>
+          } @else {
+            <button
+              type="button"
+              class="ds-button"
+              [disabled]="guardando()"
+              (click)="guardarVenta()"
+            >
+              {{ guardando() ? 'Guardando…' : 'Guardar venta' }}
+            </button>
+          }
+        </footer>
+      </section>
+    </div>
+  }
+</main>

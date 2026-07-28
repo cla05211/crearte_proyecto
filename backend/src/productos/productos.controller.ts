@@ -15,21 +15,21 @@ export class ProductosController
     @UseGuards(AuthGuard,PermisosGuard)
     async obtenerUsuarios(@Req() req: any) 
     {
-        return this.productosService.obtenerProductos();
+        return await this.productosService.obtenerProductos();
     }  
 
     @Get('/agregados')
     @UseGuards(AuthGuard,PermisosGuard)
     async obtenerAgregados(@Req() req: any) 
     {
-        return this.productosService.obtenerAgregados();
+        return await this.productosService.obtenerAgregados();
     }  
 
     @Get('/precio-beneficio')
     @UseGuards(AuthGuard,PermisosGuard)
     async obtenerPrecioBeneficio(@Query('idProducto') idProducto: number, @Query('cantidad') cantidad: number, @Query('cuotas') cuotas: number,) 
     {
-        return this.productosService.obtenerPreciosBeneficios(idProducto, cantidad, cuotas);
+        return await this.productosService.obtenerPreciosBeneficios(idProducto, cantidad, cuotas);
     }  
 
     @Post ('')
@@ -37,7 +37,7 @@ export class ProductosController
     //@RequierePermiso('ver_productos')
     async agregarProducto(@Body() dto: ProductoPostDTO)
     {
-        this.productosService.agregarProductoPrecio(dto);
+        return await this.productosService.agregarProductoPrecio(dto);
     }
 
     @Post ('/agregado')
@@ -45,7 +45,7 @@ export class ProductosController
     //@RequierePermiso('ver_productos')
     async agregarAgregado(@Body() dto: AgregadoPostDTO)
     {
-        this.productosService.agregarAgregado(dto);
+        return await this.productosService.agregarAgregado(dto);
     }
 }
 
