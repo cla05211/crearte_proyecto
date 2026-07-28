@@ -26,11 +26,11 @@ export class ProductosService
         }
 
         const productos: ProductoConPrecioResponseDTO[] = data.map(p => ({
-            id_producto_precio: p.id_producto,
+            id_producto: p.id_producto,
             cantidad_desde: p.cantidad_desde,
             cantidad_hasta: p.cantidad_hasta,
             cuotas: p.cuotas,
-            seña: p.seña,
+            valor_senia: p.seña,
             valor_cuota: p.valor_cuota,
             beneficio: p.beneficio,
             nombre: p.productos.nombre,

@@ -1,6 +1,6 @@
 export class ProductoConPrecioResponseDTO
 {
-    id_producto_precio!: number; 
+    id_producto!: number; 
     cantidad_desde!: number;
     cantidad_hasta!: number;
     cuotas!: number;
