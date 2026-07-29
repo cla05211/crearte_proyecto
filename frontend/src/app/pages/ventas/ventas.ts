@@ -43,6 +43,7 @@ export class Ventas implements OnInit {
   readonly productoCalculado = signal<ProductoCarrito | null>(null);
   readonly ventasExpandidas = signal<number[]>([]);
   readonly pedidosExpandidos = signal<number[]>([]);
+  cuotasDisponibles = signal<number[]>([]);
 
   readonly anioActual = new Date().getFullYear();
   banderaSeleccionada = false;
@@ -83,12 +84,21 @@ export class Ventas implements OnInit {
     this.obtenerVentas();
     this.obtenerProductos();
     this.obtenerAgregados();
+    this.obtenerNroCuotasDispoinibles();
   }
 
   abrirFormulario(): void {
     this.error.set('');
     this.vistaFormulario.set(true);
     this.paso.set(1);
+  }
+
+  obtenerNroCuotasDispoinibles()
+  {
+    //ACA
+    this.productosService.obtenerCuotasDisponibles().subscribe({
+      next: (cuotas) => {
+        this.cuotasDisponibles.set(cuotas);}});
   }
 
   cerrarFormulario(): void {

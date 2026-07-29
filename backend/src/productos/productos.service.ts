@@ -163,4 +163,17 @@ export class ProductosService
 
         return data as PreciosBeneficiosResponseDTO | null;
     }
+    
+    async obtenerCuotasDisponibles():Promise<number[]>
+    {
+        const { data } = await this.sb.supabase
+        .from('precios_productos')
+        .select('cuotas');
+
+        const cuotasTabla = data?.map(x => x.cuotas);
+        const set = new Set (cuotasTabla);
+        const cuotasDisponibles = [...set].sort((a, b) => a - b)
+
+        return cuotasDisponibles
+    }
 }

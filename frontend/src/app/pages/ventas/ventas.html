@@ -255,7 +255,7 @@
                     }
                   </select></label
                 ><label class="ds-field"
-                  ><span class="ds-label">Cantidad de alumnos</span
+                  ><span class="ds-label">Cantidad</span
                   ><input
                     class="ds-input"
                     type="number"
@@ -264,13 +264,15 @@
                     (change)="calcularProducto()" /></label
                 ><label class="ds-field"
                   ><span class="ds-label">Plan de cuotas</span
-                  ><input
-                    class="ds-input"
-                    type="number"
-                    min="1"
+                  ><select class="ds-select"
                     [(ngModel)]="productoEnEdicion.cuotas"
-                    (change)="calcularProducto()"
-                /></label>
+                    (change)="calcularProducto()">
+                    @for (cuotas of cuotasDisponibles(); track cuotas) {
+                      <option [value]="cuotas">
+                        {{ cuotas }} cuotas
+                      </option>
+                    }
+                  </select></label>
                 <div class="agregados">
                   <span class="ds-label">Agregados</span>
                   @for (agregado of agregadosIndividuales(); track agregado.id) {

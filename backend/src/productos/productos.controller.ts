@@ -47,5 +47,12 @@ export class ProductosController
     {
         return await this.productosService.agregarAgregado(dto);
     }
+
+    @Get('/cuotas-disponibles')
+    @UseGuards(AuthGuard,PermisosGuard)
+    async obtenerCuotasDisponibles() 
+    {
+        return await this.productosService.obtenerCuotasDisponibles();
+    }  
 }
 
