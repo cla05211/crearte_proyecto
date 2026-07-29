@@ -23,6 +23,39 @@
   display: grid;
   gap: var(--space-3);
 }
+.promo-tabs {
+  align-items: center;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  width: fit-content;
+}
+.promo-tabs button {
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--radius-md) - 2px);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-4);
+}
+.promo-tabs button:hover {
+  color: var(--color-primary-700);
+}
+.promo-tabs button.is-active {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-primary-700);
+}
+.promo-tabs button:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: 0;
+}
 .promo-section__heading h2 {
   font-size: var(--font-size-xl);
   margin: 0;
@@ -216,6 +249,47 @@ legend {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
+.price-edit-form {
+  background: var(--color-surface);
+  border: 1px solid var(--color-primary-200);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: var(--space-3);
+}
+.price-edit-form__description,
+.price-edit-form__actions {
+  grid-column: 1 / -1;
+}
+.price-edit-form .ds-textarea {
+  min-height: 5rem;
+}
+.price-edit-form__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+.resource-upload {
+  align-content: start;
+}
+.resource-upload .ds-input {
+  cursor: pointer;
+  padding: var(--space-2);
+}
+.resource-upload .ds-input::file-selector-button {
+  background: var(--color-primary-100);
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-primary-700);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  margin-right: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
 .flag-option {
   align-items: center;
   border: 1px solid var(--color-border);
@@ -271,7 +345,8 @@ legend {
   }
   .form-grid,
   .product-editor,
-  .totals-card {
+  .totals-card,
+  .price-edit-form {
     grid-template-columns: 1fr;
   }
   .sales-table {

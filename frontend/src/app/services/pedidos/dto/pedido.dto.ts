@@ -13,8 +13,6 @@ export interface PedidoDTO
     colores: string;
     cantidad_hermanos: number;
     porcentaje_descuento_hermanos: number;
-    buzo_campera:string;
-    chomba_remera:string;
     estado_talles:string;
     estado_boceto:string;
     recursos_adicionales:string[];

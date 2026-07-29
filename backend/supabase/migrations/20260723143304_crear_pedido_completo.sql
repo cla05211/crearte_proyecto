@@ -62,7 +62,7 @@ begin
     id_grupo, talles, envio_gratis, senia, observaciones, estado_general,
     fecha_aprobacion_boceto, fecha_aprobacion_talles, colores,
     cantidad_hermanos, porcentaje_descuento_hermanos, id_vendedora,
-    buzo_campera, chomba_remera, estado_boceto, estado_talles, id_diseñadora,
+    estado_boceto, estado_talles, id_diseñadora,
     recursos_adicionales
   )
   values (
@@ -78,8 +78,6 @@ begin
     coalesce((payload->'pedidoDTO'->>'cantidad_hermanos')::smallint, 0),
     (payload->'pedidoDTO'->>'porcentaje_descuento_hermanos')::smallint,
     (payload->'pedidoDTO'->>'id_vendedora')::bigint,
-    payload->'pedidoDTO'->>'buzo_campera',
-    payload->'pedidoDTO'->>'chomba_remera',
     payload->'pedidoDTO'->>'estado_boceto',
     payload->'pedidoDTO'->>'estado_talles',
     (payload->'pedidoDTO'->>'id_diseñadora')::bigint,

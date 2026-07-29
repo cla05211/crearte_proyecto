@@ -15,6 +15,18 @@
     @if (cargando()) {
       <div class="ds-card state-card">Cargando ventas…</div>
     } @else {
+      <nav class="promo-tabs" aria-label="Filtrar colegios por promoción">
+        @for (promo of [anioActual, anioActual + 1]; track promo) {
+          <button
+            type="button"
+            [class.is-active]="promoSeleccionada() === promo"
+            [attr.aria-pressed]="promoSeleccionada() === promo"
+            (click)="promoSeleccionada.set(promo)"
+          >
+            {{ promo }}
+          </button>
+        }
+      </nav>
       @for (seccion of ventasPorPromo(); track seccion.promo) {
         <section class="promo-section" [attr.aria-labelledby]="'promo-' + seccion.promo">
           <div class="promo-section__heading">
@@ -33,7 +45,6 @@
                     <th>Colegio</th>
                     <th>Nivel</th>
                     <th>Ubicación</th>
-                    <th>Prendas</th>
                     <th>Pedido</th>
                     <th>Plan de pago</th>
                     <th>Seña total</th>
@@ -67,9 +78,6 @@
                       </td>
                       <td data-label="Ubicación">
                         {{ venta.colegioDTO.localidad }}, {{ venta.colegioDTO.provincia }}
-                      </td>
-                      <td data-label="Prendas">
-                        {{ venta.pedidoDTO.chomba_remera }}<br />{{ venta.pedidoDTO.buzo_campera }}
                       </td>
                       <td data-label="Pedido">
                         <button
@@ -289,17 +297,44 @@
                     >
                   }
                 </div>
-                @if (productoCalculado(); as producto) {
+                @if (productoCalculado(); as producto) 
+                {
                   <div class="price-preview">
-                    <strong>{{ producto.nombre }}</strong
-                    ><span>{{ producto.descripcion }}</span
-                    ><span
-                      >Seña individual:
+                    <strong>{{ producto.nombre }}</strong>
+                  @if (!editando()) {
+                    <span>{{ producto.descripcion }}</span>
+                    <span>
+                      Seña individual:
                       {{ producto.valorSenia | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }} ·
                       Cuota individual:
-                      {{ producto.valorCuota | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</span
-                    ><span
-                      >Totales:
+                      {{ producto.valorCuota | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}
+                    </span> 
+                    <button type="button" (click)="abrirEdicion(producto)" class="btn-edit-price">
+                      ✏️
+                    </button>
+                  }
+                  @else {
+                    <div class="price-edit-form">
+                      <label class="ds-field price-edit-form__description">
+                        <span class="ds-label">Descripción</span>
+                        <textarea #descripcionInput class="ds-textarea">{{ producto.descripcion }}</textarea>
+                      </label>
+                      <label class="ds-field">
+                        <span class="ds-label">Seña individual</span>
+                        <input class="ds-input" type="number" min="0" #seniaInput [value]="producto.valorSenia" />
+                      </label>
+                      <label class="ds-field">
+                        <span class="ds-label">Cuota individual</span>
+                        <input class="ds-input" type="number" min="0" #cuotaInput [value]="producto.valorCuota" />
+                      </label>
+                      <div class="price-edit-form__actions">
+                        <button class="ds-button ds-button--small" type="button" (click)="guardarEdicion(+seniaInput.value, +cuotaInput.value, descripcionInput.value)">Guardar cambios</button>
+                        <button class="ds-button ds-button--ghost ds-button--small" type="button" (click)="cancelarEdicion()">Cancelar</button>
+                      </div>
+                    </div>
+                  }
+                    <span>
+                      Totales:
                       {{
                         producto.valorSenia * producto.cantidad
                           | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
@@ -309,12 +344,11 @@
                         producto.valorCuota * producto.cantidad
                           | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
                       }}
-                      por cuota</span
-                    ><button
+                      por cuota</span>
+                      <button
                       class="ds-button ds-button--small"
                       type="button"
-                      (click)="agregarProductoAlCarrito()"
-                    >
+                      (click)="agregarProductoAlCarrito()">
                       Agregar al pedido
                     </button>
                   </div>
@@ -370,21 +404,7 @@
           @if (paso() === 5) {
             <div class="form-grid">
               <h3>Detalles del pedido</h3>
-              <label class="ds-field"
-                ><span class="ds-label">Buzo/Campera *</span
-                ><select class="ds-select" [(ngModel)]="detallePedido.buzo_campera">
-                  <option value="">Seleccioná una opción</option>
-                  <option>Campera</option>
-                  <option>Buzo</option>
-                </select></label
-              ><label class="ds-field"
-                ><span class="ds-label">Chomba/Remera *</span
-                ><select class="ds-select" [(ngModel)]="detallePedido.chomba_remera">
-                  <option value="">Seleccioná una opción</option>
-                  <option>Chomba</option>
-                  <option>Remera</option>
-                </select></label
-              ><label class="ds-field"
+                <label class="ds-field"
                 ><span class="ds-label">Talles *</span
                 ><select class="ds-select" [(ngModel)]="detallePedido.talles">
                   <option value="">Seleccioná una opción</option>
@@ -411,9 +431,11 @@
               ><label class="check-field"
                 ><input type="checkbox" [(ngModel)]="detallePedido.envio_gratis" /> Envío
                 gratis</label
-              ><label class="check-field"
-                ><input type="checkbox" [(ngModel)]="detallePedido.recursoAdicional" /> Adjuntar
-                recurso adicional (URL temporal)</label
+              ><label class="ds-field resource-upload"
+                ><span class="ds-label">Recursos adicionales</span
+                ><input class="ds-input" type="file" multiple /><span class="ds-field__help"
+                  >Podés seleccionar uno o más archivos.</span
+                ></label
               ><label class="ds-field form-grid__full"
                 ><span class="ds-label">Observaciones</span
                 ><textarea class="ds-textarea" [(ngModel)]="detallePedido.observaciones"></textarea>

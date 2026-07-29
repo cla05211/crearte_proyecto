@@ -46,6 +46,7 @@ export class Ventas implements OnInit {
   cuotasDisponibles = signal<number[]>([]);
 
   readonly anioActual = new Date().getFullYear();
+  readonly promoSeleccionada = signal(this.anioActual);
   banderaSeleccionada = false;
 
   colegio = this.crearColegio();
@@ -56,11 +57,14 @@ export class Ventas implements OnInit {
   detallePedido = this.crearDetallePedido();
   pago = { fechaSenia: '', fechaPrimeraCuota: '' };
 
+  //Para editar
+  editando = signal<boolean>(false);
+
   readonly ventasPorPromo = computed(() =>
-    [this.anioActual, this.anioActual + 1].map((promo) => ({
-      promo,
-      ventas: this.ventas().filter((venta) => venta.grupoDTO.promo === promo),
-    })),
+    [{
+      promo: this.promoSeleccionada(),
+      ventas: this.ventas().filter((venta) => venta.grupoDTO.promo === this.promoSeleccionada()),
+    }],
   );
 
   readonly productosParaElegir = computed(() => {
@@ -186,7 +190,7 @@ export class Ventas implements OnInit {
           nombre: producto?.nombre ?? 'Producto',
           descripcion: [producto?.descripcion, ...extras.map((item) => item.agregado)]
             .filter(Boolean)
-            .join(' · '),
+            .join(' · Agregado: '),
           cantidad,
           cuotas,
           valorSenia: precio.valor_senia,
@@ -306,7 +310,7 @@ export class Ventas implements OnInit {
       2: () => this.alumnosResponsables.every((alumno) => Boolean(alumno.nombre && alumno.apellido && alumno.telefono)),
       3: () => this.padresResponsables.every((padre, indice) => Boolean(padre.nombre && padre.apellido && padre.telefono && padre.dni && (indice || padre.mail))),
       4: () => this.carrito().length > 0,
-      5: () => Boolean(this.detallePedido.buzo_campera && this.detallePedido.chomba_remera && this.detallePedido.talles),
+      5: () => Boolean(this.detallePedido.talles),
       6: () => Boolean(this.pago.fechaSenia && this.pago.fechaPrimeraCuota),
     };
     for (let indice = 1; indice <= paso; indice += 1) {
@@ -341,8 +345,6 @@ export class Ventas implements OnInit {
         colores: this.detallePedido.colores,
         cantidad_hermanos: Number(this.detallePedido.cantidad_hermanos) || 0,
         porcentaje_descuento_hermanos: Number(this.detallePedido.porcentaje_descuento_hermanos) || 0,
-        buzo_campera: this.detallePedido.buzo_campera,
-        chomba_remera: this.detallePedido.chomba_remera,
         estado_talles: '',
         estado_boceto: '',
         recursos_adicionales: this.detallePedido.recursoAdicional ? ['pendiente-storage'] : [],
@@ -421,6 +423,34 @@ export class Ventas implements OnInit {
   }
 
   private crearDetallePedido() {
-    return { buzo_campera: '', chomba_remera: '', talles: '', colores: '', cantidad_hermanos: 0, porcentaje_descuento_hermanos: 0, envio_gratis: false, recursoAdicional: false, observaciones: '' };
+    return { talles: '', colores: '', cantidad_hermanos: 0, porcentaje_descuento_hermanos: 0, envio_gratis: false, recursoAdicional: false, observaciones: '' };
+  }
+
+  abrirEdicion(producto: any) 
+  {
+  this.editando.set(true);
+  }
+
+  guardarEdicion(nuevaSenia: number, nuevaCuota:number, nuevaDescripcion: string) 
+  {
+    if(this.productoCalculado() != null)
+    {
+      const actual = this.productoCalculado();
+
+      if (actual != null) 
+      {
+        this.productoCalculado.update(producto => ({
+          ...producto!,
+          valorSenia: nuevaSenia,
+          valorCuota: nuevaCuota,
+          descripcion: nuevaDescripcion}));
+          this.cancelarEdicion();
+      }
+    }
+  }  
+
+  cancelarEdicion() 
+  {
+    this.editando.set(false);
   }
 }
