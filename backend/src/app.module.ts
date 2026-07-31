@@ -30,12 +30,13 @@ import { ProductosService } from './productos/productos.service';
 import { ProductosModule } from './productos/productos.module';
 import { CuotasController } from './cuotas/cuotas.controller';
 import { CuotasModule } from './cuotas/cuotas.module';
+import { BeneficiosModule } from './beneficios/beneficios.module';
 
 
 @Module({
   imports: [ConfigModule.forRoot({
       isGlobal: true,
-    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule,],
+    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule,],
   controllers: [AppController, RolesController, PedidosController, CuotasController],
   providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService, ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, DocumentosService, CuotasService, ProductosService],
 })

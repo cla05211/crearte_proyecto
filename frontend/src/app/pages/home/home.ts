@@ -15,24 +15,4 @@ export class Home
   auth = inject(AuthService)
   notificaciones = inject(NotificationService)
 
-  async cerrarSesion()
-  {
-    try
-    {
-      await firstValueFrom(this.auth.cerrarSesion());
-    }
-    catch (err: any) 
-    {
-        const code = err?.error?.code; //Este es el data.error del back
-        const mensaje = err?.error?.message;
-
-        if (code === 'SIGNOUT_ERROR')
-        {
-            this.notificaciones.warning({
-                title: 'Usuario no registrado',
-                description: mensaje,
-            });
-        }
-    }
-  }
 }

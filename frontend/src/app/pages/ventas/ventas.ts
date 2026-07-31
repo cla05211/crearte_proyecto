@@ -17,8 +17,12 @@ interface ProductoCarrito {
   cuotas: number;
   valorSenia: number;
   valorCuota: number;
-  beneficio: string;
   agregados: number[];
+}
+
+interface BeneficioSeleccionado {
+  nombre: string;
+  cantidad: number;
 }
 
 @Component({
@@ -31,15 +35,30 @@ export class Ventas implements OnInit {
   private readonly pedidosService = inject(PedidosService);
   private readonly productosService = inject(ProductosService);
 
+  //Opciones
+  orientaciones = ["Sociales", "Naturales", "Arte", "Economía", "Técnica", "Teatro", "Educación física",
+    "Administración de empresas", "Turismo", "Electromecánica", "Maestro mayor de obras", "Comunicación", 
+    "Industrial", "Informática", "Contabilidad", "Humanidades", "Mecánica", "Química", "Lenguas extranjeras", 
+    "Idiomas", "Audiovisual", "Agro", "Programación", "Música", "Literatura", "Educación social", "Artística", 
+    "Humanístico", "Pedagogía", "Bachiller", "-"];
+  turnos = ["Mañana", "Tarde", "Noche", "Doble", "Vespertino"];
+  provincias = ["Buenos Aires","Catamarca","Chaco","Chubut","Córdoba","Corrientes","Entre Ríos",
+    "Formosa","Jujuy","La Pampa","La Rioja","Mendoza","Misiones","Neuquén","Río Negro","Salta",
+    "San Juan","San Luis","Santa Cruz","Santa Fe","Santiago del Estero","Tierra del Fuego","Tucumán",
+    "Ciudad Autónoma de Buenos Aires"];  
+  niveles = ["Secundaria", "Primaria", "Jardin"];
+
   readonly ventas = signal<PedidoResponseVentas[]>([]);
   readonly productosDisponibles = signal<ProductoConPrecioResponseDTO[]>([]);
   readonly agregadosDisponibles = signal<AgregadoDBDTO[]>([]);
+  readonly beneficiosDisponibles = signal<string[]>([]);
   readonly cargando = signal(false);
   readonly guardando = signal(false);
   readonly error = signal('');
   readonly vistaFormulario = signal(false);
   readonly paso = signal(1);
   readonly carrito = signal<ProductoCarrito[]>([]);
+  readonly beneficiosSeleccionados = signal<BeneficioSeleccionado[]>([]);
   readonly productoCalculado = signal<ProductoCarrito | null>(null);
   readonly ventasExpandidas = signal<number[]>([]);
   readonly pedidosExpandidos = signal<number[]>([]);
@@ -54,6 +73,7 @@ export class Ventas implements OnInit {
   alumnosResponsables = [this.crearAlumno(), this.crearAlumno()];
   padresResponsables = [this.crearPadre(true), this.crearPadre(false)];
   productoEnEdicion = this.crearProductoEnEdicion();
+  beneficioEnEdicion = this.crearBeneficioEnEdicion();
   detallePedido = this.crearDetallePedido();
   pago = { fechaSenia: '', fechaPrimeraCuota: '' };
 
@@ -89,6 +109,7 @@ export class Ventas implements OnInit {
     this.obtenerProductos();
     this.obtenerAgregados();
     this.obtenerNroCuotasDispoinibles();
+    this.obtenerBeneficios();
   }
 
   abrirFormulario(): void {
@@ -195,7 +216,6 @@ export class Ventas implements OnInit {
           cuotas,
           valorSenia: precio.valor_senia,
           valorCuota: precio.valor_cuota + costoExtras / cuotas,
-          beneficio: precio.beneficio ?? '',
           agregados,
         });
       },
@@ -216,6 +236,34 @@ export class Ventas implements OnInit {
 
   quitarProducto(indice: number): void {
     this.carrito.update((carrito) => carrito.filter((_, index) => index !== indice));
+  }
+
+  agregarBeneficio(): void {
+    const nombre = this.beneficioEnEdicion.nombre;
+    const cantidad = Number(this.beneficioEnEdicion.cantidad);
+    if (!nombre || cantidad < 1) return;
+
+    this.beneficiosSeleccionados.update((beneficios) => {
+      const indice = beneficios.findIndex((beneficio) => beneficio.nombre === nombre);
+      if (indice === -1) return [...beneficios, { nombre, cantidad }];
+
+      return beneficios.map((beneficio, i) =>
+        i === indice ? { ...beneficio, cantidad: beneficio.cantidad + cantidad } : beneficio,
+      );
+    });
+    this.beneficioEnEdicion = this.crearBeneficioEnEdicion();
+  }
+
+  quitarBeneficio(indice: number): void {
+    this.beneficiosSeleccionados.update((beneficios) =>
+      beneficios.filter((_, i) => i !== indice),
+    );
+  }
+
+  textoBeneficios(): string {
+    return this.beneficiosSeleccionados()
+      .map((beneficio) => `${beneficio.cantidad} ${beneficio.nombre}`)
+      .join(' - ');
   }
 
   totalSenia(): number {
@@ -300,6 +348,12 @@ export class Ventas implements OnInit {
     });
   }
 
+    private obtenerBeneficios(): void {
+    this.pedidosService.obtenerBeneficios().subscribe({
+      next: (beneficios) => { this.beneficiosDisponibles.set([...beneficios,"Sin beneficio"]);},
+      error: () => this.error.set('No se pudieron cargar los beneficios.'),})
+  }
+
   private validarPaso(): boolean {
     return this.validarHasta(this.paso());
   }
@@ -349,11 +403,11 @@ export class Ventas implements OnInit {
         estado_boceto: '',
         recursos_adicionales: this.detallePedido.recursoAdicional ? ['pendiente-storage'] : [],
       },
-      productosPedidoDTO: this.carrito().map((producto) => ({
+      productosPedidoDTO: this.carrito().map((producto, indice) => ({
         id_pedido: 0,
         id_producto_original: producto.idProducto,
         descripcion: producto.descripcion,
-        beneficio: producto.beneficio,
+        beneficio: indice === 0 ? "Sin Beneficio" : this.textoBeneficios(),
         valor_senia: producto.valorSenia,
         valor_cuota: producto.valorCuota,
         cantidad: producto.cantidad,
@@ -394,6 +448,7 @@ export class Ventas implements OnInit {
     this.detallePedido = this.crearDetallePedido();
     this.pago = { fechaSenia: '', fechaPrimeraCuota: '' };
     this.carrito.set([]);
+    this.beneficiosSeleccionados.set([]);
     this.productoCalculado.set(null);
     this.banderaSeleccionada = false;
   }
@@ -420,6 +475,10 @@ export class Ventas implements OnInit {
 
   private crearProductoEnEdicion() {
     return { idProducto: 0, cantidad: 0, cuotas: 0, agregados: [] as number[] };
+  }
+
+  private crearBeneficioEnEdicion() {
+    return { nombre: '', cantidad: 1 };
   }
 
   private crearDetallePedido() {

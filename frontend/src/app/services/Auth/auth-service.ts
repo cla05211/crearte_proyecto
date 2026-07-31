@@ -9,6 +9,7 @@ import { tap } from 'rxjs';
 import { respuestaLogin } from './dto/respuestaLogin';
 import { PermisosService } from '../permisos/permisos';
 import { Router, RouterLink } from '@angular/router';
+import { UsuarioRespuestaGet } from '../usuarios/dto/usuarioRespuestaGet';
 
 @Injectable({
   providedIn: 'root',
@@ -58,7 +59,6 @@ export class AuthService
     localStorage.setItem('access_token', this.session!.access_token);
     localStorage.setItem('token_refresh', this.session!.refresh_token);
     localStorage.setItem('usuario', JSON.stringify(this.usuario));
-    console.log(localStorage.getItem('usuario'))
     }
     catch(err)
     {
@@ -75,25 +75,29 @@ export class AuthService
         this.permisosService.limpiar();
         localStorage.removeItem('access_token');
         localStorage.removeItem('token_refresh');
+        localStorage.removeItem('usuario');
 
         this.router.navigate(['/login']);})
-    );
+    ).subscribe();
   }
 
-  cargarUsuarioDesdeStorage(): void
+  cargarUsuarioDesdeStorage(): Usuario|null
   {
+    let usuarioGuardado: Usuario|null = null
     try
     {
-      const usuarioGuardado = localStorage.getItem('usuario');
-      if (usuarioGuardado)
+      const usuarioString = localStorage.getItem('usuario');
+      if (usuarioString)
       {
-        this.usuario = JSON.parse(usuarioGuardado);
+        usuarioGuardado = JSON.parse(usuarioString);
+        this.usuario = usuarioGuardado!;
       }
     }
     catch(err)
     {
       console.log(err);
     }
+    return usuarioGuardado
   }
   
   enviarEnlaceClave(correo:string)
@@ -105,5 +109,4 @@ export class AuthService
   {
     return this.http.post(`${environment.apiUrl}/auth/resetear-clave`, {clave, accessToken, refreshToken});
   }
-
 }

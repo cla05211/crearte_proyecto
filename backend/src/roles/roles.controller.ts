@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { RolesService } from './roles.service';
 
 @Controller('roles')
@@ -10,5 +10,11 @@ export class RolesController
     async obtenerRoles()
     {
         return await this.rolesService.obtenerRoles();
+    }
+
+    @Get('nro/:nroRol')
+    async obtenerRolPorNro(@Param('nroRol')nroRol: number)
+    {
+        return await this.rolesService.obtenerRolPorNumero(nroRol);
     }
 }

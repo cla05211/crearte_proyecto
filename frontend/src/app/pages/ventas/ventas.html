@@ -46,17 +46,15 @@
                     <th>Nivel</th>
                     <th>Ubicación</th>
                     <th>Pedido</th>
+                    <th>Beneficio</th>
                     <th>Plan de pago</th>
                     <th>Seña total</th>
                     <th>Cuota total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (
-                    venta of seccion.ventas;
-                    track venta.pedidoDTO.id_grupo;
-                    let indice = $index
-                  ) {
+                  @for (venta of seccion.ventas; track venta.pedidoDTO.id_grupo; let indice = $index) 
+                  {
                     <tr>
                       <td data-label="Colegio">
                         <button
@@ -66,7 +64,8 @@
                         >
                           {{ venta.colegioDTO.nombre }}
                         </button>
-                        @if (estaVentaExpandida(venta.pedidoDTO.id_grupo)) {
+                        @if (estaVentaExpandida(venta.pedidoDTO.id_grupo)) 
+                        {
                           <div class="table-details">
                             Orientación: {{ venta.grupoDTO.orientacion }}<br />Turno:
                             {{ venta.grupoDTO.turno }}
@@ -89,7 +88,8 @@
                             venta.productosPedidoDTO.length === 1 ? '' : 's'
                           }}
                         </button>
-                        @if (estaPedidoExpandido(venta.pedidoDTO.id_grupo)) {
+                        @if (estaPedidoExpandido(venta.pedidoDTO.id_grupo)) 
+                        {
                           <ul class="product-list">
                             @for (producto of venta.productosPedidoDTO; track $index) {
                               <li>
@@ -104,14 +104,14 @@
                                       | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
                                   }}</span
                                 >
-                                @if (producto.beneficio) {
-                                  <span>Beneficio: {{ producto.beneficio }}</span>
-                                }
                               </li>
                             }
                           </ul>
                         }
                       </td>
+                      <td data-label="Beneficio">
+                        {{ venta.productosPedidoDTO[0]?.beneficio }}
+                      </td>                    
                       <td data-label="Plan de pago">{{ venta.nroCuotas }} cuotas</td>
                       <td data-label="Seña total">
                         {{ totalSeniaVenta(venta) | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}
@@ -169,7 +169,12 @@
                 ><input class="ds-input" [(ngModel)]="colegio.localidad" /></label
               ><label class="ds-field"
                 ><span class="ds-label">Provincia *</span
-                ><input class="ds-input" [(ngModel)]="colegio.provincia" /></label
+                ><select class="ds-select" [(ngModel)]="colegio.provincia">
+                  <option value="">Seleccioná una provincia</option>
+                  @for (provincia of provincias; track provincia) {
+                    <option [value]="provincia">{{ provincia }}</option>
+                  }
+                </select></label
               ><label class="ds-field"
                 ><span class="ds-label">Promo *</span
                 ><select class="ds-select" [(ngModel)]="grupo.promo">
@@ -178,13 +183,28 @@
                 </select></label
               ><label class="ds-field"
                 ><span class="ds-label">Orientación *</span
-                ><input class="ds-input" [(ngModel)]="grupo.orientacion" /></label
+                ><select class="ds-select" [(ngModel)]="grupo.orientacion">
+                  <option value="">Seleccioná una orientación</option>
+                  @for (orientacion of orientaciones; track orientacion) {
+                    <option [value]="orientacion">{{ orientacion }}</option>
+                  }
+                </select></label
               ><label class="ds-field"
                 ><span class="ds-label">Turno *</span
-                ><input class="ds-input" [(ngModel)]="grupo.turno" /></label
+                ><select class="ds-select" [(ngModel)]="grupo.turno">
+                  <option value="">Seleccioná un turno</option>
+                  @for (turno of turnos; track turno) {
+                    <option [value]="turno">{{ turno }}</option>
+                  }
+                </select></label
               ><label class="ds-field"
                 ><span class="ds-label">Nivel *</span
-                ><input class="ds-input" [(ngModel)]="grupo.nivel" /></label
+                ><select class="ds-select" [(ngModel)]="grupo.nivel">
+                  <option value="">Seleccioná un nivel</option>
+                  @for (nivel of niveles; track nivel) {
+                    <option [value]="nivel">{{ nivel }}</option>
+                  }
+                </select></label
               ><label class="ds-field"
                 ><span class="ds-label">Cantidad de egresados *</span
                 ><input
@@ -309,8 +329,15 @@
                       Cuota individual:
                       {{ producto.valorCuota | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}
                     </span> 
-                    <button type="button" (click)="abrirEdicion(producto)" class="btn-edit-price">
-                      ✏️
+                    <button
+                      type="button"
+                      (click)="abrirEdicion(producto)"
+                      class="ds-button ds-button--secondary ds-button--small btn-edit-price">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                      </svg>
+                      Editar valores
                     </button>
                   }
                   @else {
@@ -366,6 +393,52 @@
                   ></label
                 >
               }
+              <section class="benefits" aria-labelledby="beneficios-title">
+                <div>
+                  <h4 id="beneficios-title">Beneficios</h4>
+                  <p class="ds-text-muted">Agregá cada beneficio y su cantidad.</p>
+                </div>
+                <div class="benefits__editor">
+                  <label class="ds-field">
+                    <span class="ds-label">Beneficio</span>
+                    <select class="ds-select" [(ngModel)]="beneficioEnEdicion.nombre">
+                      <option value="">Seleccioná un beneficio</option>
+                      @for (beneficio of beneficiosDisponibles(); track beneficio) {
+                        <option [value]="beneficio">{{ beneficio }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label class="ds-field">
+                    <span class="ds-label">Cantidad</span>
+                    <input
+                      class="ds-input"
+                      type="number"
+                      min="1"
+                      [(ngModel)]="beneficioEnEdicion.cantidad"
+                    />
+                  </label>
+                  <button class="ds-button ds-button--secondary" type="button" (click)="agregarBeneficio()">
+                    Agregar beneficio
+                  </button>
+                </div>
+                @if (beneficiosSeleccionados().length) {
+                  <ul class="benefits__list">
+                    @for (beneficio of beneficiosSeleccionados(); track beneficio.nombre; let i = $index) {
+                      <li>
+                        <span>{{ beneficio.cantidad }} {{ beneficio.nombre }}</span>
+                        <button
+                          class="ds-button ds-button--ghost ds-button--small"
+                          type="button"
+                          (click)="quitarBeneficio(i)"
+                        >
+                          Quitar
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                  <p class="benefits__summary">Se guardará como: {{ textoBeneficios() }}</p>
+                }
+              </section>
               <div class="cart">
                 <h4>Pedido</h4>
                 @for (producto of carrito(); track $index; let i = $index) {
@@ -409,7 +482,7 @@
                 ><select class="ds-select" [(ngModel)]="detallePedido.talles">
                   <option value="">Seleccioná una opción</option>
                   <option>Digital</option>
-                  <option>Presencial</option>
+                  <option>Muestras Físicas</option>
                 </select></label
               ><label class="ds-field"
                 ><span class="ds-label">Colores elegidos</span

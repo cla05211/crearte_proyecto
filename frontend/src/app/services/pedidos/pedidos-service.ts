@@ -21,4 +21,9 @@ export class PedidosService
   {
     return this.http.get<PedidoResponseVentas[]>(`${environment.apiUrl}/gestion-pedidos`);
   }
+
+  obtenerBeneficios(): Observable<string[]>
+  {
+    return this.http.get<string[]>(`${environment.apiUrl}/beneficios`);
+  }
 }
