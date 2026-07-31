@@ -22,4 +22,5 @@ export class CrearPedidoDTO
     documentoDTO!: DocumentoDTO | DocumentoDTO[];
     primerCuota!: CuotaInicioVentaDTO;
     nroCuotas!: number;
+    molderias!: string;
 }

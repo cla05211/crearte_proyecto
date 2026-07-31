@@ -60,7 +60,7 @@ begin
   -- Pedido
   insert into pedidos (
     id_grupo, talles, envio_gratis, senia, observaciones, estado_general,
-    fecha_aprobacion_boceto, fecha_aprobacion_talles, colores,
+    fecha_aprobacion_boceto, fecha_aprobacion_talles, colores,molderias,
     cantidad_hermanos, porcentaje_descuento_hermanos, id_vendedora,
     estado_boceto, estado_talles, id_diseñadora,
     recursos_adicionales
@@ -75,6 +75,7 @@ begin
     (payload->'pedidoDTO'->>'fecha_aprobacion_boceto')::date,
     (payload->'pedidoDTO'->>'fecha_aprobacion_talles')::date,
     payload->'pedidoDTO'->>'colores',
+    payload->'pedidoDTO'->>'molderias',
     coalesce((payload->'pedidoDTO'->>'cantidad_hermanos')::smallint, 0),
     (payload->'pedidoDTO'->>'porcentaje_descuento_hermanos')::smallint,
     (payload->'pedidoDTO'->>'id_vendedora')::bigint,

@@ -15,6 +15,7 @@ export class GestionPedidosController
     //@RequierePermiso('crear_pedido')
     async crearPedido(@Body() dto: CrearPedidoDTO)
     {
+        console.log("Aca andamos");
         return await this.gestionService.crearPedido(dto);
     }
 

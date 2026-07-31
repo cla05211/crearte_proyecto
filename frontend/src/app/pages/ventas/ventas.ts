@@ -1,6 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { CrearPedidoDTO } from '../../services/pedidos/dto/crearPedidoPost.dto';
 import { PedidoResponseVentas } from '../../services/pedidos/dto/PedidoResponseVentas.dto';
 import { PedidosService } from '../../services/pedidos/pedidos-service';
@@ -8,6 +9,9 @@ import { ProductoConPrecioResponseDTO } from '../../services/productos/dto/Produ
 import { AgregadoDBDTO } from '../../services/productos/dto/agregadoDB.dto';
 import { ProductosService } from '../../services/productos/productos-service';
 import { Usuario } from '../../../interfaces/usuario';
+import { BuscadorSelect } from '../../shared/buscador-select/buscador-select';
+import { faL } from '@fortawesome/free-solid-svg-icons';
+import { NotificationService } from '../../shared/notifications/notification.service';
 
 interface ProductoCarrito {
   idProducto: number;
@@ -27,13 +31,14 @@ interface BeneficioSeleccionado {
 
 @Component({
   selector: 'app-ventas',
-  imports: [FormsModule, CurrencyPipe],
+  imports: [FormsModule, CurrencyPipe, BuscadorSelect],
   templateUrl: './ventas.html',
   styleUrl: './ventas.css',
 })
 export class Ventas implements OnInit {
   private readonly pedidosService = inject(PedidosService);
   private readonly productosService = inject(ProductosService);
+  private readonly notificaciones = inject(NotificationService);
 
   //Opciones
   orientaciones = ["Sociales", "Naturales", "Arte", "Economía", "Técnica", "Teatro", "Educación física",
@@ -71,7 +76,7 @@ export class Ventas implements OnInit {
   colegio = this.crearColegio();
   grupo = this.crearGrupo();
   alumnosResponsables = [this.crearAlumno(), this.crearAlumno()];
-  padresResponsables = [this.crearPadre(true), this.crearPadre(false)];
+  padresResponsables = [this.crearPadre(true), this.crearPadre(false), this.crearPadre(false)];
   productoEnEdicion = this.crearProductoEnEdicion();
   beneficioEnEdicion = this.crearBeneficioEnEdicion();
   detallePedido = this.crearDetallePedido();
@@ -133,16 +138,32 @@ export class Ventas implements OnInit {
   }
 
   irAPaso(numero: number): void {
-    if (numero < this.paso() || this.validarHasta(numero - 1)) this.paso.set(numero);
+    if (this.paso() == 1 && this.grupo.nivel != "Secundaria")
+    {
+      this.paso.set(3);
+    }
+    else if (numero < this.paso() || this.validarHasta(numero - 1)) this.paso.set(numero);
   }
 
-  siguientePaso(): void {
+  siguientePaso(): void 
+  {
     if (!this.validarPaso()) return;
-    this.paso.update((paso) => Math.min(6, paso + 1));
+    
+    this.paso.update((paso) => {
+      if (paso === 1 && this.grupo.nivel !== 'Secundaria') 
+      {
+        return 3;
+      }
+      return Math.min(6, paso + 1)});
   }
 
   anteriorPaso(): void {
-    this.paso.update((paso) => Math.max(1, paso - 1));
+    this.paso.update((paso) => {
+      if (paso === 3 && this.grupo.nivel !== 'Secundaria') 
+      {
+        return 1;
+      }
+      return Math.max(1, paso - 1)});
   }
 
   toggleVenta(idGrupo: number): void {
@@ -192,6 +213,11 @@ export class Ventas implements OnInit {
     this.calcularProducto();
   }
 
+  cambiarBandera(seleccionado: boolean): void {
+    this.banderaSeleccionada = seleccionado;
+    this.calcularProducto();
+  }
+
   calcularProducto(): void {
     const { idProducto, cantidad, cuotas, agregados } = this.productoEnEdicion;
     if (!idProducto || !cantidad || !cuotas) {
@@ -206,10 +232,14 @@ export class Ventas implements OnInit {
         );
         const extras = this.agregadosIndividuales().filter((item) => agregados.includes(item.id));
         const costoExtras = extras.reduce((total, item) => total + item.precio, 0);
+        const nombresExtras = extras.map((item) => item.agregado);
+        if (this.banderaSeleccionada && this.bandera()) {
+          nombresExtras.push(this.bandera()!.agregado);
+        }
         this.productoCalculado.set({
           idProducto,
           nombre: producto?.nombre ?? 'Producto',
-          descripcion: [producto?.descripcion, ...extras.map((item) => item.agregado)]
+          descripcion: [producto?.descripcion, ...nombresExtras]
             .filter(Boolean)
             .join(' · Agregado: '),
           cantidad,
@@ -299,7 +329,10 @@ export class Ventas implements OnInit {
     if (!this.validarHasta(6)) return;
     const usuario = this.obtenerUsuario();
     if (!usuario) {
-      this.error.set('No se encontró la sesión de la vendedora. Volvé a iniciar sesión.');
+      this.notificaciones.warning({
+        title: 'Sesión no encontrada',
+        description: 'No se encontró la sesión de la vendedora. Volvé a iniciar sesión.',
+      });
       return;
     }
 
@@ -308,13 +341,90 @@ export class Ventas implements OnInit {
     this.pedidosService.agregarPedido(this.crearPedido(usuario)).subscribe({
       next: () => {
         this.guardando.set(false);
+        this.notificaciones.success({
+          title: 'Venta guardada',
+          description: 'La venta se registró correctamente.',
+        });
         this.cerrarFormulario();
         this.obtenerVentas();
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
         this.guardando.set(false);
-        this.error.set('No se pudo guardar la venta. Intentá nuevamente.');
+        this.notificarErrorGuardado(err);
       },
+    });
+  }
+
+  private notificarErrorGuardado(err: HttpErrorResponse): void {
+    const mensajeBackend: string = err?.error?.message ?? '';
+
+    if (err.status === 0) {
+      this.notificaciones.error({
+        title: 'Sin conexión',
+        description: 'No se pudo conectar con el servidor. Verificá tu conexión a internet.',
+      });
+      return;
+    }
+
+    if (err.status === 401 || err.status === 403) {
+      this.notificaciones.error({
+        title: 'Sesión no válida',
+        description: 'No tenés permisos o tu sesión expiró. Volvé a iniciar sesión.',
+      });
+      return;
+    }
+
+    if (/duplicate key|unique constraint/i.test(mensajeBackend)) {
+      this.notificaciones.error({
+        title: 'Registro duplicado',
+        description: 'Ya existe un registro con esos datos.',
+      });
+      return;
+    }
+
+    if (/null value.*not-null constraint/i.test(mensajeBackend)) {
+      this.notificaciones.error({
+        title: 'Faltan datos',
+        description: 'Falta completar un campo obligatorio. Revisá el formulario e intentá nuevamente.',
+      });
+      return;
+    }
+
+    if (/invalid input syntax for type (date|timestamp)/i.test(mensajeBackend)) {
+      this.notificaciones.error({
+        title: 'Fecha inválida',
+        description: 'Una de las fechas ingresadas no es válida.',
+      });
+      return;
+    }
+
+    if (/invalid input syntax/i.test(mensajeBackend)) {
+      this.notificaciones.error({
+        title: 'Datos inválidos',
+        description: 'Uno de los valores ingresados no tiene un formato válido.',
+      });
+      return;
+    }
+
+    if (/violates foreign key constraint/i.test(mensajeBackend)) {
+      this.notificaciones.error({
+        title: 'Referencia inválida',
+        description: 'Uno de los datos seleccionados (producto, colegio, etc.) ya no existe.',
+      });
+      return;
+    }
+
+    if (err.status >= 500) {
+      this.notificaciones.error({
+        title: 'Error del servidor',
+        description: 'Ocurrió un error interno. Intentá nuevamente en unos minutos.',
+      });
+      return;
+    }
+
+    this.notificaciones.error({
+      title: 'No se pudo guardar la venta',
+      description: mensajeBackend || 'Ocurrió un error inesperado. Intentá nuevamente.',
     });
   }
 
@@ -361,7 +471,7 @@ export class Ventas implements OnInit {
   private validarHasta(paso: number): boolean {
     const validadores: Record<number, () => boolean> = {
       1: () => Boolean(this.colegio.nombre && this.colegio.localidad && this.colegio.provincia && this.grupo.orientacion && this.grupo.turno && this.grupo.nivel && Number(this.grupo.cantidad_egresados) > 0),
-      2: () => this.alumnosResponsables.every((alumno) => Boolean(alumno.nombre && alumno.apellido && alumno.telefono)),
+      2: () =>this.grupo.nivel !== 'Secundaria' ||this.alumnosResponsables.every((alumno) =>Boolean(alumno.nombre && alumno.apellido && alumno.telefono)),
       3: () => this.padresResponsables.every((padre, indice) => Boolean(padre.nombre && padre.apellido && padre.telefono && padre.dni && (indice || padre.mail))),
       4: () => this.carrito().length > 0,
       5: () => Boolean(this.detallePedido.talles),
@@ -377,13 +487,22 @@ export class Ventas implements OnInit {
     return true;
   }
 
+  private capitalizarInicial(valor: string): string {
+    const limpio = valor.trim();
+    return limpio ? limpio.charAt(0).toUpperCase() + limpio.slice(1) : limpio;
+  }
+
   private crearPedido(usuario: Usuario): CrearPedidoDTO {
     const documentos = [{ tipo: 'seña', archivo_url: 'pendiente-storage' }];
     if (this.detallePedido.recursoAdicional) {
       documentos.push({ tipo: 'recurso adicional', archivo_url: 'pendiente-storage' });
     }
     return {
-      colegioDTO: { ...this.colegio },
+      colegioDTO: {
+        ...this.colegio,
+        nombre: this.capitalizarInicial(this.colegio.nombre),
+        localidad: this.capitalizarInicial(this.colegio.localidad),
+      },
       grupoDTO: { ...this.grupo, id_colegio: 0, cantidad_egresados: Number(this.grupo.cantidad_egresados) },
       pedidoDTO: {
         id_grupo: 0,
@@ -392,11 +511,12 @@ export class Ventas implements OnInit {
         talles: this.detallePedido.talles,
         envio_gratis: this.detallePedido.envio_gratis,
         seña: 'pendiente-storage',
-        observaciones: this.detallePedido.observaciones,
+        observaciones: this.capitalizarInicial(this.detallePedido.observaciones),
         estado_general: 'Venta realizada',
         fecha_aprobacion_boceto: null,
         fecha_aprobacion_talles: null,
-        colores: this.detallePedido.colores,
+        colores: this.capitalizarInicial(this.detallePedido.colores),
+        molderias: this.capitalizarInicial(this.detallePedido.molderias),
         cantidad_hermanos: Number(this.detallePedido.cantidad_hermanos) || 0,
         porcentaje_descuento_hermanos: Number(this.detallePedido.porcentaje_descuento_hermanos) || 0,
         estado_talles: '',
@@ -412,8 +532,18 @@ export class Ventas implements OnInit {
         valor_cuota: producto.valorCuota,
         cantidad: producto.cantidad,
       })),
-      padresResponsablesDTO: this.padresResponsables.map((padre) => ({ ...padre, id_grupo: 0 })),
-      alumnosResponsablesDTO: this.alumnosResponsables.map((alumno) => ({ ...alumno, id_grupo: 0 })),
+      padresResponsablesDTO: this.padresResponsables.map((padre) => ({
+        ...padre,
+        nombre: this.capitalizarInicial(padre.nombre),
+        apellido: this.capitalizarInicial(padre.apellido),
+        id_grupo: 0,
+      })),
+      alumnosResponsablesDTO: this.alumnosResponsables[0].nombre == '' ? [] : this.alumnosResponsables.map((alumno) => ({
+        ...alumno,
+        nombre: this.capitalizarInicial(alumno.nombre),
+        apellido: this.capitalizarInicial(alumno.apellido),
+        id_grupo: 0,
+      })),
       pagoDTO: { id_pedido: 0, nro_transferencia: '', tipo_pago: 'Seña', monto: this.totalSenia(), motivo: 'Seña', fecha: new Date(`${this.pago.fechaSenia}T00:00:00`) },
       movimientoDTO: { id_grupo: 0, importe: this.totalSenia(), fecha: this.pago.fechaSenia },
       documentoDTO: documentos,
@@ -443,7 +573,7 @@ export class Ventas implements OnInit {
     this.colegio = this.crearColegio();
     this.grupo = this.crearGrupo();
     this.alumnosResponsables = [this.crearAlumno(), this.crearAlumno()];
-    this.padresResponsables = [this.crearPadre(true), this.crearPadre(false)];
+    this.padresResponsables = [this.crearPadre(true), this.crearPadre(false), this.crearPadre(false)];
     this.productoEnEdicion = this.crearProductoEnEdicion();
     this.detallePedido = this.crearDetallePedido();
     this.pago = { fechaSenia: '', fechaPrimeraCuota: '' };
@@ -482,7 +612,7 @@ export class Ventas implements OnInit {
   }
 
   private crearDetallePedido() {
-    return { talles: '', colores: '', cantidad_hermanos: 0, porcentaje_descuento_hermanos: 0, envio_gratis: false, recursoAdicional: false, observaciones: '' };
+    return { talles: '', colores: '',molderias: '', cantidad_hermanos: 0, porcentaje_descuento_hermanos: 0, envio_gratis: false, recursoAdicional: false, observaciones: '' };
   }
 
   abrirEdicion(producto: any) 

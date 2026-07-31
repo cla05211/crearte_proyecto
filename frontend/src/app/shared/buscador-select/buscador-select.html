@@ -1,0 +1,29 @@
+<div class="buscador-select" [class.is-open]="abierto()">
+  <input
+    class="ds-input"
+    type="text"
+    role="combobox"
+    [attr.aria-expanded]="abierto()"
+    autocomplete="off"
+    [placeholder]="placeholder"
+    [disabled]="disabled()"
+    [value]="busqueda()"
+    (focus)="alEnfocar()"
+    (input)="alEscribir($any($event.target).value)"
+    (keydown.enter)="alPresionarEnter()"
+    (keydown.escape)="cerrar()"
+  />
+  @if (abierto()) {
+    <ul class="buscador-select__lista" role="listbox">
+      @for (opcion of opcionesFiltradas(); track opcion) {
+        <li role="option">
+          <button type="button" (mousedown)="$event.preventDefault()" (click)="elegir(opcion)">
+            {{ opcion }}
+          </button>
+        </li>
+      } @empty {
+        <li class="buscador-select__vacio">{{ etiquetaVacia }}</li>
+      }
+    </ul>
+  }
+</div>

@@ -169,12 +169,12 @@
                 ><input class="ds-input" [(ngModel)]="colegio.localidad" /></label
               ><label class="ds-field"
                 ><span class="ds-label">Provincia *</span
-                ><select class="ds-select" [(ngModel)]="colegio.provincia">
-                  <option value="">Seleccioná una provincia</option>
-                  @for (provincia of provincias; track provincia) {
-                    <option [value]="provincia">{{ provincia }}</option>
-                  }
-                </select></label
+                ><app-buscador-select
+                  [opciones]="provincias"
+                  placeholder="Buscar provincia…"
+                  etiquetaVacia="No se encontraron provincias"
+                  [(ngModel)]="colegio.provincia"
+                ></app-buscador-select></label
               ><label class="ds-field"
                 ><span class="ds-label">Promo *</span
                 ><select class="ds-select" [(ngModel)]="grupo.promo">
@@ -183,12 +183,12 @@
                 </select></label
               ><label class="ds-field"
                 ><span class="ds-label">Orientación *</span
-                ><select class="ds-select" [(ngModel)]="grupo.orientacion">
-                  <option value="">Seleccioná una orientación</option>
-                  @for (orientacion of orientaciones; track orientacion) {
-                    <option [value]="orientacion">{{ orientacion }}</option>
-                  }
-                </select></label
+                ><app-buscador-select
+                  [opciones]="orientaciones"
+                  placeholder="Buscar orientación…"
+                  etiquetaVacia="No se encontraron orientaciones"
+                  [(ngModel)]="grupo.orientacion"
+                ></app-buscador-select></label
               ><label class="ds-field"
                 ><span class="ds-label">Turno *</span
                 ><select class="ds-select" [(ngModel)]="grupo.turno">
@@ -215,7 +215,7 @@
               /></label>
             </div>
           }
-          @if (paso() === 2) {
+          @if (paso() === 2 && grupo.nivel == "Secundaria") {
             <div class="form-grid">
               <h3>Alumnos responsables</h3>
               <p class="form-intro">Ingresá los datos de dos alumnos responsables.</p>
@@ -239,7 +239,6 @@
           @if (paso() === 3) {
             <div class="form-grid">
               <h3>Padres responsables</h3>
-              <p class="form-intro">El mail se solicita únicamente para el primer responsable.</p>
               @for (padre of padresResponsables; track $index; let i = $index) {
                 <fieldset>
                   <legend>Padre/madre responsable {{ i + 1 }}</legend>
@@ -383,7 +382,11 @@
               </div>
               @if (bandera(); as itemBandera) {
                 <label class="flag-option"
-                  ><input type="checkbox" [(ngModel)]="banderaSeleccionada" />
+                  ><input
+                    type="checkbox"
+                    [ngModel]="banderaSeleccionada"
+                    (ngModelChange)="cambiarBandera($any($event))"
+                  />
                   {{ itemBandera.agregado }}
                   <span
                     >+{{
@@ -487,6 +490,10 @@
               ><label class="ds-field"
                 ><span class="ds-label">Colores elegidos</span
                 ><input class="ds-input" [(ngModel)]="detallePedido.colores" /></label
+              >
+              <label class="ds-field"
+                ><span class="ds-label">Molderías</span
+                ><input class="ds-input" [(ngModel)]="detallePedido.molderias" /></label
               ><label class="ds-field"
                 ><span class="ds-label">Cantidad de hermanos</span
                 ><input
@@ -501,15 +508,14 @@
                   type="number"
                   min="0"
                   [(ngModel)]="detallePedido.porcentaje_descuento_hermanos" /></label
+              ><label class="ds-field resource-upload"
+                ><span class="ds-label">Recursos adicionales</span
+                ><input class="ds-input" type="file" multiple /></label
               ><label class="check-field"
                 ><input type="checkbox" [(ngModel)]="detallePedido.envio_gratis" /> Envío
                 gratis</label
-              ><label class="ds-field resource-upload"
-                ><span class="ds-label">Recursos adicionales</span
-                ><input class="ds-input" type="file" multiple /><span class="ds-field__help"
-                  >Podés seleccionar uno o más archivos.</span
-                ></label
-              ><label class="ds-field form-grid__full"
+              >
+              <label class="ds-field form-grid__full"
                 ><span class="ds-label">Observaciones</span
                 ><textarea class="ds-textarea" [(ngModel)]="detallePedido.observaciones"></textarea>
               </label>
