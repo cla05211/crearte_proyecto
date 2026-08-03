@@ -5,7 +5,7 @@ import { RegistroDto } from './dto/registro.interface';
 import { Usuario } from '../../../interfaces/usuario';
 import { Session } from '@supabase/supabase-js';
 import { Permiso } from '../../../interfaces/permiso';
-import { tap } from 'rxjs';
+import { tap, throwError } from 'rxjs';
 import { respuestaLogin } from './dto/respuestaLogin';
 import { PermisosService } from '../permisos/permisos';
 import { Router, RouterLink } from '@angular/router';
@@ -108,5 +108,22 @@ export class AuthService
   resetearClave(clave:string, accessToken:string, refreshToken:string)
   {
     return this.http.post(`${environment.apiUrl}/auth/resetear-clave`, {clave, accessToken, refreshToken});
+  }
+  refrescarToken()
+  {
+    const refreshToken = localStorage.getItem('token_refresh');
+    if (!refreshToken) {
+      return throwError(() => new Error('No hay refresh token'));
+    }
+
+    return this.http.post<respuestaLogin>(`${environment.apiUrl}/auth/refresh`, {
+      refresh_token: refreshToken
+    }).pipe(
+      tap(respuesta => {
+        this.session = respuesta.session;
+        localStorage.setItem('access_token', this.session!.access_token);
+        localStorage.setItem('token_refresh', this.session!.refresh_token);
+      })
+    );
   }
 }

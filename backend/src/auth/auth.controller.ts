@@ -4,6 +4,7 @@ import {LoginDto} from './dto/login.dto';
 import { RegistroDto } from './dto/registro.dto';
 import { AuthGuard } from './guards/auth.guard';
 import { ResetearClaveDto } from './dto/resetearClave.dto';
+import { BadRequestException } from '@nestjs/common';
 
 @Controller('auth')
 export class AuthController 
@@ -47,5 +48,12 @@ export class AuthController
         return this.auth.resetearClave(dto);
     }
 
-
+    @Post('refresh')
+    async refresh(@Body('refresh_token') refreshToken: string) {
+    if (!refreshToken) 
+    {
+        throw new BadRequestException('Falta refresh_token');
+    }
+        return this.auth.refrescarSesion(refreshToken);
+    }
 }

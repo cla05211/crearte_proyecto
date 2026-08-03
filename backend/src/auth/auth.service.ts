@@ -152,4 +152,18 @@ export class AuthService {
 
     return { mensaje: 'Contraseña restablecida'};
   }
+  async refrescarSesion(refreshToken: string) {
+  const { data, error } = await this.sb.supabaseAuth.auth.refreshSession({
+    refresh_token: refreshToken,
+  });
+
+  if (error || !data.session) {
+    throw new UnauthorizedException('No se pudo refrescar la sesión');
+  }
+
+  return {
+    session: data.session,
+    usuario: data.user,
+  };
+}
 }
