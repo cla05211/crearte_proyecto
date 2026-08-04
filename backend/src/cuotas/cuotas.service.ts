@@ -12,9 +12,7 @@ export class CuotasService
     async crearCuotas(primerCuota: CuotaInicioVentaDTO, nroCuotas: number)
     {
         const cuotas = await this.calcularCuotas(primerCuota,nroCuotas)
-
-        console.log(cuotas);
-
+        
         const {data,error} = await this.sb.supabase
         .from('cuotas')
         .insert(cuotas)

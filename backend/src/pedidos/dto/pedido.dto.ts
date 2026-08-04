@@ -5,7 +5,6 @@ export class PedidoDTO
     id_diseñadora!:number;
     talles!: string;
     envio_gratis!:boolean;
-    senia!: string;
     observaciones!: string;
     estado_general!: string;
     fecha_aprobacion_boceto!:string|null;
@@ -15,6 +14,5 @@ export class PedidoDTO
     porcentaje_descuento_hermanos!: number;
     estado_talles!:string;
     estado_boceto!:string;
-    recursos_adicionales!:string[];
     molderias!: string;
 }

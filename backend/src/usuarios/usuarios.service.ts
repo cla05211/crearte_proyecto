@@ -13,12 +13,9 @@ export class UsuariosService {
 
     async guardarUsuario(dto: GuardarUsuarioDTO)
     {
-        console.log('DTO recibido:', dto);
         const resultado = await this.sb.supabase
             .from('usuarios')
             .insert(dto);
-
-        console.log('Resultado Supabase:', resultado);
 
         return resultado;
     }
@@ -104,8 +101,6 @@ export class UsuariosService {
 
     async modificarAprobado(id: number, aprobado:boolean)
     {
-        console.log (id)
-        console.log(aprobado);
         const { data, error } = await this.sb.supabase
         .from('usuarios')
         .update({ aprobado })

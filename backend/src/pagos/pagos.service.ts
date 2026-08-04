@@ -10,14 +10,12 @@ export class PagosService
 
     async crearPago(dto: PagoDTO)
     {
-        console.log('DTO recibido:', dto);
         const {data,error} = await this.sb.supabase
             .from('pagos')
             .insert(dto)
             .select('id')
             .single();
 
-        console.log('Resultado Supabase:', data);
         if (error) 
         {
             throw new BadRequestException(error.message);

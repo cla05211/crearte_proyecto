@@ -36,13 +36,11 @@ export class AuthService
     })
     .pipe(
       tap(respuesta => {
-          console.log("Respuesta completa:", respuesta);
         this.usuario = respuesta.usuario;
         this.session = respuesta.session;
 
         this.permisosService.guardarPermisos(respuesta.permisos);
         this.guardarSesion();
-        console.log(localStorage.getItem('permisos'))
       })
     );
   }

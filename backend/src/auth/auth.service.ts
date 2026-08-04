@@ -84,7 +84,6 @@ export class AuthService {
 
   async cerrarSesion()
   {
-    console.log("Entre a la funcion del back");
     const { error } = await this.sb.supabase.auth.signOut();
     if (error) 
     {

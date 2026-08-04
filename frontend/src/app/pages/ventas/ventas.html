@@ -508,15 +508,39 @@
                   type="number"
                   min="0"
                   [(ngModel)]="detallePedido.porcentaje_descuento_hermanos" /></label
-              ><label class="ds-field resource-upload"
+              ><div class="ds-field resource-upload"
                 ><span class="ds-label">Recursos adicionales</span
                 ><input
-                  class="ds-input"
+                  class="file-input-hidden"
                   type="file"
                   multiple
                   #recursosAdicionalesInput
                   (change)="seleccionarRecursosAdicionales($event)"
-              /></label
+                />
+                <button
+                  type="button"
+                  class="file-picker-button"
+                  (click)="recursosAdicionalesInput.click()"
+                >
+                  Elegir archivos
+                </button>
+                @if (archivosRecursosAdicionales.length) {
+                  <ul class="file-list">
+                    @for (archivo of archivosRecursosAdicionales; track archivo.name + $index; let i = $index) {
+                      <li>
+                        <span class="file-list__name">{{ archivo.name }}</span>
+                        <button
+                          type="button"
+                          class="ds-button ds-button--ghost ds-button--small"
+                          (click)="quitarArchivoRecursoAdicional(i)"
+                        >
+                          Quitar
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                } 
+              </div
               ><label class="check-field"
                 ><input type="checkbox" [(ngModel)]="detallePedido.envio_gratis" /> Envío
                 gratis</label
@@ -530,16 +554,51 @@
           @if (paso() === 6) {
             <div class="payment-step">
               <h3>Seña y primera cuota</h3>
+              <label class="ds-field">
+              <span class="ds-label">Comprobante de seña</span>
+            </label>
+            <div class="ds-field resource-upload">
+              <span class="ds-label">Seña</span>
+              <input
+                class="file-input-hidden"
+                type="file"
+                multiple
+                #archivoSeniaInput
+                (change)="seleccionarArchivosSenia($event)" />
+              <button
+                type="button"
+                class="file-picker-button"
+                (click)="archivoSeniaInput.click()"
+              >
+                Elegir archivos
+              </button>
+              @if (archivosSenia.length) {
+                <ul class="file-list">
+                  @for (archivo of archivosSenia; track archivo.name + $index; let i = $index) {
+                    <li>
+                      <span class="file-list__name">{{ archivo.name }}</span>
+                      <button
+                        type="button"
+                        class="ds-button ds-button--ghost ds-button--small"
+                        (click)="quitarArchivoSenia(i)"
+                      >
+                        Quitar
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+
+            <label class="ds-field">
+              <span class="ds-label">Fecha de pago de la seña *</span>
+              <input
+                class="ds-input"
+                type="date"
+                [(ngModel)]="pago.fechaSenia"
+                (change)="actualizarFechaPrimeraCuota()" />
+            </label>
               <label class="ds-field"
-                ><span class="ds-label">Comprobante de seña</span
-                ><input
-                  class="ds-input"
-                  type="file"
-                  accept="image/*"
-                  #archivoSeniaInput
-                  (change)="seleccionarArchivoSenia($event)"
-              /></label
-              ><label class="ds-field"
                 ><span class="ds-label">Fecha de pago de la seña *</span
                 ><input
                   class="ds-input"

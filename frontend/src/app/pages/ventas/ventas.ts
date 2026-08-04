@@ -3,7 +3,7 @@ import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin, Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { CrearPedidoDTO } from '../../services/pedidos/dto/crearPedidoPost.dto';
 import { PedidoResponseVentas } from '../../services/pedidos/dto/PedidoResponseVentas.dto';
 import { PedidosService } from '../../services/pedidos/pedidos-service';
@@ -48,7 +48,7 @@ export class Ventas implements OnInit {
   @ViewChild('archivoSeniaInput') private archivoSeniaInputRef?: ElementRef<HTMLInputElement>;
   @ViewChild('recursosAdicionalesInput') private recursosAdicionalesInputRef?: ElementRef<HTMLInputElement>;
 
-  archivoSenia: File | null = null;
+  archivosSenia: File[] = [];
   archivosRecursosAdicionales: File[] = [];
 
   //Opciones
@@ -95,9 +95,6 @@ export class Ventas implements OnInit {
 
   //Para editar
   editando = signal<boolean>(false);
-
-  archivoImagenSenia: File[] | null = null;
-  archivoImagenAdicionales: File[] | null = null;
 
   readonly ventasPorPromo = computed(() =>
     [{
@@ -339,14 +336,34 @@ export class Ventas implements OnInit {
     this.pago.fechaPrimeraCuota = fecha.toISOString().slice(0, 10);
   }
 
-  seleccionarArchivoSenia(event: Event): void {
+  seleccionarArchivosSenia(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.archivoSenia = input.files?.[0] ?? null;
+    if (!input.files) return;
+
+    const nuevosArchivos = Array.from(input.files);
+    this.archivosSenia = [...this.archivosSenia, ...nuevosArchivos];
+
+    input.value = '';
   }
 
   seleccionarRecursosAdicionales(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.archivosRecursosAdicionales = input.files ? Array.from(input.files) : [];
+    if (!input.files) return;
+
+    const nuevosArchivos = Array.from(input.files);
+    this.archivosRecursosAdicionales = [...this.archivosRecursosAdicionales, ...nuevosArchivos];
+
+    input.value = '';
+  }
+
+  quitarArchivoSenia(indice: number): void {
+    this.archivosSenia = this.archivosSenia.filter((_, index) => index !== indice);
+  }
+
+  quitarArchivoRecursoAdicional(indice: number): void {
+    this.archivosRecursosAdicionales = this.archivosRecursosAdicionales.filter(
+      (_, index) => index !== indice,
+    );
   }
 
   guardarVenta(): void {
@@ -365,10 +382,8 @@ export class Ventas implements OnInit {
     const pedido = this.crearPedido(usuario);
 
     this.subirArchivos(pedido.pagoDTO.id_pedido).subscribe({
-      next: ({ urlSenia, urlsRecursos }) => {
-        pedido.pedidoDTO.seña = urlSenia;
-        pedido.pedidoDTO.recursos_adicionales = urlsRecursos;
-        pedido.documentoDTO = this.construirDocumentos(urlSenia, urlsRecursos);
+      next: ({ urlsSenia, urlsRecursos }) => {
+        pedido.documentoDTO = this.construirDocumentos(urlsSenia, urlsRecursos);
 
         this.pedidosService.agregarPedido(pedido).subscribe({
           next: () => {
@@ -396,33 +411,45 @@ export class Ventas implements OnInit {
     });
   }
 
-  private subirArchivos(idPedido: number): Observable<{ urlSenia: string; urlsRecursos: string[] }> {
-    const pedidoId = String(idPedido);
-    
+  private subirArchivos(idPedido: number): Observable<{ urlsSenia: string[]; urlsRecursos: string[] }> {
 
-    const subidaSenia: Observable<string> = this.archivoSenia
-      ? this.storageService.subirImagen({
-          archivo: this.archivoSenia,
-          nombreArchivo: `senia/senia-${this.archivoSenia.name}`,
-          carpetaGuardado:"senias"
-        })
-      : of('');
+    console.log(`SEÑA: ${this.archivosSenia.length}`);
+    console.log(`Recursos: ${this.archivosRecursosAdicionales.length}`);
 
-    const subidasRecursos: Observable<string>[] = this.archivosRecursosAdicionales.map((archivo, index) =>
+    const subidasSenia= this.archivosSenia.map((archivo, index) =>
       this.storageService.subirImagen({
         archivo,
-        nombreArchivo:  `recurso-${index + 1}-${archivo.name}`,
-        carpetaGuardado: "recursos_adicionales"
-      }),
-    );
+        nombreArchivo:  `senia-${index + 1}-${Date.now()}-${archivo.name}`,
+        carpetaGuardado: "senias"
+      }).pipe(
+        map(({ ruta }) => ruta),
+        catchError((err) => {
+          console.error(`Error subiendo recurso ${index + 1}:`, err);
+          return of(''); 
+        }),
+    ));
 
-    return forkJoin([subidaSenia, ...subidasRecursos]).pipe(
-      map(([urlSenia, ...urlsRecursos]) => ({ urlSenia, urlsRecursos })),
-    );
+    const subidasRecursos= this.archivosRecursosAdicionales.map((archivo, index) =>
+      this.storageService.subirImagen({
+        archivo,
+        nombreArchivo:  `recurso-${index + 1}-${Date.now()}-${archivo.name}`,
+        carpetaGuardado: "recursos_adicionales"
+      }).pipe(
+        map(({ ruta }) => ruta),
+        catchError((err) => {
+          console.error(`Error subiendo recurso ${index + 1}:`, err);
+          return of('');
+        }),
+    ));
+
+    return forkJoin({
+      urlsSenia: forkJoin(subidasSenia),
+      urlsRecursos: forkJoin(subidasRecursos)});
   }
 
-  private construirDocumentos(urlSenia: string, urlsRecursos: string[]): DocumentoDTO[] {
-    const documentos: DocumentoDTO[] = [{ tipo: 'seña', archivo_url: urlSenia }];
+  private construirDocumentos(urlsSenia: string[], urlsRecursos: string[]): DocumentoDTO[] {
+    const documentos: DocumentoDTO[] = [];
+    urlsSenia.forEach((url) => documentos.push({ tipo: 'senia', archivo_url: url }));
     urlsRecursos.forEach((url) => documentos.push({ tipo: 'recurso adicional', archivo_url: url }));
     return documentos;
   }
@@ -505,8 +532,6 @@ export class Ventas implements OnInit {
     this.pedidosService.obtenerPedidos().subscribe({
       next: (ventas) => {
         this.ventas.set(ventas);
-        console.log("Frontend mostrando ventas:")
-        console.log(ventas);
         this.cargando.set(false);
       },
       error: () => {
@@ -579,7 +604,6 @@ export class Ventas implements OnInit {
         id_diseñadora: 0,
         talles: this.detallePedido.talles,
         envio_gratis: this.detallePedido.envio_gratis,
-        seña: '',
         observaciones: this.capitalizarInicial(this.detallePedido.observaciones),
         estado_general: 'Venta realizada',
         fecha_aprobacion_boceto: null,
@@ -590,13 +614,12 @@ export class Ventas implements OnInit {
         porcentaje_descuento_hermanos: Number(this.detallePedido.porcentaje_descuento_hermanos) || 0,
         estado_talles: '',
         estado_boceto: '',
-        recursos_adicionales: [],
       },
       productosPedidoDTO: this.carrito().map((producto, indice) => ({
         id_pedido: idPedido,
         id_producto_original: producto.idProducto,
         descripcion: producto.descripcion,
-        beneficio: indice === 0 ? "Sin Beneficio" : this.textoBeneficios(),
+        beneficio: this.beneficiosSeleccionados().length < 1 ? "Sin Beneficio" : this.textoBeneficios(),
         valor_senia: producto.valorSenia,
         valor_cuota: producto.valorCuota,
         cantidad: producto.cantidad,
@@ -650,7 +673,7 @@ export class Ventas implements OnInit {
     this.beneficiosSeleccionados.set([]);
     this.productoCalculado.set(null);
     this.banderaSeleccionada = false;
-    this.archivoSenia = null;
+    this.archivosSenia = [];
     this.archivosRecursosAdicionales = [];
     if (this.archivoSeniaInputRef) this.archivoSeniaInputRef.nativeElement.value = '';
     if (this.recursosAdicionalesInputRef) this.recursosAdicionalesInputRef.nativeElement.value = '';

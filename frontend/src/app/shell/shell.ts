@@ -45,7 +45,7 @@ export class Shell implements OnInit {
   }
 
   cerrarSesion(): void 
-  { console.log("Cerrando");
+  { 
     this.authService.cerrarSesion();
   }
 }

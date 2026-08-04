@@ -59,17 +59,15 @@ begin
  
   -- Pedido
   insert into pedidos (
-    id_grupo, talles, envio_gratis, senia, observaciones, estado_general,
+    id_grupo, talles, envio_gratis, observaciones, estado_general,
     fecha_aprobacion_boceto, fecha_aprobacion_talles, colores,molderias,
     cantidad_hermanos, porcentaje_descuento_hermanos, id_vendedora,
-    estado_boceto, estado_talles, id_diseñadora,
-    recursos_adicionales
+    estado_boceto, estado_talles, id_diseñadora
   )
   values (
     id_grupo,
     payload->'pedidoDTO'->>'talles',
     (payload->'pedidoDTO'->>'envio_gratis')::boolean,
-    payload->'pedidoDTO'->>'senia',
     payload->'pedidoDTO'->>'observaciones',
     payload->'pedidoDTO'->>'estado_general',
     (payload->'pedidoDTO'->>'fecha_aprobacion_boceto')::date,
@@ -81,8 +79,7 @@ begin
     (payload->'pedidoDTO'->>'id_vendedora')::bigint,
     payload->'pedidoDTO'->>'estado_boceto',
     payload->'pedidoDTO'->>'estado_talles',
-    (payload->'pedidoDTO'->>'id_diseñadora')::bigint,
-    array(select jsonb_array_elements_text(coalesce(payload->'pedidoDTO'->'recursos_adicionales', '[]'::jsonb)))
+    (payload->'pedidoDTO'->>'id_diseñadora')::bigint
   )
   returning id into id_pedido;
  

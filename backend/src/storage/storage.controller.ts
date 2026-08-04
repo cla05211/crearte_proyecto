@@ -18,6 +18,7 @@ export class StorageController
     @UseInterceptors(FileInterceptor('archivo'))
     async agregarProducto(@UploadedFile() archivo: ArchivoSubido, @Body() dto: SubirArchivoStorage)
     {
-        return await this.storageService.guardarImagen(dto, archivo);
+        const ruta = await this.storageService.guardarImagen(dto, archivo);
+        return {ruta};
     }
 }

@@ -12,13 +12,13 @@ export class StorageService
 
   http = inject(HttpClient);
 
-  subirImagen(datos: SubirArchivoStorage): Observable<string>
+  subirImagen(datos: SubirArchivoStorage): Observable<{ruta: string}>
   {
     const formData = new FormData();
     formData.append('nombreArchivo', datos.nombreArchivo);
     formData.append('carpetaGuardado', datos.carpetaGuardado);
     formData.append('archivo', datos.archivo, datos.archivo.name);
 
-    return this.http.post<string>(`${environment.apiUrl}/storage`, formData)
+    return this.http.post<{ruta: string}>(`${environment.apiUrl}/storage`, formData)
   }
 }
