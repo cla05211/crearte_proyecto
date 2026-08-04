@@ -19,5 +19,22 @@ export class BeneficiosService
 
         return data.map(d => d.beneficio);
     }
+
+    async modificarBeneficios(nuevoBeneficio: string, idPedido: number):Promise<string>
+    {
+        const { data, error } = await this.sb.supabase
+        .from("productos_pedidos")
+        .update({ beneficio: nuevoBeneficio })
+        .eq("id_pedido", idPedido)
+        .select()
+        .single();
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }
+
+        return data.beneficio;
+    }
 }
 

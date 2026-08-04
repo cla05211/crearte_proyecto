@@ -17,6 +17,7 @@ import { CuotasService } from 'src/cuotas/cuotas.service';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { BadRequestException } from '@nestjs/common';
 import { PedidoResponseVentas } from './dto/PedidoResponseVentas.dto';
+import { AuditoriasService } from 'src/auditorias/auditorias.service';
 
 @Injectable()
 export class GestionPedidosService 
@@ -25,7 +26,7 @@ export class GestionPedidosService
         private pedidos:PedidosService, private productosPedido: ProductosPedidoService,
         private padres:PadreResponsableService, private alumnos:AlumnoResponsableService,
         private documentos:DocumentosService, private pagos:PagosService, private cuentaCorriente: CuentaCorrienteService,
-        private cuotas: CuotasService, private sb: SupabaseService){}
+        private cuotas: CuotasService, private sb: SupabaseService, private auditoriaService: AuditoriasService){}
 
     async crearPedido(dto:CrearPedidoDTO)
     {
@@ -34,12 +35,12 @@ export class GestionPedidosService
         {
             payload: dto
         }
-            );
+        );
 
-        if (error) {
+        if (error)
+        {
             throw new BadRequestException(error.message);
         }
-
         return data;
     }
 

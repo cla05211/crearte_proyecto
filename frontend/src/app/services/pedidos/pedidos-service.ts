@@ -4,6 +4,7 @@ import { CrearPedidoDTO } from './dto/crearPedidoPost.dto';
 import { environment } from '../../../environments/environment.development';
 import { PedidoResponseVentas } from './dto/PedidoResponseVentas.dto';
 import { Observable } from 'rxjs';
+import { ModificarBeneficioDto } from './dto/modficaciones/modficiarBeneficio.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -25,5 +26,10 @@ export class PedidosService
   obtenerBeneficios(): Observable<string[]>
   {
     return this.http.get<string[]>(`${environment.apiUrl}/beneficios`);
+  }
+
+  modificarBeneficio(dto: ModificarBeneficioDto, idPedido: number): Observable<{nuevoBeneficio: string}>
+  {
+    return this.http.patch<{nuevoBeneficio:string}>((`${environment.apiUrl}/beneficios/${idPedido}`), dto);
   }
 }
