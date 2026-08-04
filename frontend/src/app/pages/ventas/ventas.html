@@ -510,7 +510,13 @@
                   [(ngModel)]="detallePedido.porcentaje_descuento_hermanos" /></label
               ><label class="ds-field resource-upload"
                 ><span class="ds-label">Recursos adicionales</span
-                ><input class="ds-input" type="file" multiple /></label
+                ><input
+                  class="ds-input"
+                  type="file"
+                  multiple
+                  #recursosAdicionalesInput
+                  (change)="seleccionarRecursosAdicionales($event)"
+              /></label
               ><label class="check-field"
                 ><input type="checkbox" [(ngModel)]="detallePedido.envio_gratis" /> Envío
                 gratis</label
@@ -526,9 +532,13 @@
               <h3>Seña y primera cuota</h3>
               <label class="ds-field"
                 ><span class="ds-label">Comprobante de seña</span
-                ><input class="ds-input" type="file" accept="image/*" /><span class="ds-field__help"
-                  >Se usará una URL temporal hasta que esté disponible Storage.</span
-                ></label
+                ><input
+                  class="ds-input"
+                  type="file"
+                  accept="image/*"
+                  #archivoSeniaInput
+                  (change)="seleccionarArchivoSenia($event)"
+              /></label
               ><label class="ds-field"
                 ><span class="ds-label">Fecha de pago de la seña *</span
                 ><input

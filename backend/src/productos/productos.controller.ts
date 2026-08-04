@@ -33,16 +33,16 @@ export class ProductosController
     }  
 
     @Post ('')
-    //@UseGuards(AuthGuard,PermisosGuard)
-    //@RequierePermiso('ver_productos')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_productos')
     async agregarProducto(@Body() dto: ProductoPostDTO)
     {
         return await this.productosService.agregarProductoPrecio(dto);
     }
 
     @Post ('/agregado')
-    //@UseGuards(AuthGuard,PermisosGuard)
-    //@RequierePermiso('ver_productos')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_productos')
     async agregarAgregado(@Body() dto: AgregadoPostDTO)
     {
         return await this.productosService.agregarAgregado(dto);

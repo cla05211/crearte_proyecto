@@ -31,13 +31,17 @@ import { ProductosModule } from './productos/productos.module';
 import { CuotasController } from './cuotas/cuotas.controller';
 import { CuotasModule } from './cuotas/cuotas.module';
 import { BeneficiosModule } from './beneficios/beneficios.module';
+import { StorageService } from './storage/storage.service';
+import { StorageModule } from './storage/storage.module';
 
 
 @Module({
   imports: [ConfigModule.forRoot({
       isGlobal: true,
-    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule,],
+    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule],
   controllers: [AppController, RolesController, PedidosController, CuotasController],
-  providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService, ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, DocumentosService, CuotasService, ProductosService],
+  providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService,
+     ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, 
+     DocumentosService, CuotasService, ProductosService,],
 })
 export class AppModule {}

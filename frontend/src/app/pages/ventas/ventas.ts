@@ -1,7 +1,9 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { forkJoin, Observable, of } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { CrearPedidoDTO } from '../../services/pedidos/dto/crearPedidoPost.dto';
 import { PedidoResponseVentas } from '../../services/pedidos/dto/PedidoResponseVentas.dto';
 import { PedidosService } from '../../services/pedidos/pedidos-service';
@@ -12,6 +14,8 @@ import { Usuario } from '../../../interfaces/usuario';
 import { BuscadorSelect } from '../../shared/buscador-select/buscador-select';
 import { faL } from '@fortawesome/free-solid-svg-icons';
 import { NotificationService } from '../../shared/notifications/notification.service';
+import { DocumentoDTO } from '../../services/pedidos/dto/documento.dto';
+import { StorageService } from '../../services/storage/storage-service';
 
 interface ProductoCarrito {
   idProducto: number;
@@ -39,6 +43,13 @@ export class Ventas implements OnInit {
   private readonly pedidosService = inject(PedidosService);
   private readonly productosService = inject(ProductosService);
   private readonly notificaciones = inject(NotificationService);
+  private readonly storageService = inject(StorageService);
+
+  @ViewChild('archivoSeniaInput') private archivoSeniaInputRef?: ElementRef<HTMLInputElement>;
+  @ViewChild('recursosAdicionalesInput') private recursosAdicionalesInputRef?: ElementRef<HTMLInputElement>;
+
+  archivoSenia: File | null = null;
+  archivosRecursosAdicionales: File[] = [];
 
   //Opciones
   orientaciones = ["Sociales", "Naturales", "Arte", "Economía", "Técnica", "Teatro", "Educación física",
@@ -84,6 +95,9 @@ export class Ventas implements OnInit {
 
   //Para editar
   editando = signal<boolean>(false);
+
+  archivoImagenSenia: File[] | null = null;
+  archivoImagenAdicionales: File[] | null = null;
 
   readonly ventasPorPromo = computed(() =>
     [{
@@ -325,6 +339,16 @@ export class Ventas implements OnInit {
     this.pago.fechaPrimeraCuota = fecha.toISOString().slice(0, 10);
   }
 
+  seleccionarArchivoSenia(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.archivoSenia = input.files?.[0] ?? null;
+  }
+
+  seleccionarRecursosAdicionales(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.archivosRecursosAdicionales = input.files ? Array.from(input.files) : [];
+  }
+
   guardarVenta(): void {
     if (!this.validarHasta(6)) return;
     const usuario = this.obtenerUsuario();
@@ -338,21 +362,69 @@ export class Ventas implements OnInit {
 
     this.guardando.set(true);
     this.error.set('');
-    this.pedidosService.agregarPedido(this.crearPedido(usuario)).subscribe({
-      next: () => {
-        this.guardando.set(false);
-        this.notificaciones.success({
-          title: 'Venta guardada',
-          description: 'La venta se registró correctamente.',
+    const pedido = this.crearPedido(usuario);
+
+    this.subirArchivos(pedido.pagoDTO.id_pedido).subscribe({
+      next: ({ urlSenia, urlsRecursos }) => {
+        pedido.pedidoDTO.seña = urlSenia;
+        pedido.pedidoDTO.recursos_adicionales = urlsRecursos;
+        pedido.documentoDTO = this.construirDocumentos(urlSenia, urlsRecursos);
+
+        this.pedidosService.agregarPedido(pedido).subscribe({
+          next: () => {
+            this.guardando.set(false);
+            this.notificaciones.success({
+              title: 'Venta guardada',
+              description: 'La venta se registró correctamente.',
+            });
+            this.cerrarFormulario();
+            this.obtenerVentas();
+          },
+          error: (err: HttpErrorResponse) => {
+            this.guardando.set(false);
+            this.notificarErrorGuardado(err);
+          },
         });
-        this.cerrarFormulario();
-        this.obtenerVentas();
       },
-      error: (err: HttpErrorResponse) => {
+      error: () => {
         this.guardando.set(false);
-        this.notificarErrorGuardado(err);
+        this.notificaciones.error({
+          title: 'Error al subir archivos',
+          description: 'No se pudieron subir los archivos adjuntos. Intentá nuevamente.',
+        });
       },
     });
+  }
+
+  private subirArchivos(idPedido: number): Observable<{ urlSenia: string; urlsRecursos: string[] }> {
+    const pedidoId = String(idPedido);
+    
+
+    const subidaSenia: Observable<string> = this.archivoSenia
+      ? this.storageService.subirImagen({
+          archivo: this.archivoSenia,
+          nombreArchivo: `senia/senia-${this.archivoSenia.name}`,
+          carpetaGuardado:"senias"
+        })
+      : of('');
+
+    const subidasRecursos: Observable<string>[] = this.archivosRecursosAdicionales.map((archivo, index) =>
+      this.storageService.subirImagen({
+        archivo,
+        nombreArchivo:  `recurso-${index + 1}-${archivo.name}`,
+        carpetaGuardado: "recursos_adicionales"
+      }),
+    );
+
+    return forkJoin([subidaSenia, ...subidasRecursos]).pipe(
+      map(([urlSenia, ...urlsRecursos]) => ({ urlSenia, urlsRecursos })),
+    );
+  }
+
+  private construirDocumentos(urlSenia: string, urlsRecursos: string[]): DocumentoDTO[] {
+    const documentos: DocumentoDTO[] = [{ tipo: 'seña', archivo_url: urlSenia }];
+    urlsRecursos.forEach((url) => documentos.push({ tipo: 'recurso adicional', archivo_url: url }));
+    return documentos;
   }
 
   private notificarErrorGuardado(err: HttpErrorResponse): void {
@@ -493,10 +565,7 @@ export class Ventas implements OnInit {
   }
 
   private crearPedido(usuario: Usuario): CrearPedidoDTO {
-    const documentos = [{ tipo: 'seña', archivo_url: 'pendiente-storage' }];
-    if (this.detallePedido.recursoAdicional) {
-      documentos.push({ tipo: 'recurso adicional', archivo_url: 'pendiente-storage' });
-    }
+    const idPedido = Date.now();
     return {
       colegioDTO: {
         ...this.colegio,
@@ -510,7 +579,7 @@ export class Ventas implements OnInit {
         id_diseñadora: 0,
         talles: this.detallePedido.talles,
         envio_gratis: this.detallePedido.envio_gratis,
-        seña: 'pendiente-storage',
+        seña: '',
         observaciones: this.capitalizarInicial(this.detallePedido.observaciones),
         estado_general: 'Venta realizada',
         fecha_aprobacion_boceto: null,
@@ -521,10 +590,10 @@ export class Ventas implements OnInit {
         porcentaje_descuento_hermanos: Number(this.detallePedido.porcentaje_descuento_hermanos) || 0,
         estado_talles: '',
         estado_boceto: '',
-        recursos_adicionales: this.detallePedido.recursoAdicional ? ['pendiente-storage'] : [],
+        recursos_adicionales: [],
       },
       productosPedidoDTO: this.carrito().map((producto, indice) => ({
-        id_pedido: 0,
+        id_pedido: idPedido,
         id_producto_original: producto.idProducto,
         descripcion: producto.descripcion,
         beneficio: indice === 0 ? "Sin Beneficio" : this.textoBeneficios(),
@@ -544,10 +613,10 @@ export class Ventas implements OnInit {
         apellido: this.capitalizarInicial(alumno.apellido),
         id_grupo: 0,
       })),
-      pagoDTO: { id_pedido: 0, nro_transferencia: '', tipo_pago: 'Seña', monto: this.totalSenia(), motivo: 'Seña', fecha: new Date(`${this.pago.fechaSenia}T00:00:00`) },
+      pagoDTO: { id_pedido: idPedido, nro_transferencia: '', tipo_pago: 'Seña', monto: this.totalSenia(), motivo: 'Seña', fecha: new Date(`${this.pago.fechaSenia}T00:00:00`) },
       movimientoDTO: { id_grupo: 0, importe: this.totalSenia(), fecha: this.pago.fechaSenia },
-      documentoDTO: documentos,
-      primerCuota: { id_pedido: 0, numero: 1, fecha_vencimiento: new Date(`${this.pago.fechaPrimeraCuota}T00:00:00`), importe: this.totalCuotas() },
+      documentoDTO: [],
+      primerCuota: { id_pedido: idPedido, numero: 1, fecha_vencimiento: new Date(`${this.pago.fechaPrimeraCuota}T00:00:00`), importe: this.totalCuotas() },
       nroCuotas: this.carrito()[0]?.cuotas ?? 0,
     };
   }
@@ -581,6 +650,10 @@ export class Ventas implements OnInit {
     this.beneficiosSeleccionados.set([]);
     this.productoCalculado.set(null);
     this.banderaSeleccionada = false;
+    this.archivoSenia = null;
+    this.archivosRecursosAdicionales = [];
+    if (this.archivoSeniaInputRef) this.archivoSeniaInputRef.nativeElement.value = '';
+    if (this.recursosAdicionalesInputRef) this.recursosAdicionalesInputRef.nativeElement.value = '';
   }
 
   private alternarId(ids: number[], id: number): number[] {
@@ -612,7 +685,7 @@ export class Ventas implements OnInit {
   }
 
   private crearDetallePedido() {
-    return { talles: '', colores: '',molderias: '', cantidad_hermanos: 0, porcentaje_descuento_hermanos: 0, envio_gratis: false, recursoAdicional: false, observaciones: '' };
+    return { talles: '', colores: '',molderias: '', cantidad_hermanos: 0, porcentaje_descuento_hermanos: 0, envio_gratis: false, observaciones: '' };
   }
 
   abrirEdicion(producto: any) 
