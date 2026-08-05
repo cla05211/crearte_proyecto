@@ -9,7 +9,7 @@ import { ModificarBeneficioDto } from './dto/modficaciones/modficiarBeneficio.dt
 @Injectable({
   providedIn: 'root',
 })
-export class PedidosService 
+export class GestionPedidosService 
 {
   http = inject(HttpClient);
   
@@ -32,4 +32,5 @@ export class PedidosService
   {
     return this.http.patch<{nuevoBeneficio:string}>((`${environment.apiUrl}/beneficios/${idPedido}`), dto);
   }
+
 }

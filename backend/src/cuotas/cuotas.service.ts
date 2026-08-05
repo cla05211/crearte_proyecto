@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { CuotaDTO } from './dto/cuota.dto';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { BadRequestException } from '@nestjs/common';
+import { CuotaResponseDTO } from './dto/cuotaResponse.dto';
 import { CuotaInicioVentaDTO } from './dto/cuotaInicioVenta.dto';
+import { ModificarImporteCuotaDTO } from './dto/ModificarImporteCuota';
 
 @Injectable()
 export class CuotasService 
@@ -56,5 +58,37 @@ export class CuotasService
         fecha.setDate(Math.min(diaOriginal, ultimoDia));
     
         return fecha
+    }
+
+    async traerCuotasPendientesPorIdPedido(idPedido: number): Promise<CuotaResponseDTO[]>
+    {
+        const { data, error } = await this.sb.supabase
+            .from('cuotas')
+            .select(`*`)
+            .eq('id_pedido', idPedido)
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }        
+
+        return data as CuotaResponseDTO[];
+    }
+
+    async modificarImporteCuotasPendientesPedido(dto: ModificarImporteCuotaDTO)
+    {
+        const { data, error } = await this.sb.supabase
+        .from("cuotas")
+        .update({ importe: dto.importe })
+        .eq("id_pedido", dto.id_pedido)
+        .eq("estado", "Pendiente")
+        .select()
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }
+
+        return data;
     }
 }

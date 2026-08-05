@@ -4,9 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { CrearPedidoDTO } from '../../services/pedidos/dto/crearPedidoPost.dto';
-import { PedidoResponseVentas } from '../../services/pedidos/dto/PedidoResponseVentas.dto';
-import { PedidosService } from '../../services/pedidos/pedidos-service';
+import { CrearPedidoDTO } from '../../services/gestionPedidos/dto/crearPedidoPost.dto';
+import { PedidoResponseVentas } from '../../services/gestionPedidos/dto/PedidoResponseVentas.dto';
+import { GestionPedidosService } from '../../services/gestionPedidos/gestion-pedidos-service';
 import { ProductoConPrecioResponseDTO } from '../../services/productos/dto/ProductoConPrecioResponse';
 import { AgregadoDBDTO } from '../../services/productos/dto/agregadoDB.dto';
 import { ProductosService } from '../../services/productos/productos-service';
@@ -14,7 +14,7 @@ import { Usuario } from '../../../interfaces/usuario';
 import { BuscadorSelect } from '../../shared/buscador-select/buscador-select';
 import { faL } from '@fortawesome/free-solid-svg-icons';
 import { NotificationService } from '../../shared/notifications/notification.service';
-import { DocumentoDTO } from '../../services/pedidos/dto/documento.dto';
+import { DocumentoDTO } from '../../services/gestionPedidos/dto/documento.dto';
 import { StorageService } from '../../services/storage/storage-service';
 
 interface ProductoCarrito {
@@ -40,7 +40,7 @@ interface BeneficioSeleccionado {
   styleUrl: './ventas.css',
 })
 export class Ventas implements OnInit {
-  private readonly pedidosService = inject(PedidosService);
+  private readonly pedidosService = inject(GestionPedidosService);
   private readonly productosService = inject(ProductosService);
   private readonly notificaciones = inject(NotificationService);
   private readonly storageService = inject(StorageService);
@@ -442,9 +442,11 @@ export class Ventas implements OnInit {
         }),
     ));
 
-    return forkJoin({
-      urlsSenia: forkJoin(subidasSenia),
-      urlsRecursos: forkJoin(subidasRecursos)});
+    const urlsSenia$ =subidasSenia.length > 0? forkJoin(subidasSenia): of<string[]>([]);
+
+    const urlsRecursos$ =subidasRecursos.length > 0? forkJoin(subidasRecursos): of<string[]>([]);
+
+    return forkJoin({urlsSenia: urlsSenia$,urlsRecursos: urlsRecursos$});
   }
 
   private construirDocumentos(urlsSenia: string[], urlsRecursos: string[]): DocumentoDTO[] {
