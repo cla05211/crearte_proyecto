@@ -1,9 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CuotaDTO } from './dto/cuota.dto';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { BadRequestException } from '@nestjs/common';
 import { CuotaResponseDTO } from './dto/cuotaResponse.dto';
 import { CuotaInicioVentaDTO } from './dto/cuotaInicioVenta.dto';
+import { ModificarImporteCuotasDTO } from './dto/ModificarImporteCuotas';
+import { crearCuotasDTO } from './dto/crearCuotas.dto';
+import { PagarCuotaDTO } from './dto/PagarCuota.dto';
 import { ModificarImporteCuotaDTO } from './dto/ModificarImporteCuota';
 
 @Injectable()
@@ -11,9 +14,9 @@ export class CuotasService
 {
     constructor(private sb: SupabaseService){}
 
-    async crearCuotas(primerCuota: CuotaInicioVentaDTO, nroCuotas: number)
+    async crearCuotas(dto: crearCuotasDTO)
     {
-        const cuotas = await this.calcularCuotas(primerCuota,nroCuotas)
+        const cuotas = await this.calcularCuotas(dto.primerCuota,dto.nroCuotas)
         
         const {data,error} = await this.sb.supabase
         .from('cuotas')
@@ -66,6 +69,7 @@ export class CuotasService
             .from('cuotas')
             .select(`*`)
             .eq('id_pedido', idPedido)
+            .eq('estado', 'Pendiente')
 
         if (error) 
         {
@@ -75,11 +79,27 @@ export class CuotasService
         return data as CuotaResponseDTO[];
     }
 
-    async modificarImporteCuotasPendientesPedido(dto: ModificarImporteCuotaDTO)
+    async traerCuotasPorIdPedido(idPedido: number): Promise<CuotaResponseDTO[]>
+    {
+        const { data, error } = await this.sb.supabase
+            .from('cuotas')
+            .select(`*`)
+            .eq('id_pedido', idPedido)
+            .order('fecha_vencimiento', { ascending: true });
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }        
+
+        return data as CuotaResponseDTO[];
+    }
+
+    async modificarImporteCuotasPendientesPedido(dto: ModificarImporteCuotasDTO)
     {
         const { data, error } = await this.sb.supabase
         .from("cuotas")
-        .update({ importe: dto.importe })
+        .update({ 'importe': dto.importe })
         .eq("id_pedido", dto.id_pedido)
         .eq("estado", "Pendiente")
         .select()
@@ -90,5 +110,53 @@ export class CuotasService
         }
 
         return data;
+    }
+
+    async modificarImporteUnaCuotaPedido(dto: ModificarImporteCuotaDTO)
+    {
+        const { data, error } = await this.sb.supabase
+        .from("cuotas")
+        .update({ 'importe': dto.importe})
+        .eq("id_pedido", dto.id_pedido)
+        .eq("numero", dto.numero)
+        .select()
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }
+
+        return data;
+    }
+
+    async pagarCuota(dto: PagarCuotaDTO)
+    {
+        const { data, error } = await this.sb.supabase
+        .from("cuotas")
+        .update({ 'importe': "Pagado" })
+        .eq("id_pedido", dto.id_pedido)
+        .eq("numero", dto.numero)
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }
+
+        return data;
+    }
+
+    async eliminarCuotasPedido(idPedido: number)
+    {
+        const { data, error } = await this.sb.supabase
+        .from('cuotas')
+        .delete()
+        .eq('id_pedido', idPedido)
+
+        if (error) 
+        {
+            throw new InternalServerErrorException(`No se pudieron eliminar las cuotas. ${error.message}`);
+        }
+
+        return data;          
     }
 }

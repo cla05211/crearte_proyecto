@@ -16,6 +16,14 @@ import { faL } from '@fortawesome/free-solid-svg-icons';
 import { NotificationService } from '../../shared/notifications/notification.service';
 import { DocumentoDTO } from '../../services/gestionPedidos/dto/documento.dto';
 import { StorageService } from '../../services/storage/storage-service';
+import { ModificarBeneficioDto } from '../../services/gestionPedidos/dto/modficaciones/modficiarBeneficio.dto';
+import { ProductosPedidoService } from '../../services/productosPedidos/productos-pedido-service';
+import { ProductoPedidoDTO } from '../../services/gestionPedidos/dto/ProductoPedido.dto';
+import { CuotasService } from '../../services/cuotas/cuotas-service';
+import { CuotaResponseDTO } from '../../services/cuotas/dto/CuotaResponseDTO';
+import { CrearCuotasDTO } from '../../services/cuotas/dto/crearCuotas.dto';
+import { PagosService } from '../../services/pagos/pagos-service';
+import { PagoResponseDTO } from '../../services/pagos/dto/pagoResponse.dto';
 
 interface ProductoCarrito {
   idProducto: number;
@@ -40,10 +48,13 @@ interface BeneficioSeleccionado {
   styleUrl: './ventas.css',
 })
 export class Ventas implements OnInit {
-  private readonly pedidosService = inject(GestionPedidosService);
+  private readonly gestionPedidosService = inject(GestionPedidosService);
   private readonly productosService = inject(ProductosService);
   private readonly notificaciones = inject(NotificationService);
   private readonly storageService = inject(StorageService);
+  private readonly cuotasService = inject(CuotasService);
+  private readonly productosPedidosService = inject(ProductosPedidoService);
+  private readonly pagosService = inject(PagosService);
 
   @ViewChild('archivoSeniaInput') private archivoSeniaInputRef?: ElementRef<HTMLInputElement>;
   @ViewChild('recursosAdicionalesInput') private recursosAdicionalesInputRef?: ElementRef<HTMLInputElement>;
@@ -92,6 +103,7 @@ export class Ventas implements OnInit {
   beneficioEnEdicion = this.crearBeneficioEnEdicion();
   detallePedido = this.crearDetallePedido();
   pago = { fechaSenia: '', fechaPrimeraCuota: '' };
+  cuotasPedido: CuotaResponseDTO[] = [];
 
   //Para editar
   editando = signal<boolean>(false);
@@ -385,7 +397,7 @@ export class Ventas implements OnInit {
       next: ({ urlsSenia, urlsRecursos }) => {
         pedido.documentoDTO = this.construirDocumentos(urlsSenia, urlsRecursos);
 
-        this.pedidosService.agregarPedido(pedido).subscribe({
+        this.gestionPedidosService.agregarPedido(pedido).subscribe({
           next: () => {
             this.guardando.set(false);
             this.notificaciones.success({
@@ -531,7 +543,7 @@ export class Ventas implements OnInit {
 
   private obtenerVentas(): void {
     this.cargando.set(true);
-    this.pedidosService.obtenerPedidos().subscribe({
+    this.gestionPedidosService.obtenerPedidos().subscribe({
       next: (ventas) => {
         this.ventas.set(ventas);
         this.cargando.set(false);
@@ -558,7 +570,7 @@ export class Ventas implements OnInit {
   }
 
     private obtenerBeneficios(): void {
-    this.pedidosService.obtenerBeneficios().subscribe({
+    this.gestionPedidosService.obtenerBeneficios().subscribe({
       next: (beneficios) => { this.beneficiosDisponibles.set([...beneficios,"Sin beneficio"]);},
       error: () => this.error.set('No se pudieron cargar los beneficios.'),})
   }
@@ -740,4 +752,104 @@ export class Ventas implements OnInit {
   {
     this.editando.set(false);
   }
+
+  //EDICIONES
+  //BENEFICIO
+
+  editarBeneficio(nuevoBeneficio: string, idPedido:number)
+  {
+    const dto: ModificarBeneficioDto = {beneficio: nuevoBeneficio};
+
+    this.gestionPedidosService.modificarBeneficio(dto, idPedido);
+  }
+
+  modificarProductosCuotas(idPedido: number, nuevosProductos?: ProductoPedidoDTO[], nuevaCantidadCuotas?: number, totalAntiguo: number, totalNuevo:number,valorCuota:number, valorSenia:number)
+  {
+    const diferenciaPrecios = totalAntiguo - totalNuevo;
+    //Si cambio algo de productos eliminamos los viejos productos e insertamos los nuevos:
+    if(nuevosProductos)
+    {
+      this.modificarProductosPedido(idPedido, nuevosProductos)
+    }
+
+    //Si cambio el plan de cuotas (aca agregar un if de comprobacion):
+    if(nuevaCantidadCuotas)
+    {
+      this.crearNuevasCuotas(idPedido, nuevaCantidadCuotas, totalNuevo, valorCuota, valorSenia);
+    }
+    //Si no cambio solo modificamos el importe de las cuotas restantes:
+    this.modificarImporteCuotasSiguientes(idPedido, totalAntiguo, totalNuevo);
+  }
+
+  modificarImporteCuotasSiguientes(idPedido: number, totalAntiguo: number, totalNuevo: number)
+  {
+      const diferenciaAPagar = totalNuevo - totalAntiguo;
+    let cuotasPagadas: CuotaResponseDTO[] = [];
+    this.cuotasService.traerCuotasPendientesIdPedido(idPedido).subscribe({
+    next: (data) => {cuotasPagadas = data}})
+    const diferenciaAPagarCuotas = diferenciaAPagar / (this.cuotasPedido.length - cuotasPagadas.length);
+    this.cuotasService.modificarImporteCuotasPendientesPedido({id_pedido: idPedido, importe: diferenciaAPagarCuotas});
+  }
+
+  crearNuevasCuotas(idPedido: number, nuevaCantidadCuotas: number, totalNuevo: number, valorCuota:number, valorSenia:number)
+  {
+    //Traemos las cuotas para conseguir las fechas de vencimiento
+    this.cuotasService.traerCuotasIdPedido(idPedido).subscribe({
+    next: (data) => {this.cuotasPedido = data}})
+    
+    //Eliminamos las viejas
+    this.cuotasService.eliminarCuotasPedido(idPedido);
+
+    //Creamos las nuevas El importe de cada cuota ya lo tiene directamente el combo comprado.
+    let crearCuotasDTO: CrearCuotasDTO = {nroCuotas: nuevaCantidadCuotas, primerCuota: {id_pedido: idPedido, numero: 1, fecha_vencimiento: this.cuotasPedido[0].fecha_vencimiento, importe:}}
+    this.cuotasService.agregarCuotas(crearCuotasDTO).subscribe();
+
+    this.pagarCuotas(idPedido, nuevaCantidadCuotas, valorCuota, valorSenia);
+  }
+
+  pagarCuotas(idPedido:number, nuevaCantidadCuotas:number, valorCuota:number, valorSenia:number)
+  {
+    const pagoTotal = this.calcularMontoPagos(idPedido);
+    let pagoDisponible = pagoTotal - valorSenia;
+
+    for (let index = 0; index < nuevaCantidadCuotas; index++) 
+    {
+      const restante = pagoDisponible - valorCuota
+      if(restante > 0)
+      {
+        this.cuotasService.pagarCuotasPedido({id_pedido: idPedido, numero: index +1})
+      }
+      else
+      {
+        const valorConMontoAFavor = valorCuota - restante;
+        this.cuotasService.modificarImporteUnaCuotasPedido({id_pedido: idPedido, numero: index +1, importe: valorConMontoAFavor});
+      }
+    }
+  }
+
+  calcularMontoPagos(idPedido:number): number
+  {
+    let pagos: PagoResponseDTO[] = [];
+    //Traemos todos los pagos y sumamos los importes. 
+    this.pagosService.traerPagosIdPedido(idPedido).subscribe({
+    next: (data) => {pagos = data}})
+
+    let pagoTotal = 0;
+
+    for (const pago of pagos) 
+    {
+      pagoTotal += pago.monto;
+    }
+
+    return pagoTotal
+  }
+
+  modificarProductosPedido(idPedido: number, nuevosProductos: ProductoPedidoDTO[])
+  {
+    //Primero eliminamos todos
+    this.productosPedidosService.eliminarTodosProductoPedido(idPedido).subscribe();
+    //Creamos los nuevos con esta funcion, puse los productos como parametro pero puede armarse donde quieras:
+    this.productosPedidosService.crearProductosPedido(nuevosProductos).subscribe();
+  }
+
 }

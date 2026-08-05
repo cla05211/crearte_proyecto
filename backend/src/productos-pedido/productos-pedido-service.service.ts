@@ -45,6 +45,21 @@ export class ProductosPedidoService
         return data;       
     }
 
+    async eliminarTodosProductosPedido(idPedido: number)
+    {
+        const { data, error } = await this.sb.supabase
+        .from('productos_pedidos')
+        .delete()
+        .eq('id_pedido', idPedido)
+
+        if (error) 
+        {
+            throw new InternalServerErrorException(`No se pudo eliminar el producto del pedido. ${error.message}`);
+        }
+
+        return data;      
+    }
+
     async modificarDescripcionProductoPedido(dto: ModificarDescripcionProductoPedido)
     {
         const { data, error } = await this.sb.supabase

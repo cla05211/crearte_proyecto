@@ -36,12 +36,13 @@ import { StorageModule } from './storage/storage.module';
 import { AuditoriasModule } from './auditorias/auditorias.module';
 import { AuditoriasService } from './auditorias/auditorias.service';
 import { ProductosPedidoModule } from './productos-pedido/productos-pedido.module';
+import { PagosModule } from './pagos/pagos.module';
 
 
 @Module({
   imports: [ConfigModule.forRoot({
       isGlobal: true,
-    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule],
+    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule],
   controllers: [AppController, RolesController, PedidosController, CuotasController],
   providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService,
      ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, 

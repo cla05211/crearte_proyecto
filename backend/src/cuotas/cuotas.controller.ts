@@ -3,6 +3,10 @@ import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
 import { CuotasService } from './cuotas.service';
+import { ModificarImporteCuotasDTO } from './dto/ModificarImporteCuotas';
+import { CuotaDTO } from './dto/cuota.dto';
+import { crearCuotasDTO } from './dto/crearCuotas.dto';
+import { PagarCuotaDTO } from './dto/PagarCuota.dto';
 import { ModificarImporteCuotaDTO } from './dto/ModificarImporteCuota';
 
 @Controller('cuotas')
@@ -10,19 +14,61 @@ export class CuotasController
 {
     constructor(private cuotasService: CuotasService){}
 
+    @Post()
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('modificar_pedidos')
+    async crearProductosPedido(@Body() dto: crearCuotasDTO)
+    {
+        return await this.cuotasService.crearCuotas(dto);
+    }
+
+    @Get ('pendientes/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('modficar_pedidos')
+    async obtenerCuotasPendientesIdPedido(@Param ('id', ParseIntPipe) id:number)
+    {
+        return await this.cuotasService.traerCuotasPendientesPorIdPedido(id);
+    }
+
     @Get (':id')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('modficar_pedidos')
     async obtenerCuotasIdPedido(@Param ('id', ParseIntPipe) id:number)
     {
-        return await this.cuotasService.traerCuotasPendientesPorIdPedido(id);
+        return await this.cuotasService.traerCuotasPorIdPedido(id);
     }
 
-    @Patch('importe')
+    @Patch('importe-cuotas')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('modificar_pedidos')
-    modificarImporteCuotasPedido(@Body() dto: ModificarImporteCuotaDTO)
+    modificarImporteCuotasPedido(@Body() dto: ModificarImporteCuotasDTO)
     {
         return this.cuotasService.modificarImporteCuotasPendientesPedido(dto);
     }   
+
+    
+    @Patch('importe-cuota')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('modificar_pedidos')
+    modificarImporteUnaCuotaPedido(@Body() dto: ModificarImporteCuotaDTO)
+    {
+        return this.cuotasService.modificarImporteUnaCuotaPedido(dto);
+    }   
+
+    @Patch('pagar')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('modificar_pedidos')
+    pagarCuotasPedido(@Body() dto: PagarCuotaDTO)
+    {
+        return this.cuotasService.pagarCuota(dto);
+    }   
+
+    @Delete('/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('modificar_pedidos')
+    async eliminarCuotasPedido(@Param('id', ParseIntPipe)idPedido: number)
+    {
+        return await this.cuotasService.eliminarCuotasPedido(idPedido);
+    }
 }
+

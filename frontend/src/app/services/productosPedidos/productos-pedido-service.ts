@@ -4,6 +4,7 @@ import { EliminarProductoPedidoDTO } from './dto/EliminarProductoPedido.dto';
 import { environment } from '../../../environments/environment.development';
 import { ModificarDescripcionProductoPedido } from './dto/ModificarDescripcionProductoPedido.dto copy';
 import { ModificarCantidadProductoPedido } from './dto/ModificarCantidadProductoPedido.dto';
+import { ProductoPedidoDTO } from '../gestionPedidos/dto/ProductoPedido.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -12,9 +13,14 @@ export class ProductosPedidoService
 {
   http = inject(HttpClient);  
 
-  eliminarProductoPedido(dto: EliminarProductoPedidoDTO)
+  crearProductosPedido(dto: ProductoPedidoDTO[])
   {
-    return this.http.delete((`${environment.apiUrl}/productos-pedido`), {body:dto});
+    return this.http.post((`${environment.apiUrl}/productos-pedido`), dto);
+  }
+
+  eliminarTodosProductoPedido(idPedido: number)
+  {
+    return this.http.delete(`${environment.apiUrl}/productos-pedido/${idPedido}`);
   }
 
   modficarDescripcionProductoPedido(dto: ModificarDescripcionProductoPedido)
