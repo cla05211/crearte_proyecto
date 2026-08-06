@@ -753,103 +753,16 @@ export class Ventas implements OnInit {
     this.editando.set(false);
   }
 
-  //EDICIONES
-  //BENEFICIO
+  //MODIFICACIONES
 
-  editarBeneficio(nuevoBeneficio: string, idPedido:number)
+  modificarBeneficio()
   {
-    const dto: ModificarBeneficioDto = {beneficio: nuevoBeneficio};
-
-    this.gestionPedidosService.modificarBeneficio(dto, idPedido);
+    // suscribe a this.gestionPedidosService.modificarBeneficio(dto, idPedido);
   }
 
-  modificarProductosCuotas(idPedido: number, nuevosProductos?: ProductoPedidoDTO[], nuevaCantidadCuotas?: number, totalAntiguo: number, totalNuevo:number,valorCuota:number, valorSenia:number)
+  modificarProductosCuotas()
   {
-    const diferenciaPrecios = totalAntiguo - totalNuevo;
-    //Si cambio algo de productos eliminamos los viejos productos e insertamos los nuevos:
-    if(nuevosProductos)
-    {
-      this.modificarProductosPedido(idPedido, nuevosProductos)
-    }
-
-    //Si cambio el plan de cuotas (aca agregar un if de comprobacion):
-    if(nuevaCantidadCuotas)
-    {
-      this.crearNuevasCuotas(idPedido, nuevaCantidadCuotas, totalNuevo, valorCuota, valorSenia);
-    }
-    //Si no cambio solo modificamos el importe de las cuotas restantes:
-    this.modificarImporteCuotasSiguientes(idPedido, totalAntiguo, totalNuevo);
-  }
-
-  modificarImporteCuotasSiguientes(idPedido: number, totalAntiguo: number, totalNuevo: number)
-  {
-      const diferenciaAPagar = totalNuevo - totalAntiguo;
-    let cuotasPagadas: CuotaResponseDTO[] = [];
-    this.cuotasService.traerCuotasPendientesIdPedido(idPedido).subscribe({
-    next: (data) => {cuotasPagadas = data}})
-    const diferenciaAPagarCuotas = diferenciaAPagar / (this.cuotasPedido.length - cuotasPagadas.length);
-    this.cuotasService.modificarImporteCuotasPendientesPedido({id_pedido: idPedido, importe: diferenciaAPagarCuotas});
-  }
-
-  crearNuevasCuotas(idPedido: number, nuevaCantidadCuotas: number, totalNuevo: number, valorCuota:number, valorSenia:number)
-  {
-    //Traemos las cuotas para conseguir las fechas de vencimiento
-    this.cuotasService.traerCuotasIdPedido(idPedido).subscribe({
-    next: (data) => {this.cuotasPedido = data}})
-    
-    //Eliminamos las viejas
-    this.cuotasService.eliminarCuotasPedido(idPedido);
-
-    //Creamos las nuevas El importe de cada cuota ya lo tiene directamente el combo comprado.
-    let crearCuotasDTO: CrearCuotasDTO = {nroCuotas: nuevaCantidadCuotas, primerCuota: {id_pedido: idPedido, numero: 1, fecha_vencimiento: this.cuotasPedido[0].fecha_vencimiento, importe:}}
-    this.cuotasService.agregarCuotas(crearCuotasDTO).subscribe();
-
-    this.pagarCuotas(idPedido, nuevaCantidadCuotas, valorCuota, valorSenia);
-  }
-
-  pagarCuotas(idPedido:number, nuevaCantidadCuotas:number, valorCuota:number, valorSenia:number)
-  {
-    const pagoTotal = this.calcularMontoPagos(idPedido);
-    let pagoDisponible = pagoTotal - valorSenia;
-
-    for (let index = 0; index < nuevaCantidadCuotas; index++) 
-    {
-      const restante = pagoDisponible - valorCuota
-      if(restante > 0)
-      {
-        this.cuotasService.pagarCuotasPedido({id_pedido: idPedido, numero: index +1})
-      }
-      else
-      {
-        const valorConMontoAFavor = valorCuota - restante;
-        this.cuotasService.modificarImporteUnaCuotasPedido({id_pedido: idPedido, numero: index +1, importe: valorConMontoAFavor});
-      }
-    }
-  }
-
-  calcularMontoPagos(idPedido:number): number
-  {
-    let pagos: PagoResponseDTO[] = [];
-    //Traemos todos los pagos y sumamos los importes. 
-    this.pagosService.traerPagosIdPedido(idPedido).subscribe({
-    next: (data) => {pagos = data}})
-
-    let pagoTotal = 0;
-
-    for (const pago of pagos) 
-    {
-      pagoTotal += pago.monto;
-    }
-
-    return pagoTotal
-  }
-
-  modificarProductosPedido(idPedido: number, nuevosProductos: ProductoPedidoDTO[])
-  {
-    //Primero eliminamos todos
-    this.productosPedidosService.eliminarTodosProductoPedido(idPedido).subscribe();
-    //Creamos los nuevos con esta funcion, puse los productos como parametro pero puede armarse donde quieras:
-    this.productosPedidosService.crearProductosPedido(nuevosProductos).subscribe();
+    // suscribe a this.gestionPedidosService.modificarProductosCuotas()
   }
 
 }

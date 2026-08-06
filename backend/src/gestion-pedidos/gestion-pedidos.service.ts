@@ -18,6 +18,7 @@ import { SupabaseService } from 'src/supabase/supabase.service';
 import { BadRequestException } from '@nestjs/common';
 import { PedidoResponseVentas } from './dto/PedidoResponseVentas.dto';
 import { AuditoriasService } from 'src/auditorias/auditorias.service';
+import { ModificarPlanPedidoDTO } from './dto/ModificarPlanPedido';
 
 @Injectable()
 export class GestionPedidosService 
@@ -78,6 +79,20 @@ export class GestionPedidosService
 
         return pedidosVentas;
     }
+
+    async modificarPlanPedido(dto: ModificarPlanPedidoDTO)
+{
+    const { data, error } = await this.sb.supabase.rpc(
+        'modificar_plan_pedido',
+        { payload: dto }
+    );
+
+    if (error)
+    {
+        throw new BadRequestException(error.message);
+    }
+    return data;
+}
 
 
 }

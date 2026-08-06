@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment.development';
 import { PedidoResponseVentas } from './dto/PedidoResponseVentas.dto';
 import { Observable } from 'rxjs';
 import { ModificarBeneficioDto } from './dto/modficaciones/modficiarBeneficio.dto';
+import { ModificarPlanPedidoDTO } from './dto/modficaciones/ModificarPlanPedido';
 
 @Injectable({
   providedIn: 'root',
@@ -31,6 +32,11 @@ export class GestionPedidosService
   modificarBeneficio(dto: ModificarBeneficioDto, idPedido: number): Observable<{nuevoBeneficio: string}>
   {
     return this.http.patch<{nuevoBeneficio:string}>((`${environment.apiUrl}/beneficios/${idPedido}`), dto);
+  }
+
+  modificarProductosCuotas(dto: ModificarPlanPedidoDTO)
+  {
+      return this.http.patch(`${environment.apiUrl}/gestion-pedidos/modificar-plan`, dto);
   }
 
 }
