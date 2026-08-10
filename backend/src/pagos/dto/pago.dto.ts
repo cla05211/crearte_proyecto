@@ -6,4 +6,6 @@ export class PagoDTO
     monto!: number;
     motivo!: string;
     fecha!: Date;
+    aprobado!: boolean;
+    banco!: string;
 }

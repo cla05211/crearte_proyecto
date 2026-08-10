@@ -128,14 +128,16 @@ begin
  
   -- Pago
   -- NOTA: PagoDTO no incluye 'fecha' actualmente; si no se manda, queda null.
-  insert into pagos (id_pedido, nro_transferencia, tipo_pago, monto, motivo, fecha)
+  insert into pagos (id_pedido, nro_transferencia, tipo_pago, monto, motivo, fecha, aprobado, banco)
   values (
     id_pedido,
     payload->'pagoDTO'->>'nro_transferencia',
     payload->'pagoDTO'->>'tipo_pago',
     (payload->'pagoDTO'->>'monto')::double precision,
     payload->'pagoDTO'->>'motivo',
-    (payload->'pagoDTO'->>'fecha')::date
+    (payload->'pagoDTO'->>'fecha')::date,
+    payload->'pagoDTO'->>'aprobado',
+    payload->'pagoDTO'->>'banco',
   )
   returning id into id_pago;
  

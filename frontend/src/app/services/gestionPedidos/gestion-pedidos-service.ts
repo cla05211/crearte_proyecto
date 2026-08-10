@@ -29,14 +29,14 @@ export class GestionPedidosService
     return this.http.get<string[]>(`${environment.apiUrl}/beneficios`);
   }
 
-  modificarBeneficio(dto: ModificarBeneficioDto, idPedido: number): Observable<{nuevoBeneficio: string}>
+  modificarBeneficio(dto: ModificarBeneficioDto, idPedido: number): Observable<{'nuevoBeneficio':string}>
   {
-    return this.http.patch<{nuevoBeneficio:string}>((`${environment.apiUrl}/beneficios/${idPedido}`), dto);
+    return this.http.patch<{'nuevoBeneficio': string}>((`${environment.apiUrl}/beneficios/${idPedido}`), dto);
   }
 
   modificarProductosCuotas(dto: ModificarPlanPedidoDTO)
   {
-      return this.http.patch(`${environment.apiUrl}/gestion-pedidos/modificar-plan`, dto);
+      return this.http.patch(`${environment.apiUrl}/gestion-pedidos/modificar-pedidos`, dto);
   }
 
 }

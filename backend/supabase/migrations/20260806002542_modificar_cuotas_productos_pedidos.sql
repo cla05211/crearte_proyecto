@@ -1,4 +1,4 @@
--- Función atómica para modificar los productos y/o el plan de cuotas de un
+-- VESION 2: Función atómica para modificar los productos y/o el plan de cuotas de un
 -- pedido ya creado. Borra productos_pedidos y cuotas existentes, e inserta
 -- todo de cero (misma filosofía en toda la operación, sin parchear valores
 -- sueltos). Si algo falla en el medio (ej: sobrepago), Postgres hace
@@ -41,10 +41,13 @@ declare
   v_fecha_calculada     date;
  
   v_total_pagado        double precision;
-  v_restante            double precision;
+  v_total_plan_nuevo    double precision;
+  v_saldo_pendiente     double precision;
+  v_cuotas_pagadas      int;
+  v_pendientes_count    int;
+  v_importe_pendiente   double precision;
   v_importe_cuota       double precision;
   v_estado_cuota        text;
-  v_cuotas_pagadas      int := 0;
  
   i                      int;
   v_numero               int;
@@ -104,10 +107,35 @@ begin
   from pagos
   where id_pedido = v_id_pedido;
  
-  -- Lo que "sobra" después de cubrir la seña del plan nuevo. Puede dar
-  -- negativo (todavía no se cubrió ni la seña nueva) -- ese déficit se
-  -- absorbe en la primera cuota más abajo, sin necesidad de un caso aparte.
-  v_restante := v_total_pagado - v_valor_senia_nuevo;
+  v_total_plan_nuevo := v_valor_senia_nuevo + (v_nueva_cant_cuotas * v_valor_cuota_nuevo);
+  v_saldo_pendiente  := v_total_plan_nuevo - v_total_pagado;
+ 
+  -- Si lo que ya pagaron supera el total del plan nuevo, no lo resolvemos
+  -- solos (¿se acredita en cuenta corriente? ¿se devuelve?) -- frenamos y
+  -- que se decida a mano. Esto hace rollback de todo lo insertado arriba.
+  if v_saldo_pendiente < 0 then
+    raise exception 'El pago ya realizado ($%) supera el total del nuevo plan ($%). Hay un saldo a favor de $% que debe resolverse manualmente.', v_total_pagado, v_total_plan_nuevo, abs(v_saldo_pendiente);
+  end if;
+ 
+  -- Cuántas cuotas quedan totalmente cubiertas con la plata que ya entró
+  -- (descontando la seña del plan nuevo). Esto solo determina CUÁNTAS se
+  -- marcan 'Pagada' -- no cuánto se cobra en cada una de las pendientes.
+  v_cuotas_pagadas := least(
+    floor(greatest(v_total_pagado - v_valor_senia_nuevo, 0) / v_valor_cuota_nuevo)::int,
+    v_nueva_cant_cuotas
+  );
+ 
+  v_pendientes_count := v_nueva_cant_cuotas - v_cuotas_pagadas;
+ 
+  -- El saldo pendiente se reparte EN PARTES IGUALES entre todas las
+  -- cuotas pendientes -- así, si el total sube porque se agregó un
+  -- producto, el faltante se diluye entre todas y no se concentra en
+  -- una sola cuota "bisagra".
+  if v_pendientes_count > 0 then
+    v_importe_pendiente := v_saldo_pendiente / v_pendientes_count;
+  else
+    v_importe_pendiente := 0;
+  end if;
  
   v_dia_original := extract(day from v_fecha_primera);
  
@@ -122,32 +150,17 @@ begin
       v_fecha_calculada := v_fecha_mes_base + (least(v_dia_original, v_ultimo_dia_mes) - 1);
     end if;
  
-    if v_restante >= v_valor_cuota_nuevo then
-      -- Alcanza para cubrir esta cuota completa.
-      v_estado_cuota    := 'Pagada';
-      v_importe_cuota   := v_valor_cuota_nuevo;
-      v_restante        := v_restante - v_valor_cuota_nuevo;
-      v_cuotas_pagadas  := v_cuotas_pagadas + 1;
+    if v_numero <= v_cuotas_pagadas then
+      v_estado_cuota  := 'Pagada';
+      v_importe_cuota := v_valor_cuota_nuevo;
     else
-      -- No alcanza (puede ser 0, positivo parcial, o negativo si venía
-      -- arrastrando déficit de la seña): se cobra lo que falte.
       v_estado_cuota  := 'Pendiente';
-      v_importe_cuota := v_valor_cuota_nuevo - v_restante;
-      v_restante      := 0;
+      v_importe_cuota := v_importe_pendiente;
     end if;
  
     insert into cuotas (id_pedido, numero, fecha_vencimiento, importe, estado)
     values (v_id_pedido, v_numero, v_fecha_calculada, v_importe_cuota, v_estado_cuota);
   end loop;
- 
-  -- Si después de repartir todo entre las cuotas nuevas todavía sobra
-  -- plata, es que el pago ya hecho supera el total del plan nuevo.
-  -- No lo resolvemos solos (¿se acredita en cuenta corriente? ¿se
-  -- devuelve?) -- frenamos y que se decida a mano. Esto también
-  -- hace rollback de todo lo insertado arriba.
-  if v_restante > 0 then
-    raise exception 'El pago ya realizado ($%) supera el total del nuevo plan. Queda un saldo a favor de $% sin poder asignarse a ninguna cuota.', v_total_pagado, v_restante;
-  end if;
  
   return jsonb_build_object(
     'id_pedido', v_id_pedido,
@@ -155,5 +168,7 @@ begin
     'cuotas_pendientes', v_nueva_cant_cuotas - v_cuotas_pagadas,
     'total_pagado', v_total_pagado
   );
+   -- Version 2
 end;
 $$;
+ 

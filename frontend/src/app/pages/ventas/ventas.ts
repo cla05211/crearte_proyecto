@@ -19,6 +19,7 @@ import { StorageService } from '../../services/storage/storage-service';
 import { ModificarBeneficioDto } from '../../services/gestionPedidos/dto/modficaciones/modficiarBeneficio.dto';
 import { ProductosPedidoService } from '../../services/productosPedidos/productos-pedido-service';
 import { ProductoPedidoDTO } from '../../services/gestionPedidos/dto/ProductoPedido.dto';
+import { ModificarPlanPedidoDTO } from '../../services/gestionPedidos/dto/modficaciones/ModificarPlanPedido';
 import { CuotasService } from '../../services/cuotas/cuotas-service';
 import { CuotaResponseDTO } from '../../services/cuotas/dto/CuotaResponseDTO';
 import { CrearCuotasDTO } from '../../services/cuotas/dto/crearCuotas.dto';
@@ -88,11 +89,12 @@ export class Ventas implements OnInit {
   readonly beneficiosSeleccionados = signal<BeneficioSeleccionado[]>([]);
   readonly productoCalculado = signal<ProductoCarrito | null>(null);
   readonly ventasExpandidas = signal<number[]>([]);
-  readonly pedidosExpandidos = signal<number[]>([]);
+  readonly detalleProductosVenta = signal<PedidoResponseVentas | null>(null);
   cuotasDisponibles = signal<number[]>([]);
 
   readonly anioActual = new Date().getFullYear();
   readonly promoSeleccionada = signal(this.anioActual);
+  readonly busqueda = signal('');
   banderaSeleccionada = false;
 
   colegio = this.crearColegio();
@@ -102,18 +104,44 @@ export class Ventas implements OnInit {
   productoEnEdicion = this.crearProductoEnEdicion();
   beneficioEnEdicion = this.crearBeneficioEnEdicion();
   detallePedido = this.crearDetallePedido();
-  pago = { fechaSenia: '', fechaPrimeraCuota: '' };
+  pago = this.crearPago();
   cuotasPedido: CuotaResponseDTO[] = [];
 
   //Para editar
   editando = signal<boolean>(false);
 
-  readonly ventasPorPromo = computed(() =>
-    [{
+  //Edición de beneficio
+  readonly edicionBeneficio = signal<PedidoResponseVentas | null>(null);
+  readonly beneficiosSeleccionadosEdicion = signal<BeneficioSeleccionado[]>([]);
+  readonly guardandoBeneficio = signal(false);
+  beneficioEnEdicionForm = this.crearBeneficioEnEdicion();
+
+  //Edición de plan (productos y cuotas)
+  readonly edicionPlan = signal<PedidoResponseVentas | null>(null);
+  readonly carritoEdicionPlan = signal<ProductoCarrito[]>([]);
+  readonly cuotasPlanSeleccionadas = signal<number>(0);
+  readonly productoCalculadoPlan = signal<ProductoCarrito | null>(null);
+  readonly guardandoPlan = signal(false);
+  readonly indiceEdicionProductoPlan = signal<number | null>(null);
+  productoEnEdicionPlan = this.crearProductoEnEdicionPlan();
+  banderaSeleccionadaPlan = false;
+
+  readonly ventasPorPromo = computed(() => {
+    const palabras = this.normalizarTexto(this.busqueda())
+      .split(/\s+/)
+      .filter(Boolean);
+
+    return [{
       promo: this.promoSeleccionada(),
-      ventas: this.ventas().filter((venta) => venta.grupoDTO.promo === this.promoSeleccionada()),
-    }],
-  );
+      ventas: this.ventas().filter((venta) => {
+        if (venta.grupoDTO.promo !== this.promoSeleccionada()) return false;
+        if (!palabras.length) return true;
+
+        const texto = this.normalizarTexto(`${venta.colegioDTO.nombre} ${venta.colegioDTO.localidad}`);
+        return palabras.every((palabra) => texto.includes(palabra));
+      }),
+    }];
+  });
 
   readonly productosParaElegir = computed(() => {
     const vistos = new Set<number>();
@@ -197,12 +225,12 @@ export class Ventas implements OnInit {
     return this.ventasExpandidas().includes(idGrupo);
   }
 
-  togglePedido(idGrupo: number): void {
-    this.pedidosExpandidos.update((ids) => this.alternarId(ids, idGrupo));
+  abrirDetalleProductos(venta: PedidoResponseVentas): void {
+    this.detalleProductosVenta.set(venta);
   }
 
-  estaPedidoExpandido(idGrupo: number): boolean {
-    return this.pedidosExpandidos().includes(idGrupo);
+  cerrarDetalleProductos(): void {
+    this.detalleProductosVenta.set(null);
   }
 
   nombreProducto(idProducto: number): string {
@@ -586,7 +614,7 @@ export class Ventas implements OnInit {
       3: () => this.padresResponsables.every((padre, indice) => Boolean(padre.nombre && padre.apellido && padre.telefono && padre.dni && (indice || padre.mail))),
       4: () => this.carrito().length > 0,
       5: () => Boolean(this.detallePedido.talles),
-      6: () => Boolean(this.pago.fechaSenia && this.pago.fechaPrimeraCuota),
+      6: () => Boolean(this.pago.fechaSenia && this.pago.fechaPrimeraCuota && (this.pago.pagadaEfectivo || (this.pago.banco && this.archivosSenia.length > 0))),
     };
     for (let indice = 1; indice <= paso; indice += 1) {
       if (!validadores[indice]()) {
@@ -596,6 +624,14 @@ export class Ventas implements OnInit {
     }
     this.error.set('');
     return true;
+  }
+
+  private normalizarTexto(valor: string): string {
+    return valor
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .trim();
   }
 
   private capitalizarInicial(valor: string): string {
@@ -650,7 +686,8 @@ export class Ventas implements OnInit {
         apellido: this.capitalizarInicial(alumno.apellido),
         id_grupo: 0,
       })),
-      pagoDTO: { id_pedido: idPedido, nro_transferencia: '', tipo_pago: 'Seña', monto: this.totalSenia(), motivo: 'Seña', fecha: new Date(`${this.pago.fechaSenia}T00:00:00`) },
+      pagoDTO: { id_pedido: idPedido, nro_transferencia: '', tipo_pago: 'Seña', monto: this.totalSenia(), motivo: 'Seña', fecha: new Date(`${this.pago.fechaSenia}T00:00:00`),aprobado: true,
+      banco: this.pago.pagadaEfectivo ? 'Efectivo' : this.pago.banco},
       movimientoDTO: { id_grupo: 0, importe: this.totalSenia(), fecha: this.pago.fechaSenia },
       documentoDTO: [],
       primerCuota: { id_pedido: idPedido, numero: 1, fecha_vencimiento: new Date(`${this.pago.fechaPrimeraCuota}T00:00:00`), importe: this.totalCuotas() },
@@ -682,7 +719,7 @@ export class Ventas implements OnInit {
     this.padresResponsables = [this.crearPadre(true), this.crearPadre(false), this.crearPadre(false)];
     this.productoEnEdicion = this.crearProductoEnEdicion();
     this.detallePedido = this.crearDetallePedido();
-    this.pago = { fechaSenia: '', fechaPrimeraCuota: '' };
+    this.pago = this.crearPago();
     this.carrito.set([]);
     this.beneficiosSeleccionados.set([]);
     this.productoCalculado.set(null);
@@ -717,12 +754,20 @@ export class Ventas implements OnInit {
     return { idProducto: 0, cantidad: 0, cuotas: 0, agregados: [] as number[] };
   }
 
+  private crearProductoEnEdicionPlan() {
+    return { idProducto: 0, cantidad: 0, agregados: [] as number[] };
+  }
+
   private crearBeneficioEnEdicion() {
     return { nombre: '', cantidad: 1 };
   }
 
   private crearDetallePedido() {
     return { talles: '', colores: '',molderias: '', cantidad_hermanos: 0, porcentaje_descuento_hermanos: 0, envio_gratis: false, observaciones: '' };
+  }
+
+  private crearPago() {
+    return { fechaSenia: '', fechaPrimeraCuota: '', pagadaEfectivo: false, banco: '' };
   }
 
   abrirEdicion(producto: any) 
@@ -755,14 +800,320 @@ export class Ventas implements OnInit {
 
   //MODIFICACIONES
 
-  modificarBeneficio()
-  {
-    // suscribe a this.gestionPedidosService.modificarBeneficio(dto, idPedido);
+  //--- Beneficio ---
+
+  abrirEdicionBeneficio(venta: PedidoResponseVentas): void {
+    this.beneficiosSeleccionadosEdicion.set(this.parsearBeneficios(venta.productosPedidoDTO[0]?.beneficio ?? ''));
+    this.beneficioEnEdicionForm = this.crearBeneficioEnEdicion();
+    this.edicionBeneficio.set(venta);
   }
 
-  modificarProductosCuotas()
-  {
-    // suscribe a this.gestionPedidosService.modificarProductosCuotas()
+  cerrarEdicionBeneficio(): void {
+    this.edicionBeneficio.set(null);
+    this.beneficiosSeleccionadosEdicion.set([]);
+    this.beneficioEnEdicionForm = this.crearBeneficioEnEdicion();
+  }
+
+  agregarBeneficioEdicion(): void {
+    const nombre = this.beneficioEnEdicionForm.nombre;
+    const cantidad = Number(this.beneficioEnEdicionForm.cantidad);
+    if (!nombre || cantidad < 1) return;
+
+    this.beneficiosSeleccionadosEdicion.update((beneficios) => {
+      const indice = beneficios.findIndex((beneficio) => beneficio.nombre === nombre);
+      if (indice === -1) return [...beneficios, { nombre, cantidad }];
+
+      return beneficios.map((beneficio, i) =>
+        i === indice ? { ...beneficio, cantidad: beneficio.cantidad + cantidad } : beneficio,
+      );
+    });
+    this.beneficioEnEdicionForm = this.crearBeneficioEnEdicion();
+  }
+
+  quitarBeneficioEdicion(indice: number): void {
+    this.beneficiosSeleccionadosEdicion.update((beneficios) =>
+      beneficios.filter((_, i) => i !== indice),
+    );
+  }
+
+  textoBeneficiosEdicion(): string {
+    if (!this.beneficiosSeleccionadosEdicion().length) return 'Sin Beneficio';
+    return this.beneficiosSeleccionadosEdicion()
+      .map((beneficio) => `${beneficio.cantidad} ${beneficio.nombre}`)
+      .join(' - ');
+  }
+
+  guardarEdicionBeneficio(): void {
+    const venta = this.edicionBeneficio();
+    const idPedido = venta?.productosPedidoDTO[0]?.id_pedido;
+    if (!venta || !idPedido) return;
+
+    const dto: ModificarBeneficioDto = { beneficio: this.textoBeneficiosEdicion() };
+
+    this.guardandoBeneficio.set(true);
+    this.gestionPedidosService.modificarBeneficio(dto, idPedido).subscribe({
+      next: () => {
+        this.guardandoBeneficio.set(false);
+        this.notificaciones.success({
+          title: 'Beneficio actualizado',
+          description: 'El beneficio del pedido se modificó correctamente.',
+        });
+        this.cerrarEdicionBeneficio();
+        this.obtenerVentas();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.guardandoBeneficio.set(false);
+        this.notificarErrorGuardado(err);
+      },
+    });
+  }
+
+  private parsearBeneficios(texto: string): BeneficioSeleccionado[] {
+    if (!texto || texto.trim().toLowerCase() === 'sin beneficio') return [];
+
+    return texto
+      .split(' - ')
+      .map((parte) => parte.trim())
+      .filter(Boolean)
+      .map((parte) => {
+        const coincidencia = parte.match(/^(\d+)\s+(.+)$/);
+        return coincidencia
+          ? { cantidad: Number(coincidencia[1]), nombre: coincidencia[2] }
+          : { cantidad: 1, nombre: parte };
+      });
+  }
+
+  //--- Productos y plan de cuotas ---
+
+  abrirEdicionPlan(venta: PedidoResponseVentas): void {
+    const cuotas = venta.nroCuotas;
+    this.carritoEdicionPlan.set(
+      venta.productosPedidoDTO.map((producto) => this.productoPedidoAProductoCarrito(producto, cuotas)),
+    );
+    this.banderaSeleccionadaPlan = this.bandera()
+      ? venta.productosPedidoDTO.some((producto) => producto.descripcion.includes(`Agregado: ${this.bandera()!.agregado}`))
+      : false;
+    this.cuotasPlanSeleccionadas.set(cuotas);
+    this.productoEnEdicionPlan = this.crearProductoEnEdicionPlan();
+    this.productoCalculadoPlan.set(null);
+    this.indiceEdicionProductoPlan.set(null);
+    this.edicionPlan.set(venta);
+  }
+
+  cerrarEdicionPlan(): void {
+    this.edicionPlan.set(null);
+    this.carritoEdicionPlan.set([]);
+    this.productoEnEdicionPlan = this.crearProductoEnEdicionPlan();
+    this.productoCalculadoPlan.set(null);
+    this.indiceEdicionProductoPlan.set(null);
+    this.banderaSeleccionadaPlan = false;
+  }
+
+  cambiarCuotasPlan(nuevasCuotas: number): void {
+    this.cuotasPlanSeleccionadas.set(nuevasCuotas);
+
+    const productos = this.carritoEdicionPlan();
+    if (!productos.length) return;
+
+    const recalculos = productos.map((producto) =>
+      this.productosService
+        .obtenerPrecioBeneficioProducto(producto.idProducto, nuevasCuotas, producto.cantidad)
+        .pipe(
+          map((precio) => {
+            const costoExtras = this.agregadosIndividuales()
+              .filter((extra) => producto.agregados.includes(extra.id))
+              .reduce((total, extra) => total + extra.precio, 0);
+            return {
+              ...producto,
+              cuotas: nuevasCuotas,
+              valorSenia: precio.valor_senia,
+              valorCuota: precio.valor_cuota + costoExtras / nuevasCuotas,
+            };
+          }),
+        ),
+    );
+
+    forkJoin(recalculos).subscribe({
+      next: (actualizados) => this.carritoEdicionPlan.set(actualizados),
+      error: () =>
+        this.notificaciones.error({
+          title: 'No se pudo recalcular',
+          description: 'No se pudieron recalcular los precios para el nuevo plan de cuotas.',
+        }),
+    });
+  }
+
+  cambiarAgregadoPlan(idAgregado: number, seleccionado: boolean): void {
+    this.productoEnEdicionPlan.agregados = seleccionado
+      ? [...this.productoEnEdicionPlan.agregados, idAgregado]
+      : this.productoEnEdicionPlan.agregados.filter((id) => id !== idAgregado);
+    this.calcularProductoPlan();
+  }
+
+  cambiarBanderaPlan(seleccionado: boolean): void {
+    this.banderaSeleccionadaPlan = seleccionado;
+  }
+
+  calcularProductoPlan(): void {
+    const { idProducto, cantidad, agregados } = this.productoEnEdicionPlan;
+    const cuotas = this.cuotasPlanSeleccionadas();
+    if (!idProducto || !cantidad || !cuotas) {
+      this.productoCalculadoPlan.set(null);
+      return;
+    }
+
+    this.productosService.obtenerPrecioBeneficioProducto(idProducto, cuotas, cantidad).subscribe({
+      next: (precio) => {
+        const producto = this.productosParaElegir().find((item) => item.id_producto === idProducto);
+        const extras = this.agregadosIndividuales().filter((item) => agregados.includes(item.id));
+        const costoExtras = extras.reduce((total, item) => total + item.precio, 0);
+        const nombresExtras = extras.map((item) => item.agregado);
+        this.productoCalculadoPlan.set({
+          idProducto,
+          nombre: producto?.nombre ?? 'Producto',
+          descripcion: [producto?.descripcion, ...nombresExtras].filter(Boolean).join(' · Agregado: '),
+          cantidad,
+          cuotas,
+          valorSenia: precio.valor_senia,
+          valorCuota: precio.valor_cuota + costoExtras / cuotas,
+          agregados,
+        });
+      },
+      error: () => {
+        this.productoCalculadoPlan.set(null);
+        this.error.set('No se pudo calcular el precio del producto seleccionado.');
+      },
+    });
+  }
+
+  agregarProductoAlCarritoPlan(): void {
+    const producto = this.productoCalculadoPlan();
+    if (!producto) return;
+
+    const indice = this.indiceEdicionProductoPlan();
+    this.carritoEdicionPlan.update((carrito) =>
+      indice === null
+        ? [...carrito, producto]
+        : carrito.map((item, i) => (i === indice ? producto : item)),
+    );
+    this.productoEnEdicionPlan = this.crearProductoEnEdicionPlan();
+    this.productoCalculadoPlan.set(null);
+    this.indiceEdicionProductoPlan.set(null);
+  }
+
+  editarProductoPlan(indice: number): void {
+    const producto = this.carritoEdicionPlan()[indice];
+    if (!producto) return;
+
+    this.productoEnEdicionPlan = {
+      idProducto: producto.idProducto,
+      cantidad: producto.cantidad,
+      agregados: [...producto.agregados],
+    };
+    this.indiceEdicionProductoPlan.set(indice);
+    this.calcularProductoPlan();
+  }
+
+  cancelarEdicionProductoPlan(): void {
+    this.productoEnEdicionPlan = this.crearProductoEnEdicionPlan();
+    this.productoCalculadoPlan.set(null);
+    this.indiceEdicionProductoPlan.set(null);
+  }
+
+  quitarProductoPlan(indice: number): void {
+    if (this.indiceEdicionProductoPlan() !== null) this.cancelarEdicionProductoPlan();
+    this.carritoEdicionPlan.update((carrito) => carrito.filter((_, index) => index !== indice));
+  }
+
+  nombresAgregados(ids: number[]): string {
+    return this.agregadosDisponibles()
+      .filter((agregado) => ids.includes(agregado.id))
+      .map((agregado) => agregado.agregado)
+      .join(', ');
+  }
+
+  totalSeniaPlan(): number {
+    return this.carritoEdicionPlan().reduce((total, producto) => total + producto.valorSenia * producto.cantidad, 0);
+  }
+
+  totalCuotasPlanSinDescuento(): number {
+    const productos = this.carritoEdicionPlan().reduce(
+      (total, producto) => total + producto.valorCuota * producto.cantidad,
+      0,
+    );
+    return productos + (this.banderaSeleccionadaPlan ? this.bandera()?.precio ?? 0 : 0);
+  }
+
+  descuentoCuotasPlan(): number {
+    const venta = this.edicionPlan();
+    if (!venta) return 0;
+    const porcentaje = Number(venta.pedidoDTO.porcentaje_descuento_hermanos) || 0;
+    const hermanos = Number(venta.pedidoDTO.cantidad_hermanos) || 0;
+    return this.totalCuotasPlanSinDescuento() * (porcentaje / 100) * hermanos;
+  }
+
+  totalCuotasPlan(): number {
+    return this.totalCuotasPlanSinDescuento() - this.descuentoCuotasPlan();
+  }
+
+  guardarEdicionPlan(): void {
+    const venta = this.edicionPlan();
+    const idPedido = venta?.productosPedidoDTO[0]?.id_pedido;
+    const productos = this.carritoEdicionPlan();
+    if (!venta || !idPedido || !productos.length) return;
+
+    const beneficioActual = venta.productosPedidoDTO[0]?.beneficio ?? 'Sin Beneficio';
+
+    const dto: ModificarPlanPedidoDTO = {
+      id_pedido: idPedido,
+      productos: productos.map((producto) => ({
+        id_pedido: idPedido,
+        id_producto_original: producto.idProducto,
+        descripcion: producto.descripcion,
+        beneficio: beneficioActual,
+        valor_senia: producto.valorSenia,
+        valor_cuota: producto.valorCuota,
+        cantidad: producto.cantidad,
+      })),
+      nueva_cantidad_cuotas: this.cuotasPlanSeleccionadas(),
+      valor_cuota_nuevo: this.totalCuotasPlan(),
+      valor_senia_nuevo: this.totalSeniaPlan(),
+    };
+
+    this.guardandoPlan.set(true);
+    this.gestionPedidosService.modificarProductosCuotas(dto).subscribe({
+      next: () => {
+        this.guardandoPlan.set(false);
+        this.notificaciones.success({
+          title: 'Plan actualizado',
+          description: 'Los productos y el plan de cuotas se modificaron correctamente.',
+        });
+        this.cerrarEdicionPlan();
+        this.obtenerVentas();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.guardandoPlan.set(false);
+        this.notificarErrorGuardado(err);
+      },
+    });
+  }
+
+  private productoPedidoAProductoCarrito(producto: ProductoPedidoDTO, cuotas: number): ProductoCarrito {
+    const [, ...nombresExtras] = producto.descripcion.split(' · Agregado: ');
+    const agregados = this.agregadosIndividuales()
+      .filter((extra) => nombresExtras.includes(extra.agregado))
+      .map((extra) => extra.id);
+
+    return {
+      idProducto: producto.id_producto_original,
+      nombre: this.nombreProducto(producto.id_producto_original),
+      descripcion: producto.descripcion,
+      cantidad: producto.cantidad,
+      cuotas,
+      valorSenia: producto.valor_senia,
+      valorCuota: producto.valor_cuota,
+      agregados,
+    };
   }
 
 }

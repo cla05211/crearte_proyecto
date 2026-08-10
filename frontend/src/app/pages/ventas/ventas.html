@@ -15,18 +15,30 @@
     @if (cargando()) {
       <div class="ds-card state-card">Cargando ventas…</div>
     } @else {
-      <nav class="promo-tabs" aria-label="Filtrar colegios por promoción">
-        @for (promo of [anioActual, anioActual + 1]; track promo) {
-          <button
-            type="button"
-            [class.is-active]="promoSeleccionada() === promo"
-            [attr.aria-pressed]="promoSeleccionada() === promo"
-            (click)="promoSeleccionada.set(promo)"
-          >
-            {{ promo }}
-          </button>
-        }
-      </nav>
+      <div class="ventas-toolbar">
+        <nav class="promo-tabs" aria-label="Filtrar colegios por promoción">
+          @for (promo of [anioActual, anioActual + 1]; track promo) {
+            <button
+              type="button"
+              [class.is-active]="promoSeleccionada() === promo"
+              [attr.aria-pressed]="promoSeleccionada() === promo"
+              (click)="promoSeleccionada.set(promo)"
+            >
+              {{ promo }}
+            </button>
+          }
+        </nav>
+        <label class="ds-field search-field">
+          <span class="ds-label">Buscar</span>
+          <input
+            class="ds-input"
+            type="search"
+            placeholder="Colegio o localidad…"
+            [ngModel]="busqueda()"
+            (ngModelChange)="busqueda.set($any($event))"
+          />
+        </label>
+      </div>
       @for (seccion of ventasPorPromo(); track seccion.promo) {
         <section class="promo-section" [attr.aria-labelledby]="'promo-' + seccion.promo">
           <div class="promo-section__heading">
@@ -79,40 +91,61 @@
                         {{ venta.colegioDTO.localidad }}, {{ venta.colegioDTO.provincia }}
                       </td>
                       <td data-label="Pedido">
-                        <button
-                          class="table-link"
-                          type="button"
-                          (click)="togglePedido(venta.pedidoDTO.id_grupo)"
-                        >
-                          {{ venta.productosPedidoDTO.length }} producto{{
-                            venta.productosPedidoDTO.length === 1 ? '' : 's'
-                          }}
-                        </button>
-                        @if (estaPedidoExpandido(venta.pedidoDTO.id_grupo)) 
-                        {
-                          <ul class="product-list">
-                            @for (producto of venta.productosPedidoDTO; track $index) {
-                              <li>
-                                <strong>{{ nombreProducto(producto.id_producto_original) }}</strong
-                                ><span>{{ producto.descripcion }}</span
-                                ><span
-                                  >{{ producto.cantidad }} unidades · Seña
-                                  {{ producto.valor_senia | currency:'ARS':'symbol-narrow':'1.0-0' }}
-                                  · Cuota
-                                  {{
-                                    producto.valor_cuota
-                                      | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
-                                  }}</span
-                                >
-                              </li>
-                            }
-                          </ul>
-                        }
+                        <div class="cell-inline">
+                          <button
+                            class="table-link"
+                            type="button"
+                            (click)="abrirDetalleProductos(venta)"
+                          >
+                            {{ venta.productosPedidoDTO.length }} producto{{
+                              venta.productosPedidoDTO.length === 1 ? '' : 's'
+                            }}
+                          </button>
+                          <button
+                            type="button"
+                            class="icon-edit"
+                            title="Editar productos"
+                            (click)="abrirEdicionPlan(venta)"
+                          >
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                       <td data-label="Beneficio">
-                        {{ venta.productosPedidoDTO[0]?.beneficio }}
-                      </td>                    
-                      <td data-label="Plan de pago">{{ venta.nroCuotas }} cuotas</td>
+                        <div class="cell-inline">
+                          <span>{{ venta.productosPedidoDTO[0]?.beneficio }}</span>
+                          <button
+                            type="button"
+                            class="icon-edit"
+                            title="Editar beneficio"
+                            (click)="abrirEdicionBeneficio(venta)"
+                          >
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                      <td data-label="Plan de pago">
+                        <div class="cell-inline">
+                          <span>{{ venta.nroCuotas }} cuotas</span>
+                          <button
+                            type="button"
+                            class="icon-edit"
+                            title="Editar plan de cuotas"
+                            (click)="abrirEdicionPlan(venta)"
+                          >
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
                       <td data-label="Seña total">
                         {{ totalSeniaVenta(venta) | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}
                       </td>
@@ -554,41 +587,56 @@
           @if (paso() === 6) {
             <div class="payment-step">
               <h3>Seña y primera cuota</h3>
-              <label class="ds-field">
-              <span class="ds-label">Comprobante de seña</span>
-            </label>
-            <div class="ds-field resource-upload">
-              <span class="ds-label">Seña</span>
-              <input
-                class="file-input-hidden"
-                type="file"
-                multiple
-                #archivoSeniaInput
-                (change)="seleccionarArchivosSenia($event)" />
-              <button
-                type="button"
-                class="file-picker-button"
-                (click)="archivoSeniaInput.click()"
+
+              <label class="check-field"
+                ><input type="checkbox" [(ngModel)]="pago.pagadaEfectivo" /> Pago parcial o
+                totalmente en efectivo</label
               >
-                Elegir archivos
-              </button>
-              @if (archivosSenia.length) {
-                <ul class="file-list">
-                  @for (archivo of archivosSenia; track archivo.name + $index; let i = $index) {
-                    <li>
-                      <span class="file-list__name">{{ archivo.name }}</span>
-                      <button
-                        type="button"
-                        class="ds-button ds-button--ghost ds-button--small"
-                        (click)="quitarArchivoSenia(i)"
-                      >
-                        Quitar
-                      </button>
-                    </li>
-                  }
-                </ul>
-              }
-            </div>
+
+              <label class="ds-field"
+                ><span class="ds-label"
+                  >Banco al que se transfirió{{ pago.pagadaEfectivo ? '' : ' *' }}</span
+                ><select class="ds-select" [(ngModel)]="pago.banco">
+                  <option value="">Seleccioná un banco</option>
+                  <option value="Santander">Santander</option>
+                  <option value="Comafi">Comafi</option>
+                </select></label
+              >
+
+              <div class="ds-field resource-upload">
+                <span class="ds-label"
+                  >Comprobante de seña{{ pago.pagadaEfectivo ? '' : ' *' }}</span
+                >
+                <input
+                  class="file-input-hidden"
+                  type="file"
+                  multiple
+                  #archivoSeniaInput
+                  (change)="seleccionarArchivosSenia($event)" />
+                <button
+                  type="button"
+                  class="file-picker-button"
+                  (click)="archivoSeniaInput.click()"
+                >
+                  Elegir archivos
+                </button>
+                @if (archivosSenia.length) {
+                  <ul class="file-list">
+                    @for (archivo of archivosSenia; track archivo.name + $index; let i = $index) {
+                      <li>
+                        <span class="file-list__name">{{ archivo.name }}</span>
+                        <button
+                          type="button"
+                          class="ds-button ds-button--ghost ds-button--small"
+                          (click)="quitarArchivoSenia(i)"
+                        >
+                          Quitar
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
 
               <label class="ds-field"
                 ><span class="ds-label">Fecha de pago de la seña *</span
@@ -653,6 +701,311 @@
             </button>
           }
         </footer>
+      </section>
+    </div>
+  }
+
+  @if (edicionBeneficio(); as venta) {
+    <div class="modal-backdrop" role="presentation">
+      <section class="sale-modal" role="dialog" aria-modal="true" aria-labelledby="edit-benefit-title">
+        <header class="sale-modal__header">
+          <div>
+            <span class="ds-eyebrow">{{ venta.colegioDTO.nombre }}</span>
+            <h2 id="edit-benefit-title" class="ds-heading-2">Editar beneficio</h2>
+          </div>
+          <button
+            class="close-button"
+            type="button"
+            (click)="cerrarEdicionBeneficio()"
+            aria-label="Cerrar"
+          >
+            ×
+          </button>
+        </header>
+        <div class="wizard-content">
+          <section class="benefits" aria-labelledby="beneficios-edicion-title">
+            <div>
+              <h4 id="beneficios-edicion-title">Beneficios</h4>
+              <p class="ds-text-muted">Agregá o quitá beneficios de este pedido.</p>
+            </div>
+            <div class="benefits__editor">
+              <label class="ds-field">
+                <span class="ds-label">Beneficio</span>
+                <select class="ds-select" [(ngModel)]="beneficioEnEdicionForm.nombre">
+                  <option value="">Seleccioná un beneficio</option>
+                  @for (beneficio of beneficiosDisponibles(); track beneficio) {
+                    <option [value]="beneficio">{{ beneficio }}</option>
+                  }
+                </select>
+              </label>
+              <label class="ds-field">
+                <span class="ds-label">Cantidad</span>
+                <input class="ds-input" type="number" min="1" [(ngModel)]="beneficioEnEdicionForm.cantidad" />
+              </label>
+              <button class="ds-button ds-button--secondary" type="button" (click)="agregarBeneficioEdicion()">
+                Agregar beneficio
+              </button>
+            </div>
+            @if (beneficiosSeleccionadosEdicion().length) {
+              <ul class="benefits__list">
+                @for (beneficio of beneficiosSeleccionadosEdicion(); track beneficio.nombre; let i = $index) {
+                  <li>
+                    <span>{{ beneficio.cantidad }} {{ beneficio.nombre }}</span>
+                    <button
+                      class="ds-button ds-button--ghost ds-button--small"
+                      type="button"
+                      (click)="quitarBeneficioEdicion(i)"
+                    >
+                      Quitar
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+            <p class="benefits__summary">Se guardará como: {{ textoBeneficiosEdicion() }}</p>
+          </section>
+        </div>
+        <footer class="wizard-actions">
+          <button type="button" class="ds-button ds-button--secondary" (click)="cerrarEdicionBeneficio()">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="ds-button"
+            [disabled]="guardandoBeneficio()"
+            (click)="guardarEdicionBeneficio()"
+          >
+            {{ guardandoBeneficio() ? 'Guardando…' : 'Guardar cambios' }}
+          </button>
+        </footer>
+      </section>
+    </div>
+  }
+
+  @if (edicionPlan(); as venta) {
+    <div class="modal-backdrop" role="presentation">
+      <section class="sale-modal" role="dialog" aria-modal="true" aria-labelledby="edit-plan-title">
+        <header class="sale-modal__header">
+          <div>
+            <span class="ds-eyebrow">{{ venta.colegioDTO.nombre }}</span>
+            <h2 id="edit-plan-title" class="ds-heading-2">Editar productos y plan de cuotas</h2>
+          </div>
+          <button
+            class="close-button"
+            type="button"
+            (click)="cerrarEdicionPlan()"
+            aria-label="Cerrar"
+          >
+            ×
+          </button>
+        </header>
+        <div class="wizard-content product-step">
+          <label class="ds-field">
+            <span class="ds-label">Plan de cuotas</span>
+            <select
+              class="ds-select"
+              [ngModel]="cuotasPlanSeleccionadas()"
+              (ngModelChange)="cambiarCuotasPlan(+$event)"
+            >
+              @for (cuotas of cuotasDisponibles(); track cuotas) {
+                <option [value]="cuotas">{{ cuotas }} cuotas</option>
+              }
+            </select>
+          </label>
+
+          <div class="product-editor">
+            <label class="ds-field"
+              ><span class="ds-label">Producto</span
+              ><select
+                class="ds-select"
+                [(ngModel)]="productoEnEdicionPlan.idProducto"
+                (change)="calcularProductoPlan()"
+              >
+                <option [ngValue]="0">Seleccioná un producto</option>
+                @for (producto of productosParaElegir(); track producto.nombre) {
+                  <option [ngValue]="idProducto(producto)">{{ producto.nombre }}</option>
+                }
+              </select></label
+            ><label class="ds-field"
+              ><span class="ds-label">Cantidad</span
+              ><input
+                class="ds-input"
+                type="number"
+                min="1"
+                [(ngModel)]="productoEnEdicionPlan.cantidad"
+                (change)="calcularProductoPlan()"
+            /></label>
+            <div class="agregados">
+              <span class="ds-label">Agregados</span>
+              @for (agregado of agregadosIndividuales(); track agregado.id) {
+                <label
+                  ><input
+                    type="checkbox"
+                    [checked]="productoEnEdicionPlan.agregados.includes(agregado.id)"
+                    (change)="cambiarAgregadoPlan(agregado.id, $any($event.target).checked)"
+                  />
+                  {{ agregado.agregado }}
+                  <small>+{{ agregado.precio | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</small></label
+                >
+              }
+            </div>
+            @if (productoCalculadoPlan(); as producto) {
+              <div class="price-preview">
+                <strong>{{ producto.nombre }}</strong>
+                <span>{{ producto.descripcion }}</span>
+                <span>
+                  Seña individual: {{ producto.valorSenia | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }} ·
+                  Cuota individual: {{ producto.valorCuota | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}
+                </span>
+                <span>
+                  Totales:
+                  {{ producto.valorSenia * producto.cantidad | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}
+                  de seña ·
+                  {{ producto.valorCuota * producto.cantidad | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}
+                  por cuota
+                </span>
+                <div class="price-edit-form__actions">
+                  <button
+                    class="ds-button ds-button--small"
+                    type="button"
+                    (click)="agregarProductoAlCarritoPlan()"
+                  >
+                    {{ indiceEdicionProductoPlan() === null ? 'Agregar al pedido' : 'Guardar cambios' }}
+                  </button>
+                  @if (indiceEdicionProductoPlan() !== null) {
+                    <button
+                      class="ds-button ds-button--ghost ds-button--small"
+                      type="button"
+                      (click)="cancelarEdicionProductoPlan()"
+                    >
+                      Cancelar edición
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          @if (bandera(); as itemBandera) {
+            <label class="flag-option"
+              ><input
+                type="checkbox"
+                [ngModel]="banderaSeleccionadaPlan"
+                (ngModelChange)="cambiarBanderaPlan($any($event))"
+              />
+              {{ itemBandera.agregado }}
+              <span>+{{ itemBandera.precio | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }} total</span></label
+            >
+          }
+
+          <div class="cart">
+            <h4>Productos del pedido</h4>
+            @for (producto of carritoEdicionPlan(); track $index; let i = $index) {
+              <div class="cart__row" [class.is-editing]="indiceEdicionProductoPlan() === i">
+                <div>
+                  <strong>{{ producto.nombre }}</strong
+                  ><span>{{ producto.cantidad }} unidades · {{ producto.cuotas }} cuotas</span
+                  >@if (producto.agregados.length) {
+                    <span>Agregados: {{ nombresAgregados(producto.agregados) }}</span>
+                  }
+                  <span
+                    >Seña
+                    {{ producto.valorSenia * producto.cantidad | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}
+                    · Cuotas
+                    {{ producto.valorCuota * producto.cantidad | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</span
+                  >
+                </div>
+                <div class="cart__row-actions">
+                  <button
+                    type="button"
+                    class="icon-edit"
+                    title="Editar producto"
+                    (click)="editarProductoPlan(i)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    class="ds-button ds-button--ghost ds-button--small"
+                    (click)="quitarProductoPlan(i)"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              </div>
+            }
+            @if (!carritoEdicionPlan().length) {
+              <p class="ds-text-muted">No quedan productos en el pedido.</p>
+            }
+          </div>
+
+          <div class="totals-card">
+            <span
+              >Seña total
+              <strong>{{ totalSeniaPlan() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong></span
+            >
+            <span
+              >Total por cuota
+              <strong>{{ totalCuotasPlan() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong></span
+            >
+            @if (descuentoCuotasPlan()) {
+              <span
+                >Descuento hermanos
+                <strong>-{{ descuentoCuotasPlan() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong></span
+              >
+            }
+          </div>
+        </div>
+        <footer class="wizard-actions">
+          <button type="button" class="ds-button ds-button--secondary" (click)="cerrarEdicionPlan()">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="ds-button"
+            [disabled]="guardandoPlan() || !carritoEdicionPlan().length"
+            (click)="guardarEdicionPlan()"
+          >
+            {{ guardandoPlan() ? 'Guardando…' : 'Guardar cambios' }}
+          </button>
+        </footer>
+      </section>
+    </div>
+  }
+
+  @if (detalleProductosVenta(); as venta) {
+    <div class="modal-backdrop" role="presentation">
+      <section class="sale-modal detail-modal" role="dialog" aria-modal="true" aria-labelledby="detalle-productos-title">
+        <header class="sale-modal__header">
+          <div>
+            <span class="ds-eyebrow">{{ venta.colegioDTO.nombre }}</span>
+            <h2 id="detalle-productos-title" class="ds-heading-2">Productos del pedido</h2>
+          </div>
+          <button
+            class="close-button"
+            type="button"
+            (click)="cerrarDetalleProductos()"
+            aria-label="Cerrar"
+          >
+            ×
+          </button>
+        </header>
+        <ul class="detail-product-list">
+          @for (producto of venta.productosPedidoDTO; track $index) {
+            <li>
+              <strong>{{ nombreProducto(producto.id_producto_original) }}</strong>
+              <span>{{ producto.descripcion }}</span>
+              <span
+                >{{ producto.cantidad }} unidades · Seña
+                {{ producto.valor_senia | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }} · Cuota
+                {{ producto.valor_cuota | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</span
+              >
+            </li>
+          }
+        </ul>
       </section>
     </div>
   }
