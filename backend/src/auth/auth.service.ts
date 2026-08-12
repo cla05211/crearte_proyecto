@@ -58,7 +58,6 @@ export class AuthService {
     const{data,error} = await this.sb.supabaseAuth.auth.signInWithPassword({ email: correo, password: contraseña });
     if (error) 
     {
-      console.log("error")
         throw new UnauthorizedException({
         code: 'INVALID_CREDENTIALS',
         message: error.message,

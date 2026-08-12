@@ -8,4 +8,5 @@ export class PagoDTO
     fecha!: Date;
     aprobado!: boolean;
     banco!: string;
+    entidad_pago!:string;
 }

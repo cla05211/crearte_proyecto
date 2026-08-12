@@ -3,11 +3,15 @@ import { SupabaseService } from 'src/supabase/supabase.service';
 import { BadRequestException } from '@nestjs/common';
 import { PagoDTO } from './dto/pago.dto';
 import { PagoResponseDTO } from './dto/pagoResponse.dto';
+import { OcrService } from 'src/ocr/ocr.service';
+import { text } from 'stream/consumers';
+import { Console } from 'console';
+import { PagoComprobanteDatosDTO } from './dto/pagoComprobanteDatos.dto';
 
 @Injectable()
 export class PagosService 
 {
-    constructor(private sb: SupabaseService){}
+    constructor(private sb: SupabaseService, private ocrService: OcrService){}
 
     async crearPago(dto: PagoDTO)
     {
@@ -39,4 +43,82 @@ export class PagosService
 
         return data as PagoResponseDTO[];
     }
+
+    async comprobarComprobantePago(archivo: Buffer): Promise<PagoComprobanteDatosDTO>
+    {
+        let textoImagen = await this.ocrService.extraerTexto(archivo);
+        let textoProcesado = (textoImagen.toLocaleLowerCase()).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        let datosComprobante: PagoComprobanteDatosDTO = new PagoComprobanteDatosDTO();
+
+        const nombresTransferencia = ["coassini adrian alejandro", "centro logistico sur srl"];
+
+        if (textoProcesado.includes("centro logistico sur srl"))
+        {
+            datosComprobante.banco = "COMAFI";
+        }
+        else if (textoProcesado.includes("coassini adrian alejandro"))
+        {
+            datosComprobante.banco = "Santander";
+        }
+        else
+        {
+            throw new BadRequestException('El archivo enviado no es válido');
+        }
+        datosComprobante.nro_transferencia = this.determinarNroComprobante(textoImagen);
+        datosComprobante.monto = this.determinarMonto(textoImagen);
+
+        console.log(datosComprobante);
+        return datosComprobante;
+    }
+
+    private determinarNroComprobante(textoImagen:string): string
+    {
+        let codigo = "";
+        const REGEX_NRO_OPERACION = new RegExp(
+            '(?:' +
+                // Prefijo: N°, N°., Nro, Nro., o "Número"
+                '(?:N[°º]?\\.?|Nro\\.?|Número)\\s*de\\s*(?:operación|transacción)' +
+                '|' +
+                // Prefijo: "Código de transacción/referencia" (NaranjaX, Cuenta DNI)
+                'Código\\s*de\\s*(?:transacción|referencia)' +
+            ')' +
+            '\\s*:?\\s*' +
+            '([a-zA-Z0-9-]+)', // grupo de captura: el número/código en sí
+            'i');
+
+        const match = textoImagen.match(REGEX_NRO_OPERACION);
+        if (match != null)
+        {
+            codigo = match?.[1];
+        }
+        return codigo;
+    }
+
+    private determinarMonto(textoImagen:string):number
+    {
+        let monto = 0;
+
+        const REGEX_MONTO = /\$\s*([\d.]+(?:,\d{1,2})?)/;
+        const match = textoImagen.match(REGEX_MONTO);
+        const montoCrudo = match?.[1]; 
+        
+        if (match != null && montoCrudo != null)
+        {
+            monto = this.parsearMonto(montoCrudo);
+        }
+
+        return monto;
+    }
+
+    private parsearMonto(montoStr: string): number 
+    {
+        const partes = montoStr.split(',');
+        const parteEntera = partes[0].replace(/\./g, ''); 
+        const parteDecimal = partes[1] ?? '00'; 
+        return parseFloat(`${parteEntera}.${parteDecimal}`);
+    }
+
+
+
+    
 }

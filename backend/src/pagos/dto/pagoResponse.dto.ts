@@ -6,4 +6,5 @@ export class PagoResponseDTO
     monto!: number;
     motivo!: string;
     fecha!: Date;
+    entidad_pago!: string;
 }

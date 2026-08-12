@@ -16,9 +16,10 @@ import { CuentaCorrienteService } from 'src/cuenta-corriente/CuentaCorriente.ser
 import { CuotasService } from 'src/cuotas/cuotas.service';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { AuditoriasService } from 'src/auditorias/auditorias.service';
+import { OcrModule } from 'src/ocr/ocr.module';
 
 @Module({
-  imports: [SupabaseModule, PermisosModule],
+  imports: [SupabaseModule, PermisosModule, OcrModule],
   controllers: [GestionPedidosController],
   providers: [GestionPedidosService, UsuariosService, ColegiosService, 
             GruposService, PedidosService, ProductosPedidoService, PadreResponsableService,
