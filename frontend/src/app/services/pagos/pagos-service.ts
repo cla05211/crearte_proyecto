@@ -6,6 +6,7 @@ import { Observable } from 'rxjs';
 import { SubirArchivoStorage } from '../storage/dtos/SubirArchivoStorage';
 import { PagoComprobanteDatosDTO } from './dto/pagoComprobanteDatos.dto';
 import { PagoBancoResponse } from './dto/pagoBancoResponse.dto';
+import { ModificarPago } from './dto/modificarBanco.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -27,5 +28,15 @@ export class PagosService
   comprobarDatosComprobante(formData: FormData): Observable<PagoComprobanteDatosDTO>
   {
     return this.http.post<PagoComprobanteDatosDTO>(`${environment.apiUrl}/pagos/ocr`, formData);
+  }
+
+  modificarAprobado(dto: ModificarPago)
+  {
+    return this.http.patch((`${environment.apiUrl}/pagos/aprobado`), dto);
+  }
+
+  modificarEnviadoBanco(dto: ModificarPago)
+  {
+    return this.http.patch((`${environment.apiUrl}/pagos/enviado`), dto);
   }
 }

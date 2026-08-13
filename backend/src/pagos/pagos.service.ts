@@ -8,6 +8,7 @@ import { text } from 'stream/consumers';
 import { Console } from 'console';
 import { PagoComprobanteDatosDTO } from './dto/pagoComprobanteDatos.dto';
 import { PagoBancoResponse } from './dto/pagoBancoResponse.dto';
+import { ModificarPago } from './dto/modificarBanco.dto';
 
 @Injectable()
 export class PagosService 
@@ -99,6 +100,32 @@ export class PagosService
 
         console.log(datosComprobante);
         return datosComprobante;
+    }
+
+    async modificarEnviadoBanco(dto: ModificarPago)
+    {
+        const { data, error } = await this.sb.supabase
+        .from("pagos")
+        .update({ 'enviado_banco': dto.nuevoValor})
+        .eq("id", dto.idPago);
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }
+    }
+
+    async modificarAprobadoBanco(dto: ModificarPago)
+    {
+        const { data, error } = await this.sb.supabase
+        .from("pagos")
+        .update({ 'aprobado': dto.nuevoValor})
+        .eq("id", dto.idPago);
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }
     }
 
     private determinarNroComprobante(textoImagen:string): string
