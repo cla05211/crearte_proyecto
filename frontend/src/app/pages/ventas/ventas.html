@@ -593,16 +593,6 @@
                 totalmente en efectivo</label
               >
 
-              <label class="ds-field"
-                ><span class="ds-label"
-                  >Banco al que se transfirió{{ pago.pagadaEfectivo ? '' : ' *' }}</span
-                ><select class="ds-select" [(ngModel)]="pago.banco">
-                  <option value="">Seleccioná un banco</option>
-                  <option value="Santander">Santander</option>
-                  <option value="Comafi">Comafi</option>
-                </select></label
-              >
-
               <div class="ds-field resource-upload">
                 <span class="ds-label"
                   >Comprobante de seña{{ pago.pagadaEfectivo ? '' : ' *' }}</span
@@ -637,6 +627,41 @@
                   </ul>
                 }
               </div>
+
+              @if (archivosSenia.length) {
+                <label class="ds-field"
+                  ><span class="ds-label">Entidad de pago *</span
+                  ><select class="ds-select" [(ngModel)]="pago.entidadPago">
+                    <option value="">Seleccioná una entidad</option>
+                    @for (entidad of entidadesPago; track entidad) {
+                      <option [value]="entidad">{{ entidad }}</option>
+                    }
+                  </select></label
+                >
+
+                @if (verificandoComprobante()) {
+                  <div class="ds-alert">Verificando comprobante…</div>
+                }
+                @if (errorComprobante()) {
+                  <div class="ds-alert ds-alert--danger">{{ errorComprobante() }}</div>
+                }
+                @if (datosComprobante(); as datos) {
+                  <div class="totals-card">
+                    <span
+                      >Banco detectado <strong>{{ datos.banco }}</strong></span
+                    >
+                    <span
+                      >Monto detectado
+                      <strong>{{
+                        datos.monto | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
+                      }}</strong></span
+                    >
+                    <span
+                      >Nro. de comprobante <strong>{{ datos.nro_transferencia }}</strong></span
+                    >
+                  </div>
+                }
+              }
 
               <label class="ds-field"
                 ><span class="ds-label">Fecha de pago de la seña *</span

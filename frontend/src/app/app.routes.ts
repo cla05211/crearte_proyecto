@@ -16,6 +16,7 @@ export const routes: Routes = [
     canActivate: [LogueadoGuard],
     children: [
       { path: "home", loadComponent: () => import('./pages/home/home').then((archivo) => archivo.Home) },
+       { path: "pruebas", loadComponent: () => import('./pages/pruebas-pagos/pruebas-pagos').then((archivo) => archivo.PruebasPagos) },
       {
         path: "usuarios",
         loadComponent: () => import('./pages/usuarios/usuarios').then((archivo) => archivo.Usuarios),

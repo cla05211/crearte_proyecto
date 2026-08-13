@@ -3,6 +3,8 @@ import { inject, Injectable } from '@angular/core';
 import { PagoResponseDTO } from './dto/pagoResponse.dto';
 import { environment } from '../../../environments/environment.development';
 import { Observable } from 'rxjs';
+import { SubirArchivoStorage } from '../storage/dtos/SubirArchivoStorage';
+import { PagoComprobanteDatosDTO } from './dto/pagoComprobanteDatos.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -14,5 +16,10 @@ export class PagosService
   traerPagosIdPedido(idPedido: number): Observable<PagoResponseDTO[]>
   {
     return this.http.get<PagoResponseDTO[]>((`${environment.apiUrl}/pagos/${idPedido}`));
+  }
+
+  comprobarDatosComprobante(formData: FormData): Observable<PagoComprobanteDatosDTO>
+  {
+    return this.http.post<PagoComprobanteDatosDTO>(`${environment.apiUrl}/pagos/ocr`, formData);
   }
 }

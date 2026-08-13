@@ -76,14 +76,13 @@ export class PagosService
         let codigo = "";
         const REGEX_NRO_OPERACION = new RegExp(
             '(?:' +
-                // Prefijo: N°, N°., Nro, Nro., o "Número"
                 '(?:N[°º]?\\.?|Nro\\.?|Número)\\s*de\\s*(?:operación|transacción)' +
+                '(?:\\s*de\\s*Mercado\\s*Pago)?' +
                 '|' +
-                // Prefijo: "Código de transacción/referencia" (NaranjaX, Cuenta DNI)
                 'Código\\s*de\\s*(?:transacción|referencia)' +
             ')' +
             '\\s*:?\\s*' +
-            '([a-zA-Z0-9-]+)', // grupo de captura: el número/código en sí
+            '([a-zA-Z0-9-]+)',
             'i');
 
         const match = textoImagen.match(REGEX_NRO_OPERACION);
@@ -116,9 +115,5 @@ export class PagosService
         const parteEntera = partes[0].replace(/\./g, ''); 
         const parteDecimal = partes[1] ?? '00'; 
         return parseFloat(`${parteEntera}.${parteDecimal}`);
-    }
-
-
-
-    
+    }    
 }

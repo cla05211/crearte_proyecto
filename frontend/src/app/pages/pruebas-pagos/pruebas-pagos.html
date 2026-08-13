@@ -1,0 +1,22 @@
+<div style="max-width: 500px; margin: 40px auto; font-family: sans-serif;">
+  <h2>Prueba OCR Comprobante</h2>
+
+  <input type="file" accept="image/*,application/pdf" (change)="onFileSelected($event)" />
+
+  @if (archivoSeleccionado()) {
+    <p>Archivo seleccionado: {{ archivoSeleccionado()?.name }}</p>
+  }
+
+  <button (click)="enviarComprobante()" [disabled]="cargando() || !archivoSeleccionado()">
+    {{ cargando() ? 'Procesando...' : 'Enviar comprobante' }}
+  </button>
+
+  @if (error()) {
+    <p style="color: red;">{{ error() }}</p>
+  }
+
+  @if (resultado()) {
+    <h3>Resultado:</h3>
+    <pre>{{ resultado() | json }}</pre>
+  }
+</div>

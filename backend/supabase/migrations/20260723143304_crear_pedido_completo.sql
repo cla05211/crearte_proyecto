@@ -127,19 +127,22 @@ begin
   end loop;
  
   -- Pago
-  -- NOTA: PagoDTO no incluye 'fecha' actualmente; si no se manda, queda null.
-  insert into pagos (id_pedido, nro_transferencia, tipo_pago, monto, motivo, fecha, aprobado, banco)
-  values (
-    id_pedido,
-    payload->'pagoDTO'->>'nro_transferencia',
-    payload->'pagoDTO'->>'tipo_pago',
-    (payload->'pagoDTO'->>'monto')::double precision,
-    payload->'pagoDTO'->>'motivo',
-    (payload->'pagoDTO'->>'fecha')::date,
-    payload->'pagoDTO'->>'aprobado',
-    payload->'pagoDTO'->>'banco',
-  )
-  returning id into id_pago;
+  FOR pago IN SELECT * FROM jsonb_array_elements(payload->'pagosDTO')
+  LOOP
+    INSERT INTO pagos (id_pedido, nro_transferencia, tipo_pago, monto, motivo, fecha, aprobado, banco, entidad_pago)
+    VALUES (
+      id_pedido,
+      pago->>'nro_transferencia',
+      pago->>'tipo_pago',
+      (pago->>'monto')::double precision,
+      pago->>'motivo',
+      (pago->>'fecha')::date,
+      (pago->>'aprobado')::boolean,
+      pago->>'banco',
+      pago->>'entidad_pago'
+    )
+    RETURNING id INTO id_pago;
+  END LOOP;
  
   -- Documentos (uno o varios) + vínculo con el pago
   if jsonb_typeof(payload->'documentoDTO') = 'array' then

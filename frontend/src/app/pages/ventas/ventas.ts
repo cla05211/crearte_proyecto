@@ -25,6 +25,7 @@ import { CuotaResponseDTO } from '../../services/cuotas/dto/CuotaResponseDTO';
 import { CrearCuotasDTO } from '../../services/cuotas/dto/crearCuotas.dto';
 import { PagosService } from '../../services/pagos/pagos-service';
 import { PagoResponseDTO } from '../../services/pagos/dto/pagoResponse.dto';
+import { PagoComprobanteDatosDTO } from '../../services/pagos/dto/pagoComprobanteDatos.dto';
 
 interface ProductoCarrito {
   idProducto: number;
@@ -63,6 +64,10 @@ export class Ventas implements OnInit {
   archivosSenia: File[] = [];
   archivosRecursosAdicionales: File[] = [];
 
+  readonly datosComprobante = signal<PagoComprobanteDatosDTO | null>(null);
+  readonly verificandoComprobante = signal(false);
+  readonly errorComprobante = signal('');
+
   //Opciones
   orientaciones = ["Sociales", "Naturales", "Arte", "Economía", "Técnica", "Teatro", "Educación física",
     "Administración de empresas", "Turismo", "Electromecánica", "Maestro mayor de obras", "Comunicación", 
@@ -75,6 +80,7 @@ export class Ventas implements OnInit {
     "San Juan","San Luis","Santa Cruz","Santa Fe","Santiago del Estero","Tierra del Fuego","Tucumán",
     "Ciudad Autónoma de Buenos Aires"];  
   niveles = ["Secundaria", "Primaria", "Jardin"];
+  entidadesPago = ["Mercado Pago", "NaranjaX", "Cuenta DNI", "Galicia", "BNA", "Uala"];
 
   readonly ventas = signal<PedidoResponseVentas[]>([]);
   readonly productosDisponibles = signal<ProductoConPrecioResponseDTO[]>([]);
@@ -384,6 +390,7 @@ export class Ventas implements OnInit {
     this.archivosSenia = [...this.archivosSenia, ...nuevosArchivos];
 
     input.value = '';
+    this.verificarComprobante();
   }
 
   seleccionarRecursosAdicionales(event: Event): void {
@@ -398,6 +405,35 @@ export class Ventas implements OnInit {
 
   quitarArchivoSenia(indice: number): void {
     this.archivosSenia = this.archivosSenia.filter((_, index) => index !== indice);
+    this.verificarComprobante();
+  }
+
+  private verificarComprobante(): void {
+    const archivo = this.archivosSenia[0];
+    if (!archivo) {
+      this.datosComprobante.set(null);
+      this.errorComprobante.set('');
+      this.verificandoComprobante.set(false);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('comprobante', archivo, archivo.name);
+
+    this.datosComprobante.set(null);
+    this.errorComprobante.set('');
+    this.verificandoComprobante.set(true);
+
+    this.pagosService.comprobarDatosComprobante(formData).subscribe({
+      next: (datos) => {
+        this.datosComprobante.set(datos);
+        this.verificandoComprobante.set(false);
+      },
+      error: () => {
+        this.verificandoComprobante.set(false);
+        this.errorComprobante.set('No se pudieron extraer los datos del comprobante. Verificá el archivo e intentá nuevamente.');
+      },
+    });
   }
 
   quitarArchivoRecursoAdicional(indice: number): void {
@@ -453,13 +489,13 @@ export class Ventas implements OnInit {
 
   private subirArchivos(idPedido: number): Observable<{ urlsSenia: string[]; urlsRecursos: string[] }> {
 
-    console.log(`SEÑA: ${this.archivosSenia.length}`);
-    console.log(`Recursos: ${this.archivosRecursosAdicionales.length}`);
-
     const subidasSenia= this.archivosSenia.map((archivo, index) =>
       this.storageService.subirImagen({
         archivo,
-        nombreArchivo:  `senia-${index + 1}-${Date.now()}-${archivo.name}`,
+        nombreArchivo:  `senia-${index + 1}-${Date.now()}-${archivo.name}`        
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9._-]/g, '-'),
         carpetaGuardado: "senias"
       }).pipe(
         map(({ ruta }) => ruta),
@@ -472,7 +508,10 @@ export class Ventas implements OnInit {
     const subidasRecursos= this.archivosRecursosAdicionales.map((archivo, index) =>
       this.storageService.subirImagen({
         archivo,
-        nombreArchivo:  `recurso-${index + 1}-${Date.now()}-${archivo.name}`,
+        nombreArchivo:  `recurso-${index + 1}-${Date.now()}-${archivo.name}`
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9._-]/g, '-'),
         carpetaGuardado: "recursos_adicionales"
       }).pipe(
         map(({ ruta }) => ruta),
@@ -491,6 +530,7 @@ export class Ventas implements OnInit {
 
   private construirDocumentos(urlsSenia: string[], urlsRecursos: string[]): DocumentoDTO[] {
     const documentos: DocumentoDTO[] = [];
+    
     urlsSenia.forEach((url) => documentos.push({ tipo: 'senia', archivo_url: url }));
     urlsRecursos.forEach((url) => documentos.push({ tipo: 'recurso adicional', archivo_url: url }));
     return documentos;
@@ -614,7 +654,13 @@ export class Ventas implements OnInit {
       3: () => this.padresResponsables.every((padre, indice) => Boolean(padre.nombre && padre.apellido && padre.telefono && padre.dni && (indice || padre.mail))),
       4: () => this.carrito().length > 0,
       5: () => Boolean(this.detallePedido.talles),
-      6: () => Boolean(this.pago.fechaSenia && this.pago.fechaPrimeraCuota && (this.pago.pagadaEfectivo || (this.pago.banco && this.archivosSenia.length > 0))),
+      6: () => {
+        if (!this.pago.fechaSenia || !this.pago.fechaPrimeraCuota) return false;
+        if (this.archivosSenia.length > 0) {
+          return Boolean(this.pago.entidadPago && this.datosComprobante() && !this.verificandoComprobante());
+        }
+        return this.pago.pagadaEfectivo;
+      },
     };
     for (let indice = 1; indice <= paso; indice += 1) {
       if (!validadores[indice]()) {
@@ -686,12 +732,42 @@ export class Ventas implements OnInit {
         apellido: this.capitalizarInicial(alumno.apellido),
         id_grupo: 0,
       })),
-      pagoDTO: { id_pedido: idPedido, nro_transferencia: '', tipo_pago: 'Seña', monto: this.totalSenia(), motivo: 'Seña', fecha: new Date(`${this.pago.fechaSenia}T00:00:00`),aprobado: true,
-      banco: this.pago.pagadaEfectivo ? 'Efectivo' : this.pago.banco},
+      pagoDTO: this.crearPagoDTO(idPedido),
       movimientoDTO: { id_grupo: 0, importe: this.totalSenia(), fecha: this.pago.fechaSenia },
       documentoDTO: [],
       primerCuota: { id_pedido: idPedido, numero: 1, fecha_vencimiento: new Date(`${this.pago.fechaPrimeraCuota}T00:00:00`), importe: this.totalCuotas() },
       nroCuotas: this.carrito()[0]?.cuotas ?? 0,
+    };
+  }
+
+  private crearPagoDTO(idPedido: number) {
+    const fecha = new Date(`${this.pago.fechaSenia}T00:00:00`);
+    const comprobante = this.datosComprobante();
+
+    if (comprobante) {
+      return {
+        id_pedido: idPedido,
+        nro_transferencia: comprobante.nro_transferencia,
+        tipo_pago: 'Seña',
+        monto: comprobante.monto,
+        motivo: 'Seña',
+        fecha,
+        aprobado: true,
+        banco: comprobante.banco,
+        entidad_pago: this.pago.entidadPago,
+      };
+    }
+
+    return {
+      id_pedido: idPedido,
+      nro_transferencia: '',
+      tipo_pago: 'Seña',
+      monto: this.totalSenia(),
+      motivo: 'Seña',
+      fecha,
+      aprobado: true,
+      banco: 'Efectivo',
+      entidad_pago: '',
     };
   }
 
@@ -726,6 +802,9 @@ export class Ventas implements OnInit {
     this.banderaSeleccionada = false;
     this.archivosSenia = [];
     this.archivosRecursosAdicionales = [];
+    this.datosComprobante.set(null);
+    this.verificandoComprobante.set(false);
+    this.errorComprobante.set('');
     if (this.archivoSeniaInputRef) this.archivoSeniaInputRef.nativeElement.value = '';
     if (this.recursosAdicionalesInputRef) this.recursosAdicionalesInputRef.nativeElement.value = '';
   }
@@ -767,7 +846,7 @@ export class Ventas implements OnInit {
   }
 
   private crearPago() {
-    return { fechaSenia: '', fechaPrimeraCuota: '', pagadaEfectivo: false, banco: '' };
+    return { fechaSenia: '', fechaPrimeraCuota: '', pagadaEfectivo: false, entidadPago: '' };
   }
 
   abrirEdicion(producto: any) 

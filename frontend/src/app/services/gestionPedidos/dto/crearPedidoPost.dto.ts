@@ -17,7 +17,7 @@ export interface CrearPedidoDTO
     productosPedidoDTO: ProductoPedidoDTO[];
     padresResponsablesDTO:  PadreResponsableDTO[];
     alumnosResponsablesDTO: alumnoResponsableDTO[] | null;
-    pagoDTO: PagoDTO;
+    pagoDTO: PagoDTO[];
     movimientoDTO: MovimientoDTO;
     documentoDTO: DocumentoDTO | DocumentoDTO[];
     primerCuota: CuotaInicioVentaDTO;
