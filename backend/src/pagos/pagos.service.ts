@@ -7,6 +7,7 @@ import { OcrService } from 'src/ocr/ocr.service';
 import { text } from 'stream/consumers';
 import { Console } from 'console';
 import { PagoComprobanteDatosDTO } from './dto/pagoComprobanteDatos.dto';
+import { PagoBancoResponse } from './dto/pagoBancoResponse.dto';
 
 @Injectable()
 export class PagosService 
@@ -42,6 +43,35 @@ export class PagosService
         }        
 
         return data as PagoResponseDTO[];
+    }
+
+    async traerPagosBanco(banco: string):Promise<PagoBancoResponse[]>
+    {
+        const { data, error } = await this.sb.supabase
+            .from('pagos')
+            .select(`*,
+                pedidos!inner(estado_general, grupos(colegios(nombre)))`)
+            .eq('banco', banco)
+            .neq('pedidos.estado_general', "entregado");
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }        
+
+        const pagosBancos: PagoBancoResponse[] = data.map(pago => ({
+                    id: pago.id,
+                    fecha: pago.fecha,
+                    nro_transferencia: pago.nro_transferencia,
+                    entidad_pago: pago.entidad_pago,
+                    banco: pago.banco,
+                    monto: pago.monto,
+                    nombre_colegio: pago.pedidos.grupos.colegios.nombre,
+                    aprobado: pago.aprobado,
+                    enviado_banco: pago.enviado_banco
+                }));
+        
+        return pagosBancos
     }
 
     async comprobarComprobantePago(archivo: Buffer): Promise<PagoComprobanteDatosDTO>

@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment.development';
 import { Observable } from 'rxjs';
 import { SubirArchivoStorage } from '../storage/dtos/SubirArchivoStorage';
 import { PagoComprobanteDatosDTO } from './dto/pagoComprobanteDatos.dto';
+import { PagoBancoResponse } from './dto/pagoBancoResponse.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -16,6 +17,11 @@ export class PagosService
   traerPagosIdPedido(idPedido: number): Observable<PagoResponseDTO[]>
   {
     return this.http.get<PagoResponseDTO[]>((`${environment.apiUrl}/pagos/${idPedido}`));
+  }
+
+  traerPagosBanco(banco: string): Observable<PagoBancoResponse[]>
+  {
+    return this.http.get<PagoBancoResponse[]>((`${environment.apiUrl}/pagos/bancos/${banco}`));
   }
 
   comprobarDatosComprobante(formData: FormData): Observable<PagoComprobanteDatosDTO>

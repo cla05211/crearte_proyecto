@@ -28,7 +28,7 @@ export class ProductosPedidoService
     return this.http.patch((`${environment.apiUrl}/productos-pedido/descripcion`), dto);
   }
 
-    modficarCantidadProductoPedido(dto: ModificarCantidadProductoPedido)
+  modficarCantidadProductoPedido(dto: ModificarCantidadProductoPedido)
   {
     return this.http.patch((`${environment.apiUrl}/productos-pedido/cantidad`), dto);
   }

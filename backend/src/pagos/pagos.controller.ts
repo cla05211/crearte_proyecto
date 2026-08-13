@@ -14,10 +14,18 @@ export class PagosController
     
     @Get(':id')
     @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('modficar_pedidos')
+    @RequierePermiso('modificar_pedidos')
     async obtenerCuotasIdPedido(@Param ('id', ParseIntPipe) id:number)
     {
         return await this.pagosService.traerPagosPedido(id);
+    }
+
+    @Get('bancos/:banco')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_bancos')
+    async obtenerPagosBancos(@Param ('banco') banco:string)
+    {
+        return await this.pagosService.traerPagosBanco(banco);
     }
 
     @Post('ocr')

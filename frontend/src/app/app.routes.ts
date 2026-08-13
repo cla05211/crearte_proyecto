@@ -24,6 +24,12 @@ export const routes: Routes = [
         data: { permiso: 'ver_usuarios' }
       },
       {
+        path: "bancos",
+        loadComponent: () => import('./pages/bancos/bancos').then((archivo) => archivo.Bancos),
+        canActivate: [PermisosGuard],
+        data: { permiso: 'ver_bancos' }
+      },
+      {
         path: "productos",
         loadComponent: () => import('./pages/productos/productos').then((archivo) => archivo.Productos),
         canActivate: [PermisosGuard],
