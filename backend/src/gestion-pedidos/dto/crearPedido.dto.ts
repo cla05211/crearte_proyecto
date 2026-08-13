@@ -17,9 +17,9 @@ export class CrearPedidoDTO
     productosPedidoDTO!: ProductoPedidoDTO[];
     padresResponsablesDTO!:  PadreResponsableDTO[];
     alumnosResponsablesDTO!: alumnoResponsableDTO[];
-    pagoDTO!: PagoDTO[];
+    pagosDTO!: PagoDTO[];
     movimientoDTO!: MovimientoDTO;
-    documentoDTO!: DocumentoDTO | DocumentoDTO[];
+    documentoDTO?: DocumentoDTO | DocumentoDTO[];
     primerCuota!: CuotaInicioVentaDTO;
     nroCuotas!: number;
     molderias!: string;

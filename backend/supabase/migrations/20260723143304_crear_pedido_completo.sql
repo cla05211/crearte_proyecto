@@ -18,6 +18,7 @@ declare
   padre           jsonb;
   alumno          jsonb;
   documento       jsonb;
+  pago            jsonb;
   nro_cuotas      int;
   fecha_primera   date;
   importe_cuota   double precision;
@@ -126,12 +127,25 @@ begin
     );
   end loop;
  
-  -- Pago
+  -- Pagos, cada uno con su propio comprobante (1 a 1)
   FOR pago IN SELECT * FROM jsonb_array_elements(payload->'pagosDTO')
   LOOP
-    INSERT INTO pagos (id_pedido, nro_transferencia, tipo_pago, monto, motivo, fecha, aprobado, banco, entidad_pago)
+    id_documento := null;
+ 
+    IF pago->'documentoDTO' IS NOT NULL AND jsonb_typeof(pago->'documentoDTO') <> 'null' THEN
+      INSERT INTO documentos (id_grupo, tipo, archivo_url)
+      VALUES (
+        id_grupo,
+        pago->'documentoDTO'->>'tipo',
+        pago->'documentoDTO'->>'archivo_url'
+      )
+      RETURNING id INTO id_documento;
+    END IF;
+ 
+    INSERT INTO pagos (id_pedido, id_documento, nro_transferencia, tipo_pago, monto, motivo, fecha, aprobado, banco, entidad_pago)
     VALUES (
       id_pedido,
+      id_documento,
       pago->>'nro_transferencia',
       pago->>'tipo_pago',
       (pago->>'monto')::double precision,
@@ -144,29 +158,23 @@ begin
     RETURNING id INTO id_pago;
   END LOOP;
  
-  -- Documentos (uno o varios) + vínculo con el pago
-  if jsonb_typeof(payload->'documentoDTO') = 'array' then
-    for documento in select * from jsonb_array_elements(payload->'documentoDTO')
-    loop
+  -- Documentos que no son comprobante de ningún pago (ej: recursos adicionales)
+  IF payload->'documentoDTO' IS NOT NULL AND jsonb_typeof(payload->'documentoDTO') <> 'null' THEN
+    if jsonb_typeof(payload->'documentoDTO') = 'array' then
+      for documento in select * from jsonb_array_elements(payload->'documentoDTO')
+      loop
+        insert into documentos (id_grupo, tipo, archivo_url)
+        values (id_grupo, documento->>'tipo', documento->>'archivo_url');
+      end loop;
+    else
       insert into documentos (id_grupo, tipo, archivo_url)
-      values (id_grupo, documento->>'tipo', documento->>'archivo_url')
-      returning id into id_documento;
- 
-      insert into pagos_documentos (id_pago, id_documento)
-      values (id_pago, id_documento);
-    end loop;
-  else
-    insert into documentos (id_grupo, tipo, archivo_url)
-    values (
-      id_grupo,
-      payload->'documentoDTO'->>'tipo',
-      payload->'documentoDTO'->>'archivo_url'
-    )
-    returning id into id_documento;
- 
-    insert into pagos_documentos (id_pago, id_documento)
-    values (id_pago, id_documento);
-  end if;
+      values (
+        id_grupo,
+        payload->'documentoDTO'->>'tipo',
+        payload->'documentoDTO'->>'archivo_url'
+      );
+    end if;
+  END IF;
  
   -- Movimiento en cuenta corriente
   insert into movimientos (id_grupo, importe, fecha)

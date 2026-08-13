@@ -15,6 +15,7 @@ import { BuscadorSelect } from '../../shared/buscador-select/buscador-select';
 import { faL } from '@fortawesome/free-solid-svg-icons';
 import { NotificationService } from '../../shared/notifications/notification.service';
 import { DocumentoDTO } from '../../services/gestionPedidos/dto/documento.dto';
+import { PagoDTO } from '../../services/gestionPedidos/dto/pago.dto';
 import { StorageService } from '../../services/storage/storage-service';
 import { ModificarBeneficioDto } from '../../services/gestionPedidos/dto/modficaciones/modficiarBeneficio.dto';
 import { ProductosPedidoService } from '../../services/productosPedidos/productos-pedido-service';
@@ -43,6 +44,13 @@ interface BeneficioSeleccionado {
   cantidad: number;
 }
 
+interface ComprobanteVerificado {
+  datos: PagoComprobanteDatosDTO | null;
+  verificando: boolean;
+  error: string;
+  entidadPago: string;
+}
+
 @Component({
   selector: 'app-ventas',
   imports: [FormsModule, CurrencyPipe, BuscadorSelect],
@@ -64,9 +72,7 @@ export class Ventas implements OnInit {
   archivosSenia: File[] = [];
   archivosRecursosAdicionales: File[] = [];
 
-  readonly datosComprobante = signal<PagoComprobanteDatosDTO | null>(null);
-  readonly verificandoComprobante = signal(false);
-  readonly errorComprobante = signal('');
+  readonly comprobantesSenia = signal<ComprobanteVerificado[]>([]);
 
   //Opciones
   orientaciones = ["Sociales", "Naturales", "Arte", "Economía", "Técnica", "Teatro", "Educación física",
@@ -387,10 +393,17 @@ export class Ventas implements OnInit {
     if (!input.files) return;
 
     const nuevosArchivos = Array.from(input.files);
+    const indiceInicial = this.archivosSenia.length;
     this.archivosSenia = [...this.archivosSenia, ...nuevosArchivos];
+    this.comprobantesSenia.update((comprobantes) => [
+      ...comprobantes,
+      ...nuevosArchivos.map(() => ({ datos: null, verificando: true, error: '', entidadPago: '' })),
+    ]);
 
     input.value = '';
-    this.verificarComprobante();
+    nuevosArchivos.forEach((archivo, offset) =>
+      this.verificarComprobante(archivo, indiceInicial + offset),
+    );
   }
 
   seleccionarRecursosAdicionales(event: Event): void {
@@ -405,35 +418,42 @@ export class Ventas implements OnInit {
 
   quitarArchivoSenia(indice: number): void {
     this.archivosSenia = this.archivosSenia.filter((_, index) => index !== indice);
-    this.verificarComprobante();
+    this.comprobantesSenia.update((comprobantes) =>
+      comprobantes.filter((_, index) => index !== indice),
+    );
   }
 
-  private verificarComprobante(): void {
-    const archivo = this.archivosSenia[0];
-    if (!archivo) {
-      this.datosComprobante.set(null);
-      this.errorComprobante.set('');
-      this.verificandoComprobante.set(false);
-      return;
-    }
-
+  private verificarComprobante(archivo: File, indice: number): void {
     const formData = new FormData();
     formData.append('comprobante', archivo, archivo.name);
 
-    this.datosComprobante.set(null);
-    this.errorComprobante.set('');
-    this.verificandoComprobante.set(true);
-
     this.pagosService.comprobarDatosComprobante(formData).subscribe({
       next: (datos) => {
-        this.datosComprobante.set(datos);
-        this.verificandoComprobante.set(false);
+        this.comprobantesSenia.update((comprobantes) =>
+          comprobantes.map((c, i) => (i === indice ? { ...c, datos, verificando: false, error: '' } : c)),
+        );
       },
       error: () => {
-        this.verificandoComprobante.set(false);
-        this.errorComprobante.set('No se pudieron extraer los datos del comprobante. Verificá el archivo e intentá nuevamente.');
+        this.comprobantesSenia.update((comprobantes) =>
+          comprobantes.map((c, i) =>
+            i === indice
+              ? {
+                  ...c,
+                  datos: null,
+                  verificando: false,
+                  error: 'No se pudieron extraer los datos del comprobante. Verificá el archivo e intentá nuevamente.',
+                }
+              : c,
+          ),
+        );
       },
     });
+  }
+
+  actualizarEntidadComprobante(indice: number, entidadPago: string): void {
+    this.comprobantesSenia.update((comprobantes) =>
+      comprobantes.map((c, i) => (i === indice ? { ...c, entidadPago } : c)),
+    );
   }
 
   quitarArchivoRecursoAdicional(indice: number): void {
@@ -455,11 +475,14 @@ export class Ventas implements OnInit {
 
     this.guardando.set(true);
     this.error.set('');
-    const pedido = this.crearPedido(usuario);
+    const idPedido = Date.now();
 
-    this.subirArchivos(pedido.pagoDTO.id_pedido).subscribe({
+    this.subirArchivos(idPedido).subscribe({
       next: ({ urlsSenia, urlsRecursos }) => {
-        pedido.documentoDTO = this.construirDocumentos(urlsSenia, urlsRecursos);
+        const pedido = this.crearPedido(usuario, idPedido);
+        pedido.pagosDTO = this.construirPagosDTO(idPedido, urlsSenia);
+        const recursos = this.construirDocumentosRecursos(urlsRecursos);
+        if (recursos.length) pedido.documentoDTO = recursos;
 
         this.gestionPedidosService.agregarPedido(pedido).subscribe({
           next: () => {
@@ -492,7 +515,7 @@ export class Ventas implements OnInit {
     const subidasSenia= this.archivosSenia.map((archivo, index) =>
       this.storageService.subirImagen({
         archivo,
-        nombreArchivo:  `senia-${index + 1}-${Date.now()}-${archivo.name}`        
+        nombreArchivo:  `senia-${index + 1}-${this.colegio.nombre}-${Date.now()}-${archivo.name}`        
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-zA-Z0-9._-]/g, '-'),
@@ -508,7 +531,7 @@ export class Ventas implements OnInit {
     const subidasRecursos= this.archivosRecursosAdicionales.map((archivo, index) =>
       this.storageService.subirImagen({
         archivo,
-        nombreArchivo:  `recurso-${index + 1}-${Date.now()}-${archivo.name}`
+        nombreArchivo:  `recurso-${index + 1}-${this.colegio.nombre}-${Date.now()}-${archivo.name}`
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-zA-Z0-9._-]/g, '-'),
@@ -528,12 +551,10 @@ export class Ventas implements OnInit {
     return forkJoin({urlsSenia: urlsSenia$,urlsRecursos: urlsRecursos$});
   }
 
-  private construirDocumentos(urlsSenia: string[], urlsRecursos: string[]): DocumentoDTO[] {
-    const documentos: DocumentoDTO[] = [];
-    
-    urlsSenia.forEach((url) => documentos.push({ tipo: 'senia', archivo_url: url }));
-    urlsRecursos.forEach((url) => documentos.push({ tipo: 'recurso adicional', archivo_url: url }));
-    return documentos;
+  private construirDocumentosRecursos(urlsRecursos: string[]): DocumentoDTO[] {
+    return urlsRecursos
+      .filter((url) => url)
+      .map((url) => ({ tipo: 'recurso adicional', archivo_url: url }));
   }
 
   private notificarErrorGuardado(err: HttpErrorResponse): void {
@@ -657,7 +678,11 @@ export class Ventas implements OnInit {
       6: () => {
         if (!this.pago.fechaSenia || !this.pago.fechaPrimeraCuota) return false;
         if (this.archivosSenia.length > 0) {
-          return Boolean(this.pago.entidadPago && this.datosComprobante() && !this.verificandoComprobante());
+          const comprobantes = this.comprobantesSenia();
+          const todosListos =
+            comprobantes.length === this.archivosSenia.length &&
+            comprobantes.every((c) => c.datos && !c.verificando && !c.error && c.entidadPago);
+          return todosListos;
         }
         return this.pago.pagadaEfectivo;
       },
@@ -685,8 +710,7 @@ export class Ventas implements OnInit {
     return limpio ? limpio.charAt(0).toUpperCase() + limpio.slice(1) : limpio;
   }
 
-  private crearPedido(usuario: Usuario): CrearPedidoDTO {
-    const idPedido = Date.now();
+  private crearPedido(usuario: Usuario, idPedido: number): CrearPedidoDTO {
     return {
       colegioDTO: {
         ...this.colegio,
@@ -732,43 +756,45 @@ export class Ventas implements OnInit {
         apellido: this.capitalizarInicial(alumno.apellido),
         id_grupo: 0,
       })),
-      pagoDTO: this.crearPagoDTO(idPedido),
+      pagosDTO: [],
       movimientoDTO: { id_grupo: 0, importe: this.totalSenia(), fecha: this.pago.fechaSenia },
-      documentoDTO: [],
       primerCuota: { id_pedido: idPedido, numero: 1, fecha_vencimiento: new Date(`${this.pago.fechaPrimeraCuota}T00:00:00`), importe: this.totalCuotas() },
       nroCuotas: this.carrito()[0]?.cuotas ?? 0,
     };
   }
 
-  private crearPagoDTO(idPedido: number) {
+  private construirPagosDTO(idPedido: number, urlsSenia: string[]): PagoDTO[] {
     const fecha = new Date(`${this.pago.fechaSenia}T00:00:00`);
-    const comprobante = this.datosComprobante();
+    const comprobantes = this.comprobantesSenia();
 
-    if (comprobante) {
-      return {
+    if (comprobantes.length > 0) {
+      return comprobantes.map((comprobante, indice) => ({
         id_pedido: idPedido,
-        nro_transferencia: comprobante.nro_transferencia,
+        nro_transferencia: comprobante.datos?.nro_transferencia ?? '',
         tipo_pago: 'Seña',
-        monto: comprobante.monto,
+        monto: comprobante.datos?.monto ?? 0,
         motivo: 'Seña',
         fecha,
         aprobado: true,
-        banco: comprobante.banco,
-        entidad_pago: this.pago.entidadPago,
-      };
+        banco: comprobante.datos?.banco ?? '',
+        entidad_pago: comprobante.entidadPago,
+        documentoDTO: urlsSenia[indice] ? { tipo: 'senia', archivo_url: urlsSenia[indice] } : undefined,
+      }));
     }
 
-    return {
-      id_pedido: idPedido,
-      nro_transferencia: '',
-      tipo_pago: 'Seña',
-      monto: this.totalSenia(),
-      motivo: 'Seña',
-      fecha,
-      aprobado: true,
-      banco: 'Efectivo',
-      entidad_pago: '',
-    };
+    return [
+      {
+        id_pedido: idPedido,
+        nro_transferencia: '',
+        tipo_pago: 'Seña',
+        monto: this.totalSenia(),
+        motivo: 'Seña',
+        fecha,
+        aprobado: true,
+        banco: 'Efectivo',
+        entidad_pago: '',
+      },
+    ];
   }
 
   private totalCuotasSinDescuento(): number {
@@ -802,9 +828,7 @@ export class Ventas implements OnInit {
     this.banderaSeleccionada = false;
     this.archivosSenia = [];
     this.archivosRecursosAdicionales = [];
-    this.datosComprobante.set(null);
-    this.verificandoComprobante.set(false);
-    this.errorComprobante.set('');
+    this.comprobantesSenia.set([]);
     if (this.archivoSeniaInputRef) this.archivoSeniaInputRef.nativeElement.value = '';
     if (this.recursosAdicionalesInputRef) this.recursosAdicionalesInputRef.nativeElement.value = '';
   }
@@ -846,7 +870,7 @@ export class Ventas implements OnInit {
   }
 
   private crearPago() {
-    return { fechaSenia: '', fechaPrimeraCuota: '', pagadaEfectivo: false, entidadPago: '' };
+    return { fechaSenia: '', fechaPrimeraCuota: '', pagadaEfectivo: false };
   }
 
   abrirEdicion(producto: any) 
