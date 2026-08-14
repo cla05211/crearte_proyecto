@@ -1,6 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { forkJoin, of } from 'rxjs';
+import { firstValueFrom, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { PagoBancoResponse } from '../../services/pagos/dto/pagoBancoResponse.dto';
 import { PagosService } from '../../services/pagos/pagos-service';
@@ -8,6 +8,9 @@ import { ModificarPago } from '../../services/pagos/dto/modificarBanco.dto';
 import { GenerarExcelDTO } from '../../../interfaces/generarExcel.dto';
 import { GenerarReciboDTO } from '../../../interfaces/generarRecibo.dto';
 import { NotificationService } from '../../shared/notifications/notification.service';
+import { PadreResponsableService } from '../../services/padreResponsable/padre-responsable-service';
+import { PadreResponsableDTO } from '../../services/gestionPedidos/dto/padreResponsable.dto';
+import { CuotasService } from '../../services/cuotas/cuotas-service';
 
 type Banco = 'COMAFI' | 'Santander';
 
@@ -21,6 +24,8 @@ export class Bancos implements OnInit
 {
   private readonly pagosService = inject(PagosService);
   private readonly notificaciones = inject(NotificationService);
+  private readonly padreResponsableService = inject(PadreResponsableService);
+  private readonly cuotasService = inject(CuotasService);
 
   pagosComafi = signal<PagoBancoResponse[]>([]);
   pagosSantander = signal<PagoBancoResponse[]>([]);
@@ -36,9 +41,13 @@ export class Bancos implements OnInit
   generandoExcel = signal(false);
   descargandoReciboId = signal<number | null>(null);
 
+  pagosSeleccionables = computed(() =>
+    this.pagosVisibles().filter(pago => !pago.enviado_banco)
+  );
+
   todosSeleccionados = computed(() => {
-    const visibles = this.pagosVisibles();
-    return visibles.length > 0 && visibles.every(pago => this.seleccionados().has(pago.id));
+    const seleccionables = this.pagosSeleccionables();
+    return seleccionables.length > 0 && seleccionables.every(pago => this.seleccionados().has(pago.id));
   });
 
   ngOnInit(): void
@@ -113,12 +122,19 @@ export class Bancos implements OnInit
 
   toggleSeleccionarTodos(): void
   {
+    const idsSeleccionables = this.pagosSeleccionables().map(pago => pago.id);
+
     if (this.todosSeleccionados())
     {
-      this.seleccionados.set(new Set());
+      this.seleccionados.update(actual => {
+        const nuevo = new Set(actual);
+        idsSeleccionables.forEach(id => nuevo.delete(id));
+        return nuevo;
+      });
       return;
     }
-    this.seleccionados.set(new Set(this.pagosVisibles().map(pago => pago.id)));
+
+    this.seleccionados.update(actual => new Set([...actual, ...idsSeleccionables]));
   }
 
   confirmarGenerarExcel(): void
@@ -196,17 +212,28 @@ export class Bancos implements OnInit
     });
   }
 
-  generarComprobantePDF(pago: PagoBancoResponse): void
+  async generarComprobantePDF(pago: PagoBancoResponse)
   {
     this.descargandoReciboId.set(pago.id);
+
+    const padreResponsable: PadreResponsableDTO = await firstValueFrom(this.padreResponsableService.traerPadreResponsableId(pago.id_grupo));
+    const nroCuotas: number = (await firstValueFrom(this.cuotasService.traerCuotasIdPedido(pago.id_pedido))).length;
+
 
     const dto: GenerarReciboDTO = {
       numero: pago.nro_transferencia,
       fecha: this.formatearFecha(pago.fecha),
       clienteNombre: pago.nombre_colegio,
+      localidad:pago.localidad,
       concepto: pago.motivo,
       importe: pago.monto,
       leyendaSenia: false,
+      turno: pago.turno,
+      orientacion: pago.orientacion,
+      nivel: pago.nivel,
+      nombrePadre: padreResponsable.nombre,
+      apellidoPadre: padreResponsable.apellido,
+      nroCuotas: nroCuotas,
     };
 
     this.pagosService.descargarRecibo(dto)

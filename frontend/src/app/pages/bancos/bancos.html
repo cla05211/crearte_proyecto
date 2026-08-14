@@ -92,8 +92,10 @@
                     <input
                       type="checkbox"
                       [checked]="todosSeleccionados()"
+                      [disabled]="pagosSeleccionables().length === 0"
                       (change)="toggleSeleccionarTodos()"
-                      aria-label="Seleccionar todos los pagos"
+                      aria-label="Seleccionar todos los pagos pendientes de enviar al banco"
+                      title="Selecciona los pagos que todavía no fueron enviados al banco"
                     />
                   </th>
                 }

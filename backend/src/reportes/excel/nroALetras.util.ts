@@ -73,5 +73,5 @@ export function numeroALetras(monto: number): string
 
     texto = texto.trim();
 
-    return `${texto} PESOS CON ${String(parteDecimal).padStart(2, '0')}/100`;
+    return `${texto} PESOS`;
 }

@@ -23,4 +23,23 @@ export class PadreResponsableService
 
         return mensaje;
     }
+
+    async traerPadreResponsables(id:number):Promise<PadreResponsableDTO>
+    {
+        const { data, error } = await this.sb.supabase
+            .from('padres_responsables')
+            .select(`
+                *
+            `)
+            .eq('id_grupo', id)
+            .neq('mail', '')
+            .single();
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }
+
+        return data as PadreResponsableDTO;       
+    }
 }

@@ -7,5 +7,10 @@ export class GenerarReciboDTO {
     concepto!: string;
     importe!: number;
     leyendaSenia?: boolean;
+    turno!: string;
+    orientacion!: string;
+    nivel!:string;
+    nombrePadre!:string;
+    apellidoPadre!:string;
+    nroCuotas!:number;
 }
- 

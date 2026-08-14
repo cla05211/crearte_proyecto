@@ -24,7 +24,7 @@ export class CuotasController
 
     @Get ('pendientes/:id')
     @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('modficar_pedidos')
+    @RequierePermiso('modificar_pedidos')
     async obtenerCuotasPendientesIdPedido(@Param ('id', ParseIntPipe) id:number)
     {
         return await this.cuotasService.traerCuotasPendientesPorIdPedido(id);
@@ -32,7 +32,7 @@ export class CuotasController
 
     @Get (':id')
     @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('modficar_pedidos')
+    @RequierePermiso('modificar_pedidos')
     async obtenerCuotasIdPedido(@Param ('id', ParseIntPipe) id:number)
     {
         return await this.cuotasService.traerCuotasPorIdPedido(id);

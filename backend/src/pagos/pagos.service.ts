@@ -51,14 +51,14 @@ export class PagosService
         const { data, error } = await this.sb.supabase
             .from('pagos')
             .select(`*,
-                pedidos!inner(estado_general, grupos(colegios(nombre)))`)
+                pedidos!inner(id,estado_general, grupos(id,turno, orientacion, nivel,colegios(nombre, localidad)))`)
             .eq('banco', banco)
             .neq('pedidos.estado_general', "entregado");
 
         if (error) 
         {
             throw new Error(error.message);
-        }        
+        }      
 
         const pagosBancos: PagoBancoResponse[] = data.map(pago => ({
                     id: pago.id,
@@ -70,9 +70,15 @@ export class PagosService
                     nombre_colegio: pago.pedidos.grupos.colegios.nombre,
                     aprobado: pago.aprobado,
                     enviado_banco: pago.enviado_banco,
-                    motivo:pago.motivo
+                    motivo:pago.motivo,
+                    localidad:pago.pedidos.grupos.colegios.localidad,
+                    turno: pago.pedidos.grupos.turno,
+                    orientacion: pago.pedidos.grupos.orientacion,
+                    nivel:pago.pedidos.grupos.nivel,
+                    id_grupo:pago.pedidos.grupos.id,
+                    id_pedido:pago.pedidos.id,
                 }));
-        
+
         return pagosBancos
     }
 

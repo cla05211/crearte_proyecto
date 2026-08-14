@@ -10,4 +10,10 @@ export interface PagoBancoResponse
     aprobado: boolean;
     enviado_banco: boolean;
     motivo: string;
+    localidad:string;
+    turno: string;
+    orientacion: string;
+    nivel:string;
+    id_grupo:number;
+    id_pedido:number;
 }

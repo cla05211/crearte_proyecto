@@ -3,11 +3,13 @@ import * as path from 'path';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { GenerarReciboDTO } from './dto/generarRecibo.dto';
 import { numeroALetras } from 'src/reportes/excel/nroALetras.util';
+import { fstat } from 'fs';
+import * as fs from 'fs'
  
 // Datos fijos de la empresa, tal como figuran en el membrete del recibo.
 const EMPRESA = {
     nombre: 'CREARTE',
-    lema: 'Bolsos de egresados',
+    lema: 'Buzos de egresados',
     responsable: 'de Adrián Alejandro Coassini',
     direccion: 'Alvear 123 Of. 8',
     localidad: 'B1832BVC - Lomas de Zamora, Provincia de Buenos Aires',
@@ -15,24 +17,28 @@ const EMPRESA = {
     cuit: 'C.U.I.T.: 23-18380631-9',
     ingresosBrutos: 'INGR. BRUTOS CM: 902-2318380631-9',
     inicioActividades: 'Fecha de Inicio de Actividades: 11/2002',
-    condicionIva: 'I.V.A. RESPONSABLE INSC RIPTO',
+    condicionIva: 'I.V.A. RESPONSABLE INSCRIPTO',
 };
  
 const LEYENDA_SENIA =
-    'SEÑA: SE DEJA EXPRESA CONSTANCIA QUE, ANTE EL INGRESO DE LA SEÑA, LA EMPRESA YA COMIENZA A GENERAR COSTOS Y GASTOS, ES POR ELLO QUE, ' +
-    'ANTE EL ARREPENTIMIENTO TRANSCURRIDOS LOS 15 DIAS, SE LE RECONOCERA Y DEVOLVERA EL 50% DE LO ABONADO OPORTUNAMENTE EN CONCEPTO ' +
+    'SEÑA: SE DEJA EXPRESA CONSTANCIA DE QUE, ANTE EL INGRESO DE LA SEÑA, LA EMPRESA YA COMIENZA A GENERAR COSTOS Y GASTOS, ES POR ELLO QUE, ' +
+    'ANTE EL ARREPENTIMIENTO TRANSCURRIDOS LOS 15 DIAS, SE LE RECONOCERÁ Y DEVOLVERÁ EL 50% DE LO ABONADO OPORTUNAMENTE EN CONCEPTO ' +
     'DE SEÑA, Y TRANSCURRIDOS LOS 30 DIAS, NO SE HARA EFECTIVA NINGUNA DEVOLUCION. - (Art.1059 c.c. "La entrega de señal o arras se interpreta como ' +
     'confirmatoria del acto, excepto que las partes convengan la facultad de arrepentirse; en tal caso, quien entregó la señal la pierde en beneficio de la otra, y quien la ' +
-    'recibió, debe restituirla doblada…").-';
+    'recibió, debe restituirla doblada…").-'
+
+const logoPath = path.join(__dirname, '..', 'assets', 'logo-crearte.png');
  
 @Injectable()
 export class PdfService
 {
     private readonly logger = new Logger(PdfService.name);
     private printer: any;
+    private logoBase64: string; 
  
     constructor()
     {
+        this.logoBase64 = fs.readFileSync(path.join(__dirname, '..', '..', 'assets', 'logo-crearte.png')).toString('base64');
         const PdfPrinter = require('pdfmake');
         const carpetaFuentes = path.join(path.dirname(require.resolve('pdfmake/package.json')), 'build', 'fonts', 'Roboto');
  
@@ -47,6 +53,8 @@ export class PdfService
         PdfPrinter.setLocalAccessPolicy((rutaArchivo: string) => rutaArchivo.startsWith(carpetaFuentes));
  
         this.printer = PdfPrinter;
+        const rutaLogo = path.join(__dirname, '..', '..', 'assets', 'logo-crearte.png');
+        this.logoBase64 = fs.readFileSync(rutaLogo).toString('base64');
     }
  
     async generarReciboPago(dto: GenerarReciboDTO): Promise<Buffer>
@@ -55,11 +63,14 @@ export class PdfService
         {
             const montoFormateado = dto.importe.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             const montoEnLetras = numeroALetras(dto.importe);
+            const nombrePadre = dto.nombrePadre.charAt(0).toUpperCase() + dto.nombrePadre.slice(1).toLowerCase();
+            const apellidoPadre = dto.apellidoPadre.charAt(0).toUpperCase() + dto.apellidoPadre.slice(1).toLowerCase();
  
             const docDefinition: TDocumentDefinitions = {
                 pageSize: 'A4',
                 pageMargins: [40, 40, 40, 60],
                 defaultStyle: { font: 'Roboto', fontSize: 9 },
+                images: {logoCrearte: `data:image/png;base64,${this.logoBase64}`,},
                 content: [
                     // Encabezado: datos de la empresa + N° de recibo
                     {
@@ -67,7 +78,7 @@ export class PdfService
                             {
                                 width: '60%',
                                 stack: [
-                                    { text: EMPRESA.nombre, fontSize: 20, bold: true, color: '#E91E63' },
+                                    { image: 'logoCrearte', width: 120, margin: [0, 0, 0, 6] },
                                     { text: EMPRESA.lema, fontSize: 9, italics: true, margin: [0, -2, 0, 4] },
                                     { text: EMPRESA.responsable, fontSize: 8 },
                                     { text: EMPRESA.direccion, fontSize: 8 },
@@ -80,7 +91,7 @@ export class PdfService
                                 width: '40%',
                                 stack: [
                                     {
-                                        table: { widths: ['*'], body: [[{ text: 'RECIBO', alignment: 'center', bold: true, fontSize: 12 }]] },
+                                        table: { widths: ['*'], body: [[{ text: 'RECIBO', alignment: 'right', bold: true, fontSize: 12 }]] },
                                         layout: 'noBorders',
                                     },
                                     { text: `N° ${dto.numero}`, alignment: 'right', bold: true, fontSize: 11, margin: [0, 4, 0, 2] },
@@ -95,12 +106,20 @@ export class PdfService
                     { canvas: [{ type: 'line' as const, x1: 0, y1: 10, x2: 515, y2: 10, lineWidth: 1, lineColor: '#000000' }] },
  
                     // Datos del cliente
-                    {
+                    {                        
                         margin: [0, 15, 0, 15],
                         stack: [
-                            { text: [{ text: 'Señor/es: ', bold: true }, dto.clienteNombre] },
-                            { text: [{ text: 'Domicilio: ', bold: true }, dto.domicilio ?? ''], margin: [0, 3, 0, 0] },
+                            { text: [{ text: 'Colegio: ', bold: true }, dto.clienteNombre] },
                             { text: [{ text: 'Localidad: ', bold: true }, dto.localidad ?? ''], margin: [0, 3, 0, 0] },
+                            { text: [{ text: 'Turno: ', bold: true }, dto.turno?? ''], margin: [0, 3, 0, 0] },
+                            (dto.orientacion !== '-' 
+                                ? [{  
+                                    text: [{ text: 'Modalidad: ', bold: true }, dto.orientacion ?? ''],
+                                    margin: [0, 3, 0, 0]}]
+                                : []
+                            ),
+                            { text: [{ text: 'Nivel: ', bold: true }, dto.nivel ?? ''], margin: [0, 3, 0, 0] },
+                            { text: [{ text: 'Padre Responsable: ', bold: true }, `${nombrePadre} ${apellidoPadre}`], margin: [0, 3, 0, 0] },
                         ],
                     },
  
@@ -111,7 +130,7 @@ export class PdfService
                     },
                     {
                         margin: [0, 10, 0, 40],
-                        text: `Recibimos de ${dto.clienteNombre.toUpperCase()} la suma de ${montoEnLetras} ($ ${montoFormateado}) en concepto de: ${dto.concepto}`,
+                        text: `Recibimos de ${dto.clienteNombre.toUpperCase()} la suma de ${montoEnLetras} ($ ${montoFormateado}) en concepto de la ${dto.concepto.toLowerCase()}, correspondiente al plan de pagos de ${dto.nroCuotas} cuotas.`,
                     },
  
                     // Totales

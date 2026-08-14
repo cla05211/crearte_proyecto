@@ -42,18 +42,18 @@ export class PagosService
     return this.http.patch((`${environment.apiUrl}/pagos/enviado`), dto);
   }
 
-  eliminarPago(idPago: int)
+  eliminarPago(idPago: number)
   {
-    
+
   }
 
-  descargarExcel(dto: GenerarExcelDTO)
+  descargarExcel(dto: GenerarExcelDTO): Observable<Blob>
   {
-    return this.http.patch((`${environment.apiUrl}/pagos/excel`), dto);
+    return this.http.post((`${environment.apiUrl}/pagos/excel`), dto, { responseType: 'blob' });
   }
 
-  descargarRecibo(dto:GenerarReciboDTO)
+  descargarRecibo(dto: GenerarReciboDTO): Observable<Blob>
   {
-    return this.http.patch((`${environment.apiUrl}/pagos/recibo`), dto);
+    return this.http.post((`${environment.apiUrl}/pagos/recibo`), dto, { responseType: 'blob' });
   }
 }
