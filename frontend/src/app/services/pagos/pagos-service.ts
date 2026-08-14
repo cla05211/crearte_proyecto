@@ -7,6 +7,8 @@ import { SubirArchivoStorage } from '../storage/dtos/SubirArchivoStorage';
 import { PagoComprobanteDatosDTO } from './dto/pagoComprobanteDatos.dto';
 import { PagoBancoResponse } from './dto/pagoBancoResponse.dto';
 import { ModificarPago } from './dto/modificarBanco.dto';
+import { GenerarReciboDTO } from '../../../interfaces/generarRecibo.dto';
+import { GenerarExcelDTO } from '../../../interfaces/generarExcel.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -38,5 +40,20 @@ export class PagosService
   modificarEnviadoBanco(dto: ModificarPago)
   {
     return this.http.patch((`${environment.apiUrl}/pagos/enviado`), dto);
+  }
+
+  eliminarPago(idPago: int)
+  {
+    
+  }
+
+  descargarExcel(dto: GenerarExcelDTO)
+  {
+    return this.http.patch((`${environment.apiUrl}/pagos/excel`), dto);
+  }
+
+  descargarRecibo(dto:GenerarReciboDTO)
+  {
+    return this.http.patch((`${environment.apiUrl}/pagos/recibo`), dto);
   }
 }

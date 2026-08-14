@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { BadRequestException } from '@nestjs/common';
 import { PagoDTO } from './dto/pago.dto';
@@ -69,7 +69,8 @@ export class PagosService
                     monto: pago.monto,
                     nombre_colegio: pago.pedidos.grupos.colegios.nombre,
                     aprobado: pago.aprobado,
-                    enviado_banco: pago.enviado_banco
+                    enviado_banco: pago.enviado_banco,
+                    motivo:pago.motivo
                 }));
         
         return pagosBancos

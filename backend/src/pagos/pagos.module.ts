@@ -6,9 +6,10 @@ import { SupabaseModule } from 'src/supabase/supabase.module';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
 import { OcrService } from 'src/ocr/ocr.service';
 import { OcrModule } from 'src/ocr/ocr.module';
+import { ReportesModule } from 'src/reportes/reportes.module';
 
 @Module({
-  imports:[SupabaseModule, OcrModule],
+  imports:[SupabaseModule, OcrModule, ReportesModule],
   controllers: [PagosController],
   providers:[PermisosService, PagosService, UsuariosService, OcrService]
 })

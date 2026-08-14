@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import type { Response } from 'express';
 import { PagosService } from './pagos.service';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
@@ -7,11 +8,15 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { OcrService } from '../ocr/ocr.service';
 import type { ArchivoSubido } from 'src/storage/storage.service';
 import { ModificarPago } from './dto/modificarBanco.dto';
+import { GenerarExcelDTO } from 'src/reportes/excel/dto/generarExcel.dto';
+import { ExcelService } from 'src/reportes/excel/excel.service';
+import { GenerarReciboDTO } from 'src/reportes/pdf/dto/generarRecibo.dto';
+import { PdfService } from 'src/reportes/pdf/pdf.service';
 
 @Controller('pagos')
 export class PagosController 
 {
-    constructor(private pagosService: PagosService, private ocrService: OcrService){}
+    constructor(private pagosService: PagosService, private ocrService: OcrService, private excelService: ExcelService, private pdfService: PdfService){}
     
     @Get(':id')
     @UseGuards(AuthGuard,PermisosGuard)
@@ -50,5 +55,31 @@ export class PagosController
     async testOcr(@UploadedFile() file: ArchivoSubido) 
     {
         return await this.pagosService.comprobarComprobantePago(file.buffer)
+    }
+
+    @Post('excel')
+    @UseGuards(AuthGuard)
+    async descargarExcel(@Body() dto: GenerarExcelDTO, @Res() res: Response)
+    {
+        const buffer = await this.excelService.generarExcel(dto.nombreHoja, dto.columnas, dto.filas);
+
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': `attachment; filename="${dto.nombreHoja || 'reporte'}.xlsx"`,
+        });
+        res.send(buffer);
+    }
+
+    @Post('recibo')
+    @UseGuards(AuthGuard)
+    async descargarRecibo(@Body() dto: GenerarReciboDTO, @Res() res: Response)
+    {
+        const buffer = await this.pdfService.generarReciboPago(dto);
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="recibo-${dto.numero}.pdf"`,
+        });
+        res.send(buffer);
     }
 }

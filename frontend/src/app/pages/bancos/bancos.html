@@ -1,27 +1,173 @@
-<div style="max-width: 500px; margin: 40px auto; font-family: sans-serif;">
-  <h2>Prueba OBancos</h2>
+<main class="banks-page">
+  <div class="banks-page__shape banks-page__shape--left" aria-hidden="true"></div>
+  <div class="banks-page__shape banks-page__shape--right" aria-hidden="true"></div>
 
-  @if (pagosSantander().length) {
-                  <ul class="file-list">
-                    @for (pago of pagosSantander(); track + $index; let i = $index) {
-                      <li>
-                        <span class="file-list__name">{{ pago.nombre_colegio }}</span>
-                        <span class="file-list__name">{{ pago.fecha }}</span>
-                        <span class="file-list__name">{{ pago.nro_transferencia }}</span>
-                      </li>
-                    }
-                  </ul>
-                } 
-  @if (pagosComafi().length) {
-                  <ul class="file-list">
-                    @for (pago of pagosComafi(); track + $index; let i = $index) {
-                      <li>
-                        <span class="file-list__name">{{ pago.nombre_colegio }}</span>
-                        <span class="file-list__name">{{ pago.fecha }}</span>
-                        <span class="file-list__name">{{ pago.nro_transferencia }}</span>
-                      </li>
-                    }
-                  </ul>
-                } 
-</div>
+  <section class="ds-container banks-container">
+    <header class="banks-header">
+      <div>
+        <span class="ds-eyebrow">Gestión de pagos</span>
+        <h1 class="ds-heading-1">Bancos</h1>
+        <p class="ds-text-muted">Revisá, aprobá y enviá los comprobantes de pago recibidos.</p>
+      </div>
 
+      <div class="banks-header__count" aria-label="Cantidad de pagos">
+        <span class="banks-header__count-number">{{ pagosVisibles().length }}</span>
+        <span>pagos</span>
+      </div>
+    </header>
+
+    <div class="banks-toolbar">
+      <nav class="promo-tabs" aria-label="Seleccionar banco">
+        <button
+          type="button"
+          [class.is-active]="bancoSeleccionado() === 'COMAFI'"
+          [attr.aria-pressed]="bancoSeleccionado() === 'COMAFI'"
+          (click)="seleccionarBanco('COMAFI')"
+        >
+          COMAFI
+        </button>
+        <button
+          type="button"
+          [class.is-active]="bancoSeleccionado() === 'Santander'"
+          [attr.aria-pressed]="bancoSeleccionado() === 'Santander'"
+          (click)="seleccionarBanco('Santander')"
+        >
+          Santander
+        </button>
+      </nav>
+
+      @if (!modoSeleccion()) {
+        <button
+          type="button"
+          class="ds-button"
+          [disabled]="pagosVisibles().length === 0"
+          (click)="iniciarSeleccionExcel()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+          Generar excel
+        </button>
+      } @else {
+        <div class="selection-toolbar">
+          <span class="selection-toolbar__count">{{ seleccionados().size }} seleccionado{{ seleccionados().size === 1 ? '' : 's' }}</span>
+          <button type="button" class="ds-button ds-button--secondary" [disabled]="generandoExcel()" (click)="cancelarSeleccionExcel()">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="ds-button"
+            [disabled]="seleccionados().size === 0 || generandoExcel()"
+            (click)="confirmarGenerarExcel()"
+          >
+            {{ generandoExcel() ? 'Generando…' : 'Confirmar y generar excel' }}
+          </button>
+        </div>
+      }
+    </div>
+
+    <section class="banks-card" aria-label="Listado de pagos">
+      @if (cargando()) {
+        <div class="loading-state" role="status" aria-live="polite">
+          <span class="loading-state__spinner" aria-hidden="true"></span>
+          <div>
+            <h2>Cargando pagos</h2>
+            <p>Estamos preparando el listado de pagos.</p>
+          </div>
+        </div>
+      } @else if (pagosVisibles().length === 0) {
+        <div class="empty-state">
+          <div class="empty-state__illustration" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <h2>No hay pagos para {{ bancoSeleccionado() }}.</h2>
+          <p>Cuando ingrese un pago para este banco, lo vas a ver acá.</p>
+        </div>
+      } @else {
+        <div class="table-wrapper">
+          <table class="banks-table">
+            <caption>Pagos registrados en {{ bancoSeleccionado() }}</caption>
+            <thead>
+              <tr>
+                @if (modoSeleccion()) {
+                  <th scope="col" class="banks-table__select-heading">
+                    <input
+                      type="checkbox"
+                      [checked]="todosSeleccionados()"
+                      (change)="toggleSeleccionarTodos()"
+                      aria-label="Seleccionar todos los pagos"
+                    />
+                  </th>
+                }
+                <th scope="col">Fecha</th>
+                <th scope="col">Nro de Comprobante</th>
+                <th scope="col">Entidad de Pago</th>
+                <th scope="col">Monto</th>
+                <th scope="col">Colegio</th>
+                <th scope="col" class="banks-table__center-heading">Enviado al banco</th>
+                <th scope="col" class="banks-table__center-heading">Aprobado</th>
+                <th scope="col" class="banks-table__actions-heading">Comprobante</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (pago of pagosVisibles(); track pago.id) {
+                <tr [class.is-rechazado]="!pago.aprobado">
+                  @if (modoSeleccion()) {
+                    <td class="banks-table__select-cell">
+                      <input
+                        type="checkbox"
+                        [checked]="seleccionados().has(pago.id)"
+                        (change)="toggleSeleccionPago(pago.id)"
+                        [attr.aria-label]="'Seleccionar pago ' + pago.nro_transferencia"
+                      />
+                    </td>
+                  }
+                  <td data-label="Fecha">{{ pago.fecha | date: 'dd/MM/yyyy' }}</td>
+                  <td data-label="Nro de Comprobante">{{ pago.nro_transferencia }}</td>
+                  <td data-label="Entidad de Pago">{{ pago.entidad_pago }}</td>
+                  <td data-label="Monto">{{ pago.monto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Colegio"><span class="school-name">{{ pago.nombre_colegio }}</span></td>
+                  <td data-label="Enviado al banco" class="banks-table__center-cell">
+                    <label class="approval-control">
+                      <input
+                        type="checkbox"
+                        [checked]="pago.enviado_banco"
+                        [disabled]="modoSeleccion()"
+                        (change)="modificarEnviadoBanco(pago, $any($event.target).checked)"
+                        [attr.aria-label]="'Marcar enviado al banco el pago ' + pago.nro_transferencia"
+                      />
+                      <span class="approval-control__track" aria-hidden="true"></span>
+                    </label>
+                  </td>
+                  <td data-label="Aprobado" class="banks-table__center-cell">
+                    <button
+                      type="button"
+                      class="reject-button"
+                      [class.is-active]="!pago.aprobado"
+                      [disabled]="modoSeleccion()"
+                      (click)="modificarAprobado(pago)"
+                      [attr.aria-label]="(pago.aprobado ? 'Rechazar' : 'Restaurar') + ' el pago ' + pago.nro_transferencia"
+                      [title]="pago.aprobado ? 'Rechazar pago' : 'Pago rechazado, tocar para restaurar'"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+                    </button>
+                  </td>
+                  <td data-label="Comprobante" class="banks-table__actions-cell">
+                    <button
+                      type="button"
+                      class="download-button"
+                      [disabled]="modoSeleccion() || descargandoReciboId() === pago.id"
+                      (click)="generarComprobantePDF(pago)"
+                      [attr.aria-label]="'Descargar comprobante del pago ' + pago.nro_transferencia"
+                      title="Descargar comprobante"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </section>
+</main>
