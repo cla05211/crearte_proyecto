@@ -191,6 +191,47 @@
 
 .school-name { color: var(--color-text-strong); font-weight: var(--font-weight-bold); }
 
+.banks-table__group-row td {
+  background: #f0e6eb;
+  padding: (var(--space-1)/2) var(--space-5);
+  text-align: center;
+}
+
+.banks-table__group-row:first-child td { border-top: 0; }
+
+.banks-table__group-row.is-clickable { cursor: pointer; }
+
+.banks-table__group-heading { text-align: center; }
+
+.banks-table__group-content {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-2);
+}
+
+.banks-table__group-heading span {
+  color: var(--color-surface);
+  font-size: 0.70rem;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #690446;
+}
+
+.banks-table__group-chevron {
+  fill: none;
+  height: 0.85rem;
+  stroke: var(--color-surface);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+  transition: transform var(--transition-fast);
+  width: 0.85rem;
+  stroke: #690446;
+}
+
+.banks-table__group-chevron.is-open { transform: rotate(180deg); }
+
 .banks-table__select-heading,
 .banks-table__select-cell,
 .banks-table__center-heading,

@@ -3,6 +3,7 @@ import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/rou
 import { AuthService } from '../services/Auth/auth-service';
 import { Usuario } from '../../interfaces/usuario';
 import { RolService } from '../services/roles/rol-service';
+import { PermisosService } from '../services/permisos/permisos';
 
 @Component({
   selector: 'app-shell',
@@ -17,7 +18,7 @@ export class Shell implements OnInit {
   sidebarAbierto = signal(false);
   rol = signal<string>('');
 
-  constructor(private authService: AuthService, private router: Router, private rolesService: RolService) {}
+  constructor(private authService: AuthService, private router: Router, private rolesService: RolService, private permisosService: PermisosService) {}
 
   ngOnInit()
   {
@@ -44,8 +45,13 @@ export class Shell implements OnInit {
     this.sidebarAbierto.set(false);
   }
 
-  cerrarSesion(): void 
-  { 
+  cerrarSesion(): void
+  {
     this.authService.cerrarSesion();
+  }
+
+  tienePermiso(nombre: string): boolean
+  {
+    return this.permisosService.tienePermiso(nombre);
   }
 }

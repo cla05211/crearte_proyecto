@@ -45,9 +45,18 @@
     </div>
     <nav>
       <a routerLink="/home" routerLinkActive="activo" (click)="cerrarSidebar()">Inicio</a>
-      <a routerLink="/usuarios" routerLinkActive="activo" (click)="cerrarSidebar()">Usuarios</a>
-      <a routerLink="/productos" routerLinkActive="activo" (click)="cerrarSidebar()">Productos</a>
-      <a routerLink="/ventas" routerLinkActive="activo" (click)="cerrarSidebar()">Ventas</a>
+      @if (tienePermiso('ver_usuarios')) {
+        <a routerLink="/usuarios" routerLinkActive="activo" (click)="cerrarSidebar()">Usuarios</a>
+      }
+      @if (tienePermiso('ver_productos')) {
+        <a routerLink="/productos" routerLinkActive="activo" (click)="cerrarSidebar()">Productos</a>
+      }
+      @if (tienePermiso('crear_pedido')) {
+        <a routerLink="/ventas" routerLinkActive="activo" (click)="cerrarSidebar()">Ventas</a>
+      }
+      @if (tienePermiso('ver_bancos')) {
+        <a routerLink="/bancos" routerLinkActive="activo" (click)="cerrarSidebar()">Cuentas Bancarias</a>
+      }
     </nav>
   </aside>
 

@@ -53,7 +53,8 @@ export class PagosService
             .select(`*,
                 pedidos!inner(id,estado_general, grupos(id,turno, orientacion, nivel,colegios(nombre, localidad)))`)
             .eq('banco', banco)
-            .neq('pedidos.estado_general', "entregado");
+            .neq('pedidos.estado_general', "entregado")
+            .order('fecha', { ascending: false });;
 
         if (error) 
         {
@@ -105,7 +106,11 @@ export class PagosService
         datosComprobante.nro_transferencia = this.determinarNroComprobante(textoImagen);
         datosComprobante.monto = this.determinarMonto(textoImagen);
 
-        console.log(datosComprobante);
+        if(datosComprobante.nro_transferencia == "" || datosComprobante.monto == 0)
+        {
+            throw new BadRequestException('El archivo enviado no es válido');
+        }
+
         return datosComprobante;
     }
 

@@ -110,31 +110,56 @@
               </tr>
             </thead>
             <tbody>
-              @for (pago of pagosVisibles(); track pago.id) {
-                <tr [class.is-rechazado]="!pago.aprobado">
+              @for (fila of filasTabla(); track fila.pago.id) {
+                @if (fila.mostrarEncabezado) {
+                  <tr
+                    class="banks-table__group-row"
+                    [class.is-clickable]="fila.grupo === 'Anterior'"
+                    (click)="fila.grupo === 'Anterior' && toggleAnteriores()"
+                  >
+                    <td
+                      [attr.colspan]="modoSeleccion() ? 9 : 8"
+                      class="banks-table__group-heading"
+                      [attr.role]="fila.grupo === 'Anterior' ? 'button' : null"
+                      [attr.tabindex]="fila.grupo === 'Anterior' ? 0 : null"
+                      [attr.aria-expanded]="fila.grupo === 'Anterior' ? mostrarAnteriores() : null"
+                    >
+                      <div class="banks-table__group-content">
+                        <span>{{ fila.grupo }}</span>
+                        @if (fila.grupo === 'Anterior') {
+                          <svg class="banks-table__group-chevron" [class.is-open]="mostrarAnteriores()" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m6 9 6 6 6-6" />
+                          </svg>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+                @if (fila.grupo === 'Esta semana' || mostrarAnteriores()) {
+                <tr [class.is-rechazado]="!fila.pago.aprobado">
                   @if (modoSeleccion()) {
                     <td class="banks-table__select-cell">
                       <input
                         type="checkbox"
-                        [checked]="seleccionados().has(pago.id)"
-                        (change)="toggleSeleccionPago(pago.id)"
-                        [attr.aria-label]="'Seleccionar pago ' + pago.nro_transferencia"
+                        [checked]="seleccionados().has(fila.pago.id)"
+                        (change)="toggleSeleccionPago(fila.pago.id)"
+                        [attr.aria-label]="'Seleccionar pago ' + fila.pago.nro_transferencia"
                       />
                     </td>
                   }
-                  <td data-label="Fecha">{{ pago.fecha | date: 'dd/MM/yyyy' }}</td>
-                  <td data-label="Nro de Comprobante">{{ pago.nro_transferencia }}</td>
-                  <td data-label="Entidad de Pago">{{ pago.entidad_pago }}</td>
-                  <td data-label="Monto">{{ pago.monto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
-                  <td data-label="Colegio"><span class="school-name">{{ pago.nombre_colegio }}</span></td>
+                  <td data-label="Fecha">{{ fila.pago.fecha | date: 'dd/MM/yyyy' }}</td>
+                  <td data-label="Nro de Comprobante">{{ fila.pago.nro_transferencia }}</td>
+                  <td data-label="Entidad de Pago">{{ fila.pago.entidad_pago }}</td>
+                  <td data-label="Monto">{{ fila.pago.monto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Colegio"><span class="school-name">{{ fila.pago.nombre_colegio }}</span></td>
                   <td data-label="Enviado al banco" class="banks-table__center-cell">
                     <label class="approval-control">
                       <input
                         type="checkbox"
-                        [checked]="pago.enviado_banco"
+                        [checked]="fila.pago.enviado_banco"
                         [disabled]="modoSeleccion()"
-                        (change)="modificarEnviadoBanco(pago, $any($event.target).checked)"
-                        [attr.aria-label]="'Marcar enviado al banco el pago ' + pago.nro_transferencia"
+                        (change)="modificarEnviadoBanco(fila.pago, $any($event.target).checked)"
+                        [attr.aria-label]="'Marcar enviado al banco el pago ' + fila.pago.nro_transferencia"
                       />
                       <span class="approval-control__track" aria-hidden="true"></span>
                     </label>
@@ -143,11 +168,11 @@
                     <button
                       type="button"
                       class="reject-button"
-                      [class.is-active]="!pago.aprobado"
+                      [class.is-active]="!fila.pago.aprobado"
                       [disabled]="modoSeleccion()"
-                      (click)="modificarAprobado(pago)"
-                      [attr.aria-label]="(pago.aprobado ? 'Rechazar' : 'Restaurar') + ' el pago ' + pago.nro_transferencia"
-                      [title]="pago.aprobado ? 'Rechazar pago' : 'Pago rechazado, tocar para restaurar'"
+                      (click)="modificarAprobado(fila.pago)"
+                      [attr.aria-label]="(fila.pago.aprobado ? 'Rechazar' : 'Restaurar') + ' el pago ' + fila.pago.nro_transferencia"
+                      [title]="fila.pago.aprobado ? 'Rechazar pago' : 'Pago rechazado, tocar para restaurar'"
                     >
                       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
                     </button>
@@ -156,15 +181,16 @@
                     <button
                       type="button"
                       class="download-button"
-                      [disabled]="modoSeleccion() || descargandoReciboId() === pago.id"
-                      (click)="generarComprobantePDF(pago)"
-                      [attr.aria-label]="'Descargar comprobante del pago ' + pago.nro_transferencia"
+                      [disabled]="modoSeleccion() || descargandoReciboId() === fila.pago.id"
+                      (click)="generarComprobantePDF(fila.pago)"
+                      [attr.aria-label]="'Descargar comprobante del pago ' + fila.pago.nro_transferencia"
                       title="Descargar comprobante"
                     >
                       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
                     </button>
                   </td>
                 </tr>
+                }
               }
             </tbody>
           </table>

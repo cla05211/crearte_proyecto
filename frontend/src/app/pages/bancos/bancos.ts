@@ -36,6 +36,8 @@ export class Bancos implements OnInit
     this.bancoSeleccionado() === 'COMAFI' ? this.pagosComafi() : this.pagosSantander()
   );
 
+  mostrarAnteriores = signal(false);
+
   modoSeleccion = signal(false);
   seleccionados = signal<Set<number>>(new Set());
   generandoExcel = signal(false);
@@ -44,6 +46,23 @@ export class Bancos implements OnInit
   pagosSeleccionables = computed(() =>
     this.pagosVisibles().filter(pago => !pago.enviado_banco && pago.aprobado)
   );
+
+  filasTabla = computed(() => {
+    const lunesActual = this.obtenerLunesSemana(new Date());
+    const domingoActual = new Date(lunesActual);
+    domingoActual.setDate(domingoActual.getDate() + 6);
+    domingoActual.setHours(23, 59, 59, 999);
+
+    let grupoPrevio: string | null = null;
+
+    return this.pagosVisibles().map(pago => {
+      const fecha = new Date(pago.fecha);
+      const grupo = fecha >= lunesActual && fecha <= domingoActual ? 'Esta semana' : 'Anterior';
+      const mostrarEncabezado = grupo !== grupoPrevio;
+      grupoPrevio = grupo;
+      return { pago, grupo, mostrarEncabezado };
+    });
+  });
 
   todosSeleccionados = computed(() => {
     const seleccionables = this.pagosSeleccionables();
@@ -83,6 +102,11 @@ export class Bancos implements OnInit
         this.notificaciones.error({ title: 'Error al cargar pagos', description: 'No se pudieron obtener los pagos de Santander.' });
       },
     });
+  }
+
+  toggleAnteriores(): void
+  {
+    this.mostrarAnteriores.update(valor => !valor);
   }
 
   seleccionarBanco(banco: Banco): void
@@ -266,6 +290,16 @@ export class Bancos implements OnInit
 
     this.pagosComafi.update(actualizar);
     this.pagosSantander.update(actualizar);
+  }
+
+  private obtenerLunesSemana(fecha: Date): Date
+  {
+    const lunes = new Date(fecha);
+    const dia = lunes.getDay();
+    const diferencia = dia === 0 ? -6 : 1 - dia;
+    lunes.setDate(lunes.getDate() + diferencia);
+    lunes.setHours(0, 0, 0, 0);
+    return lunes;
   }
 
   private formatearFecha(fecha: Date | string): string

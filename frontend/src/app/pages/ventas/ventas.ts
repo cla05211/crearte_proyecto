@@ -49,6 +49,11 @@ interface ComprobanteVerificado {
   verificando: boolean;
   error: string;
   entidadPago: string;
+  requiereIngresoManual: boolean;
+  manualNroTransferencia: string;
+  manualMonto: number | null;
+  manualBanco: string;
+  entidadPagoPersonalizada: boolean;
 }
 
 @Component({
@@ -86,7 +91,8 @@ export class Ventas implements OnInit {
     "San Juan","San Luis","Santa Cruz","Santa Fe","Santiago del Estero","Tierra del Fuego","Tucumán",
     "Ciudad Autónoma de Buenos Aires"];  
   niveles = ["Secundaria", "Primaria", "Jardin"];
-  entidadesPago = ["Mercado Pago", "NaranjaX", "Cuenta DNI", "Galicia", "BNA", "Uala"];
+  entidadesPago = ["Mercado Pago", "NaranjaX", "Cuenta DNI", "Galicia", "BNA", "Uala", "Otra"];
+  bancosComprobante = ["COMAFI", "Santander"];
 
   readonly ventas = signal<PedidoResponseVentas[]>([]);
   readonly productosDisponibles = signal<ProductoConPrecioResponseDTO[]>([]);
@@ -397,7 +403,17 @@ export class Ventas implements OnInit {
     this.archivosSenia = [...this.archivosSenia, ...nuevosArchivos];
     this.comprobantesSenia.update((comprobantes) => [
       ...comprobantes,
-      ...nuevosArchivos.map(() => ({ datos: null, verificando: true, error: '', entidadPago: '' })),
+      ...nuevosArchivos.map(() => ({
+        datos: null,
+        verificando: true,
+        error: '',
+        entidadPago: '',
+        requiereIngresoManual: false,
+        manualNroTransferencia: '',
+        manualMonto: null,
+        manualBanco: '',
+        entidadPagoPersonalizada: false,
+      })),
     ]);
 
     input.value = '';
@@ -441,7 +457,8 @@ export class Ventas implements OnInit {
                   ...c,
                   datos: null,
                   verificando: false,
-                  error: 'No se pudieron extraer los datos del comprobante. Verificá el archivo e intentá nuevamente.',
+                  error: 'No se pudieron extraer los datos del comprobante. Verificá el archivo e intentá nuevamente, o ingresá los datos manualmente.',
+                  requiereIngresoManual: true,
                 }
               : c,
           ),
@@ -452,7 +469,54 @@ export class Ventas implements OnInit {
 
   actualizarEntidadComprobante(indice: number, entidadPago: string): void {
     this.comprobantesSenia.update((comprobantes) =>
+      comprobantes.map((c, i) => {
+        if (i !== indice) return c;
+        if (entidadPago === 'Otra') {
+          return { ...c, entidadPagoPersonalizada: true, entidadPago: '' };
+        }
+        return { ...c, entidadPagoPersonalizada: false, entidadPago };
+      }),
+    );
+  }
+
+  actualizarEntidadPagoPersonalizada(indice: number, entidadPago: string): void {
+    this.comprobantesSenia.update((comprobantes) =>
       comprobantes.map((c, i) => (i === indice ? { ...c, entidadPago } : c)),
+    );
+  }
+
+  actualizarDatoManualComprobante(
+    indice: number,
+    campo: 'nro_transferencia' | 'monto' | 'banco',
+    valor: string,
+  ): void {
+    this.comprobantesSenia.update((comprobantes) =>
+      comprobantes.map((c, i) => {
+        if (i !== indice) return c;
+
+        const actualizado = { ...c };
+        if (campo === 'nro_transferencia') actualizado.manualNroTransferencia = valor.trim();
+        if (campo === 'banco') actualizado.manualBanco = valor;
+        if (campo === 'monto') actualizado.manualMonto = valor === '' ? null : Number(valor);
+
+        const completo = Boolean(
+          actualizado.manualNroTransferencia &&
+            actualizado.manualBanco &&
+            actualizado.manualMonto &&
+            actualizado.manualMonto > 0,
+        );
+
+        actualizado.datos = completo
+          ? {
+              nro_transferencia: actualizado.manualNroTransferencia,
+              monto: actualizado.manualMonto!,
+              banco: actualizado.manualBanco,
+            }
+          : null;
+        actualizado.error = completo ? '' : c.error;
+
+        return actualizado;
+      }),
     );
   }
 

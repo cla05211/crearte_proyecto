@@ -636,7 +636,7 @@
                       ><span class="ds-label">Entidad de pago *</span
                       ><select
                         class="ds-select"
-                        [ngModel]="comprobante.entidadPago"
+                        [ngModel]="comprobante.entidadPagoPersonalizada ? 'Otra' : comprobante.entidadPago"
                         (ngModelChange)="actualizarEntidadComprobante(i, $any($event))"
                       >
                         <option value="">Seleccioná una entidad</option>
@@ -645,18 +645,67 @@
                         }
                       </select></label
                     >
+                    @if (comprobante.entidadPagoPersonalizada) {
+                      <label class="ds-field"
+                        ><span class="ds-label">Especificá la entidad de pago *</span
+                        ><input
+                          class="ds-input"
+                          type="text"
+                          [ngModel]="comprobante.entidadPago"
+                          (ngModelChange)="
+                            actualizarEntidadPagoPersonalizada(i, $any($event))
+                          " /></label
+                      >
+                    }
                     @if (comprobante.verificando) {
                       <span class="ds-text-muted">Verificando comprobante…</span>
                     }
-                    @if (comprobante.error) {
-                      <span class="ds-alert ds-alert--danger">{{ comprobante.error }}</span>
+                    @if (comprobante.requiereIngresoManual) {
+                      @if (comprobante.error) {
+                        <span class="ds-alert ds-alert--danger">{{ comprobante.error }}</span>
+                      }
+                      <label class="ds-field"
+                        ><span class="ds-label">Nro. de transferencia *</span
+                        ><input
+                          class="ds-input"
+                          type="text"
+                          [ngModel]="comprobante.manualNroTransferencia"
+                          (ngModelChange)="
+                            actualizarDatoManualComprobante(i, 'nro_transferencia', $any($event))
+                          " /></label
+                      ><label class="ds-field"
+                        ><span class="ds-label">Monto *</span
+                        ><input
+                          class="ds-input"
+                          type="number"
+                          min="0"
+                          [ngModel]="comprobante.manualMonto"
+                          (ngModelChange)="
+                            actualizarDatoManualComprobante(i, 'monto', $any($event))
+                          " /></label
+                      ><label class="ds-field"
+                        ><span class="ds-label">Banco *</span
+                        ><select
+                          class="ds-select"
+                          [ngModel]="comprobante.manualBanco"
+                          (ngModelChange)="
+                            actualizarDatoManualComprobante(i, 'banco', $any($event))
+                          "
+                        >
+                          <option value="">Seleccioná un banco</option>
+                          @for (banco of bancosComprobante; track banco) {
+                            <option [value]="banco">{{ banco }}</option>
+                          }
+                        </select></label
+                      >
                     }
                     @if (comprobante.datos; as datos) {
                       <span
-                        >Banco detectado <strong>{{ datos.banco }}</strong></span
+                        >Banco{{ comprobante.requiereIngresoManual ? '' : ' detectado' }}
+                        <strong>{{ datos.banco }}</strong></span
                       >
                       <span
-                        >Monto detectado
+                        >Monto{{ comprobante.requiereIngresoManual ? '' : ' detectado' }}
                         <strong>{{
                           datos.monto | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
                         }}</strong></span
