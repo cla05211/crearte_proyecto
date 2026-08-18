@@ -39,7 +39,7 @@ export class ExcelService
         filaHeader.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: 'FFE91E63' },
+            fgColor: { argb: 'FF434343' },
         };
         filaHeader.alignment = { vertical: 'middle', horizontal: 'center' };
         filaHeader.height = 22;

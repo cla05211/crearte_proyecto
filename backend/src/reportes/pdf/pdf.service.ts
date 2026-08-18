@@ -1,9 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as path from 'path';
-import type { TDocumentDefinitions } from 'pdfmake/interfaces';
+import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { GenerarReciboDTO } from './dto/generarRecibo.dto';
 import { numeroALetras } from 'src/reportes/excel/nroALetras.util';
-import { fstat } from 'fs';
 import * as fs from 'fs'
  
 // Datos fijos de la empresa, tal como figuran en el membrete del recibo.
@@ -65,13 +64,33 @@ export class PdfService
             const montoEnLetras = numeroALetras(dto.importe);
             const nombrePadre = dto.nombrePadre.charAt(0).toUpperCase() + dto.nombrePadre.slice(1).toLowerCase();
             const apellidoPadre = dto.apellidoPadre.charAt(0).toUpperCase() + dto.apellidoPadre.slice(1).toLowerCase();
+            const MARGIN_X = 45;
+            const CONTENT_WIDTH = 515;
+
+            //Lineas de abajo
+            const COL_LABEL_WIDTH = 405; // CONTENT_WIDTH (515) - COL_VALUE_WIDTH (80)
+            const COL_VALUE_WIDTH = 90;
  
             const docDefinition: TDocumentDefinitions = {
                 pageSize: 'A4',
-                pageMargins: [40, 40, 40, 60],
+                pageMargins: [45, 40, 40, 10], // dejamos más aire abajo para el bloque fijo
                 defaultStyle: { font: 'Roboto', fontSize: 9 },
-                images: {logoCrearte: `data:image/png;base64,${this.logoBase64}`,},
+                images: { logoCrearte: `data:image/png;base64,${this.logoBase64}` },
                 content: [
+                    // Recuadro general que enmarca toda la hoja
+                    {
+                        canvas: [
+                        {
+                            type: 'rect',
+                            x: 0,
+                            y: 0,
+                            w: 525,
+                            h: 755,
+                            lineWidth: 1,
+                            lineColor: '#000000',
+                        },],
+                        absolutePosition: { x: 40, y: 30 },
+                    },
                     // Encabezado: datos de la empresa + N° de recibo
                     {
                         columns: [
@@ -132,30 +151,68 @@ export class PdfService
                         margin: [0, 10, 0, 40],
                         text: `Recibimos de ${dto.clienteNombre.toUpperCase()} la suma de ${montoEnLetras} ($ ${montoFormateado}) en concepto de la ${dto.concepto.toLowerCase()}, correspondiente al plan de pagos de ${dto.nroCuotas} cuotas.`,
                     },
- 
-                    // Totales
+                    //Importe y eso
                     {
-                        margin: [0, 0, 0, 0],
-                        table: {
-                            widths: ['*', 80],
-                            body: [
-                                [{ text: 'Importe $', alignment: 'right', border: [false, true, false, false] }, { text: montoFormateado, alignment: 'right', border: [false, true, false, false] }],
-                                [{ text: 'I.V.A. Inscr. %', alignment: 'right', border: [false, false, false, false] }, { text: '', alignment: 'right', border: [false, false, false, false] }],
-                                [{ text: 'TOTAL $', alignment: 'right', bold: true, fontSize: 11, border: [false, true, false, false] }, { text: montoFormateado, alignment: 'right', bold: true, fontSize: 11, border: [false, true, false, false] }],
-                            ],
+                        absolutePosition: { x: MARGIN_X, y: 660 },
+                            table: {
+                                widths: [COL_LABEL_WIDTH, COL_VALUE_WIDTH],
+                                body: [
+                                    [
+                                        { text: 'Importe $', alignment: 'right', border: [false, true, false, false] },
+                                        { text: montoFormateado, alignment: 'right', border: [false, true, false, false] },
+                                    ],
+                                    [
+                                        { text: 'I.V.A. Inscr. %', alignment: 'right', border: [false, false, false, false] },
+                                        { text: '', alignment: 'right', border: [false, false, false, false] },
+                                    ],
+                                ],
+                            },
+                                layout: {
+                                    paddingTop: () => 3,
+                                    paddingBottom: () => 6,
+                                    paddingLeft: () => 4,
+                                    paddingRight: () => 4,
+                                },
                         },
-                    },
- 
-                    ...(dto.leyendaSenia === false
-                        ? []
-                        : [
-                              { canvas: [{ type: 'line' as const, x1: 0, y1: 10, x2: 515, y2: 10, lineWidth: 0.5, lineColor: '#000000' }] },
-                              { text: LEYENDA_SENIA, fontSize: 6, margin: [0, 8, 0, 4] as [number, number, number, number] },
-                          ]),
- 
-                    { text: 'COMPROBANTE NO VÁLIDO COMO FACTURA', fontSize: 7, italics: true },
-                ],
-            };
+                        //total
+                        {
+                            absolutePosition: { x: MARGIN_X, y: 700 }, // subí este número para bajarlo más
+                            table: {
+                                widths: [COL_LABEL_WIDTH, COL_VALUE_WIDTH],
+                                body: [
+                                    [
+                                        { text: 'TOTAL $', alignment: 'right', bold: true, fontSize: 11, border: [false, true, false, false] },
+                                        { text: montoFormateado, alignment: 'right', bold: true, fontSize: 11, border: [false, true, false, false] },
+                                    ],
+                                ],
+                            },
+                                layout: {
+                                    paddingTop: () => 6,
+                                    paddingBottom: () => 6,
+                                    paddingLeft: () => 4,
+                                    paddingRight: () => 4,
+                                },
+                        },
+
+                    ...(dto.leyendaSenia === false? []:( [
+                        {
+                            absolutePosition: { x: MARGIN_X, y: 730 },
+                            canvas: [{ type: 'line' as const, x1: 0, y1: 0, x2: CONTENT_WIDTH, y2: 0, lineWidth: 1, lineColor: '#000000' }],
+                        },
+                        {
+                            absolutePosition: { x: MARGIN_X, y: 740 },
+                            text: LEYENDA_SENIA,
+                            fontSize: 6,
+                            width: COL_LABEL_WIDTH + COL_VALUE_WIDTH,
+                        },]as Content[])),
+                        {
+                            absolutePosition: { x: MARGIN_X, y: 770 },
+                            text: 'COMPROBANTE NO VÁLIDO COMO FACTURA',
+                            fontSize: 7,
+                            italics: true,
+                        },
+                    ],
+                };
  
             const pdfDoc = this.printer.createPdf(docDefinition);
             return await pdfDoc.getBuffer();

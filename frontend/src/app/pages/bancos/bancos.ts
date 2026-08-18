@@ -42,7 +42,7 @@ export class Bancos implements OnInit
   descargandoReciboId = signal<number | null>(null);
 
   pagosSeleccionables = computed(() =>
-    this.pagosVisibles().filter(pago => !pago.enviado_banco)
+    this.pagosVisibles().filter(pago => !pago.enviado_banco && pago.aprobado)
   );
 
   todosSeleccionados = computed(() => {
@@ -227,7 +227,7 @@ export class Bancos implements OnInit
       localidad:pago.localidad,
       concepto: pago.motivo,
       importe: pago.monto,
-      leyendaSenia: false,
+      leyendaSenia: true,
       turno: pago.turno,
       orientacion: pago.orientacion,
       nivel: pago.nivel,
