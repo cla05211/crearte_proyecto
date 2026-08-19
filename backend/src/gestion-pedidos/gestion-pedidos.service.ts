@@ -45,9 +45,9 @@ export class GestionPedidosService
         return data;
     }
 
-    async obtenerPedidosVentas():Promise<PedidoResponseVentas[]>
+    async obtenerPedidosVentas(rangoDesde: number, rangoHasta:number, busqueda?:string, promo?:number):Promise<PedidoResponseVentas[]>
     {
-        const { data, error } = await this.sb.supabase
+        let query = this.sb.supabase
         .from("pedidos")
         .select(`
             *,
@@ -62,7 +62,19 @@ export class GestionPedidosService
         .order("created_at", {
             referencedTable: "grupos",
             ascending: false,
-            });
+            })
+        .range(rangoDesde, rangoHasta );
+
+        if(busqueda)
+        {
+            query = query.or(`nombre.ilike.%${busqueda}%,localidad.ilike.%${busqueda}%`, { referencedTable: "grupos.colegios" });
+        }
+        if(promo)
+        {
+            query = query.eq("grupos.promo", promo);
+        }
+
+        const { data, error } = await query.range(rangoDesde, rangoHasta);
 
         if (error) 
         {

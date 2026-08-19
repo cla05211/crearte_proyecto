@@ -1,4 +1,4 @@
-import { Controller, Post, UseGuards, Body, Get, Patch } from '@nestjs/common';
+import { Controller, Post, UseGuards, Body, Get, Patch, Query, ParseIntPipe } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
@@ -22,9 +22,9 @@ export class GestionPedidosController
     @Get ('')
     //@UseGuards(AuthGuard,PermisosGuard)
     //@RequierePermiso('crear_pedido')
-    async obtenerPedidosVentas()
+    async obtenerPedidosVentas( @Query('rangoDesde', ParseIntPipe) rangoDesde: number, @Query('rangoHasta', ParseIntPipe) rangoHasta: number,   @Query('busqueda') busqueda?: string, @Query('promo', ParseIntPipe) promo?: number,)
     {
-        return await this.gestionService.obtenerPedidosVentas();
+        return await this.gestionService.obtenerPedidosVentas(rangoDesde, rangoHasta, busqueda, promo);
     }
 
     @Patch('modificar-pedidos')

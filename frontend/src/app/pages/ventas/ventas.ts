@@ -696,7 +696,7 @@ export class Ventas implements OnInit {
 
   private obtenerVentas(): void {
     this.cargando.set(true);
-    this.gestionPedidosService.obtenerPedidos().subscribe({
+    this.gestionPedidosService.obtenerPedidos(0,9).subscribe({
       next: (ventas) => {
         this.ventas.set(ventas);
         this.cargando.set(false);

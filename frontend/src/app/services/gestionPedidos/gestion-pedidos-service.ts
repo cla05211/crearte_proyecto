@@ -19,9 +19,21 @@ export class GestionPedidosService
     return this.http.post<CrearPedidoDTO>((`${environment.apiUrl}/gestion-pedidos/crear-pedido`), pedido);
   }
 
-  obtenerPedidos(): Observable<PedidoResponseVentas[]>
+  obtenerPedidos(rangoDesde:number, rangoHasta:number, busqueda?: string, promo?:number): Observable<PedidoResponseVentas[]>
   {
-    return this.http.get<PedidoResponseVentas[]>(`${environment.apiUrl}/gestion-pedidos`);
+    let params: any = {rangoDesde, rangoHasta};
+
+    if (busqueda !== undefined) 
+    {
+      params.busqueda = busqueda;
+    }
+
+    if (promo !== undefined) 
+    {
+      params.promo = promo;
+    }
+
+    return this.http.get<PedidoResponseVentas[]>(`${environment.apiUrl}/gestion-pedidos`, {params});
   }
 
   obtenerBeneficios(): Observable<string[]>
