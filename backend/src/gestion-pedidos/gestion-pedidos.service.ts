@@ -51,7 +51,7 @@ export class GestionPedidosService
         .from("pedidos")
         .select(`
             *,
-            grupos(
+            grupos!inner(
                 *,
                 colegios(*)
             ),
@@ -61,9 +61,7 @@ export class GestionPedidosService
         .eq("estado_general", "Venta realizada") 
         .order("created_at", {
             referencedTable: "grupos",
-            ascending: false,
-            })
-        .range(rangoDesde, rangoHasta );
+            ascending: false,});
 
         if(busqueda)
         {
@@ -105,6 +103,4 @@ export class GestionPedidosService
     }
     return data;
 }
-
-
 }

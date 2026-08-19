@@ -12,61 +12,56 @@
     @if (error() && !vistaFormulario()) {
       <div class="ds-alert ds-alert--danger">{{ error() }}</div>
     }
-    @if (cargando()) {
-      <div class="ds-card state-card">Cargando ventas…</div>
-    } @else {
-      <div class="ventas-toolbar">
-        <nav class="promo-tabs" aria-label="Filtrar colegios por promoción">
-          @for (promo of [anioActual, anioActual + 1]; track promo) {
-            <button
-              type="button"
-              [class.is-active]="promoSeleccionada() === promo"
-              [attr.aria-pressed]="promoSeleccionada() === promo"
-              (click)="promoSeleccionada.set(promo)"
-            >
-              {{ promo }}
-            </button>
-          }
-        </nav>
-        <label class="ds-field search-field">
-          <span class="ds-label">Buscar</span>
-          <input
-            class="ds-input"
-            type="search"
-            placeholder="Colegio o localidad…"
-            [ngModel]="busqueda()"
-            (ngModelChange)="busqueda.set($any($event))"
-          />
-        </label>
+    <div class="ventas-toolbar">
+      <nav class="promo-tabs" aria-label="Filtrar colegios por promoción">
+        @for (promo of [anioActual, anioActual + 1]; track promo) {
+          <button
+            type="button"
+            [class.is-active]="promoSeleccionada() === promo"
+            [attr.aria-pressed]="promoSeleccionada() === promo"
+            (click)="promoSeleccionada.set(promo)"
+          >
+            {{ promo }}
+          </button>
+        }
+      </nav>
+      <label class="ds-field search-field">
+        <span class="ds-label">Buscar</span>
+        <input
+          class="ds-input"
+          type="search"
+          placeholder="Colegio o localidad…"
+          [ngModel]="busquedaInput()"
+          (ngModelChange)="actualizarBusqueda($any($event))"
+        />
+      </label>
+    </div>
+    <section class="promo-section" [attr.aria-labelledby]="'promo-' + promoSeleccionada()">
+      <div class="promo-section__heading">
+        <h2 id="promo-{{ promoSeleccionada() }}">Promo {{ promoSeleccionada() }}</h2>
       </div>
-      @for (seccion of ventasPorPromo(); track seccion.promo) {
-        <section class="promo-section" [attr.aria-labelledby]="'promo-' + seccion.promo">
-          <div class="promo-section__heading">
-            <h2 id="promo-{{ seccion.promo }}">Promo {{ seccion.promo }}</h2>
-            <span class="ds-badge"
-              >{{ seccion.ventas.length }} venta{{ seccion.ventas.length === 1 ? '' : 's' }}</span
-            >
-          </div>
-          @if (seccion.ventas.length === 0) {
-            <div class="ds-card empty-sales">Todavía no hay ventas para esta promoción.</div>
-          } @else {
-            <div class="ds-table-wrapper">
-              <table class="ds-table sales-table">
-                <thead>
-                  <tr>
-                    <th>Colegio</th>
-                    <th>Nivel</th>
-                    <th>Ubicación</th>
-                    <th>Pedido</th>
-                    <th>Beneficio</th>
-                    <th>Plan de pago</th>
-                    <th>Seña total</th>
-                    <th>Cuota total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (venta of seccion.ventas; track venta.pedidoDTO.id_grupo; let indice = $index) 
-                  {
+      @if (cargandoPromoActual()) {
+        <div class="ds-card state-card">Cargando ventas…</div>
+      } @else if (datosPromoActual().ventas.length === 0) {
+        <div class="ds-card empty-sales">Todavía no hay ventas para esta promoción.</div>
+      } @else {
+        <div class="ds-table-wrapper">
+          <table class="ds-table sales-table">
+            <thead>
+              <tr>
+                <th>Colegio</th>
+                <th>Nivel</th>
+                <th>Ubicación</th>
+                <th>Pedido</th>
+                <th>Beneficio</th>
+                <th>Plan de pago</th>
+                <th>Seña total</th>
+                <th>Cuota total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (venta of datosPromoActual().ventas; track venta.pedidoDTO.id_grupo; let indice = $index)
+              {
                     <tr>
                       <td data-label="Colegio">
                         <button
@@ -157,10 +152,33 @@
                 </tbody>
               </table>
             </div>
-          }
-        </section>
+            <nav class="ds-pagination" aria-label="Paginación de ventas">
+              <span class="ds-text-muted">
+                Mostrando {{ datosPromoActual().pagina * TAMANIO_PAGINA + 1 }}–{{
+                  datosPromoActual().pagina * TAMANIO_PAGINA + datosPromoActual().ventas.length
+                }}
+              </span>
+              <div class="ds-pagination__actions">
+                <button
+                  type="button"
+                  class="ds-button ds-button--secondary ds-button--small"
+                  [disabled]="datosPromoActual().pagina === 0"
+                  (click)="paginaAnterior()"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  class="ds-button ds-button--secondary ds-button--small"
+                  [disabled]="!datosPromoActual().hayMasPaginas"
+                  (click)="paginaSiguiente()"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </nav>
       }
-    }
+    </section>
   </section>
 
   @if (vistaFormulario()) {

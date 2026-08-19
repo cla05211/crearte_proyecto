@@ -1,9 +1,10 @@
-import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, computed, DestroyRef, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { forkJoin, Observable, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { forkJoin, Observable, of, Subject } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 import { CrearPedidoDTO } from '../../services/gestionPedidos/dto/crearPedidoPost.dto';
 import { PedidoResponseVentas } from '../../services/gestionPedidos/dto/PedidoResponseVentas.dto';
 import { GestionPedidosService } from '../../services/gestionPedidos/gestion-pedidos-service';
@@ -44,6 +45,12 @@ interface BeneficioSeleccionado {
   cantidad: number;
 }
 
+interface PaginaVentas {
+  ventas: PedidoResponseVentas[];
+  pagina: number;
+  hayMasPaginas: boolean;
+}
+
 interface ComprobanteVerificado {
   datos: PagoComprobanteDatosDTO | null;
   verificando: boolean;
@@ -70,6 +77,7 @@ export class Ventas implements OnInit {
   private readonly cuotasService = inject(CuotasService);
   private readonly productosPedidosService = inject(ProductosPedidoService);
   private readonly pagosService = inject(PagosService);
+  private readonly destroyRef = inject(DestroyRef);
 
   @ViewChild('archivoSeniaInput') private archivoSeniaInputRef?: ElementRef<HTMLInputElement>;
   @ViewChild('recursosAdicionalesInput') private recursosAdicionalesInputRef?: ElementRef<HTMLInputElement>;
@@ -94,11 +102,15 @@ export class Ventas implements OnInit {
   entidadesPago = ["Mercado Pago", "NaranjaX", "Cuenta DNI", "Galicia", "BNA", "Uala", "Otra"];
   bancosComprobante = ["COMAFI", "Santander"];
 
-  readonly ventas = signal<PedidoResponseVentas[]>([]);
+  readonly TAMANIO_PAGINA = 10;
+  readonly paginasPorPromo = signal<Record<number, PaginaVentas>>({});
+  readonly cargandoPorPromo = signal<Record<number, boolean>>({});
+  private readonly solicitudPaginaPorPromo = new Map<number, Subject<number>>();
+  private readonly busquedaCambiada$ = new Subject<string>();
+
   readonly productosDisponibles = signal<ProductoConPrecioResponseDTO[]>([]);
   readonly agregadosDisponibles = signal<AgregadoDBDTO[]>([]);
   readonly beneficiosDisponibles = signal<string[]>([]);
-  readonly cargando = signal(false);
   readonly guardando = signal(false);
   readonly error = signal('');
   readonly vistaFormulario = signal(false);
@@ -113,6 +125,7 @@ export class Ventas implements OnInit {
   readonly anioActual = new Date().getFullYear();
   readonly promoSeleccionada = signal(this.anioActual);
   readonly busqueda = signal('');
+  readonly busquedaInput = signal('');
   banderaSeleccionada = false;
 
   colegio = this.crearColegio();
@@ -144,22 +157,13 @@ export class Ventas implements OnInit {
   productoEnEdicionPlan = this.crearProductoEnEdicionPlan();
   banderaSeleccionadaPlan = false;
 
-  readonly ventasPorPromo = computed(() => {
-    const palabras = this.normalizarTexto(this.busqueda())
-      .split(/\s+/)
-      .filter(Boolean);
+  readonly datosPromoActual = computed<PaginaVentas>(
+    () => this.paginasPorPromo()[this.promoSeleccionada()] ?? { ventas: [], pagina: 0, hayMasPaginas: false },
+  );
 
-    return [{
-      promo: this.promoSeleccionada(),
-      ventas: this.ventas().filter((venta) => {
-        if (venta.grupoDTO.promo !== this.promoSeleccionada()) return false;
-        if (!palabras.length) return true;
-
-        const texto = this.normalizarTexto(`${venta.colegioDTO.nombre} ${venta.colegioDTO.localidad}`);
-        return palabras.every((palabra) => texto.includes(palabra));
-      }),
-    }];
-  });
+  readonly cargandoPromoActual = computed(
+    () => this.cargandoPorPromo()[this.promoSeleccionada()] ?? false,
+  );
 
   readonly productosParaElegir = computed(() => {
     const vistos = new Set<number>();
@@ -179,11 +183,98 @@ export class Ventas implements OnInit {
   );
 
   ngOnInit(): void {
-    this.obtenerVentas();
+    this.inicializarPipelineVentas(this.anioActual);
+    this.inicializarPipelineVentas(this.anioActual + 1);
+    this.inicializarBusquedaConDebounce();
+    this.recargarVentasDesdeInicio();
     this.obtenerProductos();
     this.obtenerAgregados();
     this.obtenerNroCuotasDispoinibles();
     this.obtenerBeneficios();
+  }
+
+  private inicializarPipelineVentas(promo: number): void {
+    const solicitudes$ = new Subject<number>();
+    this.solicitudPaginaPorPromo.set(promo, solicitudes$);
+
+    solicitudes$
+      .pipe(
+        switchMap((pagina) => {
+          this.cargandoPorPromo.update((actual) => ({ ...actual, [promo]: true }));
+          const desde = pagina * this.TAMANIO_PAGINA;
+          const hasta = desde + this.TAMANIO_PAGINA - 1;
+          const busqueda = this.busqueda().trim() || undefined;
+
+          return this.gestionPedidosService.obtenerPedidos(desde, hasta, busqueda, promo).pipe(
+            map((ventas) => ({ pagina, ventas })),
+            catchError(() => {
+              this.cargandoPorPromo.update((actual) => ({ ...actual, [promo]: false }));
+              this.error.set('No se pudieron cargar las ventas.');
+              return of(null);
+            }),
+          );
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((resultado) => {
+        if (!resultado) return;
+        const { pagina, ventas } = resultado;
+        this.paginasPorPromo.update((actual) => {
+          if (ventas.length === 0 && pagina > 0) {
+            const anterior = actual[promo];
+            return anterior ? { ...actual, [promo]: { ...anterior, hayMasPaginas: false } } : actual;
+          }
+          return {
+            ...actual,
+            [promo]: { ventas, pagina, hayMasPaginas: ventas.length === this.TAMANIO_PAGINA },
+          };
+        });
+        this.cargandoPorPromo.update((actual) => ({ ...actual, [promo]: false }));
+      });
+  }
+
+  private inicializarBusquedaConDebounce(): void {
+    this.busquedaCambiada$
+      .pipe(debounceTime(400), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe((valor) => {
+        this.busqueda.set(valor.trim());
+        this.solicitarPagina(this.anioActual, 0);
+        this.solicitarPagina(this.anioActual + 1, 0);
+      });
+  }
+
+  actualizarBusqueda(valor: string): void {
+    this.busquedaInput.set(valor);
+    this.busquedaCambiada$.next(valor);
+  }
+
+  private solicitarPagina(promo: number, pagina: number): void {
+    this.solicitudPaginaPorPromo.get(promo)?.next(pagina);
+  }
+
+  paginaAnterior(): void {
+    const promo = this.promoSeleccionada();
+    const actual = this.paginasPorPromo()[promo];
+    if (!actual || actual.pagina === 0) return;
+    this.solicitarPagina(promo, actual.pagina - 1);
+  }
+
+  paginaSiguiente(): void {
+    const promo = this.promoSeleccionada();
+    const actual = this.paginasPorPromo()[promo];
+    if (!actual || !actual.hayMasPaginas) return;
+    this.solicitarPagina(promo, actual.pagina + 1);
+  }
+
+  private recargarVentasDesdeInicio(): void {
+    this.solicitarPagina(this.anioActual, 0);
+    this.solicitarPagina(this.anioActual + 1, 0);
+  }
+
+  private recargarPaginaActual(): void {
+    const promo = this.promoSeleccionada();
+    const pagina = this.paginasPorPromo()[promo]?.pagina ?? 0;
+    this.solicitarPagina(promo, pagina);
   }
 
   abrirFormulario(): void {
@@ -556,7 +647,7 @@ export class Ventas implements OnInit {
               description: 'La venta se registró correctamente.',
             });
             this.cerrarFormulario();
-            this.obtenerVentas();
+            this.recargarVentasDesdeInicio();
           },
           error: (err: HttpErrorResponse) => {
             this.guardando.set(false);
@@ -694,20 +785,6 @@ export class Ventas implements OnInit {
     });
   }
 
-  private obtenerVentas(): void {
-    this.cargando.set(true);
-    this.gestionPedidosService.obtenerPedidos(0,9).subscribe({
-      next: (ventas) => {
-        this.ventas.set(ventas);
-        this.cargando.set(false);
-      },
-      error: () => {
-        this.error.set('No se pudieron cargar las ventas.');
-        this.cargando.set(false);
-      },
-    });
-  }
-
   private obtenerProductos(): void {
     this.productosService.obtenerProductos().subscribe({
       next: (productos) => this.productosDisponibles.set(productos),
@@ -759,14 +836,6 @@ export class Ventas implements OnInit {
     }
     this.error.set('');
     return true;
-  }
-
-  private normalizarTexto(valor: string): string {
-    return valor
-      .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
-      .toLowerCase()
-      .trim();
   }
 
   private capitalizarInicial(valor: string): string {
@@ -1026,7 +1095,7 @@ export class Ventas implements OnInit {
           description: 'El beneficio del pedido se modificó correctamente.',
         });
         this.cerrarEdicionBeneficio();
-        this.obtenerVentas();
+        this.recargarPaginaActual();
       },
       error: (err: HttpErrorResponse) => {
         this.guardandoBeneficio.set(false);
@@ -1256,7 +1325,7 @@ export class Ventas implements OnInit {
           description: 'Los productos y el plan de cuotas se modificaron correctamente.',
         });
         this.cerrarEdicionPlan();
-        this.obtenerVentas();
+        this.recargarPaginaActual();
       },
       error: (err: HttpErrorResponse) => {
         this.guardandoPlan.set(false);
