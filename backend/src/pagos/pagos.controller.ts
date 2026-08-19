@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import type { Response } from 'express';
 import { PagosService } from './pagos.service';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -29,9 +29,9 @@ export class PagosController
     @Get('bancos/:banco')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_bancos')
-    async obtenerPagosBancos(@Param ('banco') banco:string)
+    async obtenerPagosBancos(@Param ('banco') banco:string, @Query('rangoDesde', ParseIntPipe) rangoDesde: number,@Query('rangoHasta', ParseIntPipe) rangoHasta: number)
     {
-        return await this.pagosService.traerPagosBanco(banco);
+        return await this.pagosService.traerPagosBanco(banco, rangoDesde, rangoHasta);
     }
 
     @Patch('enviado')

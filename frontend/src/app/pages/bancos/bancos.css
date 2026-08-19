@@ -146,6 +146,20 @@
 
 .table-wrapper { overflow-x: auto; }
 
+.banks-pagination {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+}
+
+.banks-pagination__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
 .banks-table {
   border-collapse: collapse;
   min-width: 60rem;

@@ -46,7 +46,7 @@ export class PagosService
         return data as PagoResponseDTO[];
     }
 
-    async traerPagosBanco(banco: string):Promise<PagoBancoResponse[]>
+    async traerPagosBanco(banco: string, rangoDesde:number, rangoHasta:number):Promise<PagoBancoResponse[]>
     {
         const { data, error } = await this.sb.supabase
             .from('pagos')
@@ -54,7 +54,8 @@ export class PagosService
                 pedidos!inner(id,estado_general, grupos(id,turno, orientacion, nivel,colegios(nombre, localidad)))`)
             .eq('banco', banco)
             .neq('pedidos.estado_general', "entregado")
-            .order('fecha', { ascending: false });;
+            .order('fecha', { ascending: false })
+            .range(rangoDesde, rangoHasta);;
 
         if (error) 
         {

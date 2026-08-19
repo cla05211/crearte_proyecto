@@ -1,7 +1,8 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { firstValueFrom, forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { firstValueFrom, forkJoin, of, Subject } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { PagoBancoResponse } from '../../services/pagos/dto/pagoBancoResponse.dto';
 import { PagosService } from '../../services/pagos/pagos-service';
 import { ModificarPago } from '../../services/pagos/dto/modificarBanco.dto';
@@ -13,6 +14,12 @@ import { PadreResponsableDTO } from '../../services/gestionPedidos/dto/padreResp
 import { CuotasService } from '../../services/cuotas/cuotas-service';
 
 type Banco = 'COMAFI' | 'Santander';
+
+interface PaginaPagos {
+  pagos: PagoBancoResponse[];
+  pagina: number;
+  hayMasPaginas: boolean;
+}
 
 @Component({
   selector: 'app-bancos',
@@ -26,15 +33,21 @@ export class Bancos implements OnInit
   private readonly notificaciones = inject(NotificationService);
   private readonly padreResponsableService = inject(PadreResponsableService);
   private readonly cuotasService = inject(CuotasService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  pagosComafi = signal<PagoBancoResponse[]>([]);
-  pagosSantander = signal<PagoBancoResponse[]>([]);
-  cargando = signal(false);
+  readonly TAMANIO_PAGINA = 10;
+  private readonly paginaVacia: PaginaPagos = { pagos: [], pagina: 0, hayMasPaginas: false };
+  paginasPorBanco = signal<Record<Banco, PaginaPagos>>({
+    COMAFI: { ...this.paginaVacia },
+    Santander: { ...this.paginaVacia },
+  });
+  cargandoPorBanco = signal<Record<Banco, boolean>>({ COMAFI: false, Santander: false });
+  private readonly solicitudPaginaPorBanco = new Map<Banco, Subject<number>>();
 
   bancoSeleccionado = signal<Banco>('COMAFI');
-  pagosVisibles = computed(() =>
-    this.bancoSeleccionado() === 'COMAFI' ? this.pagosComafi() : this.pagosSantander()
-  );
+  datosBancoActual = computed(() => this.paginasPorBanco()[this.bancoSeleccionado()]);
+  cargando = computed(() => this.cargandoPorBanco()[this.bancoSeleccionado()]);
+  pagosVisibles = computed(() => this.datosBancoActual().pagos);
 
   mostrarAnteriores = signal(false);
 
@@ -71,37 +84,72 @@ export class Bancos implements OnInit
 
   ngOnInit(): void
   {
-    this.obtenerPagosComafi();
-    this.obtenerPagosSantander();
+    this.inicializarPipelineBanco('COMAFI');
+    this.inicializarPipelineBanco('Santander');
+    this.solicitarPagina('COMAFI', 0);
+    this.solicitarPagina('Santander', 0);
   }
 
-  obtenerPagosComafi()
+  private inicializarPipelineBanco(banco: Banco): void
   {
-    this.cargando.set(true);
-    this.pagosService.traerPagosBanco("COMAFI")
-    .subscribe({
-      next: (pagos) => {
-        this.pagosComafi.set(pagos);
-        this.cargando.set(false);
-      },
-      error: () => {
-        this.cargando.set(false);
-        this.notificaciones.error({ title: 'Error al cargar pagos', description: 'No se pudieron obtener los pagos de COMAFI.' });
-      },
-    });
+    const solicitudes$ = new Subject<number>();
+    this.solicitudPaginaPorBanco.set(banco, solicitudes$);
+
+    solicitudes$
+      .pipe(
+        switchMap((pagina) => {
+          this.cargandoPorBanco.update((actual) => ({ ...actual, [banco]: true }));
+          const desde = pagina * this.TAMANIO_PAGINA;
+          const hasta = desde + this.TAMANIO_PAGINA - 1;
+
+          return this.pagosService.traerPagosBanco(banco, desde, hasta).pipe(
+            map((pagos) => ({ pagina, pagos })),
+            catchError(() => {
+              this.cargandoPorBanco.update((actual) => ({ ...actual, [banco]: false }));
+              this.notificaciones.error({ title: 'Error al cargar pagos', description: `No se pudieron obtener los pagos de ${banco}.` });
+              return of(null);
+            }),
+          );
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((resultado) => {
+        if (!resultado) return;
+        const { pagina, pagos } = resultado;
+        this.paginasPorBanco.update((actual) => {
+          if (pagos.length === 0 && pagina > 0)
+          {
+            const anterior = actual[banco];
+            return anterior ? { ...actual, [banco]: { ...anterior, hayMasPaginas: false } } : actual;
+          }
+          return {
+            ...actual,
+            [banco]: { pagos, pagina, hayMasPaginas: pagos.length === this.TAMANIO_PAGINA },
+          };
+        });
+        this.cargandoPorBanco.update((actual) => ({ ...actual, [banco]: false }));
+      });
   }
 
-  obtenerPagosSantander()
+  private solicitarPagina(banco: Banco, pagina: number): void
   {
-    this.pagosService.traerPagosBanco("Santander")
-    .subscribe({
-      next: (pagos) => {
-        this.pagosSantander.set(pagos);
-      },
-      error: () => {
-        this.notificaciones.error({ title: 'Error al cargar pagos', description: 'No se pudieron obtener los pagos de Santander.' });
-      },
-    });
+    this.solicitudPaginaPorBanco.get(banco)?.next(pagina);
+  }
+
+  paginaAnterior(): void
+  {
+    const banco = this.bancoSeleccionado();
+    const actual = this.paginasPorBanco()[banco];
+    if (actual.pagina === 0) return;
+    this.solicitarPagina(banco, actual.pagina - 1);
+  }
+
+  paginaSiguiente(): void
+  {
+    const banco = this.bancoSeleccionado();
+    const actual = this.paginasPorBanco()[banco];
+    if (!actual.hayMasPaginas) return;
+    this.solicitarPagina(banco, actual.pagina + 1);
   }
 
   toggleAnteriores(): void
@@ -276,20 +324,23 @@ export class Bancos implements OnInit
   private marcarComoEnviados(ids: number[]): void
   {
     const idsSet = new Set(ids);
-    const actualizar = (lista: PagoBancoResponse[]) =>
-      lista.map(pago => idsSet.has(pago.id) ? { ...pago, enviado_banco: true } : pago);
-
-    this.pagosComafi.update(actualizar);
-    this.pagosSantander.update(actualizar);
+    this.actualizarPagosLocal(pago => idsSet.has(pago.id) ? { ...pago, enviado_banco: true } : pago);
   }
 
   private actualizarPagoLocal(id: number, cambios: Partial<PagoBancoResponse>): void
   {
-    const actualizar = (lista: PagoBancoResponse[]) =>
-      lista.map(pago => pago.id === id ? { ...pago, ...cambios } : pago);
+    this.actualizarPagosLocal(pago => pago.id === id ? { ...pago, ...cambios } : pago);
+  }
 
-    this.pagosComafi.update(actualizar);
-    this.pagosSantander.update(actualizar);
+  private actualizarPagosLocal(actualizar: (pago: PagoBancoResponse) => PagoBancoResponse): void
+  {
+    this.paginasPorBanco.update((actual) => {
+      const nuevo = { ...actual };
+      (Object.keys(nuevo) as Banco[]).forEach((banco) => {
+        nuevo[banco] = { ...nuevo[banco], pagos: nuevo[banco].pagos.map(actualizar) };
+      });
+      return nuevo;
+    });
   }
 
   private obtenerLunesSemana(fecha: Date): Date

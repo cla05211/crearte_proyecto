@@ -22,9 +22,9 @@ export class PagosService
     return this.http.get<PagoResponseDTO[]>((`${environment.apiUrl}/pagos/${idPedido}`));
   }
 
-  traerPagosBanco(banco: string): Observable<PagoBancoResponse[]>
+  traerPagosBanco(banco: string, rangoDesde: number, rangoHasta:number): Observable<PagoBancoResponse[]>
   {
-    return this.http.get<PagoBancoResponse[]>((`${environment.apiUrl}/pagos/bancos/${banco}`));
+    return this.http.get<PagoBancoResponse[]>((`${environment.apiUrl}/pagos/bancos/${banco}`), {params:{rangoDesde, rangoHasta}});
   }
 
   comprobarDatosComprobante(formData: FormData): Observable<PagoComprobanteDatosDTO>

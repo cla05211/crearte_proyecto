@@ -195,6 +195,31 @@
             </tbody>
           </table>
         </div>
+        <nav class="banks-pagination" aria-label="Paginación de pagos">
+          <span class="ds-text-muted">
+            Mostrando {{ datosBancoActual().pagina * TAMANIO_PAGINA + 1 }}–{{
+              datosBancoActual().pagina * TAMANIO_PAGINA + pagosVisibles().length
+            }}
+          </span>
+          <div class="banks-pagination__actions">
+            <button
+              type="button"
+              class="ds-button ds-button--secondary ds-button--small"
+              [disabled]="datosBancoActual().pagina === 0"
+              (click)="paginaAnterior()"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              class="ds-button ds-button--secondary ds-button--small"
+              [disabled]="!datosBancoActual().hayMasPaginas"
+              (click)="paginaSiguiente()"
+            >
+              Siguiente
+            </button>
+          </div>
+        </nav>
       }
     </section>
   </section>
