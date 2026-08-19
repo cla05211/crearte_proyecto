@@ -99,7 +99,7 @@ export class Ventas implements OnInit {
     "San Juan","San Luis","Santa Cruz","Santa Fe","Santiago del Estero","Tierra del Fuego","Tucumán",
     "Ciudad Autónoma de Buenos Aires"];  
   niveles = ["Secundaria", "Primaria", "Jardin"];
-  entidadesPago = ["Mercado Pago", "NaranjaX", "Cuenta DNI", "Galicia", "BNA", "Uala", "Otra"];
+  entidadesPago = ["Mercado Pago", "NaranjaX", "Cuenta DNI", "Galicia", "BNA", "Uala","Santander","Macro", "Otra"];
   bancosComprobante = ["COMAFI", "Santander"];
 
   readonly TAMANIO_PAGINA = 10;

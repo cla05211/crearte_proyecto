@@ -84,37 +84,6 @@ export class PagosService
         return pagosBancos
     }
 
-    async comprobarComprobantePago(archivo: Buffer): Promise<PagoComprobanteDatosDTO>
-    {
-        let textoImagen = await this.ocrService.extraerTexto(archivo);
-        let textoProcesado = (textoImagen.toLocaleLowerCase()).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        let datosComprobante: PagoComprobanteDatosDTO = new PagoComprobanteDatosDTO();
-
-        const nombresTransferencia = ["coassini adrian alejandro", "centro logistico sur srl"];
-
-        if (textoProcesado.includes("centro logistico sur srl"))
-        {
-            datosComprobante.banco = "COMAFI";
-        }
-        else if (textoProcesado.includes("coassini adrian alejandro"))
-        {
-            datosComprobante.banco = "Santander";
-        }
-        else
-        {
-            throw new BadRequestException('El archivo enviado no es válido');
-        }
-        datosComprobante.nro_transferencia = this.determinarNroComprobante(textoImagen);
-        datosComprobante.monto = this.determinarMonto(textoImagen);
-
-        if(datosComprobante.nro_transferencia == "" || datosComprobante.monto == 0)
-        {
-            throw new BadRequestException('El archivo enviado no es válido');
-        }
-
-        return datosComprobante;
-    }
-
     async modificarEnviadoBanco(dto: ModificarPago)
     {
         const { data, error } = await this.sb.supabase
@@ -141,12 +110,44 @@ export class PagosService
         }
     }
 
+    async comprobarComprobantePago(archivo: Buffer): Promise<PagoComprobanteDatosDTO>
+    {
+        let textoImagen = await this.ocrService.extraerTexto(archivo);
+        let textoProcesado = (textoImagen.toLocaleLowerCase()).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        let datosComprobante: PagoComprobanteDatosDTO = new PagoComprobanteDatosDTO();
+
+        const nombresTransferencia = ["coassini adrian alejandro", "centro logistico sur srl"];
+        const textoSinEspacios = textoProcesado.replace(/\s/g, '');
+        if (textoSinEspacios.includes("centrologisticosursrl"))
+        {
+            datosComprobante.banco = "COMAFI";
+        }
+        else if (textoSinEspacios.includes("coassiniadrianalejandro"))
+        {
+            datosComprobante.banco = "Santander";
+        }
+        else
+        {
+            throw new BadRequestException('El archivo enviado no es válido');
+        }
+
+        datosComprobante.nro_transferencia = this.determinarNroComprobante(textoImagen);
+        datosComprobante.monto = this.determinarMonto(textoImagen);
+
+        if(datosComprobante.nro_transferencia == "" || datosComprobante.monto == 0)
+        {
+            throw new BadRequestException('El archivo enviado no es válido');
+        }
+
+        return datosComprobante;
+    }
+
     private determinarNroComprobante(textoImagen:string): string
     {
         let codigo = "";
         const REGEX_NRO_OPERACION = new RegExp(
             '(?:' +
-                '(?:N[°º]?\\.?|Nro\\.?|Número)\\s*de\\s*(?:operación|transacción)' +
+                '(?:N[°º]?\\.?|Nro\\.?|Número)\\s*de\\s*(?:operación|transacción|comprobante)' +
                 '(?:\\s*de\\s*Mercado\\s*Pago)?' +
                 '|' +
                 'Código\\s*de\\s*(?:transacción|referencia)' +
@@ -163,14 +164,21 @@ export class PagosService
         return codigo;
     }
 
-    private determinarMonto(textoImagen:string):number
+    private determinarMonto(textoImagen: string): number
     {
         let monto = 0;
 
-        const REGEX_MONTO = /\$\s*([\d.]+(?:,\d{1,2})?)/;
-        const match = textoImagen.match(REGEX_MONTO);
-        const montoCrudo = match?.[1]; 
-        
+        const REGEX_MONTO_CON_LABEL = /(?:Importe\s*debitado|Monto)\s*:?\s*\$?\s*([\d.]+(?:,\d{1,2})?)/i;
+        let match = textoImagen.match(REGEX_MONTO_CON_LABEL);
+
+        if (match == null)
+        {
+            const REGEX_MONTO_GENERICO = /\$\s*([\d.]+(?:,\d{1,2})?)/;
+            match = textoImagen.match(REGEX_MONTO_GENERICO);
+        }
+
+        const montoCrudo = match?.[1];
+
         if (match != null && montoCrudo != null)
         {
             monto = this.parsearMonto(montoCrudo);
