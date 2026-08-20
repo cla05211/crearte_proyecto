@@ -18,6 +18,14 @@ export class PagosController
 {
     constructor(private pagosService: PagosService, private ocrService: OcrService, private excelService: ExcelService, private pdfService: PdfService){}
     
+    @Get('/total')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_bancos')
+    async obtenerTotalTransferencias(@Query('fechaHoy') fechaHoy: string)
+    {
+        return await this.pagosService.traerMontoTotalMes(new Date(fechaHoy));
+    }
+
     @Get(':id')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('modificar_pedidos')
@@ -41,6 +49,7 @@ export class PagosController
     {
         return await this.pagosService.traerIdDocumento(id);
     }
+    
 
     @Patch('enviado')
     @UseGuards(AuthGuard,PermisosGuard)

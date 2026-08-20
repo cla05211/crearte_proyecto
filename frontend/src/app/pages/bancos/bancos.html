@@ -8,6 +8,14 @@
         <span class="ds-eyebrow">Gestión de pagos</span>
         <h1 class="ds-heading-1">Bancos</h1>
         <p class="ds-text-muted">Revisá, aprobá y enviá los comprobantes de pago recibidos.</p>
+        <p class="banks-summary" aria-label="Total de ingresos del mes">
+          Ingresos del mes:
+          @if (cargandoTotalMes()) {
+            <span class="banks-summary__value">cargando…</span>
+          } @else {
+            <span class="banks-summary__value">{{ totalMes() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</span>
+          }
+        </p>
       </div>
 
       <div class="banks-header__count" aria-label="Cantidad de pagos">

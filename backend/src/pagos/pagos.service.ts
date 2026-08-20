@@ -212,4 +212,30 @@ export class PagosService
 
         return data.id_documento;
     }
+
+    async traerMontoTotalMes(fechaHoy:Date):Promise<number>
+    {
+        let total = 0;
+        const primerDia = new Date(fechaHoy.getFullYear(),fechaHoy.getMonth(),1);
+        const primerDiaMesSiguiente = new Date(fechaHoy.getFullYear(),fechaHoy.getMonth() + 1,1);
+
+        const { data, error } = await this.sb.supabase
+        .from('pagos')
+        .select('monto')
+        .gte('fecha', primerDia.toISOString())
+        .lt('fecha', primerDiaMesSiguiente.toISOString())
+        .neq('banco', 'Efectivo');
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }    
+
+        if(data)
+        {    
+            total = data.reduce((total, pago) => total + pago.monto, 0);
+        }
+        
+        return total;  
+    }
 }

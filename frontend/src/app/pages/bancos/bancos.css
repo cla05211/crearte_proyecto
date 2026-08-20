@@ -39,6 +39,17 @@
   z-index: 1;
 }
 
+.banks-summary {
+  color: var(--color-text-muted);
+  font-size: calc(var(--font-size-sm) + 1px);
+  margin: var(--space-1) 0 0;
+}
+
+.banks-summary__value {
+  color: var(--color-primary-700);
+  font-weight: var(--font-weight-bold);
+}
+
 .banks-header {
   align-items: end;
   display: flex;

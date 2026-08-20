@@ -61,4 +61,9 @@ export class PagosService
   {
     return (this.http.get<number>(`${environment.apiUrl}/pagos/documento/${idPago}`));
   }
+
+  traerTotalMes(fechaHoy:Date):Observable<number>
+  {
+    return this.http.get<number>(`${environment.apiUrl}/pagos/total/`,{params:{fechaHoy: fechaHoy.toISOString()}});
+  }
 }

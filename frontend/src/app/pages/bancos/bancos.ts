@@ -55,6 +55,9 @@ export class Bancos implements OnInit
 
   mostrarAnteriores = signal(false);
 
+  totalMes = signal<number | null>(null);
+  cargandoTotalMes = signal(false);
+
   modoSeleccion = signal(false);
   seleccionados = signal<Set<number>>(new Set());
   generandoExcel = signal(false);
@@ -92,6 +95,24 @@ export class Bancos implements OnInit
     this.inicializarPipelineBanco('Santander');
     this.solicitarPagina('COMAFI', 0);
     this.solicitarPagina('Santander', 0);
+    this.cargarTotalMes();
+  }
+
+  private cargarTotalMes(): void
+  {
+    this.cargandoTotalMes.set(true);
+    this.pagosService.traerTotalMes(new Date())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (total) => {
+          this.totalMes.set(total);
+          this.cargandoTotalMes.set(false);
+        },
+        error: () => {
+          this.cargandoTotalMes.set(false);
+          this.notificaciones.error({ title: 'Error', description: 'No se pudo obtener el total de ingresos del mes.' });
+        },
+      });
   }
 
   private inicializarPipelineBanco(banco: Banco): void
