@@ -33,6 +33,14 @@ export class PagosController
     {
         return await this.pagosService.traerPagosBanco(banco, rangoDesde, rangoHasta);
     }
+    
+    @Get ('documento/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('descargar_imagenes') 
+    async obtenerIdDocumento(@Param ('id', ParseIntPipe) id:number)
+    {
+        return await this.pagosService.traerIdDocumento(id);
+    }
 
     @Patch('enviado')
     @UseGuards(AuthGuard,PermisosGuard)

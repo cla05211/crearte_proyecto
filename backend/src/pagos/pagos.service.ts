@@ -194,4 +194,22 @@ export class PagosService
         const parteDecimal = partes[1] ?? '00'; 
         return parseFloat(`${parteEntera}.${parteDecimal}`);
     }    
+
+    async traerIdDocumento(idPago:number):Promise<number>
+    {
+        const { data, error } = await this.sb.supabase
+        .from('pagos')
+        .select(`
+            id_documento
+        `)
+        .eq('id', idPago)
+        .single();
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }
+
+        return data.id_documento;
+    }
 }

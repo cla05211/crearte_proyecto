@@ -21,5 +21,23 @@ export class DocumentosService
         }
 
         return data.map(d => d.id);
-    }    
+    } 
+    
+    async obtenerArchivoUrl(idArchivo:number)
+    {
+        const { data, error } = await this.sb.supabase
+            .from('documentos')
+            .select(`
+                archivo_url
+            `)
+            .eq('id', idArchivo)
+            .single();
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }
+
+        return data.archivo_url;
+    }
 }

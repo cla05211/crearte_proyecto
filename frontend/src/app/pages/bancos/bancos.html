@@ -182,7 +182,7 @@
                       type="button"
                       class="download-button"
                       [disabled]="modoSeleccion() || descargandoReciboId() === fila.pago.id"
-                      (click)="generarComprobantePDF(fila.pago)"
+                      (click)="descargarComprobante(fila.pago)"
                       [attr.aria-label]="'Descargar comprobante del pago ' + fila.pago.nro_transferencia"
                       title="Descargar comprobante"
                     >

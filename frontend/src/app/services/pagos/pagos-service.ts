@@ -56,4 +56,9 @@ export class PagosService
   {
     return this.http.post((`${environment.apiUrl}/pagos/recibo`), dto, { responseType: 'blob' });
   }
+
+  traerIdDocumento(idPago:number): Observable<number>
+  {
+    return (this.http.get<number>(`${environment.apiUrl}/pagos/documento/${idPago}`));
+  }
 }

@@ -31,16 +31,17 @@ export class StorageService {
         return ruta;
     }
 
-    async obtenerUrlArchivo(ruta: string): Promise<string> {
-    const { data, error } = await this.supabaseService.supabase.storage
-    .from('imagenes')
-    .createSignedUrl(ruta, 3600);
-
-    if (error) 
+    async obtenerUrlArchivo(ruta: string): Promise<string> 
     {
-        throw new Error(error.message);
-    }
+        const { data, error } = await this.supabaseService.supabase.storage
+        .from('imagenes')
+        .createSignedUrl(ruta, 3600);
 
-    return data.signedUrl;
-}
+        if (error) 
+        {
+            throw new Error(error.message);
+        }
+
+        return data.signedUrl;
+    }
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
@@ -20,5 +20,13 @@ export class StorageController
     {
         const ruta = await this.storageService.guardarImagen(dto, archivo);
         return {ruta};
+    }
+
+    @Get ('')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('descargar_imagenes') 
+    async obtenerUrlArchivo(@Query('ruta') ruta: string)
+    {
+        return { url: await this.storageService.obtenerUrlArchivo(ruta)};
     }
 }

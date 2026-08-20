@@ -12,6 +12,8 @@ import { NotificationService } from '../../shared/notifications/notification.ser
 import { PadreResponsableService } from '../../services/padreResponsable/padre-responsable-service';
 import { PadreResponsableDTO } from '../../services/gestionPedidos/dto/padreResponsable.dto';
 import { CuotasService } from '../../services/cuotas/cuotas-service';
+import { StorageService } from '../../services/storage/storage-service';
+import { DocumentosService } from '../../services/documentos/documentos-service';
 
 type Banco = 'COMAFI' | 'Santander';
 
@@ -33,6 +35,8 @@ export class Bancos implements OnInit
   private readonly notificaciones = inject(NotificationService);
   private readonly padreResponsableService = inject(PadreResponsableService);
   private readonly cuotasService = inject(CuotasService);
+  private readonly storageService = inject(StorageService);
+  private readonly documentosService = inject(DocumentosService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly TAMANIO_PAGINA = 10;
@@ -284,41 +288,15 @@ export class Bancos implements OnInit
     });
   }
 
-  async generarComprobantePDF(pago: PagoBancoResponse)
+  async descargarComprobante(pago: PagoBancoResponse)
   {
     this.descargandoReciboId.set(pago.id);
 
-    const padreResponsable: PadreResponsableDTO = await firstValueFrom(this.padreResponsableService.traerPadreResponsableId(pago.id_grupo));
-    const nroCuotas: number = (await firstValueFrom(this.cuotasService.traerCuotasIdPedido(pago.id_pedido))).length;
+    const idDocumento: number = await firstValueFrom(this.pagosService.traerIdDocumento(pago.id));
+    const url: string = (await firstValueFrom(this.documentosService.obtenerUrlArchivo(idDocumento))).url;
+    const clienteNombre= pago.nombre_colegio;
 
-
-    const dto: GenerarReciboDTO = {
-      numero: pago.nro_transferencia,
-      fecha: this.formatearFecha(pago.fecha),
-      clienteNombre: pago.nombre_colegio,
-      localidad:pago.localidad,
-      concepto: pago.motivo,
-      importe: pago.monto,
-      leyendaSenia: true,
-      turno: pago.turno,
-      orientacion: pago.orientacion,
-      nivel: pago.nivel,
-      nombrePadre: padreResponsable.nombre,
-      apellidoPadre: padreResponsable.apellido,
-      nroCuotas: nroCuotas,
-    };
-
-    this.pagosService.descargarRecibo(dto)
-    .subscribe({
-      next: (blob) => {
-        this.descargarArchivo(blob, `recibo-${pago.nro_transferencia}.pdf`);
-        this.descargandoReciboId.set(null);
-      },
-      error: () => {
-        this.notificaciones.error({ title: 'Error', description: 'No se pudo descargar el comprobante.' });
-        this.descargandoReciboId.set(null);
-      },
-    });
+    this.storageService.descargarImagen(`Comprobante-${clienteNombre}`, url);
   }
 
   private marcarComoEnviados(ids: number[]): void
