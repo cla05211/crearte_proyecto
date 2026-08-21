@@ -30,6 +30,12 @@ export const routes: Routes = [
         data: { permiso: 'ver_bancos' }
       },
       {
+        path: "movimientos-caja",
+        loadComponent: () => import('./pages/movimientos-caja/movimientos-caja').then((archivo) => archivo.MovimientosCaja),
+        canActivate: [PermisosGuard],
+        data: { permiso: 'ver_caja' }
+      },
+      {
         path: "productos",
         loadComponent: () => import('./pages/productos/productos').then((archivo) => archivo.Productos),
         canActivate: [PermisosGuard],

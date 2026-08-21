@@ -37,7 +37,7 @@ export class MovimientosCajaService
         }
     }
 
-    async traerMovimientosBusqueda(rangoDesde: number, rangoHasta:number, busqueda?:string):Promise<MovimientoCajaResponseDTO[]>
+    async traerMovimientosBusqueda(rangoDesde: number, rangoHasta:number, busqueda?:string, tipo?:number, categoria?:number):Promise<MovimientoCajaResponseDTO[]>
     {
         let query = this.sb.supabase
         .from("pedidos")
@@ -47,6 +47,16 @@ export class MovimientosCajaService
         if(busqueda)
         {
             query = query.or(`categoria.ilike.%${busqueda}%,descripcion.ilike.%${busqueda}%`);
+        }
+
+        if(tipo)
+        {
+            query = query.eq("tipo", tipo);
+        }
+
+        if(categoria)
+        {
+            query = query.eq("categoria", categoria);
         }
 
         const { data, error } = await query.range(rangoDesde, rangoHasta);

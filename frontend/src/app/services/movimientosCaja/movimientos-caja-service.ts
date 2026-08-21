@@ -17,7 +17,7 @@ export class MovimientosCajaService
     return this.http.post<number>(`${environment.apiUrl}/movimientos-caja`,dto);
   }
 
-  obtenerMovimientos(rangoDesde:number, rangoHasta:number, busqueda?: string): Observable<MovimientoCajaResponseDTO[]>
+  obtenerMovimientos(rangoDesde:number, rangoHasta:number, busqueda?: string, tipo?:number, categoria?:number): Observable<MovimientoCajaResponseDTO[]>
   {
     let params: any = {rangoDesde, rangoHasta};
 

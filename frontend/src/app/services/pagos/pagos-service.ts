@@ -66,4 +66,9 @@ export class PagosService
   {
     return this.http.get<number>(`${environment.apiUrl}/pagos/total/`,{params:{fechaHoy: fechaHoy.toISOString()}});
   }
+
+  traerTotalIngresosEfectivos():Observable<number>
+  {
+    return this.http.get<number>(`${environment.apiUrl}/pagos/ingresos-efectivo`);
+  }
 }

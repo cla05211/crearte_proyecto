@@ -22,9 +22,9 @@ export class MovimientosCajaController
     @Get ('')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_caja')
-    async obtenerPedidosVentas(@Query('rangoDesde', ParseIntPipe) rangoDesde: number, @Query('rangoHasta', ParseIntPipe) rangoHasta: number, @Query('busqueda') busqueda?: string):Promise<MovimientoCajaResponseDTO[]>
+    async obtenerPedidosVentas(@Query('rangoDesde', ParseIntPipe) rangoDesde: number, @Query('rangoHasta', ParseIntPipe) rangoHasta: number, @Query('busqueda') busqueda?: string,tipo?:number, categoria?:number):Promise<MovimientoCajaResponseDTO[]>
     {
-        return await this.movimientosCajaService.traerMovimientosBusqueda(rangoDesde, rangoHasta, busqueda);
+        return await this.movimientosCajaService.traerMovimientosBusqueda(rangoDesde, rangoHasta, busqueda, tipo, categoria);
     }
 
     @Get('/ingresos')

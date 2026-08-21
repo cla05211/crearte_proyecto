@@ -19,6 +19,14 @@ export class UsuariosController
         return this.usuariosService.obtenerUsuarios();
     }
 
+    @Get(':id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_caja')
+    async obtenerUsuarioPorId(@Param('id')id: number) 
+    {
+        return this.usuariosService.obtenerUsuarioPorId(id);
+    }
+
     @Post('aprobacion')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_usuarios')

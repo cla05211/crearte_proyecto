@@ -4,8 +4,7 @@ import { SupabaseClient, User } from '@supabase/supabase-js';
 import { BehaviorSubject } from 'rxjs';
 import { GuardarUsuarioDTO } from './dto/guardarUsuario.dto';
 import { InternalServerErrorException } from '@nestjs/common';
-import { UsuarioDTO } from './dto/Usuario.dto';
-import { UsuarioSupabaseDTO } from './dto/usuarioSupabase.dto';
+import { UsuarioResponseDTO } from './dto/Usuario.dto';
 
 @Injectable()
 export class UsuariosService {
@@ -36,34 +35,33 @@ export class UsuariosService {
         return data;
     }
 
-    async obtenerUsuarios():Promise<UsuarioDTO[]>
+    async obtenerUsuarioPorId(id: number):Promise<UsuarioResponseDTO>
+    {
+        const { data, error } = await this.sb.supabase
+        .from('usuarios')
+        .select(`*`)
+        .eq('id', id)
+        .single();
+
+        if(error)
+        {
+            throw new InternalServerErrorException('No se pudo obtener el usuario');
+        }
+        return data as UsuarioResponseDTO;
+    }
+
+    async obtenerUsuarios():Promise<UsuarioResponseDTO[]>
     {
         const { data, error } = await this.sb.supabase
             .from('usuarios')
-            .select(`
-                id,
-                id_auth,
-                nombre,
-                apellido,
-                aprobado,
-                roles (
-                    nombre_rol
-                )
-            `)
-            .returns<UsuarioSupabaseDTO[]>();
+            .select(`*`)
+            .returns<UsuarioResponseDTO[]>();
 
         if (error) {
             throw new Error(error.message);
         }
 
-        return data.map(u => ({
-            id: u.id,
-            idAuth: u.idAuth,
-            nombre: u.nombre,
-            apellido: u.apellido,
-            aprobado: u.aprobado,
-            rol: u.roles.nombre_rol
-        }));
+        return data as UsuarioResponseDTO[];
     }
 
     async eliminarUsuario(id: number)

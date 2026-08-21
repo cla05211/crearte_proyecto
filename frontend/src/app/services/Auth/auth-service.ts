@@ -9,7 +9,7 @@ import { tap, throwError } from 'rxjs';
 import { respuestaLogin } from './dto/respuestaLogin';
 import { PermisosService } from '../permisos/permisos';
 import { Router, RouterLink } from '@angular/router';
-import { UsuarioRespuestaGet } from '../usuarios/dto/usuarioRespuestaGet';
+import { UsuarioResponse } from '../usuarios/dto/usuarioResponse';
 
 @Injectable({
   providedIn: 'root',

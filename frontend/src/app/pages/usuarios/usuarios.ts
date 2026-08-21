@@ -4,7 +4,7 @@ import { Inject, inject } from '@angular/core';
 import { UsuarioService } from '../../services/usuarios/usuario-service';
 import { firstValueFrom } from 'rxjs';
 import { ConfirmationService } from '../../services/confirmation/confirmation.service';
-import { UsuarioRespuestaGet } from '../../services/usuarios/dto/usuarioRespuestaGet';
+import { UsuarioResponse } from '../../services/usuarios/dto/usuarioResponse';
 import { AuthService } from '../../services/Auth/auth-service';
 
 @Component({
@@ -17,8 +17,8 @@ export class Usuarios
 {
   usuariosService = inject(UsuarioService);
   confirmationService = inject(ConfirmationService);
-  usuarios = signal<UsuarioRespuestaGet[]>([]);
-  empleados = signal<UsuarioRespuestaGet[]>([]);
+  usuarios = signal<UsuarioResponse[]>([]);
+  empleados = signal<UsuarioResponse[]>([]);
   sectorSeleccionado = signal('');
   sectores = computed(() =>
     [...new Set(this.empleados().map(usuario => usuario.rol))].sort()

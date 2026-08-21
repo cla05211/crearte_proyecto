@@ -34,10 +34,10 @@ export class PagosController
         return await this.pagosService.traerPagosPedido(id);
     }
 
-    @Get('/ingresos')
+    @Get('/ingresos-efectivo')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_bancos')
-    async obtenerTotalIngresos()
+    async obtenerTotalIngresosEfectivo()
     {
         return await this.pagosService.obtenerTotalIngresosEfectivo();
     }

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment.development';
 import { ConfirmationService } from '../confirmation/confirmation.service';
-import { UsuarioRespuestaGet } from './dto/usuarioRespuestaGet';
+import { UsuarioResponse } from './dto/usuarioResponse';
 import { RegistroDto } from '../Auth/dto/registro.interface';
 
 @Injectable({
@@ -24,6 +24,11 @@ export class UsuarioService
 
   traerUsuarios()
   {
-    return this.http.get<UsuarioRespuestaGet[]>(`${environment.apiUrl}/usuarios`);
+    return this.http.get<UsuarioResponse[]>(`${environment.apiUrl}/usuarios`);
+  }
+
+  traerUsuarioPorId(idUsuario: number)
+  {
+    return this.http.get<UsuarioResponse>(`${environment.apiUrl}/usuarios/${idUsuario}`);
   }
 }
