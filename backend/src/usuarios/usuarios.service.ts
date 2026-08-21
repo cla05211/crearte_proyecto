@@ -4,7 +4,9 @@ import { SupabaseClient, User } from '@supabase/supabase-js';
 import { BehaviorSubject } from 'rxjs';
 import { GuardarUsuarioDTO } from './dto/guardarUsuario.dto';
 import { InternalServerErrorException } from '@nestjs/common';
-import { UsuarioResponseDTO } from './dto/Usuario.dto';
+import { UsuarioResponseDTO } from './dto/UsuarioResponse.dto';
+import { UsuarioSupabaseDTO } from './dto/UsuarioSupabase.dto';
+import { UsuarioResponseNombreRolDTO } from './dto/UsuarioResponseNombreRol';
 
 @Injectable()
 export class UsuariosService {
@@ -50,18 +52,34 @@ export class UsuariosService {
         return data as UsuarioResponseDTO;
     }
 
-    async obtenerUsuarios():Promise<UsuarioResponseDTO[]>
+    async obtenerUsuarios():Promise<UsuarioResponseNombreRolDTO[]>
     {
         const { data, error } = await this.sb.supabase
             .from('usuarios')
-            .select(`*`)
-            .returns<UsuarioResponseDTO[]>();
+            .select(`
+                id,
+                id_auth,
+                nombre,
+                apellido,
+                aprobado,
+                roles (
+                    nombre_rol
+                )
+            `)
+            .returns<UsuarioSupabaseDTO[]>();
 
         if (error) {
             throw new Error(error.message);
         }
 
-        return data as UsuarioResponseDTO[];
+        return data.map(u => ({
+            id: u.id,
+            idAuth: u.idAuth,
+            nombre: u.nombre,
+            apellido: u.apellido,
+            aprobado: u.aprobado,
+            rol: u.roles.nombre_rol
+        }));
     }
 
     async eliminarUsuario(id: number)

@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { ConfirmationService } from '../../services/confirmation/confirmation.service';
 import { UsuarioResponse } from '../../services/usuarios/dto/usuarioResponse';
 import { AuthService } from '../../services/Auth/auth-service';
+import { UsuarioResponseConNombreRol } from '../../services/usuarios/dto/usuarioResponseNombreRol';
 
 @Component({
   selector: 'app-usuarios',
@@ -17,8 +18,8 @@ export class Usuarios
 {
   usuariosService = inject(UsuarioService);
   confirmationService = inject(ConfirmationService);
-  usuarios = signal<UsuarioResponse[]>([]);
-  empleados = signal<UsuarioResponse[]>([]);
+  usuarios = signal<UsuarioResponseConNombreRol[]>([]);
+  empleados = signal<UsuarioResponseConNombreRol[]>([]);
   sectorSeleccionado = signal('');
   sectores = computed(() =>
     [...new Set(this.empleados().map(usuario => usuario.rol))].sort()

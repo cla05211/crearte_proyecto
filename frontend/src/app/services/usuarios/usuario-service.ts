@@ -4,6 +4,7 @@ import { environment } from '../../../environments/environment.development';
 import { ConfirmationService } from '../confirmation/confirmation.service';
 import { UsuarioResponse } from './dto/usuarioResponse';
 import { RegistroDto } from '../Auth/dto/registro.interface';
+import { UsuarioResponseConNombreRol } from './dto/usuarioResponseNombreRol';
 
 @Injectable({
   providedIn: 'root',
@@ -24,7 +25,7 @@ export class UsuarioService
 
   traerUsuarios()
   {
-    return this.http.get<UsuarioResponse[]>(`${environment.apiUrl}/usuarios`);
+    return this.http.get<UsuarioResponseConNombreRol[]>(`${environment.apiUrl}/usuarios`);
   }
 
   traerUsuarioPorId(idUsuario: number)
