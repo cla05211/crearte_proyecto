@@ -53,7 +53,7 @@ export class PagosService
             .select(`*,
                 pedidos!inner(id,estado_general, grupos(id,turno, orientacion, nivel,colegios(nombre, localidad)))`)
             .eq('banco', banco)
-            .neq('pedidos.estado_general', "entregado")
+            .neq('pedidos.estado_general', "Entregado")
             .order('fecha', { ascending: false })
             .range(rangoDesde, rangoHasta);;
 
@@ -82,6 +82,28 @@ export class PagosService
                 }));
 
         return pagosBancos
+    }
+
+    async obtenerTotalIngresosEfectivo():Promise<number>
+    {
+        let total = 0;
+
+        const { data, error } = await this.sb.supabase
+        .from('pagos')
+        .select('monto')
+        .eq('banco', 'Efectivo');
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }    
+
+        if(data)
+        {    
+            total = data.reduce((total, pago) => total + pago.monto, 0);
+        }
+        
+        return total;          
     }
 
     async modificarEnviadoBanco(dto: ModificarPago)

@@ -41,15 +41,18 @@ import { OcrModule } from './ocr/ocr.module';
 import { PadreResponsableModule } from './padre-responsable/padre-responsable.module';
 import { DocumentosController } from './documentos/documentos.controller';
 import { DocumentosModule } from './documentos/documentos.module';
+import { MovimientosCajaService } from './movimientos-caja/movimientos-caja.service';
+import { MovimientosCajaController } from './movimientos-caja/movimientos-caja.controller';
+import { MovimientosCajaModule } from './movimientos-caja/movimientos-caja.module';
 
 
 @Module({
   imports: [ConfigModule.forRoot({
       isGlobal: true,
-    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule],
-  controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController],
+    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule, MovimientosCajaModule],
+  controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController, MovimientosCajaController],
   providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService,
      ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, 
-     DocumentosService, CuotasService, ProductosService,AuditoriasService],
+     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService],
 })
 export class AppModule {}
