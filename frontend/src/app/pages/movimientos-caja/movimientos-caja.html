@@ -1,1 +1,231 @@
-<p>movimientos-caja works!</p>
+<main class="caja-page">
+  <div class="caja-page__shape caja-page__shape--left" aria-hidden="true"></div>
+  <div class="caja-page__shape caja-page__shape--right" aria-hidden="true"></div>
+
+  <section class="ds-container caja-container">
+    <header class="caja-header">
+      <div>
+        <span class="ds-eyebrow">Gestión financiera</span>
+        <h1 class="ds-heading-1">Caja</h1>
+        <p class="ds-text-muted">Registrá y consultá los ingresos y egresos de caja.</p>
+        <p class="caja-summary" aria-label="Dinero en caja">
+          Dinero en caja:
+          @if (cargandoTotales()) {
+            <span class="caja-summary__value">cargando…</span>
+          } @else {
+            <span class="caja-summary__value">{{ dineroEnCaja() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</span>
+          }
+        </p>
+      </div>
+      <button type="button" class="ds-button" (click)="abrirFormulario()">Agregar movimiento</button>
+    </header>
+
+    <div class="caja-toolbar">
+      <div class="caja-filtros">
+        <label class="ds-field">
+          <span class="ds-label">Tipo</span>
+          <select
+            class="ds-select"
+            [ngModel]="tipoFiltro()"
+            (ngModelChange)="filtrarPorTipo($any($event))"
+          >
+            <option value="">Todos</option>
+            <option value="ingreso">Ingreso</option>
+            <option value="egreso">Egreso</option>
+          </select>
+        </label>
+        <label class="ds-field">
+          <span class="ds-label">Categoría</span>
+          <select
+            class="ds-select"
+            [ngModel]="categoriaFiltro()"
+            (ngModelChange)="filtrarPorCategoria($any($event))"
+          >
+            <option value="">Todas</option>
+            @for (categoria of categoriasFiltro(); track categoria) {
+              <option [value]="categoria">{{ categoria }}</option>
+            }
+          </select>
+        </label>
+      </div>
+      <label class="ds-field search-field">
+        <span class="ds-label">Buscar</span>
+        <input
+          class="ds-input"
+          type="search"
+          placeholder="Categoría o descripción…"
+          [ngModel]="busquedaInput()"
+          (ngModelChange)="actualizarBusqueda($any($event))"
+        />
+      </label>
+    </div>
+
+    <section class="caja-card" aria-label="Listado de movimientos de caja">
+      @if (cargando()) {
+        <div class="loading-state" role="status" aria-live="polite">
+          <span class="loading-state__spinner" aria-hidden="true"></span>
+          <div>
+            <h2>Cargando movimientos</h2>
+            <p>Estamos preparando el listado de movimientos de caja.</p>
+          </div>
+        </div>
+      } @else if (movimientosVisibles().length === 0) {
+        <div class="empty-state">
+          <div class="empty-state__illustration" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <h2>No hay movimientos para mostrar.</h2>
+          <p>Cuando se registre un movimiento de caja, lo vas a ver acá.</p>
+        </div>
+      } @else {
+        <div class="table-wrapper">
+          <table class="ds-table caja-table">
+            <caption>Movimientos de caja</caption>
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">Usuario</th>
+                <th scope="col">Monto</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Categoría</th>
+                <th scope="col">Descripción</th>
+                <th scope="col" class="caja-table__actions-heading">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (movimiento of movimientosVisibles(); track movimiento.id) {
+                <tr>
+                  <td data-label="Fecha">{{ movimiento.fecha | date: 'dd/MM/yyyy' }}</td>
+                  <td data-label="Usuario">{{ nombreUsuario(movimiento.usuario) }}</td>
+                  <td data-label="Monto">{{ movimiento.monto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Tipo">
+                    <span class="ds-badge" [class.ds-badge--success]="movimiento.tipo === 'ingreso'" [class.ds-badge--danger]="movimiento.tipo === 'egreso'">
+                      {{ movimiento.tipo === 'ingreso' ? 'Ingreso' : 'Egreso' }}
+                    </span>
+                  </td>
+                  <td data-label="Categoría">{{ movimiento.categoria }}</td>
+                  <td data-label="Descripción">{{ movimiento.descripcion }}</td>
+                  <td data-label="Acciones" class="caja-table__actions-cell">
+                    <button
+                      type="button"
+                      class="delete-button"
+                      (click)="eliminarMovimiento(movimiento)"
+                      [attr.aria-label]="'Eliminar movimiento de ' + movimiento.categoria"
+                      title="Eliminar movimiento"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h10l1-13" /></svg>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <nav class="ds-pagination" aria-label="Paginación de movimientos">
+          <span class="ds-text-muted">
+            Mostrando {{ datosPagina().pagina * TAMANIO_PAGINA + 1 }}–{{
+              datosPagina().pagina * TAMANIO_PAGINA + movimientosVisibles().length
+            }}
+          </span>
+          <div class="ds-pagination__actions">
+            <button
+              type="button"
+              class="ds-button ds-button--secondary ds-button--small"
+              [disabled]="datosPagina().pagina === 0"
+              (click)="paginaAnterior()"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              class="ds-button ds-button--secondary ds-button--small"
+              [disabled]="!datosPagina().hayMasPaginas"
+              (click)="paginaSiguiente()"
+            >
+              Siguiente
+            </button>
+          </div>
+        </nav>
+      }
+    </section>
+  </section>
+
+  @if (vistaFormulario()) {
+    <div class="modal-backdrop" role="presentation">
+      <section class="caja-modal" role="dialog" aria-modal="true" aria-labelledby="new-movement-title">
+        <header class="caja-modal__header">
+          <div>
+            <span class="ds-eyebrow">Caja</span>
+            <h2 id="new-movement-title" class="ds-heading-2">Agregar movimiento</h2>
+          </div>
+          <button class="close-button" type="button" (click)="cerrarFormulario()" aria-label="Cerrar">×</button>
+        </header>
+
+        <div class="caja-modal__content">
+          <label class="ds-field">
+            <span class="ds-label">Fecha</span>
+            <input class="ds-input" type="date" [(ngModel)]="formularioMovimiento.fecha" />
+          </label>
+
+          <label class="ds-field">
+            <span class="ds-label">Monto</span>
+            <input class="ds-input" type="number" min="0" step="0.01" [(ngModel)]="formularioMovimiento.monto" />
+          </label>
+
+          <fieldset class="ds-field">
+            <legend class="ds-label">Tipo</legend>
+            <div class="tipo-toggle">
+              <button
+                type="button"
+                class="tipo-toggle__button"
+                [class.is-active]="formularioMovimiento.tipo === 'ingreso'"
+                [attr.aria-pressed]="formularioMovimiento.tipo === 'ingreso'"
+                (click)="cambiarTipoFormulario('ingreso')"
+              >
+                Ingreso
+              </button>
+              <button
+                type="button"
+                class="tipo-toggle__button"
+                [class.is-active]="formularioMovimiento.tipo === 'egreso'"
+                [attr.aria-pressed]="formularioMovimiento.tipo === 'egreso'"
+                (click)="cambiarTipoFormulario('egreso')"
+              >
+                Egreso
+              </button>
+            </div>
+          </fieldset>
+
+          <label class="ds-field">
+            <span class="ds-label">Categoría</span>
+            <select class="ds-select" [(ngModel)]="formularioMovimiento.categoria">
+              <option value="">Seleccioná una categoría</option>
+              @for (categoria of categoriasFormulario(); track categoria) {
+                <option [value]="categoria">{{ categoria }}</option>
+              }
+            </select>
+          </label>
+
+          @if (formularioMovimiento.categoria === 'Otros') {
+            <label class="ds-field">
+              <span class="ds-label">Especificar categoría</span>
+              <input class="ds-input" type="text" placeholder="Ingresá la categoría…" [(ngModel)]="formularioMovimiento.categoriaOtro" />
+            </label>
+          }
+
+          <label class="ds-field">
+            <span class="ds-label">Descripción</span>
+            <textarea class="ds-textarea" [(ngModel)]="formularioMovimiento.descripcion"></textarea>
+          </label>
+        </div>
+
+        <footer class="wizard-actions">
+          <button type="button" class="ds-button ds-button--secondary" (click)="cerrarFormulario()">Cancelar</button>
+          <button type="button" class="ds-button" [disabled]="guardando()" (click)="agregarMovimiento()">
+            {{ guardando() ? 'Guardando…' : 'Guardar movimiento' }}
+          </button>
+        </footer>
+      </section>
+    </div>
+  }
+</main>

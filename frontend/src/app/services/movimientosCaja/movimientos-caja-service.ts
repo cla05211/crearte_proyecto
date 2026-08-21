@@ -17,26 +17,36 @@ export class MovimientosCajaService
     return this.http.post<number>(`${environment.apiUrl}/movimientos-caja`,dto);
   }
 
-  obtenerMovimientos(rangoDesde:number, rangoHasta:number, busqueda?: string, tipo?:number, categoria?:number): Observable<MovimientoCajaResponseDTO[]>
+  obtenerMovimientos(rangoDesde:number, rangoHasta:number, busqueda?: string, tipo?:string, categoria?:string): Observable<MovimientoCajaResponseDTO[]>
   {
     let params: any = {rangoDesde, rangoHasta};
 
-    if (busqueda !== undefined) 
+    if (busqueda !== undefined)
     {
       params.busqueda = busqueda;
     }
 
-    return this.http.get<MovimientoCajaResponseDTO[]>(`${environment.apiUrl}/gestion-pedidos`, {params});
+    if (tipo !== undefined)
+    {
+      params.tipo = tipo;
+    }
+
+    if (categoria !== undefined)
+    {
+      params.categoria = categoria;
+    }
+
+    return this.http.get<MovimientoCajaResponseDTO[]>(`${environment.apiUrl}/movimientos-caja`, {params});
   }
 
   obtenerTotalIngresos()
   {
-    return this.http.get<number>(`${environment.apiUrl}/pagos/movimientos-caja/ingresos`);
+    return this.http.get<number>(`${environment.apiUrl}/movimientos-caja/ingresos`);
   }
 
   obtenerTotalEgresos()
   {
-    return this.http.get<number>(`${environment.apiUrl}/pagos/movimientos-caja/egresos`);
+    return this.http.get<number>(`${environment.apiUrl}/movimientos-caja/egresos`);
   }
 
   eliminarMovimiento(id:number)

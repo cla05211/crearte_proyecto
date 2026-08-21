@@ -37,10 +37,10 @@ export class MovimientosCajaService
         }
     }
 
-    async traerMovimientosBusqueda(rangoDesde: number, rangoHasta:number, busqueda?:string, tipo?:number, categoria?:number):Promise<MovimientoCajaResponseDTO[]>
+    async traerMovimientosBusqueda(rangoDesde: number, rangoHasta:number, busqueda?:string, tipo?:string, categoria?:string):Promise<MovimientoCajaResponseDTO[]>
     {
         let query = this.sb.supabase
-        .from("pedidos")
+        .from("vista_caja")
         .select(`*`)
         .order("fecha", {ascending: false,});
 

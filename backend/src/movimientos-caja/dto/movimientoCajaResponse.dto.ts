@@ -5,6 +5,7 @@ export class MovimientoCajaResponseDTO
     monto!: number;
     categoria!: string;
     descripcion!: string;
-    usuario!: number;
+    usuario!: number | null;
     tipo!:string;
+    origen!: string;
 }

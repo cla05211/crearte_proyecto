@@ -25,6 +25,14 @@ export class PagosController
     {
         return await this.pagosService.traerMontoTotalMes(new Date(fechaHoy));
     }
+    
+    @Get('ingresos-efectivo')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_bancos')
+    async obtenerTotalIngresosEfectivo()
+    {
+        return await this.pagosService.obtenerTotalIngresosEfectivo();
+    }
 
     @Get(':id')
     @UseGuards(AuthGuard,PermisosGuard)
@@ -34,13 +42,6 @@ export class PagosController
         return await this.pagosService.traerPagosPedido(id);
     }
 
-    @Get('/ingresos-efectivo')
-    @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('ver_bancos')
-    async obtenerTotalIngresosEfectivo()
-    {
-        return await this.pagosService.obtenerTotalIngresosEfectivo();
-    }
 
     @Get('bancos/:banco')
     @UseGuards(AuthGuard,PermisosGuard)
