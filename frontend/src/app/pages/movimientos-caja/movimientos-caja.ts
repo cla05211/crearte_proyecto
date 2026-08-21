@@ -11,6 +11,7 @@ import { MovimientoCajaDTO } from '../../services/movimientosCaja/dto/movimiento
 import { UsuarioService } from '../../services/usuarios/usuario-service';
 import { UsuarioResponse } from '../../services/usuarios/dto/usuarioResponse';
 import { PagosService } from '../../services/pagos/pagos-service';
+import { PedidosService } from '../../services/pedidos/pedidos-service';
 import { NotificationService } from '../../shared/notifications/notification.service';
 import { ConfirmationService } from '../../services/confirmation/confirmation.service';
 import { Usuario } from '../../../interfaces/usuario';
@@ -45,6 +46,7 @@ export class MovimientosCaja implements OnInit
 {
   private readonly movimientosCajaService = inject(MovimientosCajaService);
   private readonly pagosService = inject(PagosService);
+  private readonly pedidosService = inject(PedidosService);
   private readonly usuariosService = inject(UsuarioService);
   private readonly notificaciones = inject(NotificationService);
   private readonly confirmationService = inject(ConfirmationService);
@@ -72,6 +74,7 @@ export class MovimientosCaja implements OnInit
   });
 
   private readonly usuariosCache = signal<Record<number, UsuarioResponse>>({});
+  private readonly vendedoraPorPedido = signal<Record<number, number>>({});
 
   readonly totalIngresosCaja = signal<number | null>(null);
   readonly totalIngresosEfectivo = signal<number | null>(null);
@@ -150,7 +153,14 @@ export class MovimientosCaja implements OnInit
         {
           this.datosPagina.set({ movimientos, pagina, hayMasPaginas: movimientos.length === this.TAMANIO_PAGINA });
           movimientos.forEach((movimiento) => {
-            if (movimiento.usuario !== null) this.cargarUsuarioSiFalta(movimiento.usuario);
+            if (movimiento.usuario !== null)
+            {
+              this.cargarUsuarioSiFalta(movimiento.usuario);
+            }
+            else if (movimiento.id_pedido !== null)
+            {
+              this.cargarVendedoraSiFalta(movimiento.id_pedido);
+            }
           });
         }
 
@@ -223,11 +233,38 @@ export class MovimientosCaja implements OnInit
     return this.usuariosService.traerUsuarioPorId(id);
   }
 
-  nombreUsuario(idUsuario: number | null): string
+  private cargarVendedoraSiFalta(idPedido: number): void
   {
-    if (idUsuario === null) return 'Vendedora';
+    if (this.vendedoraPorPedido()[idPedido] !== undefined) return;
 
-    const usuario = this.usuariosCache()[idUsuario];
+    this.pedidosService.obtenerIdVendedora(idPedido)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (idVendedora) => {
+          this.vendedoraPorPedido.update((actual) => ({ ...actual, [idPedido]: idVendedora }));
+          this.cargarUsuarioSiFalta(idVendedora);
+        },
+        error: () => {
+          this.vendedoraPorPedido.update((actual) => ({ ...actual, [idPedido]: -1 }));
+        },
+      });
+  }
+
+  nombreUsuario(movimiento: MovimientoCajaResponseDTO): string
+  {
+    if (movimiento.usuario !== null)
+    {
+      const usuario = this.usuariosCache()[movimiento.usuario];
+      return usuario ? `${usuario.nombre} ${usuario.apellido}` : '…';
+    }
+
+    if (movimiento.id_pedido === null) return 'Vendedora';
+
+    const idVendedora = this.vendedoraPorPedido()[movimiento.id_pedido];
+    if (idVendedora === undefined) return '…';
+    if (idVendedora === -1) return 'Vendedora';
+
+    const usuario = this.usuariosCache()[idVendedora];
     return usuario ? `${usuario.nombre} ${usuario.apellido}` : '…';
   }
 

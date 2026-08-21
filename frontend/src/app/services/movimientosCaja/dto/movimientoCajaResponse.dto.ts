@@ -8,4 +8,5 @@ export class MovimientoCajaResponseDTO
     usuario!: number | null;
     tipo!:string;
     origen!:string;
+    id_pedido!: number | null; 
 }

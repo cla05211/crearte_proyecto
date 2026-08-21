@@ -23,4 +23,20 @@ export class PedidosService
 
         return data.id;
     }
+
+    async obtenerVendedora(idPedido:number)
+    {
+        const {data,error} = await this.sb.supabase
+            .from('pedidos')
+            .select('id_vendedora')
+            .eq('id',idPedido)
+            .single();
+
+        if (error) 
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        return data.id_vendedora;        
+    }
 }

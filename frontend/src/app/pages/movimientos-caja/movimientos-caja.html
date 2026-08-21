@@ -96,7 +96,7 @@
               @for (movimiento of movimientosVisibles(); track movimiento.id) {
                 <tr>
                   <td data-label="Fecha">{{ movimiento.fecha | date: 'dd/MM/yyyy' }}</td>
-                  <td data-label="Usuario">{{ nombreUsuario(movimiento.usuario) }}</td>
+                  <td data-label="Usuario">{{ nombreUsuario(movimiento) }}</td>
                   <td data-label="Monto">{{ movimiento.monto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                   <td data-label="Tipo">
                     <span class="ds-badge" [class.ds-badge--success]="movimiento.tipo === 'ingreso'" [class.ds-badge--danger]="movimiento.tipo === 'egreso'">
