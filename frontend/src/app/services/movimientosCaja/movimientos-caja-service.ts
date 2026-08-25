@@ -49,6 +49,11 @@ export class MovimientosCajaService
     return this.http.get<number>(`${environment.apiUrl}/movimientos-caja/egresos`);
   }
 
+  modificarMovimiento(id:number, nuevoMovimiento: MovimientoCajaDTO)
+  {
+    return this.http.patch(`${environment.apiUrl}/movimientos-caja/${id}`, nuevoMovimiento);
+  }
+
   eliminarMovimiento(id:number)
   {
     return this.http.delete(`${environment.apiUrl}/movimientos-caja/${id}`);

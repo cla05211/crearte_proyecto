@@ -26,7 +26,6 @@ export class MovimientosCajaService
 
     async eliminarMovimiento(id: number):Promise<void>
     {
-        console.log(id);
         const { error: errorDelete } = await this.sb.supabase
             .from('movimientos_caja')
             .delete()
@@ -34,8 +33,19 @@ export class MovimientosCajaService
 
         if (errorDelete) 
         {
-            console.log("Error");
-            console.log(errorDelete.details);
+            throw new InternalServerErrorException('No se pudo eliminar el movimiento');
+        }
+    }
+
+    async modificarMovimiento(id: number, nuevoMovimiento: MovimientoCajaDTO)
+    {
+        const { error } = await this.sb.supabase
+        .from('movimientos_caja')
+        .update(nuevoMovimiento)
+        .eq('id', id);
+
+        if (error) 
+        {
             throw new InternalServerErrorException('No se pudo eliminar el movimiento');
         }
     }

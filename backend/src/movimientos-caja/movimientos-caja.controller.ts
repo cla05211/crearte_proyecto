@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
 import { MovimientoCajaDTO } from './dto/movimientoCaja.dto copy';
@@ -41,6 +41,14 @@ export class MovimientosCajaController
     async obtenerTotalEgresos()
     {
         return await this.movimientosCajaService.obtenerTotalEgresos();
+    }
+
+    @Patch(':id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_caja')
+    async modificarMovimiento(@Param('id')id: number, @Body() dto: MovimientoCajaDTO)
+    {
+        return this.movimientosCajaService.modificarMovimiento(id, dto);
     }
 
     @Delete(':id')

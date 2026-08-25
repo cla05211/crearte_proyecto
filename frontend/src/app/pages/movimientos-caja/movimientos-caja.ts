@@ -91,7 +91,9 @@ export class MovimientosCaja implements OnInit
 
   readonly vistaFormulario = signal(false);
   readonly guardando = signal(false);
+  readonly modoFormulario = signal<'agregar' | 'editar'>('agregar');
   formularioMovimiento: FormularioMovimiento = this.crearFormularioVacio();
+  private movimientoEditando: MovimientoCajaResponseDTO | null = null;
 
   categoriasFormulario(): string[]
   {
@@ -305,12 +307,35 @@ export class MovimientosCaja implements OnInit
   abrirFormulario(): void
   {
     this.formularioMovimiento = this.crearFormularioVacio();
+    this.modoFormulario.set('agregar');
+    this.movimientoEditando = null;
+    this.vistaFormulario.set(true);
+  }
+
+  abrirFormularioEdicion(movimiento: MovimientoCajaResponseDTO): void
+  {
+    const tipo = movimiento.tipo as TipoMovimiento;
+    const categoriasValidas = tipo === 'ingreso' ? CATEGORIAS_INGRESO : CATEGORIAS_EGRESO;
+    const categoriaConocida = categoriasValidas.includes(movimiento.categoria);
+
+    this.formularioMovimiento = {
+      fecha: new Date(movimiento.fecha).toISOString().slice(0, 10),
+      monto: movimiento.monto,
+      tipo,
+      categoria: categoriaConocida ? movimiento.categoria : 'Otros',
+      categoriaOtro: categoriaConocida ? '' : movimiento.categoria,
+      descripcion: movimiento.descripcion,
+    };
+
+    this.modoFormulario.set('editar');
+    this.movimientoEditando = movimiento;
     this.vistaFormulario.set(true);
   }
 
   cerrarFormulario(): void
   {
     this.vistaFormulario.set(false);
+    this.movimientoEditando = null;
   }
 
   cambiarTipoFormulario(tipo: TipoMovimiento): void
@@ -320,20 +345,32 @@ export class MovimientosCaja implements OnInit
     this.formularioMovimiento.categoriaOtro = '';
   }
 
-  agregarMovimiento(): void
+  guardarFormulario(): void
+  {
+    if (this.modoFormulario() === 'editar')
+    {
+      this.modificarMovimiento();
+    }
+    else
+    {
+      this.agregarMovimiento();
+    }
+  }
+
+  private construirDtoDesdeFormulario(): MovimientoCajaDTO | null
   {
     const formulario = this.formularioMovimiento;
 
     if (!formulario.fecha)
     {
       this.notificaciones.error({ title: 'Falta la fecha', description: 'Ingresá la fecha del movimiento.' });
-      return;
+      return null;
     }
 
     if (!formulario.monto || formulario.monto <= 0)
     {
       this.notificaciones.error({ title: 'Monto inválido', description: 'Ingresá un monto mayor a 0.' });
-      return;
+      return null;
     }
 
     const categoriaElegida = formulario.categoria === 'Otros' ? formulario.categoriaOtro.trim() : formulario.categoria;
@@ -341,7 +378,7 @@ export class MovimientosCaja implements OnInit
     if (!categoriaElegida)
     {
       this.notificaciones.error({ title: 'Falta la categoría', description: 'Seleccioná o ingresá una categoría.' });
-      return;
+      return null;
     }
 
     const usuario = this.obtenerUsuario();
@@ -349,10 +386,10 @@ export class MovimientosCaja implements OnInit
     if (!usuario)
     {
       this.notificaciones.warning({ title: 'Sesión no encontrada', description: 'No se encontró la sesión del usuario. Volvé a iniciar sesión.' });
-      return;
+      return null;
     }
 
-    const dto: MovimientoCajaDTO = {
+    return {
       fecha: new Date(formulario.fecha),
       monto: formulario.monto,
       categoria: this.capitalizar(categoriaElegida),
@@ -360,6 +397,12 @@ export class MovimientosCaja implements OnInit
       usuario: usuario.id,
       tipo: formulario.tipo,
     };
+  }
+
+  agregarMovimiento(): void
+  {
+    const dto = this.construirDtoDesdeFormulario();
+    if (!dto) return;
 
     this.guardando.set(true);
 
@@ -382,8 +425,6 @@ export class MovimientosCaja implements OnInit
 
   async eliminarMovimiento(movimiento: MovimientoCajaResponseDTO): Promise<void>
   {
-    console.log("Movimiento:")
-    console.log(movimiento);
     const idNumero = Number(movimiento.id.split('-')[1]);
 
     const confirmado = await this.confirmationService.confirm({
@@ -403,6 +444,34 @@ export class MovimientosCaja implements OnInit
         },
         error: () => {
           this.notificaciones.error({ title: 'Error', description: 'No se pudo eliminar el movimiento.' });
+        },
+      });
+  }
+
+  modificarMovimiento(): void
+  {
+    if (!this.movimientoEditando) return;
+
+    const dto = this.construirDtoDesdeFormulario();
+    if (!dto) return;
+
+    const idNumero = Number(this.movimientoEditando.id.split('-')[1]);
+
+    this.guardando.set(true);
+
+    this.movimientosCajaService.modificarMovimiento(idNumero, dto)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.guardando.set(false);
+          this.notificaciones.success({ title: 'Movimiento modificado', description: 'El movimiento se modificó correctamente.' });
+          this.cerrarFormulario();
+          this.cargarMovimientos();
+          this.cargarTotales();
+        },
+        error: (err: HttpErrorResponse) => {
+          this.guardando.set(false);
+          this.notificarErrorGuardado(err);
         },
       });
   }
