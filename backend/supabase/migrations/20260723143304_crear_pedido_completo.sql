@@ -175,15 +175,7 @@ begin
       );
     end if;
   END IF;
- 
-  -- Movimiento en cuenta corriente
-  insert into movimientos (id_grupo, importe, fecha)
-  values (
-    id_grupo,
-    (payload->'movimientoDTO'->>'importe')::double precision,
-    (payload->'movimientoDTO'->>'fecha')::timestamp
-  );
- 
+  
   -- Cuotas: primera viene en 'primerCuota', el resto se calculan
   -- replicando CuotasService.acomodarFecha() (mismo día del mes,
   -- clampeado al último día si el mes no lo tiene).

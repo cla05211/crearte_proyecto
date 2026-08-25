@@ -1,6 +1,6 @@
 export class MovimientoCajaResponseDTO
 {
-    id!: number;
+    id!: string;
     fecha!: Date;
     monto!: number;
     categoria!: string;

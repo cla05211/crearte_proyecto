@@ -47,6 +47,12 @@ export const routes: Routes = [
         canActivate: [PermisosGuard],
         data: { permiso: 'crear_pedido' }
       },
+      {
+        path: "clientes",
+        loadComponent: () => import('./pages/clientes/clientes').then((archivo) => archivo.Clientes),
+        canActivate: [PermisosGuard],
+        data: { permiso: 'ver_clientes' }
+      },
       { path: "", redirectTo: "home", pathMatch: 'full' },
     ]
   },

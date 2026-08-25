@@ -26,6 +26,7 @@ export class MovimientosCajaService
 
     async eliminarMovimiento(id: number):Promise<void>
     {
+        console.log(id);
         const { error: errorDelete } = await this.sb.supabase
             .from('movimientos_caja')
             .delete()
@@ -33,7 +34,9 @@ export class MovimientosCajaService
 
         if (errorDelete) 
         {
-            throw new InternalServerErrorException('No se pudo eliminar el usuario');
+            console.log("Error");
+            console.log(errorDelete.details);
+            throw new InternalServerErrorException('No se pudo eliminar el movimiento');
         }
     }
 

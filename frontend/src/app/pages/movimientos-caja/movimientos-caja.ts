@@ -382,6 +382,10 @@ export class MovimientosCaja implements OnInit
 
   async eliminarMovimiento(movimiento: MovimientoCajaResponseDTO): Promise<void>
   {
+    console.log("Movimiento:")
+    console.log(movimiento);
+    const idNumero = Number(movimiento.id.split('-')[1]);
+
     const confirmado = await this.confirmationService.confirm({
       title: 'Eliminar movimiento',
       description: '¿Está seguro de que desea eliminar este movimiento de caja?',
@@ -389,7 +393,7 @@ export class MovimientosCaja implements OnInit
 
     if (!confirmado) return;
 
-    this.movimientosCajaService.eliminarMovimiento(movimiento.id)
+    this.movimientosCajaService.eliminarMovimiento(idNumero)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {

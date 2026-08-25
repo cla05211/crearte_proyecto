@@ -57,6 +57,9 @@
       @if (tienePermiso('ver_bancos')) {
         <a routerLink="/bancos" routerLinkActive="activo" (click)="cerrarSidebar()">Cuentas Bancarias</a>
       }
+      @if (tienePermiso('ver_bancos')) {
+        <a routerLink="/clientes" routerLinkActive="activo" (click)="cerrarSidebar()">Clientes</a>
+      }
       @if (tienePermiso('ver_caja')) {
         <a routerLink="/movimientos-caja" routerLinkActive="activo" (click)="cerrarSidebar()">Caja</a>
       }
