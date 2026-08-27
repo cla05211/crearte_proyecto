@@ -1,12 +1,12 @@
 export class MovimientoCajaResponseDTO
 {
-    id!: number;
-    fecha!: Date;
-    monto!: number;
-    categoria!: string;
-    descripcion!: string;
+    id!: string | null;
+    fecha!: string | null;
+    monto!: number | null;
+    categoria!: string | null;
+    descripcion!: string | null;
     usuario!: number | null;
-    tipo!:string;
-    origen!: string;
-    id_pedido!: number | null; 
+    tipo!: string | null;
+    origen!: string | null;
+    id_pedido!: number | null;
 }

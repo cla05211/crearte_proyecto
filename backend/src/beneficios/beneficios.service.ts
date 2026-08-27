@@ -17,7 +17,7 @@ export class BeneficiosService
             throw new Error(error.message);
         }
 
-        return data.map(d => d.beneficio);
+        return data.map(d => d.beneficio).filter((b): b is string => b !== null);
     }
 
     async modificarBeneficios(nuevoBeneficio: string, idPedido: number):Promise<{'nuevoBeneficio':string}>

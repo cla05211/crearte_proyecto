@@ -76,7 +76,7 @@ export class AuthService {
     }
     
     const usuario = await this.usuarioService.obtenerUsuarioPorIdAuth(data.user.id);
-    const permisos = await this.permisosService.obtenerPermisosRol(usuario.rol);
+    const permisos = await this.permisosService.obtenerPermisosRol(usuario.rol!);
 
     return {session: data.session, usuario, permisos};
   }
@@ -86,7 +86,6 @@ export class AuthService {
     const { error } = await this.sb.supabase.auth.signOut();
     if (error) 
     {
-      console.log("error");
         throw new BadRequestException({
         code: 'SIGNOUT_ERROR',
         message: error.message,
@@ -104,11 +103,6 @@ export class AuthService {
     }
     
     return data.aprobado;
-  }
-
-    async guardarUsuario(nombre:string, apellido:string, rol:string)
-  {
-    return await this.sb.supabase.from("usuarios").insert({nombre, apellido, rol})
   }
 
   async enviarEnlaceClave(correo:string)

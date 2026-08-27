@@ -1,6 +1,6 @@
 export class MovimientoCajaDTO
 {
-    fecha!: Date;
+    fecha!: string;
     monto!: number;
     categoria!: string;
     descripcion!: string;

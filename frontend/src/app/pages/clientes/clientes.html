@@ -1,1 +1,102 @@
-<p>clientes works!</p>
+<main class="clientes-page">
+  <div class="clientes-page__shape clientes-page__shape--left" aria-hidden="true"></div>
+  <div class="clientes-page__shape clientes-page__shape--right" aria-hidden="true"></div>
+
+  <section class="ds-container clientes-container">
+    <header class="clientes-header">
+      <div>
+        <span class="ds-eyebrow">Gestión de clientes</span>
+        <h1 class="ds-heading-1">Clientes</h1>
+        <p class="ds-text-muted">Consultá el listado de colegios y sus adultos representantes.</p>
+      </div>
+    </header>
+
+    <div class="clientes-toolbar">
+      <label class="ds-field search-field">
+        <span class="ds-label">Buscar</span>
+        <input
+          class="ds-input"
+          type="search"
+          placeholder="Colegio o representante…"
+          [ngModel]="busquedaInput()"
+          (ngModelChange)="actualizarBusqueda($any($event))"
+        />
+      </label>
+    </div>
+
+    <section class="clientes-card" aria-label="Listado de colegios">
+      @if (cargando()) {
+        <div class="loading-state" role="status" aria-live="polite">
+          <span class="loading-state__spinner" aria-hidden="true"></span>
+          <div>
+            <h2>Cargando colegios</h2>
+            <p>Estamos preparando el listado de colegios.</p>
+          </div>
+        </div>
+      } @else if (clientesVisibles().length === 0) {
+        <div class="empty-state">
+          <div class="empty-state__illustration" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <h2>No se encontraron colegios.</h2>
+          <p>Probá con otra búsqueda o revisá más tarde.</p>
+        </div>
+      } @else {
+        <div class="table-wrapper">
+          <table class="ds-table clientes-table">
+            <thead>
+              <tr>
+                <th scope="col">Colegio</th>
+                <th scope="col">Nivel</th>
+                <th scope="col">Adulto representante</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cliente of clientesVisibles(); track cliente.idGrupo) {
+                <tr
+                  class="clientes-table__row"
+                  role="button"
+                  tabindex="0"
+                  [attr.aria-label]="'Ver ficha del colegio ' + cliente.nombreColegio"
+                  (click)="abrirColegio(cliente)"
+                  (keydown.enter)="abrirColegio(cliente)"
+                >
+                  <td data-label="Colegio"><span class="school-name">{{ cliente.nombreColegio }}</span></td>
+                  <td data-label="Nivel">
+                    <span class="ds-badge nivel-badge" [attr.data-nivel]="cliente.nivel">{{ cliente.nivel }}</span>
+                  </td>
+                  <td data-label="Adulto representante">{{ cliente.padreResponsableNombre }} {{ cliente.padreResponsableApellido }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <nav class="ds-pagination" aria-label="Paginación de colegios">
+          <span class="ds-text-muted">
+            Mostrando {{ datosPagina().pagina * TAMANIO_PAGINA + 1 }}–{{
+              datosPagina().pagina * TAMANIO_PAGINA + clientesVisibles().length
+            }}
+          </span>
+          <div class="ds-pagination__actions">
+            <button
+              type="button"
+              class="ds-button ds-button--secondary ds-button--small"
+              [disabled]="datosPagina().pagina === 0"
+              (click)="paginaAnterior()"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              class="ds-button ds-button--secondary ds-button--small"
+              [disabled]="!datosPagina().hayMasPaginas"
+              (click)="paginaSiguiente()"
+            >
+              Siguiente
+            </button>
+          </div>
+        </nav>
+      }
+    </section>
+  </section>
+</main>

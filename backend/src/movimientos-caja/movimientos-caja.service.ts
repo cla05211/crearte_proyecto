@@ -98,7 +98,7 @@ export class MovimientosCajaService
 
         if(data)
         {    
-            total = data.reduce((total, pago) => total + pago.monto, 0);
+            total = data.reduce((total, pago) => total + (pago.monto ?? 0), 0);
         }
         
         return total;          
@@ -120,7 +120,7 @@ export class MovimientosCajaService
 
         if(data)
         {    
-            total = data.reduce((total, pago) => total + pago.monto, 0);
+            total = data.reduce((total, pago) => total + (pago.monto ?? 0), 0);
         }
         
         return total;          

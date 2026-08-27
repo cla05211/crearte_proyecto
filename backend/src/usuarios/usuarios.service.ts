@@ -49,7 +49,15 @@ export class UsuariosService {
         {
             throw new InternalServerErrorException('No se pudo obtener el usuario');
         }
-        return data as UsuarioResponseDTO;
+
+        return {
+            id: data.id,
+            idAuth: data.id_auth,
+            nombre: data.nombre!,
+            apellido: data.apellido!,
+            rol: data.rol!,
+            aprobado: data.aprobado,
+        };
     }
 
     async obtenerUsuarios():Promise<UsuarioResponseNombreRolDTO[]>
@@ -126,7 +134,6 @@ export class UsuariosService {
 
         if (error) 
         {
-            console.log(error);
             throw new InternalServerErrorException('No se pudo actualizar el usuario');
         }
 

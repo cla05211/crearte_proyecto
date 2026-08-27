@@ -23,7 +23,7 @@ export class PermisosService
             return [];
         }
 
-        const permisoIds = relaciones.map(r => r.permiso_id);
+        const permisoIds = relaciones.map(r => r.permiso_id).filter((id): id is number => id !== null);
 
         const { data: permisos, error: errorPermisos } = await this.sb.supabase
             .from('permisos')
@@ -35,7 +35,7 @@ export class PermisosService
             throw new InternalServerErrorException('No se pudieron conseguir los permisos');
         }
 
-        return permisos.map(p => p.nombre);
+        return permisos.map(p => p.nombre).filter((nombre): nombre is string => nombre !== null);
     }
 
     async tienePermiso(rolNro: number, permiso: string): Promise<boolean>

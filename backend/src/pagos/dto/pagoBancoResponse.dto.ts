@@ -1,19 +1,19 @@
 export class PagoBancoResponse
 {
     id!: number;
-    fecha!: Date;
-    nro_transferencia!: string;
-    entidad_pago!: string;
-    banco!: string;
-    monto!: number;
+    fecha!: string | null;
+    nro_transferencia!: string | null;
+    entidad_pago!: string | null;
+    banco!: string | null;
+    monto!: number | null;
     nombre_colegio!: string;
-    aprobado!: boolean;
-    enviado_banco!: boolean;
-    motivo!:string;
-    localidad!:string;
-    turno!: string;
-    orientacion!: string;
-    nivel!:string;
-    id_grupo!:number;
-    id_pedido!:number;
+    aprobado!: boolean | null;
+    enviado_banco!: boolean | null;
+    motivo!: string | null;
+    localidad!: string;
+    turno!: string | null;
+    orientacion!: string | null;
+    nivel!: string | null;
+    id_grupo!: number;
+    id_pedido!: number;
 }

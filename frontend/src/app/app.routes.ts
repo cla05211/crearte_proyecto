@@ -51,7 +51,40 @@ export const routes: Routes = [
         path: "clientes",
         loadComponent: () => import('./pages/clientes/clientes').then((archivo) => archivo.Clientes),
         canActivate: [PermisosGuard],
-        data: { permiso: 'ver_clientes' }
+        data: { permiso: 'ver_clientes' },
+      },
+      {
+        path: "clientes/:id",
+        loadComponent: () => import('./pages/clientes/colegio-detalle/colegio-detalle').then((archivo) => archivo.ColegioDetalle),
+        canActivate: [PermisosGuard],
+        data: { permiso: 'ver_clientes' },
+        children: [
+          { path: '', redirectTo: 'datos', pathMatch: 'full' },
+          {
+            path: "datos",
+            loadComponent: () => import('./pages/clientes/colegio-detalle/datos/datos').then((archivo) => archivo.Datos),
+            canActivate: [PermisosGuard],
+            data: { permiso: 'ver_clientes_datos' },
+          },
+          {
+            path: "presupuesto",
+            loadComponent: () => import('./pages/clientes/colegio-detalle/presupuesto/presupuesto').then((archivo) => archivo.Presupuesto),
+            canActivate: [PermisosGuard],
+            data: { permiso: 'ver_clientes_presupuesto' },
+          },
+          {
+            path: "administrativo",
+            loadComponent: () => import('./pages/clientes/colegio-detalle/administrativo/administrativo').then((archivo) => archivo.Administrativo),
+            canActivate: [PermisosGuard],
+            data: { permiso: 'ver_clientes_administrativo' },
+          },
+          {
+            path: "talles-diseño",
+            loadComponent: () => import('./pages/clientes/colegio-detalle/talles-disenio/talles-disenio').then((archivo) => archivo.TallesDisenio),
+            canActivate: [PermisosGuard],
+            data: { permiso: 'ver_clientes_talles_disenio' },
+          }
+        ]
       },
       { path: "", redirectTo: "home", pathMatch: 'full' },
     ]

@@ -19,6 +19,7 @@ import { BadRequestException } from '@nestjs/common';
 import { PedidoResponseVentas } from './dto/PedidoResponseVentas.dto';
 import { AuditoriasService } from 'src/auditorias/auditorias.service';
 import { ModificarPlanPedidoDTO } from './dto/ModificarPlanPedido';
+import { Json } from 'src/types/supabase';
 
 @Injectable()
 export class GestionPedidosService 
@@ -34,7 +35,7 @@ export class GestionPedidosService
         const { data, error } = await this.sb.supabase.rpc(
         'crear_pedido_completo',
         {
-            payload: dto
+            payload: dto as unknown as Json
         }
         );
 
@@ -94,7 +95,7 @@ export class GestionPedidosService
 {
     const { data, error } = await this.sb.supabase.rpc(
         'modificar_plan_pedido',
-        { payload: dto }
+        { payload: dto as unknown as Json }
     );
 
     if (error)

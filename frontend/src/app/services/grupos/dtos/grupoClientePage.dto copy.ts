@@ -1,7 +1,7 @@
 export interface grupoClientePageResponseDTO
 {
     idGrupo: number;
-    nombreColegio: number;
+    nombreColegio: string;
     nivel: string;
     padreResponsableNombre: string;
     padreResponsableApellido: string;

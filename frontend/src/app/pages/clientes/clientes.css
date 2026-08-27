@@ -1,0 +1,159 @@
+:host {
+  display: block;
+  min-height: 100%;
+}
+
+.clientes-page {
+  background: var(--color-primary-100);
+  min-height: 100%;
+  overflow: hidden;
+  padding: clamp(2rem, 5vw, 4.5rem) var(--space-6);
+  position: relative;
+}
+
+.clientes-page__shape {
+  border: 1px solid rgba(105, 4, 70, 0.12);
+  border-radius: 45% 55% 58% 42%;
+  pointer-events: none;
+  position: absolute;
+}
+
+.clientes-page__shape--left {
+  height: 18rem;
+  left: -11rem;
+  top: 4.5rem;
+  transform: rotate(-20deg);
+  width: 18rem;
+}
+
+.clientes-page__shape--right {
+  bottom: -9rem;
+  height: 20rem;
+  right: -11rem;
+  transform: rotate(28deg);
+  width: 20rem;
+}
+
+.clientes-container {
+  position: relative;
+  z-index: 1;
+}
+
+.clientes-header {
+  align-items: end;
+  display: flex;
+  gap: var(--space-6);
+  justify-content: space-between;
+  margin-bottom: var(--space-8);
+}
+
+.clientes-header p { margin: var(--space-2) 0 0; }
+
+.clientes-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: flex-end;
+  margin-bottom: var(--space-6);
+}
+
+.search-field {
+  min-width: 18rem;
+}
+
+.clientes-card {
+  background: var(--color-surface);
+  border: 1px solid rgba(105, 4, 70, 0.13);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.table-wrapper { overflow-x: auto; }
+
+.clientes-table { min-width: 45rem; }
+
+.school-name { color: var(--color-text-strong); font-weight: var(--font-weight-bold); }
+
+.clientes-table__row { cursor: pointer; }
+.clientes-table__row:focus-visible { box-shadow: inset var(--focus-ring); outline: 0; }
+
+.nivel-badge[data-nivel="Jardin"] { background-color: #fff0d9; color: var(--color-warning); }
+.nivel-badge[data-nivel="Primaria"] { background-color: #e2f3ea; color: var(--color-success); }
+.nivel-badge[data-nivel="Secundaria"] { background-color: var(--color-primary-100); color: var(--color-primary-700); }
+
+.ds-pagination {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+}
+
+.ds-pagination__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.loading-state,
+.empty-state {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 23rem;
+  padding: var(--space-10);
+  text-align: center;
+}
+
+.loading-state { flex-direction: row; gap: var(--space-4); text-align: left; }
+.loading-state h2,
+.empty-state h2 { color: var(--color-text-strong); font-size: var(--font-size-xl); margin: 0; }
+.loading-state p,
+.empty-state p { color: var(--color-text-muted); font-size: var(--font-size-sm); margin: var(--space-2) 0 0; }
+
+.loading-state__spinner {
+  animation: spin 750ms linear infinite;
+  border: 3px solid var(--color-primary-200);
+  border-radius: 50%;
+  border-top-color: var(--color-primary-700);
+  flex: 0 0 auto;
+  height: 2.25rem;
+  width: 2.25rem;
+}
+
+.empty-state__illustration {
+  align-items: end;
+  background: var(--color-primary-100);
+  border-radius: 48% 52% 44% 56%;
+  display: flex;
+  gap: 0.35rem;
+  height: 5.5rem;
+  justify-content: center;
+  margin-bottom: var(--space-5);
+  padding-bottom: 1.3rem;
+  transform: rotate(-4deg);
+  width: 6.5rem;
+}
+
+.empty-state__illustration span { background: var(--color-primary-600); border-radius: var(--radius-full) var(--radius-full) 0 0; display: block; width: 0.7rem; }
+.empty-state__illustration span:nth-child(1) { height: 1.35rem; }
+.empty-state__illustration span:nth-child(2) { background: var(--color-primary-700); height: 2.45rem; }
+.empty-state__illustration span:nth-child(3) { height: 1.8rem; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 680px) {
+  .clientes-page { padding: var(--space-8) var(--space-4); }
+  .clientes-header { align-items: flex-start; margin-bottom: var(--space-6); }
+  .clientes-table th,
+  .clientes-table td { padding: var(--space-4); }
+  .clientes-toolbar { align-items: stretch; flex-direction: column; }
+  .search-field { min-width: 0; }
+}
+
+@media (max-width: 440px) {
+  .clientes-header p { font-size: var(--font-size-sm); }
+  .loading-state { align-items: center; flex-direction: column; text-align: center; }
+}

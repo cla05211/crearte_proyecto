@@ -1,0 +1,1 @@
+ALTER TABLE pedidos RENAME COLUMN id_diseñadora TO id_disenadora;

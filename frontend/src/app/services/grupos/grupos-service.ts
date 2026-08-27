@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { grupoClientePageResponseDTO } from './dtos/grupoClientePage.dto copy';
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { grupoClienteDatosPageResponse } from './dtos/grupoClienteDatosPage.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -21,5 +22,10 @@ export class GruposService
       }
   
       return this.http.get<grupoClientePageResponseDTO[]>(`${environment.apiUrl}/grupos/clientes-page`, {params});
+    }
+
+    obtenerDatosGruposClientes(idGrupo:number): Observable<grupoClienteDatosPageResponse>
+    {
+      return this.http.get<grupoClienteDatosPageResponse>(`${environment.apiUrl}/grupos/clientes-page/datos/${idGrupo}`);
     }
 }

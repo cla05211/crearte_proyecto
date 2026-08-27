@@ -20,7 +20,7 @@ export class PedidosController
 
     @Get(':id')
     @UseGuards(AuthGuard,PermisosGuard)
-    async obtenerVendedora(@Param('id')id: number) :Promise<string>
+    async obtenerVendedora(@Param('id')id: number) :Promise<number | null>
     {
         return await this.pedidosService.obtenerVendedora(id);
     }

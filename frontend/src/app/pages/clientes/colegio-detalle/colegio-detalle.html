@@ -1,0 +1,35 @@
+<main class="colegio-page">
+  <div class="colegio-page__shape colegio-page__shape--left" aria-hidden="true"></div>
+  <div class="colegio-page__shape colegio-page__shape--right" aria-hidden="true"></div>
+
+  <section class="ds-container colegio-container">
+    <a class="back-link" routerLink="/clientes">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+      Volver a clientes
+    </a>
+
+    <header class="colegio-header">
+      <span class="ds-eyebrow">Ficha del colegio</span>
+      <h1 class="ds-heading-1">Detalle del cliente</h1>
+    </header>
+
+    <nav class="colegio-tabs" aria-label="Secciones del colegio">
+      @if (tienePermiso('ver_clientes_datos')) {
+        <a routerLink="datos" routerLinkActive="is-active">Datos</a>
+      }
+      @if (tienePermiso('ver_clientes_presupuesto')) {
+        <a routerLink="presupuesto" routerLinkActive="is-active">Presupuesto</a>
+      }
+      @if (tienePermiso('ver_clientes_administrativo')) {
+        <a routerLink="administrativo" routerLinkActive="is-active">Administrativo</a>
+      }
+      @if (tienePermiso('ver_clientes_talles_disenio')) {
+        <a routerLink="talles-diseño" routerLinkActive="is-active">Talles y diseño</a>
+      }
+    </nav>
+
+    <section class="colegio-content">
+      <router-outlet></router-outlet>
+    </section>
+  </section>
+</main>

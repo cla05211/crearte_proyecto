@@ -854,7 +854,7 @@ export class Ventas implements OnInit {
       pedidoDTO: {
         id_grupo: 0,
         id_vendedora: usuario.id,
-        id_diseñadora: 0,
+        id_disenadora: 0,
         talles: this.detallePedido.talles,
         envio_gratis: this.detallePedido.envio_gratis,
         observaciones: this.capitalizarInicial(this.detallePedido.observaciones),

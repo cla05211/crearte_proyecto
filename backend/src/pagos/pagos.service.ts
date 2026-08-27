@@ -17,9 +17,11 @@ export class PagosService
 
     async crearPago(dto: PagoDTO)
     {
+        const { documentoDTO, ...pagoInsert } = dto;
+
         const {data,error} = await this.sb.supabase
             .from('pagos')
-            .insert(dto)
+            .insert(pagoInsert)
             .select('id')
             .single();
 
@@ -100,7 +102,7 @@ export class PagosService
 
         if(data)
         {    
-            total = data.reduce((total, pago) => total + pago.monto, 0);
+            total = data.reduce((total, pago) => total + (pago.monto ?? 0), 0);
         }
         
         return total;          
@@ -111,7 +113,7 @@ export class PagosService
         const { data, error } = await this.sb.supabase
         .from("pagos")
         .update({ 'enviado_banco': dto.nuevoValor})
-        .eq("id", dto.idPago);
+        .eq("id", Number(dto.idPago));
 
         if (error) 
         {
@@ -124,7 +126,7 @@ export class PagosService
         const { data, error } = await this.sb.supabase
         .from("pagos")
         .update({ 'aprobado': dto.nuevoValor})
-        .eq("id", dto.idPago);
+        .eq("id", Number(dto.idPago));
 
         if (error) 
         {
@@ -217,7 +219,7 @@ export class PagosService
         return parseFloat(`${parteEntera}.${parteDecimal}`);
     }    
 
-    async traerIdDocumento(idPago:number):Promise<number>
+    async traerIdDocumento(idPago:number):Promise<number | null>
     {
         const { data, error } = await this.sb.supabase
         .from('pagos')
@@ -227,7 +229,7 @@ export class PagosService
         .eq('id', idPago)
         .single();
 
-        if (error) 
+        if (error)
         {
             throw new Error(error.message);
         }
@@ -255,7 +257,7 @@ export class PagosService
 
         if(data)
         {    
-            total = data.reduce((total, pago) => total + pago.monto, 0);
+            total = data.reduce((total, pago) => total + (pago.monto ?? 0), 0);
         }
         
         return total;  

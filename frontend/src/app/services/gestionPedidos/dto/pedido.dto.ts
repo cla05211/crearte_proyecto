@@ -2,7 +2,7 @@ export interface PedidoDTO
 {
     id_grupo: number;
     id_vendedora: number;
-    id_diseñadora:number;
+    id_disenadora:number;
     talles: string;
     envio_gratis:boolean;
     observaciones: string;

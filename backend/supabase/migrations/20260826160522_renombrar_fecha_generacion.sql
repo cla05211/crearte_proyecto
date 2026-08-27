@@ -1,0 +1,1 @@
+ALTER TABLE contratos RENAME COLUMN fecha_generación TO fecha_generacion;

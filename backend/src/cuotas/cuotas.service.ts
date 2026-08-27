@@ -17,10 +17,15 @@ export class CuotasService
     async crearCuotas(dto: crearCuotasDTO)
     {
         const cuotas = await this.calcularCuotas(dto.primerCuota,dto.nroCuotas)
-        
+
+        const cuotasInsert = cuotas.map(({ fecha_vencimiento, ...resto }) => ({
+            ...resto,
+            fecha_vencimiento: fecha_vencimiento.toISOString().slice(0, 10),
+        }));
+
         const {data,error} = await this.sb.supabase
         .from('cuotas')
-        .insert(cuotas)
+        .insert(cuotasInsert)
 
         if (error) 
         {
@@ -133,7 +138,7 @@ export class CuotasService
     {
         const { data, error } = await this.sb.supabase
         .from("cuotas")
-        .update({ 'importe': "Pagado" })
+        .update({ 'estado': "Pagado" })
         .eq("id_pedido", dto.id_pedido)
         .eq("numero", dto.numero)
 

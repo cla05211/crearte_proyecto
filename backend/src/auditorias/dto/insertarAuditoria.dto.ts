@@ -2,7 +2,6 @@ export class insertarAuditoriaDTO
 {
     usuario!: number;
     tabla!: string;
-    modificacion!: string;
     dato_anterior!: string;
     dato_nuevo!:string
     accion!: "INSERT" | "UPDATE" | "DELETE";

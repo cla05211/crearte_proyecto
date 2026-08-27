@@ -1,6 +1,6 @@
 export class AgregadoPostDTO
 {
-    agregado!: string; 
+    agregado!: string;
     precio!: number;
-    precio_unitario!: boolean;
+    individual!: boolean;
 }

@@ -1,0 +1,106 @@
+@if (cargando()) {
+  <div class="loading-state" role="status" aria-live="polite">
+    <span class="loading-state__spinner" aria-hidden="true"></span>
+    <div>
+      <h2>Cargando datos</h2>
+      <p>Estamos preparando la ficha del colegio.</p>
+    </div>
+  </div>
+} @else if (!datosColegio()) {
+  <div class="empty-state">
+    <h2>No se encontraron datos para este colegio.</h2>
+    <p>Probá recargar la página o volver más tarde.</p>
+  </div>
+} @else {
+  <div class="datos-stack">
+    <section class="ds-card">
+      <h2 class="ds-heading-3 datos-card__title">Colegio</h2>
+      <dl class="datos-grid">
+        <div class="datos-grid__item">
+          <dt>Nombre del colegio</dt>
+          <dd>{{ datosColegio()!.grupo.nombre_colegio || '—' }}</dd>
+        </div>
+        <div class="datos-grid__item">
+          <dt>Nivel</dt>
+          <dd>{{ datosColegio()!.grupo.nivel }}</dd>
+        </div>
+        <div class="datos-grid__item">
+          <dt>Orientación</dt>
+          <dd>{{ datosColegio()!.grupo.orientacion || '—' }}</dd>
+        </div>
+        <div class="datos-grid__item">
+          <dt>Turno</dt>
+          <dd>{{ datosColegio()!.grupo.turno || '—' }}</dd>
+        </div>
+        <div class="datos-grid__item">
+          <dt>Promoción</dt>
+          <dd>{{ datosColegio()!.grupo.promo }}</dd>
+        </div>
+        <div class="datos-grid__item">
+          <dt>Cantidad de egresados</dt>
+          <dd>{{ datosColegio()!.grupo.cantidad_egresados }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="ds-card">
+      <h2 class="ds-heading-3 datos-card__title">Adultos responsables</h2>
+      @if (!datosColegio()!.padresResponsables || datosColegio()!.padresResponsables!.length === 0) {
+        <p class="ds-text-muted">No hay adultos responsables cargados.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table class="ds-table">
+            <thead>
+              <tr>
+                <th scope="col">Nombre</th>
+                <th scope="col">Apellido</th>
+                <th scope="col">DNI</th>
+                <th scope="col">Teléfono</th>
+                <th scope="col">Mail</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (padre of datosColegio()!.padresResponsables; track $index) {
+                <tr>
+                  <td data-label="Nombre">{{ padre.nombre }}</td>
+                  <td data-label="Apellido">{{ padre.apellido }}</td>
+                  <td data-label="DNI">{{ padre.dni }}</td>
+                  <td data-label="Teléfono">{{ padre.telefono }}</td>
+                  <td data-label="Mail">{{ padre.mail || '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section class="ds-card">
+      <h2 class="ds-heading-3 datos-card__title">Alumnos responsables</h2>
+      @if (!datosColegio()!.alumnosResponsables || datosColegio()!.alumnosResponsables!.length === 0) {
+        <p class="ds-text-muted">No hay alumnos responsables cargados.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table class="ds-table">
+            <thead>
+              <tr>
+                <th scope="col">Nombre</th>
+                <th scope="col">Apellido</th>
+                <th scope="col">Teléfono</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (alumno of datosColegio()!.alumnosResponsables; track $index) {
+                <tr>
+                  <td data-label="Nombre">{{ alumno.nombre }}</td>
+                  <td data-label="Apellido">{{ alumno.apellido }}</td>
+                  <td data-label="Teléfono">{{ alumno.telefono }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </div>
+}
