@@ -7,8 +7,20 @@
   gap: var(--space-6);
 }
 
+.datos-card {
+  overflow: hidden;
+  padding: 0;
+}
+
 .datos-card__title {
-  margin-bottom: var(--space-5);
+  background: var(--color-primary-700);
+  color: var(--color-surface);
+  margin: 0;
+  padding: var(--space-4) var(--space-6);
+}
+
+.datos-card__body {
+  padding: var(--space-6);
 }
 
 .datos-grid {
@@ -19,7 +31,7 @@
 }
 
 .datos-grid__item dt {
-  color: var(--color-text-muted);
+  color: var(--color-primary-600);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.06em;
@@ -41,6 +53,7 @@
 }
 
 .table-wrapper .ds-table { min-width: 30rem; }
+.table-wrapper .ds-table th { color: var(--color-primary-700); }
 
 .loading-state,
 .empty-state {

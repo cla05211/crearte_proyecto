@@ -74,33 +74,41 @@ export class GruposService
 
     async traerDatosGrupoClientePage(idGrupo:number):Promise<grupoDatosClienteResponse>
     {
-        const {data,error} = await this.sb.supabase
-        .from("grupos")
-        .select(`*,padres_responsables!inner (*), alumnos_responsables!inner (*), colegios!inner (nombre)`)
-        .eq('id', idGrupo)
-        .single()
+        const { data: grupo, error: errGrupo } = await this.sb.supabase
+            .from("grupos")
+            .select(`*, colegios!inner (nombre)`)
+            .eq('id', idGrupo)
+            .single();
 
-        if (error) 
-        {
-            throw new Error(error.message);
-        }
-   
-        const datosCliente: grupoDatosClienteResponse =       
-        {
-            grupo:
-            {
-                id_colegio: data.id_colegio,
-                orientacion: data.orientacion,
-                turno: data.turno,
-                nivel: data.nivel,
-                promo: data.promo,
-                cantidad_egresados: data.cantidad_egresados,
-                nombre_colegio: data.colegios.nombre
+        if (errGrupo) throw new Error(errGrupo.message);
+
+        const { data: padresResponsables, error: errPadres } = await this.sb.supabase
+            .from("padres_responsables")
+            .select('*')
+            .eq('id_grupo', idGrupo);
+
+        if (errPadres) throw new Error(errPadres.message);
+
+        const { data: alumnosResponsables, error: errAlumnos } = await this.sb.supabase
+            .from("alumnos_responsables")
+            .select('*')
+            .eq('id_grupo', idGrupo);
+
+        if (errAlumnos) throw new Error(errAlumnos.message);
+
+        return {
+            grupo: {
+            id_colegio: grupo.id_colegio,
+            orientacion: grupo.orientacion,
+            turno: grupo.turno,
+            nivel: grupo.nivel,
+            promo: grupo.promo,
+            cantidad_egresados: grupo.cantidad_egresados,
+            nombre_colegio: grupo.colegios.nombre
             },
-            padresResponsables:data.padres_responsables,
-            alumnosResponsables: data.alumnos_responsables
-        }
+            padresResponsables,
+            alumnosResponsables
+        };
 
-        return datosCliente;
     }
 }
