@@ -23,6 +23,7 @@ import { Json } from 'src/types/supabase';
 import { PedidoDTOResponse } from 'src/pedidos/dto/pedidoResponse.dto';
 import { ProductoPedidoResponseDTO } from 'src/productos-pedido/dto/ProductoPedidoResponse.dto copy';
 import { presupuestoPedidoClientesPage } from './dto/PresupuestoPedidoClientePage.dto';
+import { ProductoPedidoResponseConNombreOriginalDTO } from 'src/productos-pedido/dto/ProductoPedidoResponseConNombreOriginal.dto';
 
 @Injectable()
 export class GestionPedidosService 
@@ -112,7 +113,7 @@ export class GestionPedidosService
     async obtenerPresupuestoPedidosClientes(idGrupo: number)
     {
         const pedido: PedidoDTOResponse = await this.pedidosService.obtenerPedidos(idGrupo);
-        const productosPedido: ProductoPedidoResponseDTO[] = await this.productosPedido.traerProductosPedido(pedido.id);
+        const productosPedido: ProductoPedidoResponseConNombreOriginalDTO[] = await this.productosPedido.traerProductosPedidoConNombreProducto(pedido.id);
         const cuotas: number = ((await this.cuotas.traerCuotasPorIdPedido(pedido.id)).length);
     
         const presupuestoPedido: presupuestoPedidoClientesPage = 

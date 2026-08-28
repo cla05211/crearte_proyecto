@@ -6,6 +6,7 @@ import { EliminarProductoPedidoDTO } from './dto/EliminarProductoPedido.dto';
 import { ModificarDescripcionProductoPedido } from './dto/ModificarDescripcionProductoPedido';
 import { ModificarCantidadProductoPedido } from './dto/ModificarCantidadProductoPedido';
 import { ProductoPedidoResponseDTO } from './dto/ProductoPedidoResponse.dto copy';
+import { ProductoPedidoResponseConNombreOriginalDTO } from './dto/ProductoPedidoResponseConNombreOriginal.dto';
 
 @Injectable()
 export class ProductosPedidoService 
@@ -97,11 +98,11 @@ export class ProductosPedidoService
         return data.cantidad;
     }
 
-    async traerProductosPedido(idPedido: number):Promise<ProductoPedidoResponseDTO[]>
+    async traerProductosPedidoConNombreProducto(idPedido: number):Promise<ProductoPedidoResponseConNombreOriginalDTO[]>
     {
         const {data,error} = await this.sb.supabase
             .from('productos_pedidos')
-            .select('*')
+            .select('*, productos(nombre)')
             .eq('id_pedido',idPedido);
 
         if (error) 
@@ -109,6 +110,18 @@ export class ProductosPedidoService
             throw new BadRequestException(error.message);
         }
 
-        return data as ProductoPedidoResponseDTO[]   
+        const productos: ProductoPedidoResponseConNombreOriginalDTO[] = data.map(p => ({
+            id: p.id,
+            id_pedido: p.id_pedido,
+            id_producto_original: p.id_producto_original,
+            descripcion: p.descripcion,
+            beneficio: p.beneficio,
+            valor_senia: p.valor_senia,
+            valor_cuota: p.valor_cuota,
+            cantidad: p.cantidad,
+            nombreProductoOriginal: p.productos.nombre,
+        }));
+
+        return productos;  
     }
 }
