@@ -1,4 +1,4 @@
-import { ProductoPedidoDTO } from "../ProductoPedido.dto";
+import { ProductoPedidoDTO } from "../../../productosPedidos/dto/ProductoPedido.dto";
 
 
 export class ModificarPlanPedidoDTO

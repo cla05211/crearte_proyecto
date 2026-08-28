@@ -6,6 +6,7 @@ import { PedidoResponseVentas } from './dto/PedidoResponseVentas.dto';
 import { Observable } from 'rxjs';
 import { ModificarBeneficioDto } from './dto/modficaciones/modficiarBeneficio.dto';
 import { ModificarPlanPedidoDTO } from './dto/modficaciones/ModificarPlanPedido';
+import { presupuestoPedidoClientesPage } from './dto/PresupuestoPedidoClientePage.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -39,6 +40,11 @@ export class GestionPedidosService
   obtenerBeneficios(): Observable<string[]>
   {
     return this.http.get<string[]>(`${environment.apiUrl}/beneficios`);
+  }
+
+  obtenerPresupuestoPedidoClientesPage(idGrupo: number): Observable<presupuestoPedidoClientesPage>
+  {
+    return this.http.get<presupuestoPedidoClientesPage>(`${environment.apiUrl}/presupuesto-clientes/${idGrupo}`);    
   }
 
   modificarBeneficio(dto: ModificarBeneficioDto, idPedido: number): Observable<{'nuevoBeneficio':string}>

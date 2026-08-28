@@ -4,7 +4,7 @@ import { EliminarProductoPedidoDTO } from './dto/EliminarProductoPedido.dto';
 import { environment } from '../../../environments/environment.development';
 import { ModificarDescripcionProductoPedido } from './dto/ModificarDescripcionProductoPedido.dto copy';
 import { ModificarCantidadProductoPedido } from './dto/ModificarCantidadProductoPedido.dto';
-import { ProductoPedidoDTO } from '../gestionPedidos/dto/ProductoPedido.dto';
+import { ProductoPedidoDTO } from './dto/ProductoPedido.dto';
 
 @Injectable({
   providedIn: 'root',

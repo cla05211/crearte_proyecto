@@ -20,7 +20,7 @@ import { PagoDTO } from '../../services/gestionPedidos/dto/pago.dto';
 import { StorageService } from '../../services/storage/storage-service';
 import { ModificarBeneficioDto } from '../../services/gestionPedidos/dto/modficaciones/modficiarBeneficio.dto';
 import { ProductosPedidoService } from '../../services/productosPedidos/productos-pedido-service';
-import { ProductoPedidoDTO } from '../../services/gestionPedidos/dto/ProductoPedido.dto';
+import { ProductoPedidoDTO } from '../../services/productosPedidos/dto/ProductoPedido.dto';
 import { ModificarPlanPedidoDTO } from '../../services/gestionPedidos/dto/modficaciones/ModificarPlanPedido';
 import { CuotasService } from '../../services/cuotas/cuotas-service';
 import { CuotaResponseDTO } from '../../services/cuotas/dto/CuotaResponseDTO';

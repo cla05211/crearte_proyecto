@@ -5,6 +5,7 @@ import { ProductoPedidoDTO } from './dto/ProductoPedido.dto';
 import { EliminarProductoPedidoDTO } from './dto/EliminarProductoPedido.dto';
 import { ModificarDescripcionProductoPedido } from './dto/ModificarDescripcionProductoPedido';
 import { ModificarCantidadProductoPedido } from './dto/ModificarCantidadProductoPedido';
+import { ProductoPedidoResponseDTO } from './dto/ProductoPedidoResponse.dto copy';
 
 @Injectable()
 export class ProductosPedidoService 
@@ -94,5 +95,20 @@ export class ProductosPedidoService
         }
 
         return data.cantidad;
+    }
+
+    async traerProductosPedido(idPedido: number):Promise<ProductoPedidoResponseDTO[]>
+    {
+        const {data,error} = await this.sb.supabase
+            .from('productos_pedidos')
+            .select('*')
+            .eq('id_pedido',idPedido);
+
+        if (error) 
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        return data as ProductoPedidoResponseDTO[]   
     }
 }

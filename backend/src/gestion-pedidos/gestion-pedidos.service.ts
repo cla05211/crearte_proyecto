@@ -20,6 +20,9 @@ import { PedidoResponseVentas } from './dto/PedidoResponseVentas.dto';
 import { AuditoriasService } from 'src/auditorias/auditorias.service';
 import { ModificarPlanPedidoDTO } from './dto/ModificarPlanPedido';
 import { Json } from 'src/types/supabase';
+import { PedidoDTOResponse } from 'src/pedidos/dto/pedidoResponse.dto';
+import { ProductoPedidoResponseDTO } from 'src/productos-pedido/dto/ProductoPedidoResponse.dto copy';
+import { presupuestoPedidoClientesPage } from './dto/PresupuestoPedidoClientePage.dto';
 
 @Injectable()
 export class GestionPedidosService 
@@ -28,7 +31,8 @@ export class GestionPedidosService
         private pedidos:PedidosService, private productosPedido: ProductosPedidoService,
         private padres:PadreResponsableService, private alumnos:AlumnoResponsableService,
         private documentos:DocumentosService, private pagos:PagosService, private cuentaCorriente: CuentaCorrienteService,
-        private cuotas: CuotasService, private sb: SupabaseService, private auditoriaService: AuditoriasService){}
+        private cuotas: CuotasService, private sb: SupabaseService, private auditoriaService: AuditoriasService, 
+        private pedidosService: PedidosService){}
 
     async crearPedido(dto:CrearPedidoDTO)
     {
@@ -92,16 +96,33 @@ export class GestionPedidosService
     }
 
     async modificarPlanPedido(dto: ModificarPlanPedidoDTO)
-{
-    const { data, error } = await this.sb.supabase.rpc(
-        'modificar_plan_pedido',
-        { payload: dto as unknown as Json }
-    );
-
-    if (error)
     {
-        throw new BadRequestException(error.message);
+        const { data, error } = await this.sb.supabase.rpc(
+            'modificar_plan_pedido',
+            { payload: dto as unknown as Json }
+        );
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+        return data;
     }
-    return data;
-}
+
+    async obtenerPresupuestoPedidosClientes(idGrupo: number)
+    {
+        const pedido: PedidoDTOResponse = await this.pedidosService.obtenerPedidos(idGrupo);
+        const productosPedido: ProductoPedidoResponseDTO[] = await this.productosPedido.traerProductosPedido(pedido.id);
+        const cuotas: number = ((await this.cuotas.traerCuotasPorIdPedido(pedido.id)).length);
+    
+        const presupuestoPedido: presupuestoPedidoClientesPage = 
+        {
+            pedido: pedido,
+            productosPedido: productosPedido,
+            nroCuotas: cuotas
+        };
+
+        return presupuestoPedido;
+    }
+
 }
