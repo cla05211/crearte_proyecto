@@ -8,6 +8,7 @@ import { PagoDTO } from "src/pagos/dto/pago.dto";
 import { PedidoDTO } from "src/pedidos/dto/pedido.dto";
 import { ProductoPedidoDTO } from "src/productos-pedido/dto/ProductoPedido.dto";
 import { CuotaInicioVentaDTO } from "src/cuotas/dto/cuotaInicioVenta.dto";
+import { AgregadoGlobalPedidoPostDTO } from "src/agregados-globales-pedido/dto/AgregadoGlobalPedidoPost.dto";
 
 export class CrearPedidoDTO
 {
@@ -15,6 +16,7 @@ export class CrearPedidoDTO
     grupoDTO!:GrupoDTO;
     pedidoDTO!: PedidoDTO;
     productosPedidoDTO!: ProductoPedidoDTO[];
+    agregadosGlobalesDTO!: AgregadoGlobalPedidoPostDTO[];
     padresResponsablesDTO!:  PadreResponsableDTO[];
     alumnosResponsablesDTO!: alumnoResponsableDTO[];
     pagosDTO!: PagoDTO[];

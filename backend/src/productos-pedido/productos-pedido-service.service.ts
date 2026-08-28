@@ -6,7 +6,7 @@ import { EliminarProductoPedidoDTO } from './dto/EliminarProductoPedido.dto';
 import { ModificarDescripcionProductoPedido } from './dto/ModificarDescripcionProductoPedido';
 import { ModificarCantidadProductoPedido } from './dto/ModificarCantidadProductoPedido';
 import { ProductoPedidoResponseDTO } from './dto/ProductoPedidoResponse.dto copy';
-import { ProductoPedidoResponseConNombreOriginalDTO } from './dto/ProductoPedidoResponseConNombreOriginal.dto';
+import { ProductoPedidoResponseConNombreOriginalDTO } from './dto/ProductoPedidoResponse.dto';
 
 @Injectable()
 export class ProductosPedidoService 

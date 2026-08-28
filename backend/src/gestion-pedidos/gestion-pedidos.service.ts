@@ -23,17 +23,19 @@ import { Json } from 'src/types/supabase';
 import { PedidoDTOResponse } from 'src/pedidos/dto/pedidoResponse.dto';
 import { ProductoPedidoResponseDTO } from 'src/productos-pedido/dto/ProductoPedidoResponse.dto copy';
 import { presupuestoPedidoClientesPage } from './dto/PresupuestoPedidoClientePage.dto';
-import { ProductoPedidoResponseConNombreOriginalDTO } from 'src/productos-pedido/dto/ProductoPedidoResponseConNombreOriginal.dto';
+import { ProductoPedidoResponseConNombreOriginalDTO } from 'src/productos-pedido/dto/ProductoPedidoResponse.dto';
+import { AgregadosGlobalesPedidoService } from 'src/agregados-globales-pedido/agregados-globales-pedido.service';
+import { AgregadoGlobalPedidoResponseDTO } from 'src/agregados-globales-pedido/dto/AgregadoGlobalPedidoResponse.dto';
 
 @Injectable()
-export class GestionPedidosService 
+export class GestionPedidosService
 {
-    constructor(private colegios:ColegiosService, private grupos: GruposService, 
+    constructor(private colegios:ColegiosService, private grupos: GruposService,
         private pedidos:PedidosService, private productosPedido: ProductosPedidoService,
         private padres:PadreResponsableService, private alumnos:AlumnoResponsableService,
         private documentos:DocumentosService, private pagos:PagosService, private cuentaCorriente: CuentaCorrienteService,
-        private cuotas: CuotasService, private sb: SupabaseService, private auditoriaService: AuditoriasService, 
-        private pedidosService: PedidosService){}
+        private cuotas: CuotasService, private sb: SupabaseService, private auditoriaService: AuditoriasService,
+        private pedidosService: PedidosService, private agregadosGlobalesPedido: AgregadosGlobalesPedidoService){}
 
     async crearPedido(dto:CrearPedidoDTO)
     {
@@ -62,12 +64,11 @@ export class GestionPedidosService
                 colegios(*)
             ),
             productos_pedidos(*),
+            agregados_globales_pedido(*, agregados(agregado, precio, individual)),
             cuotas(id)
         `)
         .eq("estado_general", "Venta realizada") 
-        .order("created_at", {
-            referencedTable: "grupos",
-            ascending: false,});
+        .order("id", { ascending: false });
 
         if(busqueda)
         {
@@ -90,6 +91,14 @@ export class GestionPedidosService
             grupoDTO: pedido.grupos,
             pedidoDTO: pedido,
             productosPedidoDTO: pedido.productos_pedidos,
+            agregadosGlobalesDTO: pedido.agregados_globales_pedido.map((a: any): AgregadoGlobalPedidoResponseDTO => ({
+                id: a.id,
+                id_pedido: a.id_pedido,
+                id_agregado: a.id_agregado,
+                agregado: a.agregados?.agregado,
+                precio: a.agregados?.precio,
+                individual: a.agregados?.individual,
+            })),
             nroCuotas: pedido.cuotas.length
         }));
 
@@ -114,12 +123,14 @@ export class GestionPedidosService
     {
         const pedido: PedidoDTOResponse = await this.pedidosService.obtenerPedidos(idGrupo);
         const productosPedido: ProductoPedidoResponseConNombreOriginalDTO[] = await this.productosPedido.traerProductosPedidoConNombreProducto(pedido.id);
+        const agregadosGlobales: AgregadoGlobalPedidoResponseDTO[] = await this.agregadosGlobalesPedido.obtenerPorPedido(pedido.id);
         const cuotas: number = ((await this.cuotas.traerCuotasPorIdPedido(pedido.id)).length);
-    
-        const presupuestoPedido: presupuestoPedidoClientesPage = 
+
+        const presupuestoPedido: presupuestoPedidoClientesPage =
         {
             pedido: pedido,
             productosPedido: productosPedido,
+            agregadosGlobales: agregadosGlobales,
             nroCuotas: cuotas
         };
 

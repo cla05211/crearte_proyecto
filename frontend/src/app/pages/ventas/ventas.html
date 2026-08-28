@@ -92,8 +92,8 @@
                             type="button"
                             (click)="abrirDetalleProductos(venta)"
                           >
-                            {{ venta.productosPedidoDTO.length }} producto{{
-                              venta.productosPedidoDTO.length === 1 ? '' : 's'
+                            {{ cantidadItemsPedido(venta) }} producto{{
+                              cantidadItemsPedido(venta) === 1 ? '' : 's'
                             }}
                           </button>
                           <button
@@ -763,6 +763,14 @@
                     cuotaPorAlumno() | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
                   }}</strong></span
                 >
+                @if (banderaSeleccionada && bandera(); as itemBandera) {
+                  <span
+                    >{{ itemBandera.agregado }}
+                    <strong>{{
+                      itemBandera.precio | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
+                    }}</strong></span
+                  >
+                }
                 @if (descuentoCuotas()) {
                   <span
                     >Descuento hermanos
@@ -1100,6 +1108,13 @@
                 {{ producto.valor_senia | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }} · Cuota
                 {{ producto.valor_cuota | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</span
               >
+            </li>
+          }
+          @for (agregado of venta.agregadosGlobalesDTO; track agregado.id) {
+            <li>
+              <strong>{{ agregado.agregado }}</strong>
+              <span>Cargo adicional del pedido</span>
+              <span>{{ agregado.precio | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</span>
             </li>
           }
         </ul>

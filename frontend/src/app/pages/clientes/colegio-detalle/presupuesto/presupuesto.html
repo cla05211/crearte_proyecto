@@ -1,1 +1,137 @@
-<p>presupuesto works!</p>
+@if (cargando()) {
+  <div class="loading-state" role="status" aria-live="polite">
+    <span class="loading-state__spinner" aria-hidden="true"></span>
+    <div>
+      <h2>Cargando presupuesto</h2>
+      <p>Estamos preparando el presupuesto del pedido.</p>
+    </div>
+  </div>
+} @else if (!presupuestoGrupo()) {
+  <div class="empty-state">
+    <h2>No se encontró presupuesto para este colegio.</h2>
+    <p>Probá recargar la página o volver más tarde.</p>
+  </div>
+} @else {
+  <div class="presupuesto-stack">
+    <section class="ds-card presupuesto-card">
+      <h2 class="ds-heading-3 presupuesto-card__title">Productos del pedido y beneficio</h2>
+      <div class="presupuesto-card__body">
+        @if (presupuestoGrupo()!.productosPedido.length === 0 && presupuestoGrupo()!.agregadosGlobales.length === 0) {
+          <p class="ds-text-muted">No hay productos cargados en este pedido.</p>
+        } @else {
+          <div class="table-wrapper">
+            <table class="ds-table">
+              <thead>
+                <tr>
+                  <th scope="col">Producto</th>
+                  <th scope="col">Cantidad</th>
+                  <th scope="col">Beneficio</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (producto of presupuestoGrupo()!.productosPedido; track producto.id) {
+                  <tr>
+                    <td data-label="Producto">
+                      <div class="producto-cell">
+                        <strong>{{ producto.nombreProductoOriginal }}</strong>
+                        @if (producto.descripcion) {
+                          <span class="ds-text-muted">{{ producto.descripcion }}</span>
+                        }
+                      </div>
+                    </td>
+                    <td data-label="Cantidad">{{ producto.cantidad }}</td>
+                    <td data-label="Beneficio">{{ producto.beneficio || '—' }}</td>
+                  </tr>
+                }
+                @for (agregado of presupuestoGrupo()!.agregadosGlobales; track agregado.id) {
+                  <tr>
+                    <td data-label="Producto">
+                      <div class="producto-cell">
+                        <strong>{{ agregado.agregado }}</strong>
+                        <span class="ds-text-muted">Cargo adicional del pedido</span>
+                      </div>
+                    </td>
+                    <td data-label="Cantidad">1</td>
+                    <td data-label="Beneficio">—</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="beneficio-pedido">
+            <span>Beneficio del pedido</span>
+            <strong>{{ beneficioPedido() }}</strong>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="ds-card presupuesto-card">
+      <h2 class="ds-heading-3 presupuesto-card__title">Detalles del pedido</h2>
+      <div class="presupuesto-card__body">
+        <dl class="presupuesto-grid">
+          <div class="presupuesto-grid__item">
+            <dt>Estado general</dt>
+            <dd>{{ presupuestoGrupo()!.pedido.estado_general || '—' }}</dd>
+          </div>
+          <div class="presupuesto-grid__item">
+            <dt>Estado de talles</dt>
+            <dd>{{ presupuestoGrupo()!.pedido.estado_talles || '—' }}</dd>
+          </div>
+          <div class="presupuesto-grid__item">
+            <dt>Estado de boceto</dt>
+            <dd>{{ presupuestoGrupo()!.pedido.estado_boceto || '—' }}</dd>
+          </div>
+          <div class="presupuesto-grid__item">
+            <dt>Talles</dt>
+            <dd>{{ presupuestoGrupo()!.pedido.talles || '—' }}</dd>
+          </div>
+          <div class="presupuesto-grid__item">
+            <dt>Colores</dt>
+            <dd>{{ presupuestoGrupo()!.pedido.colores || '—' }}</dd>
+          </div>
+          <div class="presupuesto-grid__item">
+            <dt>Molderías</dt>
+            <dd>{{ presupuestoGrupo()!.pedido.molderias || '—' }}</dd>
+          </div>
+          <div class="presupuesto-grid__item">
+            <dt>Cantidad de hermanos</dt>
+            <dd>{{ presupuestoGrupo()!.pedido.cantidad_hermanos ?? '—' }}</dd>
+          </div>
+          <div class="presupuesto-grid__item">
+            <dt>Descuento por hermano</dt>
+            <dd>{{ presupuestoGrupo()!.pedido.porcentaje_descuento_hermanos ?? 0 }}%</dd>
+          </div>
+          <div class="presupuesto-grid__item">
+            <dt>Envío gratis</dt>
+            <dd>{{ presupuestoGrupo()!.pedido.envio_gratis ? 'Sí' : 'No' }}</dd>
+          </div>
+          <div class="presupuesto-grid__item presupuesto-grid__item--full">
+            <dt>Observaciones</dt>
+            <dd>{{ presupuestoGrupo()!.pedido.observaciones || '—' }}</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="ds-card presupuesto-card">
+      <h2 class="ds-heading-3 presupuesto-card__title">Plan de pago</h2>
+      <div class="presupuesto-card__body">
+        <dl class="presupuesto-grid">
+          <div class="presupuesto-grid__item">
+            <dt>Cantidad de cuotas</dt>
+            <dd>{{ presupuestoGrupo()!.nroCuotas }}</dd>
+          </div>
+          <div class="presupuesto-grid__item">
+            <dt>Valor de la seña</dt>
+            <dd>{{ totalSenia() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</dd>
+          </div>
+          <div class="presupuesto-grid__item">
+            <dt>Valor de cada cuota</dt>
+            <dd>{{ totalCuota() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+  </div>
+}

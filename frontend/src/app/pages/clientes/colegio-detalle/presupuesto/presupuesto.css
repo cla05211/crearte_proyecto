@@ -1,0 +1,135 @@
+:host {
+  display: block;
+}
+
+.presupuesto-stack {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.presupuesto-card {
+  overflow: hidden;
+  padding: 0;
+}
+
+.presupuesto-card__title {
+  background: var(--color-primary-700);
+  color: var(--color-surface);
+  margin: 0;
+  padding: var(--space-4) var(--space-6);
+}
+
+.presupuesto-card__body {
+  padding: var(--space-6);
+}
+
+.presupuesto-grid {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  margin: 0;
+}
+
+.presupuesto-grid__item--full {
+  grid-column: 1 / -1;
+}
+
+.presupuesto-grid__item dt {
+  color: var(--color-primary-600);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.06em;
+  margin-bottom: var(--space-1);
+  text-transform: uppercase;
+}
+
+.presupuesto-grid__item dd {
+  color: var(--color-text-strong);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+}
+
+.table-wrapper {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+
+.table-wrapper .ds-table { min-width: 30rem; }
+.table-wrapper .ds-table th { color: var(--color-primary-700); }
+
+.producto-cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.producto-cell strong {
+  color: var(--color-text-strong);
+}
+
+.producto-cell .ds-text-muted {
+  font-size: var(--font-size-sm);
+}
+
+.beneficio-pedido {
+  align-items: center;
+  background: var(--color-primary-100);
+  border: 1px solid var(--color-primary-200);
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+}
+
+.beneficio-pedido span {
+  color: var(--color-primary-700);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.beneficio-pedido strong {
+  color: var(--color-text-strong);
+  font-size: var(--font-size-base);
+}
+
+.loading-state,
+.empty-state {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 16rem;
+  padding: var(--space-10);
+  text-align: center;
+}
+
+.loading-state { flex-direction: row; gap: var(--space-4); text-align: left; }
+.loading-state h2,
+.empty-state h2 { color: var(--color-text-strong); font-size: var(--font-size-xl); margin: 0; }
+.loading-state p,
+.empty-state p { color: var(--color-text-muted); font-size: var(--font-size-sm); margin: var(--space-2) 0 0; }
+
+.loading-state__spinner {
+  animation: spin 750ms linear infinite;
+  border: 3px solid var(--color-primary-200);
+  border-radius: 50%;
+  border-top-color: var(--color-primary-700);
+  flex: 0 0 auto;
+  height: 2.25rem;
+  width: 2.25rem;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 440px) {
+  .loading-state { align-items: center; flex-direction: column; text-align: center; }
+  .beneficio-pedido { align-items: flex-start; flex-direction: column; gap: var(--space-2); }
+}

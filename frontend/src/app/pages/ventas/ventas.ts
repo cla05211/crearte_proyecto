@@ -348,6 +348,10 @@ export class Ventas implements OnInit {
     )?.nombre ?? 'Producto no encontrado';
   }
 
+  cantidadItemsPedido(venta: PedidoResponseVentas): number {
+    return venta.productosPedidoDTO.length + venta.agregadosGlobalesDTO.length;
+  }
+
   totalSeniaVenta(venta: PedidoResponseVentas): number {
     return venta.productosPedidoDTO.reduce(
       (total, producto) => total + producto.valor_senia * producto.cantidad,
@@ -356,10 +360,15 @@ export class Ventas implements OnInit {
   }
 
   totalCuotaVenta(venta: PedidoResponseVentas): number {
-    return venta.productosPedidoDTO.reduce(
+    const productos = venta.productosPedidoDTO.reduce(
       (total, producto) => total + producto.valor_cuota * producto.cantidad,
       0,
     );
+    const agregadosGlobales = venta.agregadosGlobalesDTO.reduce(
+      (total, agregado) => total + agregado.precio,
+      0,
+    );
+    return productos + agregadosGlobales;
   }
 
   idProducto(producto: ProductoConPrecioResponseDTO): number {
@@ -393,9 +402,6 @@ export class Ventas implements OnInit {
         const extras = this.agregadosIndividuales().filter((item) => agregados.includes(item.id));
         const costoExtras = extras.reduce((total, item) => total + item.precio, 0);
         const nombresExtras = extras.map((item) => item.agregado);
-        if (this.banderaSeleccionada && this.bandera()) {
-          nombresExtras.push(this.bandera()!.agregado);
-        }
         this.productoCalculado.set({
           idProducto,
           nombre: producto?.nombre ?? 'Producto',
@@ -877,6 +883,8 @@ export class Ventas implements OnInit {
         valor_cuota: producto.valorCuota,
         cantidad: producto.cantidad,
       })),
+      agregadosGlobalesDTO:
+        this.banderaSeleccionada && this.bandera() ? [{ id_agregado: this.bandera()!.id }] : [],
       padresResponsablesDTO: this.padresResponsables.map((padre) => ({
         ...padre,
         nombre: this.capitalizarInicial(padre.nombre),
@@ -1127,7 +1135,7 @@ export class Ventas implements OnInit {
       venta.productosPedidoDTO.map((producto) => this.productoPedidoAProductoCarrito(producto, cuotas)),
     );
     this.banderaSeleccionadaPlan = this.bandera()
-      ? venta.productosPedidoDTO.some((producto) => producto.descripcion.includes(`Agregado: ${this.bandera()!.agregado}`))
+      ? venta.agregadosGlobalesDTO.some((agregado) => agregado.id_agregado === this.bandera()!.id)
       : false;
     this.cuotasPlanSeleccionadas.set(cuotas);
     this.productoEnEdicionPlan = this.crearProductoEnEdicionPlan();
@@ -1311,6 +1319,8 @@ export class Ventas implements OnInit {
         valor_cuota: producto.valorCuota,
         cantidad: producto.cantidad,
       })),
+      agregadosGlobales:
+        this.banderaSeleccionadaPlan && this.bandera() ? [{ id_agregado: this.bandera()!.id }] : [],
       nueva_cantidad_cuotas: this.cuotasPlanSeleccionadas(),
       valor_cuota_nuevo: this.totalCuotasPlan(),
       valor_senia_nuevo: this.totalSeniaPlan(),

@@ -17,11 +17,12 @@ import { CuotasService } from 'src/cuotas/cuotas.service';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { AuditoriasService } from 'src/auditorias/auditorias.service';
 import { OcrModule } from 'src/ocr/ocr.module';
+import { AgregadosGlobalesPedidoModule } from 'src/agregados-globales-pedido/agregados-globales-pedido.module';
 
 @Module({
-  imports: [SupabaseModule, PermisosModule, OcrModule],
+  imports: [SupabaseModule, PermisosModule, OcrModule, AgregadosGlobalesPedidoModule],
   controllers: [GestionPedidosController],
-  providers: [GestionPedidosService, UsuariosService, ColegiosService, 
+  providers: [GestionPedidosService, UsuariosService, ColegiosService,
             GruposService, PedidosService, ProductosPedidoService, PadreResponsableService,
             AlumnoResponsableService, PagosService, DocumentosService, PagosService, CuentaCorrienteService,
             CuotasService, SupabaseService, AuditoriasService],

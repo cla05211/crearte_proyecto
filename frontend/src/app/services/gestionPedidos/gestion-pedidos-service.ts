@@ -44,7 +44,7 @@ export class GestionPedidosService
 
   obtenerPresupuestoPedidoClientesPage(idGrupo: number): Observable<presupuestoPedidoClientesPage>
   {
-    return this.http.get<presupuestoPedidoClientesPage>(`${environment.apiUrl}/presupuesto-clientes/${idGrupo}`);    
+    return this.http.get<presupuestoPedidoClientesPage>(`${environment.apiUrl}/gestion-pedidos/presupuesto-clientes/${idGrupo}`);
   }
 
   modificarBeneficio(dto: ModificarBeneficioDto, idPedido: number): Observable<{'nuevoBeneficio':string}>
