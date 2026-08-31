@@ -28,4 +28,9 @@ export class GruposService
     {
       return this.http.get<grupoClienteDatosPageResponse>(`${environment.apiUrl}/grupos/clientes-page/datos/${idGrupo}`);
     }
+
+    obtenerCantidadEgresados(idGrupo: number): Observable<number>
+    {
+      return this.http.get<number>(`${environment.apiUrl}/grupos/egresados/${idGrupo}`);
+    }
 }

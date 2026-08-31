@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
@@ -27,10 +27,18 @@ export class ProductosController
 
     @Get('/precio-beneficio')
     @UseGuards(AuthGuard,PermisosGuard)
-    async obtenerPrecioBeneficio(@Query('idProducto') idProducto: number, @Query('cantidad') cantidad: number, @Query('cuotas') cuotas: number,) 
+    async obtenerPrecioBeneficio(@Query('idProducto', ParseIntPipe) idProducto: number, @Query('cantidad', ParseIntPipe) cantidad: number, @Query('cuotas',ParseIntPipe) cuotas: number,) 
     {
         return await this.productosService.obtenerPreciosBeneficios(idProducto, cantidad, cuotas);
     }  
+
+    @Get('precios')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_clientes_presupuesto')
+    async obtenerPreciosId(@Query('idProducto', ParseIntPipe) idProducto: number, @Query('cuotas', ParseIntPipe) cuotas: number, @Query('cantidad', ParseIntPipe) cantidad: number)
+    {
+        return await this.productosService.obtenerPreciosId(idProducto, cuotas, cantidad);
+    }
 
     @Post ('')
     @UseGuards(AuthGuard,PermisosGuard)

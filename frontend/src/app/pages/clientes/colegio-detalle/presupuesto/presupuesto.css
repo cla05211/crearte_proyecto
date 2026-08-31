@@ -50,6 +50,30 @@
   margin: 0;
 }
 
+.cuotas-destacado {
+  align-items: center;
+  background: var(--color-primary-100);
+  border: 1px solid var(--color-primary-200);
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+}
+
+.cuotas-destacado span {
+  color: var(--color-primary-700);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cuotas-destacado strong {
+  color: var(--color-text-strong);
+  font-size: var(--font-size-base);
+}
+
 .table-wrapper {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -65,12 +89,64 @@
   gap: var(--space-1);
 }
 
+.fila-agregados-titulo td {
+  padding-bottom: 0;
+  padding-top: var(--space-3);
+  vertical-align: middle;
+}
+
+.agregados-toggle {
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--color-primary-600);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  gap: var(--space-2);
+  letter-spacing: 0.06em;
+  padding: 0;
+  text-transform: uppercase;
+}
+
+.agregados-toggle:hover {
+  color: var(--color-primary-700);
+}
+
+.agregados-toggle__icono {
+  display: inline-block;
+  transition: transform 150ms ease;
+}
+
+.agregados-toggle__icono--abierto {
+  transform: rotate(90deg);
+}
+
+.fila-agregado td {
+  color: var(--color-text-muted);
+  padding-left: var(--space-6);
+}
+
 .producto-cell strong {
   color: var(--color-text-strong);
 }
 
 .producto-cell .ds-text-muted {
   font-size: var(--font-size-sm);
+}
+
+.fila-totales td {
+  border-top: 2px solid var(--color-primary-200);
+  color: var(--color-text-strong);
+  font-weight: var(--font-weight-bold);
+}
+
+.fila-totales td:first-child {
+  color: var(--color-primary-700);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .beneficio-pedido {

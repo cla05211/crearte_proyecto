@@ -16,6 +16,10 @@
     <section class="ds-card presupuesto-card">
       <h2 class="ds-heading-3 presupuesto-card__title">Productos del pedido y beneficio</h2>
       <div class="presupuesto-card__body">
+        <div class="cuotas-destacado">
+          <span>Plan de Cuotas</span>
+          <strong>{{ presupuestoGrupo()!.nroCuotas }} Cuotas + Seña</strong>
+        </div>
         @if (presupuestoGrupo()!.productosPedido.length === 0 && presupuestoGrupo()!.agregadosGlobales.length === 0) {
           <p class="ds-text-muted">No hay productos cargados en este pedido.</p>
         } @else {
@@ -25,37 +29,89 @@
                 <tr>
                   <th scope="col">Producto</th>
                   <th scope="col">Cantidad</th>
-                  <th scope="col">Beneficio</th>
+                  <th scope="col">Seña individual</th>
+                  <th scope="col">Seña grupal</th>
+                  <th scope="col">Cuota individual</th>
+                  <th scope="col">Cuota grupal</th>
                 </tr>
               </thead>
               <tbody>
-                @for (producto of presupuestoGrupo()!.productosPedido; track producto.id) {
+                @if (cargandoPrecios()) {
                   <tr>
-                    <td data-label="Producto">
-                      <div class="producto-cell">
-                        <strong>{{ producto.nombreProductoOriginal }}</strong>
-                        @if (producto.descripcion) {
-                          <span class="ds-text-muted">{{ producto.descripcion }}</span>
+                    <td colspan="6" class="ds-text-muted">Calculando precios…</td>
+                  </tr>
+                } @else {
+                  @for (producto of productosConPrecios(); track producto.id) {
+                    <tr>
+                      <td data-label="Producto">
+                        <div class="producto-cell">
+                          <strong>{{ producto.nombreProductoOriginal }}</strong>
+                          @if (producto.descripcion) {
+                            <span class="ds-text-muted">{{ producto.descripcion }}</span>
+                          }
+                        </div>
+                      </td>
+                      <td data-label="Cantidad">{{ producto.cantidad }}</td>
+                      <td data-label="Seña individual">{{ producto.valorSeniaIndividual | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                      <td data-label="Seña grupal">{{ producto.valorSeniaGrupal | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                      <td data-label="Cuota individual">{{ producto.valorCuotaIndividual | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                      <td data-label="Cuota grupal">{{ producto.valorCuotaGrupal | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                    </tr>
+                    @if (producto.agregados.length > 0) {
+                      <tr class="fila-agregados-titulo">
+                        <td colspan="6">
+                          <button
+                            type="button"
+                            class="agregados-toggle"
+                            [attr.aria-expanded]="productosConAgregadosAbiertos().has(producto.id)"
+                            (click)="toggleAgregados(producto.id)"
+                          >
+                            <span class="agregados-toggle__icono" [class.agregados-toggle__icono--abierto]="productosConAgregadosAbiertos().has(producto.id)">▸</span>
+                            Agregados ({{ producto.agregados.length }})
+                          </button>
+                        </td>
+                      </tr>
+                      @if (productosConAgregadosAbiertos().has(producto.id)) {
+                        @for (agregado of producto.agregados; track agregado.id) {
+                          <tr class="fila-agregado">
+                            <td data-label="Producto">{{ agregado.nombre }}</td>
+                            <td data-label="Cantidad"></td>
+                            <td data-label="Seña individual"></td>
+                            <td data-label="Seña grupal"></td>
+                            <td data-label="Cuota individual">{{ agregado.cuotaIndividual | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                            <td data-label="Cuota grupal">{{ agregado.cuotaGrupal | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                          </tr>
                         }
-                      </div>
-                    </td>
-                    <td data-label="Cantidad">{{ producto.cantidad }}</td>
-                    <td data-label="Beneficio">{{ producto.beneficio || '—' }}</td>
-                  </tr>
-                }
-                @for (agregado of presupuestoGrupo()!.agregadosGlobales; track agregado.id) {
-                  <tr>
-                    <td data-label="Producto">
-                      <div class="producto-cell">
-                        <strong>{{ agregado.agregado }}</strong>
-                        <span class="ds-text-muted">Cargo adicional del pedido</span>
-                      </div>
-                    </td>
-                    <td data-label="Cantidad">1</td>
-                    <td data-label="Beneficio">—</td>
-                  </tr>
+                      }
+                    }
+                  }
+                  @for (agregado of agregadosGlobalesConPrecios(); track agregado.id) {
+                    <tr>
+                      <td data-label="Producto">
+                        <div class="producto-cell">
+                          <strong>{{ agregado.nombre }}</strong>
+                          <span class="ds-text-muted">Cargo adicional del pedido</span>
+                        </div>
+                      </td>
+                      <td data-label="Cantidad"></td>
+                      <td data-label="Seña individual"></td>
+                      <td data-label="Seña grupal"></td>
+                      <td data-label="Cuota individual">{{ agregado.cuotaIndividual | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                      <td data-label="Cuota grupal">{{ agregado.cuotaGrupal | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                    </tr>
+                  }
                 }
               </tbody>
+              <tfoot>
+                <tr class="fila-totales">
+                  <td data-label="Producto">Total</td>
+                  <td data-label="Cantidad"></td>
+                  <td data-label="Seña individual">{{ totalSeniaIndividual() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Seña grupal">{{ totalSenia() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Cuota individual">{{ totalCuotaIndividual() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Cuota grupal">{{ totalCuota() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
           <div class="beneficio-pedido">
@@ -118,10 +174,6 @@
       <h2 class="ds-heading-3 presupuesto-card__title">Plan de pago</h2>
       <div class="presupuesto-card__body">
         <dl class="presupuesto-grid">
-          <div class="presupuesto-grid__item">
-            <dt>Cantidad de cuotas</dt>
-            <dd>{{ presupuestoGrupo()!.nroCuotas }}</dd>
-          </div>
           <div class="presupuesto-grid__item">
             <dt>Valor de la seña</dt>
             <dd>{{ totalSenia() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</dd>

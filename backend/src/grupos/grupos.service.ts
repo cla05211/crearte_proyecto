@@ -72,6 +72,19 @@ export class GruposService
         return gruposClientes;
     }
 
+    async traerCantidadEgresados(idGrupo: number)
+    {
+        const { data, error } = await this.sb.supabase
+        .from("grupos")
+        .select(`cantidad_egresados`)
+        .eq('id', idGrupo)
+        .single();
+
+        if (error) throw new Error(error.message);
+
+        return data?.cantidad_egresados;
+    }
+
     async traerDatosGrupoClientePage(idGrupo:number):Promise<grupoDatosClienteResponse>
     {
         const { data: grupo, error: errGrupo } = await this.sb.supabase

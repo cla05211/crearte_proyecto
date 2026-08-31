@@ -7,6 +7,7 @@ import { AgregadoDBDTO } from './dto/agregadoDB.dto';
 import { ProductoPostDTO } from './dto/productoPOST.dto';
 import { AgregadoPOSTDTO } from './dto/agregadoPOST.dto';
 import { PreciosBeneficiosResponseDTO } from './dto/PreciosBeneficiosResponse.dto';
+import { ProductoPreciosDTO } from './dto/ProductoPrecios.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -24,6 +25,16 @@ export class ProductosService
     {
         return this.http.get<AgregadoDBDTO[]>(`${environment.apiUrl}/productos/agregados`);
     }   
+
+    obtenerPreciosProducto(idProducto:number, nroCuotas:number, cantidad:number): Observable<ProductoPreciosDTO>
+    {
+        return this.http.get<ProductoPreciosDTO>(`${environment.apiUrl}/productos/precios`,{params:{idProducto: idProducto, cuotas: nroCuotas, cantidad: cantidad}});
+    }   
+
+    obtenerPrecioAgregadoGobal()
+    {
+        
+    }
 
     agregarProducto(producto:ProductoPostDTO): Observable<ProductoConPrecioResponseDTO>
     {

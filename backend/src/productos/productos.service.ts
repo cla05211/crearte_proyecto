@@ -6,6 +6,7 @@ import { ProductoPostDTO } from './dto/ProductoPOST.dto';
 import { AgregadoPostDTO } from './dto/AgregadoPost.dto';
 import { InternalServerErrorException } from '@nestjs/common';
 import { PreciosBeneficiosResponseDTO } from './dto/PreciosBeneficiosResponse.dto';
+import { ProductoPreciosDTO } from './dto/ProductoPrecios.dto';
 
 @Injectable()
 export class ProductosService 
@@ -42,6 +43,7 @@ export class ProductosService
 
     async obtenerProductoPrecioId(id_producto:number):Promise<ProductoConPrecioResponseDTO>
     {
+        //Esto no se usa, pero no funciona porque id coincide con muchos
         const { data, error } = await this.sb.supabase
         .from("precios_productos")
         .select(`
@@ -69,6 +71,30 @@ export class ProductosService
 
         return producto;
     }
+
+    async obtenerPreciosId(id_producto:number, nroCuotas: number, cantidad:number):Promise<ProductoPreciosDTO>
+    {
+        const { data, error } = await this.sb.supabase
+        .from("precios_productos")
+        .select(`valor_cuota, valor_senia`)
+        .eq('id_producto', id_producto)
+        .eq('cuotas', nroCuotas)
+        .lte('cantidad_desde', cantidad)
+        .gte('cantidad_hasta', cantidad)
+        .single();
+
+        if (error) {
+            throw new Error(error.message);
+        }
+
+        const producto: ProductoPreciosDTO = {
+            valor_senia: data.valor_senia,
+            valor_cuota: data.valor_cuota,
+        };
+
+        return producto;
+    }
+
 
     async obtenerAgregados():Promise<AgregadoDBDTO[]>
     {

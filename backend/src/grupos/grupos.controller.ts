@@ -17,6 +17,13 @@ export class GruposController
         return await this.grupos.traerGruposClientePage(rangoDesde, rangoHasta, busqueda);
     }
 
+    @Get('egresados/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    async obtenerCantidadEgresados(@Param ("id", ParseIntPipe) id: number)
+    {
+        return await this.grupos.traerCantidadEgresados(id);
+    }
+
     @Get('clientes-page/datos/:id')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_clientes')
@@ -24,4 +31,5 @@ export class GruposController
     {
         return await this.grupos.traerDatosGrupoClientePage(id);
     }
+
 }
