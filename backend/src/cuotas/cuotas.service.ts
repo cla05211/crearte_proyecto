@@ -74,7 +74,8 @@ export class CuotasService
             .from('cuotas')
             .select(`*`)
             .eq('id_pedido', idPedido)
-            .eq('estado', 'Pendiente')
+            .in('estado', ['Pendiente', 'Parcial', 'Adeudada'])
+            .order('numero', { ascending: true })
 
         if (error) 
         {
@@ -134,11 +135,11 @@ export class CuotasService
         return data;
     }
 
-    async pagarCuota(dto: PagarCuotaDTO)
+    async pagarCuotaPuntual(dto: PagarCuotaDTO)
     {
         const { data, error } = await this.sb.supabase
         .from("cuotas")
-        .update({ 'estado': "Pagado" })
+        .update({ 'estado': dto.nuevoEstado, 'monto_cubierto': dto.importe})
         .eq("id_pedido", dto.id_pedido)
         .eq("numero", dto.numero)
 
@@ -148,6 +149,41 @@ export class CuotasService
         }
 
         return data;
+    }
+
+    async cubrirCuotas(pago: number, idPedido: number)
+    {
+        const pendientes: CuotaResponseDTO[] = await this.traerCuotasPendientesPorIdPedido(idPedido);
+        let restante = pago;
+
+        for (const cuota of pendientes)
+        {
+            if (restante <= 0) break;
+
+            const yaCubierto = cuota.monto_cubierto ?? 0;
+            const faltaCuota = cuota.importe! - yaCubierto;
+
+            if (restante >= faltaCuota)
+            {
+                await this.pagarCuotaPuntual({
+                    id_pedido: idPedido,
+                    numero: cuota.numero!,
+                    importe: cuota.importe!,
+                    nuevoEstado: "Pagado",
+                });
+                restante -= faltaCuota;
+            }
+            else
+            {
+                await this.pagarCuotaPuntual({
+                    id_pedido: idPedido,
+                    numero: cuota.numero!,
+                    importe: yaCubierto + restante,
+                    nuevoEstado: "Parcial",
+                });
+                restante = 0;
+            }
+        }
     }
 
     async eliminarCuotasPedido(idPedido: number)

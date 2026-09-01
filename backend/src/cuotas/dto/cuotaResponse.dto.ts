@@ -7,4 +7,5 @@ export class CuotaResponseDTO
     importe!: number | null;
     estado!: string | null;
     fecha_pago!: string | null;
+    monto_cubierto!: number;
 }

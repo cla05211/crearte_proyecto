@@ -34,3 +34,4 @@ export class GruposService
       return this.http.get<number>(`${environment.apiUrl}/grupos/egresados/${idGrupo}`);
     }
 }
+ 

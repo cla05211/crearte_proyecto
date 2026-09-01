@@ -9,29 +9,38 @@ import { Console } from 'console';
 import { PagoComprobanteDatosDTO } from './dto/pagoComprobanteDatos.dto';
 import { PagoBancoResponse } from './dto/pagoBancoResponse.dto';
 import { ModificarPago } from './dto/modificarBanco.dto';
+import { CuotasService } from 'src/cuotas/cuotas.service';
+import { DocumentosService } from 'src/documentos/documentos.service';
 
 @Injectable()
 export class PagosService 
 {
-    constructor(private sb: SupabaseService, private ocrService: OcrService){}
+    constructor(private sb: SupabaseService, private ocrService: OcrService, private documentosService: DocumentosService){}
 
     async crearPago(dto: PagoDTO)
     {
         const { documentoDTO, ...pagoInsert } = dto;
 
-        const {data,error} = await this.sb.supabase
-            .from('pagos')
-            .insert(pagoInsert)
-            .select('id')
-            .single();
+        let idDocumento: number | undefined;
 
-        if (error) 
+        if (documentoDTO)
+        {
+            const ids = await this.documentosService.subirDocumento(documentoDTO);
+            idDocumento = ids[0];
+        }
+
+        const { data, error } = await this.sb.supabase
+            .rpc('registrar_pago_completo', {
+                p_pago: { ...pagoInsert, id_documento: idDocumento ?? null },
+            });
+
+        if (error)
         {
             throw new BadRequestException(error.message);
         }
 
-        return data.id;
-    }    
+        return data;
+    }
 
     async traerPagosPedido(idPedido: number):Promise<PagoResponseDTO[]>
     {

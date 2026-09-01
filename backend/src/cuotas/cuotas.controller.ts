@@ -60,7 +60,7 @@ export class CuotasController
     @RequierePermiso('modificar_pedidos')
     pagarCuotasPedido(@Body() dto: PagarCuotaDTO)
     {
-        return this.cuotasService.pagarCuota(dto);
+        return this.cuotasService.pagarCuotaPuntual(dto);
     }   
 
     @Delete('/:id')

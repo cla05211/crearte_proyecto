@@ -6,4 +6,5 @@ export class CuotaDTO
     importe!: number;
     estado!: string;
     fecha_pago!: Date;
+    monto_cubierto!: number;
 }

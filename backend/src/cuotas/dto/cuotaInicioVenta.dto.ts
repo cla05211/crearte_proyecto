@@ -4,4 +4,5 @@ export class CuotaInicioVentaDTO
     numero!: number;
     fecha_vencimiento!: Date;
     importe!: number;
+    monto_cubierto!: 0;
 }
