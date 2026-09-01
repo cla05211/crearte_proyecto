@@ -1,0 +1,44 @@
+:host {
+  display: block;
+}
+
+.admin-stack {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.admin-tabs {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  width: fit-content;
+}
+
+.admin-tabs a {
+  border-radius: calc(var(--radius-md) - 2px);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-bold);
+  min-height: var(--control-height-sm);
+  align-items: center;
+  display: inline-flex;
+  padding: 0 var(--space-4);
+  text-decoration: none;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.admin-tabs a:hover { color: var(--color-primary-700); }
+.admin-tabs a.is-active { background: var(--color-primary-700); box-shadow: var(--shadow-sm); color: var(--color-surface); }
+.admin-tabs a:focus-visible { box-shadow: var(--focus-ring); outline: 0; }
+
+.admin-content {
+  min-width: 0;
+}
+
+@media (max-width: 680px) {
+  .admin-tabs { flex-wrap: wrap; width: 100%; }
+  .admin-tabs a { flex: 1 1 auto; justify-content: center; }
+}

@@ -1,1 +1,11 @@
-<p>administrativo works!</p>
+<div class="admin-stack">
+  <nav class="admin-tabs" aria-label="Secciones administrativas">
+    <a routerLink="cuenta-corriente" routerLinkActive="is-active">Cuenta corriente</a>
+    <a routerLink="comprobantes-pago" routerLinkActive="is-active">Comprobantes de pago</a>
+    <a routerLink="contrato" routerLinkActive="is-active">Contrato</a>
+  </nav>
+
+  <div class="admin-content">
+    <router-outlet></router-outlet>
+  </div>
+</div>

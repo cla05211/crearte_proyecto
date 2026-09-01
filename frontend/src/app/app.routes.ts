@@ -77,6 +77,21 @@ export const routes: Routes = [
             loadComponent: () => import('./pages/clientes/colegio-detalle/administrativo/administrativo').then((archivo) => archivo.Administrativo),
             canActivate: [PermisosGuard],
             data: { permiso: 'ver_clientes_administrativo' },
+            children: [
+              { path: '', redirectTo: 'cuenta-corriente', pathMatch: 'full' },
+              {
+                path: "cuenta-corriente",
+                loadComponent: () => import('./pages/clientes/colegio-detalle/administrativo/cuenta-corriente/cuenta-corriente').then((archivo) => archivo.CuentaCorriente),
+              },
+              {
+                path: "comprobantes-pago",
+                loadComponent: () => import('./pages/clientes/colegio-detalle/administrativo/comprobantes-pago/comprobantes-pago').then((archivo) => archivo.ComprobantesPago),
+              },
+              {
+                path: "contrato",
+                loadComponent: () => import('./pages/clientes/colegio-detalle/administrativo/contrato/contrato').then((archivo) => archivo.Contrato),
+              },
+            ],
           },
           {
             path: "talles-diseño",

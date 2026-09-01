@@ -1,0 +1,117 @@
+@if (cargando()) {
+  <div class="loading-state" role="status" aria-live="polite">
+    <span class="loading-state__spinner" aria-hidden="true"></span>
+    <div>
+      <h2>Cargando cuenta corriente</h2>
+      <p>Estamos preparando los pagos del cliente.</p>
+    </div>
+  </div>
+} @else {
+  <div class="cc-stack">
+    <section class="cc-summary">
+      <div class="cc-summary__item">
+        <span>Total</span>
+        <strong>{{ importeTotal() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+      </div>
+      <span class="cc-summary__separator" aria-hidden="true">·</span>
+      <div class="cc-summary__item">
+        <span>Pagado</span>
+        <strong>{{ totalPagado() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+      </div>
+      <span class="cc-summary__separator" aria-hidden="true">·</span>
+      <div class="cc-summary__item">
+        <span>Falta</span>
+        <strong>{{ totalFaltante() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+      </div>
+    </section>
+
+    <section class="ds-card cc-card">
+      <header class="cc-card__header">
+        <h2 class="ds-heading-3">Pagos registrados</h2>
+        <button type="button" class="ds-button" (click)="abrirFormulario()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m-7-7h14" /></svg>
+          Agregar
+        </button>
+      </header>
+
+      @if (pagosCliente().length === 0) {
+        <p class="ds-text-muted">Todavía no hay pagos registrados para este cliente.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table class="ds-table">
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">Motivo</th>
+                <th scope="col">Monto</th>
+                <th scope="col">Banco</th>
+                <th scope="col">Entidad de pago</th>
+                <th scope="col">Comprobante</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (pago of pagosCliente(); track pago.id) {
+                <tr>
+                  <td data-label="Fecha">{{ pago.fecha | date: 'dd/MM/yyyy' }}</td>
+                  <td data-label="Motivo">{{ pago.motivo || '—' }}</td>
+                  <td data-label="Monto">{{ pago.monto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Banco">{{ pago.banco || '—' }}</td>
+                  <td data-label="Entidad de pago">{{ mostrarEntidadPago(pago) ? (pago.entidad_pago || '—') : '' }}</td>
+                  <td data-label="Comprobante">
+                    @if (pago.id_documento) {
+                      <button
+                        type="button"
+                        class="download-button"
+                        [disabled]="descargandoId() === pago.id"
+                        (click)="descargarComprobante(pago)"
+                        aria-label="Descargar comprobante"
+                        title="Descargar comprobante"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+                      </button>
+                    } @else {
+                      <span class="ds-text-muted">—</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </div>
+}
+
+@if (vistaFormulario()) {
+  <div class="modal-backdrop" role="presentation">
+    <section class="cc-modal" role="dialog" aria-modal="true" aria-labelledby="new-payment-title">
+      <header class="cc-modal__header">
+        <div>
+          <span class="ds-eyebrow">Cuenta corriente</span>
+          <h2 id="new-payment-title" class="ds-heading-2">Agregar pago en efectivo</h2>
+        </div>
+        <button class="close-button" type="button" (click)="cerrarFormulario()" aria-label="Cerrar">×</button>
+      </header>
+
+      <div class="cc-modal__content">
+        <label class="ds-field">
+          <span class="ds-label">Fecha</span>
+          <input class="ds-input" type="date" [(ngModel)]="formularioPago.fecha" />
+        </label>
+
+        <label class="ds-field">
+          <span class="ds-label">Monto</span>
+          <input class="ds-input" type="number" min="0" step="0.01" [(ngModel)]="formularioPago.monto" />
+        </label>
+      </div>
+
+      <footer class="cc-modal__actions">
+        <button type="button" class="ds-button ds-button--secondary" (click)="cerrarFormulario()">Cancelar</button>
+        <button type="button" class="ds-button" [disabled]="guardando()" (click)="guardarPago()">
+          {{ guardando() ? 'Guardando…' : 'Guardar pago' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}

@@ -7,6 +7,7 @@ import { Observable } from 'rxjs';
 import { ModificarBeneficioDto } from './dto/modficaciones/modficiarBeneficio.dto';
 import { ModificarPlanPedidoDTO } from './dto/modficaciones/ModificarPlanPedido';
 import { presupuestoPedidoClientesPage } from './dto/PresupuestoPedidoClientePage.dto';
+import { PedidoDTOResponse } from '../pedidos/dto/pedidoResponse.dto';
 
 @Injectable({
   providedIn: 'root',

@@ -125,10 +125,10 @@ export class GestionPedidosService
 
         const {data,error} = await this.sb.supabase
             .from('productos_pedidos')
-            .select('valor_cuota, valor_senia')
+            .select('valor_cuota, valor_senia, cantidad')
             .eq('id_pedido',idPedido)
-        
-        if (error) 
+
+        if (error)
         {
             throw new BadRequestException(error.message);
         }
@@ -137,18 +137,41 @@ export class GestionPedidosService
             .from('agregados_globales_pedido')
             .select('agregados(precio)')
             .eq('id_pedido',idPedido)
-        
-        if (errorAgregados) 
+
+        if (errorAgregados)
         {
             throw new BadRequestException(errorAgregados.message);
         }
 
-        const totalCuotas = data.reduce((total, producto) => total + Number(producto.valor_cuota || 0),0);
-        const totalSenias = data.reduce((total, producto) => total + Number(producto.valor_senia || 0),0);
+        const nroCuotas = (await this.cuotas.traerCuotasPorIdPedido(idPedido)).length;
+
+        // valor_cuota/valor_senia en productos_pedidos son precios por unidad
+        // (ver ProductosService.obtenerPreciosBeneficios): hay que multiplicar
+        // por la cantidad del renglón, y el total de cuota se paga nroCuotas
+        // veces. La seña, en cambio, se paga una sola vez.
+        const totalCuotaPorUnidad = data.reduce((total, producto) => total + Number(producto.valor_cuota || 0) * Number(producto.cantidad || 0),0);
+        const totalSenias = data.reduce((total, producto) => total + Number(producto.valor_senia || 0) * Number(producto.cantidad || 0),0);
         const totalAgregadosGlobales = dataAgregados.reduce((total, agregado) => total + Number(agregado.agregados?.precio || 0),0);
-        importe = totalCuotas + totalSenias + totalAgregadosGlobales;
-        
+        importe = totalSenias + (totalCuotaPorUnidad + totalAgregadosGlobales) * nroCuotas;
+
         return importe;
     }
 
+    async obtenerPresupuestoPedidosClientes(idGrupo: number)
+    {
+        const pedido: PedidoDTOResponse = await this.pedidosService.obtenerPedidoGrupo(idGrupo);
+        const productosPedido: ProductoPedidoResponseConNombreOriginalDTO[] = await this.productosPedido.traerProductosPedidoConNombreProducto(pedido.id);
+        const agregadosGlobales: AgregadoGlobalPedidoResponseDTO[] = await this.agregadosGlobalesPedido.obtenerPorPedido(pedido.id);
+        const cuotas: number = ((await this.cuotas.traerCuotasPorIdPedido(pedido.id)).length);
+    
+        const presupuestoPedido: presupuestoPedidoClientesPage =
+        {
+            pedido: pedido,
+            productosPedido: productosPedido,
+            agregadosGlobales: agregadosGlobales,
+            nroCuotas: cuotas
+        };
+
+        return presupuestoPedido;
+    }
 }
