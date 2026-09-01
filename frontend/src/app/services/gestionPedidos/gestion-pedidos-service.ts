@@ -57,4 +57,9 @@ export class GestionPedidosService
       return this.http.patch(`${environment.apiUrl}/gestion-pedidos/modificar-pedidos`, dto);
   }
 
+  obtenerImporteTotalPedido(idPedido:number):Observable<number>
+  {
+    return this.http.get<number>(`${environment.apiUrl}/gestion-pedidos/importe/${idPedido}`);
+  }
+
 }

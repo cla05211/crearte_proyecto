@@ -912,7 +912,6 @@ export class Ventas implements OnInit {
       return comprobantes.map((comprobante, indice) => ({
         id_pedido: idPedido,
         nro_transferencia: comprobante.datos?.nro_transferencia ?? '',
-        tipo_pago: 'Seña',
         monto: comprobante.datos?.monto ?? 0,
         motivo: 'Seña',
         fecha,
@@ -927,7 +926,6 @@ export class Ventas implements OnInit {
       {
         id_pedido: idPedido,
         nro_transferencia: '',
-        tipo_pago: 'Seña',
         monto: this.totalSenia(),
         motivo: 'Seña',
         fecha,

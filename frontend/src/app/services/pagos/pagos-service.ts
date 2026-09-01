@@ -9,6 +9,7 @@ import { PagoBancoResponse } from './dto/pagoBancoResponse.dto';
 import { ModificarPago } from './dto/modificarBanco.dto';
 import { GenerarReciboDTO } from '../../../interfaces/generarRecibo.dto';
 import { GenerarExcelDTO } from '../../../interfaces/generarExcel.dto';
+import { PagoDTO } from '../gestionPedidos/dto/pago.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -32,6 +33,11 @@ export class PagosService
     return this.http.post<PagoComprobanteDatosDTO>(`${environment.apiUrl}/pagos/ocr`, formData);
   }
 
+  crearPago(dto:PagoDTO)
+  {
+    return this.http.post(`${environment.apiUrl}/pagos/`, dto);
+  }
+
   modificarAprobado(dto: ModificarPago)
   {
     return this.http.patch((`${environment.apiUrl}/pagos/aprobado`), dto);
@@ -42,10 +48,6 @@ export class PagosService
     return this.http.patch((`${environment.apiUrl}/pagos/enviado`), dto);
   }
 
-  eliminarPago(idPago: number)
-  {
-
-  }
 
   descargarExcel(dto: GenerarExcelDTO): Observable<Blob>
   {

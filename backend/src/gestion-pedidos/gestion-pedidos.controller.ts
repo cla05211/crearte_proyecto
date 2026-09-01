@@ -27,12 +27,12 @@ export class GestionPedidosController
         return await this.gestionService.obtenerPedidosVentas(rangoDesde, rangoHasta, busqueda, promo);
     }
 
-    @Get ('presupuesto-clientes/:idGrupo')
+    @Get ('importe/:id')
     @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('ver_clientes_presupuesto')
-    async obtenerPresupuestoPedidoClientesPage(@Param('idGrupo', ParseIntPipe) idGrupo:number)
+    @RequierePermiso('ver_clientes_administrativo')
+    async obtenerImporteTotalPedido(@Param('id', ParseIntPipe)idPedido: number)
     {
-        return await this.gestionService.obtenerPresupuestoPedidosClientes(idGrupo);
+        return await this.gestionService.obtenerImporteTotalPedido(idPedido);
     }
 
     @Patch('modificar-pedidos')

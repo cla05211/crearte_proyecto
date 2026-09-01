@@ -422,7 +422,6 @@ export type Database = {
           monto: number | null
           motivo: string | null
           nro_transferencia: string | null
-          tipo_pago: string | null
         }
         Insert: {
           aprobado?: boolean | null
@@ -436,7 +435,6 @@ export type Database = {
           monto?: number | null
           motivo?: string | null
           nro_transferencia?: string | null
-          tipo_pago?: string | null
         }
         Update: {
           aprobado?: boolean | null
@@ -450,7 +448,6 @@ export type Database = {
           monto?: number | null
           motivo?: string | null
           nro_transferencia?: string | null
-          tipo_pago?: string | null
         }
         Relationships: [
           {

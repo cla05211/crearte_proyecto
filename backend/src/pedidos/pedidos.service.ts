@@ -41,7 +41,7 @@ export class PedidosService
         return data.id_vendedora;        
     }
 
-    async obtenerPedidos(idGrupo:number): Promise<PedidoDTOResponse>
+    async obtenerPedidoGrupo(idGrupo:number): Promise<PedidoDTOResponse>
     {
         const {data,error} = await this.sb.supabase
             .from('pedidos')
@@ -55,5 +55,21 @@ export class PedidosService
         }
 
         return data as PedidoDTOResponse   
+    }
+
+    async obtenerIdPedidoGrupo(idGrupo:number):Promise<number>
+    {
+        const {data,error} = await this.sb.supabase
+        .from('pedidos')
+        .select('id')
+        .eq('id_grupo',idGrupo)
+        .single();
+
+        if (error) 
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        return data.id;
     }
 }

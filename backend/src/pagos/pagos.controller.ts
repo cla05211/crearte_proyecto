@@ -12,6 +12,7 @@ import { GenerarExcelDTO } from 'src/reportes/excel/dto/generarExcel.dto';
 import { ExcelService } from 'src/reportes/excel/excel.service';
 import { GenerarReciboDTO } from 'src/reportes/pdf/dto/generarRecibo.dto';
 import { PdfService } from 'src/reportes/pdf/pdf.service';
+import { PagoDTO } from './dto/pago.dto';
 
 @Controller('pagos')
 export class PagosController 
@@ -58,22 +59,12 @@ export class PagosController
     {
         return await this.pagosService.traerIdDocumento(id);
     }
-    
 
-    @Patch('enviado')
+    @Post()
     @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('ver_bancos')
-    async modificarEnviadoBanco(@Body() dto: ModificarPago)
+    async crearPago(@Body() dto: PagoDTO)
     {
-        return await this.pagosService.modificarEnviadoBanco(dto);
-    }
-
-    @Patch('aprobado')
-    @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('ver_bancos')
-    async modificarAprobadoBanco(@Body() dto: ModificarPago)
-    {
-        return await this.pagosService.modificarAprobadoBanco(dto);
+        return await this.pagosService.crearPago(dto);
     }
 
     @Post('ocr')
@@ -108,4 +99,21 @@ export class PagosController
         });
         res.send(buffer);
     }
+    
+    @Patch('enviado')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_bancos')
+    async modificarEnviadoBanco(@Body() dto: ModificarPago)
+    {
+        return await this.pagosService.modificarEnviadoBanco(dto);
+    }
+
+    @Patch('aprobado')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_bancos')
+    async modificarAprobadoBanco(@Body() dto: ModificarPago)
+    {
+        return await this.pagosService.modificarAprobadoBanco(dto);
+    }
+
 }

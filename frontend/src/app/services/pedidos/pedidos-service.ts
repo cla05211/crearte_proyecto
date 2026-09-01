@@ -14,4 +14,9 @@ export class PedidosService
   {
     return this.http.get<number>(`${environment.apiUrl}/pedidos/${idPedido}`);
   }
+
+  obtenerIdPedidoGrupo(idGrupo:number):Observable<number>
+  {
+    return this.http.get<number>(`${environment.apiUrl}/pedidos/id/${idGrupo}`);    
+  }
 }

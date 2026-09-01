@@ -119,22 +119,36 @@ export class GestionPedidosService
         return data;
     }
 
-    async obtenerPresupuestoPedidosClientes(idGrupo: number)
+    async obtenerImporteTotalPedido(idPedido: number): Promise<number>
     {
-        const pedido: PedidoDTOResponse = await this.pedidosService.obtenerPedidos(idGrupo);
-        const productosPedido: ProductoPedidoResponseConNombreOriginalDTO[] = await this.productosPedido.traerProductosPedidoConNombreProducto(pedido.id);
-        const agregadosGlobales: AgregadoGlobalPedidoResponseDTO[] = await this.agregadosGlobalesPedido.obtenerPorPedido(pedido.id);
-        const cuotas: number = ((await this.cuotas.traerCuotasPorIdPedido(pedido.id)).length);
+        let importe = 0;
 
-        const presupuestoPedido: presupuestoPedidoClientesPage =
+        const {data,error} = await this.sb.supabase
+            .from('productos_pedidos')
+            .select('valor_cuota, valor_senia')
+            .eq('id_pedido',idPedido)
+        
+        if (error) 
         {
-            pedido: pedido,
-            productosPedido: productosPedido,
-            agregadosGlobales: agregadosGlobales,
-            nroCuotas: cuotas
-        };
+            throw new BadRequestException(error.message);
+        }
 
-        return presupuestoPedido;
+        const {data: dataAgregados, error: errorAgregados} = await this.sb.supabase
+            .from('agregados_globales_pedido')
+            .select('agregados(precio)')
+            .eq('id_pedido',idPedido)
+        
+        if (errorAgregados) 
+        {
+            throw new BadRequestException(errorAgregados.message);
+        }
+
+        const totalCuotas = data.reduce((total, producto) => total + Number(producto.valor_cuota || 0),0);
+        const totalSenias = data.reduce((total, producto) => total + Number(producto.valor_senia || 0),0);
+        const totalAgregadosGlobales = dataAgregados.reduce((total, agregado) => total + Number(agregado.agregados?.precio || 0),0);
+        importe = totalCuotas + totalSenias + totalAgregadosGlobales;
+        
+        return importe;
     }
 
 }

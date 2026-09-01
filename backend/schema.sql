@@ -161,12 +161,11 @@ begin
       RETURNING id INTO id_documento;
     END IF;
  
-    INSERT INTO pagos (id_pedido, id_documento, nro_transferencia, tipo_pago, monto, motivo, fecha, aprobado, banco, entidad_pago)
+    INSERT INTO pagos (id_pedido, id_documento, nro_transferencia, monto, motivo, fecha, aprobado, banco, entidad_pago)
     VALUES (
       id_pedido,
       id_documento,
       pago->>'nro_transferencia',
-      pago->>'tipo_pago',
       (pago->>'monto')::double precision,
       pago->>'motivo',
       (pago->>'fecha')::date,
@@ -673,7 +672,6 @@ CREATE TABLE IF NOT EXISTS "public"."pagos" (
     "id" bigint NOT NULL,
     "id_pedido" bigint,
     "nro_transferencia" "text",
-    "tipo_pago" "text",
     "monto" double precision,
     "motivo" "text",
     "fecha" "date",

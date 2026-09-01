@@ -24,4 +24,11 @@ export class PedidosController
     {
         return await this.pedidosService.obtenerVendedora(id);
     }
+
+    @Get('id/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    async obtenerPedidoGrupo(@Param('id')id: number) :Promise<number>
+    {
+        return await this.pedidosService.obtenerIdPedidoGrupo(id);
+    }
 }
