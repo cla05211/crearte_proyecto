@@ -7,4 +7,5 @@ export interface CuotaResponseDTO
     importe: number;
     estado: string;
     fecha_pago: Date;
+    monto_cubierto: number;
 }

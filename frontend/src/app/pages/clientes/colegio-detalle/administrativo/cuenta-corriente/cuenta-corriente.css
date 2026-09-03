@@ -41,6 +41,10 @@
   color: var(--color-primary-300);
 }
 
+.cc-summary--compact {
+  padding: var(--space-3) var(--space-4);
+}
+
 .cc-card {
   display: grid;
   gap: var(--space-5);

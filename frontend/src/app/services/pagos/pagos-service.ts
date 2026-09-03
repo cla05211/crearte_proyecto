@@ -8,6 +8,7 @@ import { PagoComprobanteDatosDTO } from './dto/pagoComprobanteDatos.dto';
 import { PagoBancoResponse } from './dto/pagoBancoResponse.dto';
 import { ModificarPago } from './dto/modificarBanco.dto';
 import { GenerarReciboDTO } from '../../../interfaces/generarRecibo.dto';
+import { GenerarContratoDTO } from '../../../interfaces/generarContrato.dto';
 import { GenerarExcelDTO } from '../../../interfaces/generarExcel.dto';
 import { PagoDTO } from '../gestionPedidos/dto/pago.dto';
 
@@ -57,6 +58,16 @@ export class PagosService
   descargarRecibo(dto: GenerarReciboDTO): Observable<Blob>
   {
     return this.http.post((`${environment.apiUrl}/pagos/recibo`), dto, { responseType: 'blob' });
+  }
+
+  descargarReciboPago(idPago: number): Observable<Blob>
+  {
+    return this.http.get((`${environment.apiUrl}/pagos/${idPago}/recibo`), { responseType: 'blob' });
+  }
+
+  descargarContrato(dto: GenerarContratoDTO): Observable<Blob>
+  {
+    return this.http.post((`${environment.apiUrl}/pagos/contrato`), dto, { responseType: 'blob' });
   }
 
   traerIdDocumento(idPago:number): Observable<number>

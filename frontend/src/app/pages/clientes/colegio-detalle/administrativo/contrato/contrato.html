@@ -1,4 +1,43 @@
-<div class="empty-state">
-  <h2>Contrato</h2>
-  <p>Esta sección todavía no está disponible.</p>
-</div>
+@if (cargando()) {
+  <div class="loading-state" role="status" aria-live="polite">
+    <span class="loading-state__spinner" aria-hidden="true"></span>
+    <div>
+      <h2>Cargando contrato</h2>
+      <p>Estamos preparando los datos del contrato.</p>
+    </div>
+  </div>
+} @else if (!contratoDisponible()) {
+  <div class="empty-state">
+    <h2>Contrato</h2>
+    <p>El contrato todavía no está disponible: se genera una vez que el boceto y los talles quedan aprobados.</p>
+  </div>
+} @else if (datosContrato(); as dto) {
+  <section class="ds-card cc-card">
+    <header class="cc-card__header">
+      <h2 class="ds-heading-3">Contrato</h2>
+      <button type="button" class="ds-button" [disabled]="descargando()" (click)="descargarContrato()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+        {{ descargando() ? 'Generando…' : 'Descargar contrato' }}
+      </button>
+    </header>
+
+    <dl class="contrato-resumen">
+      <div>
+        <dt>Colegio</dt>
+        <dd>{{ dto.colegioNombre }}</dd>
+      </div>
+      <div>
+        <dt>Compradores</dt>
+        <dd>{{ nombresCompradores(dto) || '—' }}</dd>
+      </div>
+      <div>
+        <dt>Fecha del acuerdo</dt>
+        <dd>{{ dto.diaFecha }} de {{ dto.mesFecha }} de {{ dto.anioFecha }}</dd>
+      </div>
+      <div>
+        <dt>Total</dt>
+        <dd>{{ dto.montoTotal | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</dd>
+      </div>
+    </dl>
+  </section>
+}

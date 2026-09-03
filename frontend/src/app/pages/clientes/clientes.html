@@ -57,11 +57,11 @@
                   class="clientes-table__row"
                   role="button"
                   tabindex="0"
-                  [attr.aria-label]="'Ver ficha del colegio ' + cliente.nombreColegio"
+                  [attr.aria-label]="'Ver ficha del colegio ' + cliente.colegio.nombre"
                   (click)="abrirColegio(cliente)"
                   (keydown.enter)="abrirColegio(cliente)"
                 >
-                  <td data-label="Colegio"><span class="school-name">{{ cliente.nombreColegio }}</span></td>
+                  <td data-label="Colegio"><span class="school-name">{{ cliente.colegio.nombre }}</span></td>
                   <td data-label="Nivel">
                     <span class="ds-badge nivel-badge" [attr.data-nivel]="cliente.nivel">{{ cliente.nivel }}</span>
                   </td>

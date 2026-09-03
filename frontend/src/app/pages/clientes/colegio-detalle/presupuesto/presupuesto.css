@@ -13,10 +13,62 @@
 }
 
 .presupuesto-card__title {
+  align-items: center;
   background: var(--color-primary-700);
   color: var(--color-surface);
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
   margin: 0;
   padding: var(--space-4) var(--space-6);
+}
+
+.presupuesto-card__title h2 {
+  color: var(--color-surface);
+  margin: 0;
+}
+
+.presupuesto-card__title .icon-edit {
+  color: var(--color-surface);
+}
+
+.presupuesto-card__title .icon-edit:hover,
+.presupuesto-card__title .icon-edit:focus-visible {
+  color: var(--color-primary-100);
+}
+
+.icon-edit {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  justify-content: center;
+  padding: 2px;
+  vertical-align: middle;
+}
+
+.icon-edit:hover,
+.icon-edit:focus-visible {
+  color: var(--color-primary-700);
+}
+
+.icon-edit:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: 0;
+}
+
+.icon-edit svg {
+  fill: none;
+  height: 0.85rem;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  width: 0.85rem;
 }
 
 .presupuesto-card__body {
@@ -50,18 +102,23 @@
   margin: 0;
 }
 
-.cuotas-destacado {
+.cuotas-destacado,
+.beneficio-pedido {
   align-items: center;
   background: var(--color-primary-100);
   border: 1px solid var(--color-primary-200);
   border-radius: var(--radius-md);
   display: flex;
   justify-content: space-between;
-  margin-bottom: var(--space-5);
   padding: var(--space-4) var(--space-5);
 }
 
-.cuotas-destacado span {
+.cuotas-destacado {
+  margin-bottom: var(--space-5);
+}
+
+.cuotas-destacado span,
+.beneficio-pedido span {
   color: var(--color-primary-700);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
@@ -69,7 +126,8 @@
   text-transform: uppercase;
 }
 
-.cuotas-destacado strong {
+.cuotas-destacado strong,
+.beneficio-pedido strong {
   color: var(--color-text-strong);
   font-size: var(--font-size-base);
 }
@@ -150,27 +208,13 @@
 }
 
 .beneficio-pedido {
-  align-items: center;
-  background: var(--color-primary-100);
-  border: 1px solid var(--color-primary-200);
-  border-radius: var(--radius-md);
-  display: flex;
-  justify-content: space-between;
   margin-top: var(--space-5);
-  padding: var(--space-4) var(--space-5);
 }
 
-.beneficio-pedido span {
-  color: var(--color-primary-700);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.beneficio-pedido strong {
-  color: var(--color-text-strong);
-  font-size: var(--font-size-base);
+.beneficio-pedido__valor {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
 }
 
 .loading-state,
@@ -204,6 +248,231 @@
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.modal-backdrop {
+  align-items: flex-start;
+  background: rgba(45, 17, 35, 0.5);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  overflow-y: auto;
+  padding: var(--space-6);
+  position: fixed;
+  z-index: 10;
+}
+
+.presupuesto-modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  margin: auto;
+  max-width: 58rem;
+  padding: var(--space-6);
+  width: 100%;
+}
+
+.presupuesto-modal__header,
+.wizard-actions,
+.cart__row,
+.benefits__list li {
+  align-items: center;
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+
+.presupuesto-modal__header {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-4);
+}
+
+.presupuesto-modal__header h2 {
+  margin: 0;
+}
+
+.close-button {
+  background: transparent;
+  border: 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.wizard-content {
+  min-height: 22rem;
+}
+
+.wizard-actions {
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+}
+
+.product-step,
+.product-editor,
+.cart {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.product-editor,
+.cart,
+.totals-card {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.product-editor {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.agregados,
+.price-preview {
+  display: grid;
+  gap: var(--space-2);
+  grid-column: 1 / -1;
+}
+
+.agregados label,
+.flag-option {
+  color: var(--color-text-strong);
+  font-size: var(--font-size-sm);
+}
+
+.agregados small,
+.flag-option span {
+  color: var(--color-text-muted);
+}
+
+.price-preview {
+  background: #f4ebf0;
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+}
+
+.price-preview span,
+.cart__row span {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.price-edit-form__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+}
+
+.flag-option {
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.cart h4 {
+  margin: 0;
+}
+
+.cart__row {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+}
+
+.cart__row.is-editing {
+  background: #f4ebf0;
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+}
+
+.cart__row div {
+  display: grid;
+  gap: 2px;
+}
+
+.cart__row-actions {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.totals-card {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.totals-card span {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.benefits {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.benefits h4,
+.benefits p {
+  margin: 0;
+}
+
+.benefits__editor {
+  align-items: end;
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: minmax(0, 1fr) 8rem auto;
+}
+
+.benefits__list {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.benefits__list li {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-2);
+}
+
+.benefits__summary {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+@media (max-width: 700px) {
+  .modal-backdrop {
+    padding: 0;
+  }
+  .presupuesto-modal {
+    border-radius: 0;
+    min-height: 100vh;
+    padding: var(--space-4);
+  }
+  .product-editor,
+  .totals-card {
+    grid-template-columns: 1fr;
+  }
+  .benefits__editor {
+    grid-template-columns: 1fr;
+  }
+  .wizard-content {
+    min-height: 26rem;
+  }
+}
 
 @media (max-width: 440px) {
   .loading-state { align-items: center; flex-direction: column; text-align: center; }

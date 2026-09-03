@@ -10,6 +10,8 @@ import { PagosService } from '../../../../../services/pagos/pagos-service';
 import { PagoResponseDTO } from '../../../../../services/pagos/dto/pagoResponse.dto';
 import { PagoDTO } from '../../../../../services/gestionPedidos/dto/pago.dto';
 import { GestionPedidosService } from '../../../../../services/gestionPedidos/gestion-pedidos-service';
+import { CuotasService } from '../../../../../services/cuotas/cuotas-service';
+import { CuotaResponseDTO } from '../../../../../services/cuotas/dto/CuotaResponseDTO';
 import { DocumentosService } from '../../../../../services/documentos/documentos-service';
 import { StorageService } from '../../../../../services/storage/storage-service';
 import { NotificationService } from '../../../../../shared/notifications/notification.service';
@@ -17,6 +19,10 @@ import { NotificationService } from '../../../../../shared/notifications/notific
 interface FormularioPago {
   fecha: string;
   monto: number | null;
+}
+
+interface FormularioPagoCuota {
+  fecha: string;
 }
 
 @Component({
@@ -31,6 +37,7 @@ export class CuentaCorriente implements OnInit
   private readonly pedidosService = inject(PedidosService);
   private readonly pagosService = inject(PagosService);
   private readonly gestionPedidosService = inject(GestionPedidosService);
+  private readonly cuotasService = inject(CuotasService);
   private readonly documentosService = inject(DocumentosService);
   private readonly storageService = inject(StorageService);
   private readonly notificaciones = inject(NotificationService);
@@ -54,7 +61,13 @@ export class CuentaCorriente implements OnInit
   readonly vistaFormulario = signal(false);
   readonly guardando = signal(false);
   readonly descargandoId = signal<number | null>(null);
+  readonly descargandoReciboId = signal<number | null>(null);
   formularioPago: FormularioPago = this.crearFormularioVacio();
+
+  readonly cuotasCliente = signal<CuotaResponseDTO[]>([]);
+  readonly cuotaSeleccionada = signal<CuotaResponseDTO | null>(null);
+  readonly pagandoCuota = signal(false);
+  formularioPagoCuota: FormularioPagoCuota = this.crearFormularioPagoCuotaVacio();
 
   ngOnInit(): void
   {
@@ -72,6 +85,7 @@ export class CuentaCorriente implements OnInit
       this.idPedido = await firstValueFrom(this.pedidosService.obtenerIdPedidoGrupo(idGrupo));
       this.cargarPagos();
       this.cargarImporteTotal();
+      this.cargarCuotas();
     }
     catch
     {
@@ -106,9 +120,24 @@ export class CuentaCorriente implements OnInit
       });
   }
 
+  private cargarCuotas(): void
+  {
+    this.cuotasService.traerCuotasIdPedido(this.idPedido)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cuotas) => this.cuotasCliente.set(cuotas),
+        error: () => this.notificaciones.error({ title: 'Error', description: 'No se pudieron obtener las cuotas del cliente.' }),
+      });
+  }
+
   private crearFormularioVacio(): FormularioPago
   {
     return { fecha: new Date().toISOString().slice(0, 10), monto: null };
+  }
+
+  private crearFormularioPagoCuotaVacio(): FormularioPagoCuota
+  {
+    return { fecha: new Date().toISOString().slice(0, 10) };
   }
 
   abrirFormulario(): void
@@ -125,6 +154,87 @@ export class CuentaCorriente implements OnInit
   mostrarEntidadPago(pago: PagoResponseDTO): boolean
   {
     return pago.banco !== 'Efectivo';
+  }
+
+  restanteCuota(cuota: CuotaResponseDTO): number
+  {
+    return (cuota.importe ?? 0) - (cuota.monto_cubierto ?? 0);
+  }
+
+  esCuotaPagable(cuota: CuotaResponseDTO): boolean
+  {
+    return cuota.estado !== 'Pagado';
+  }
+
+  claseBadgeEstado(estado: string): string
+  {
+    switch (estado)
+    {
+      case 'Pagado': return 'ds-badge--success';
+      case 'Parcial': return 'ds-badge--warning';
+      case 'Adeudada': return 'ds-badge--danger';
+      default: return '';
+    }
+  }
+
+  abrirPagoCuota(cuota: CuotaResponseDTO): void
+  {
+    this.cuotaSeleccionada.set(cuota);
+    this.formularioPagoCuota = this.crearFormularioPagoCuotaVacio();
+  }
+
+  cerrarPagoCuota(): void
+  {
+    this.cuotaSeleccionada.set(null);
+  }
+
+  confirmarPagoCuota(): void
+  {
+    const cuota = this.cuotaSeleccionada();
+    if (!cuota) return;
+
+    if (!this.formularioPagoCuota.fecha)
+    {
+      this.notificaciones.error({ title: 'Falta la fecha', description: 'Ingresá la fecha del pago.' });
+      return;
+    }
+
+    const monto = this.restanteCuota(cuota);
+
+    if (monto <= 0)
+    {
+      this.notificaciones.error({ title: 'Cuota sin saldo', description: 'Esta cuota ya está pagada.' });
+      return;
+    }
+
+    const dto: PagoDTO = {
+      id_pedido: this.idPedido,
+      nro_transferencia: '',
+      monto,
+      motivo: 'Cuota',
+      fecha: new Date(`${this.formularioPagoCuota.fecha}T00:00:00`),
+      aprobado: true,
+      banco: 'Efectivo',
+      entidad_pago: '',
+    };
+
+    this.pagandoCuota.set(true);
+
+    this.pagosService.crearPago(dto)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.pagandoCuota.set(false);
+          this.notificaciones.success({ title: 'Cuota pagada', description: 'El pago se registró correctamente.' });
+          this.cerrarPagoCuota();
+          this.cargarCuotas();
+          this.cargarPagos();
+        },
+        error: (err: HttpErrorResponse) => {
+          this.pagandoCuota.set(false);
+          this.notificarErrorGuardado(err);
+        },
+      });
   }
 
   guardarPago(): void
@@ -190,6 +300,30 @@ export class CuentaCorriente implements OnInit
     finally
     {
       this.descargandoId.set(null);
+    }
+  }
+
+  async descargarRecibo(pago: PagoResponseDTO): Promise<void>
+  {
+    this.descargandoReciboId.set(pago.id);
+
+    try
+    {
+      const blob = await firstValueFrom(this.pagosService.descargarReciboPago(pago.id));
+      const url = window.URL.createObjectURL(blob);
+      const enlace = document.createElement('a');
+      enlace.href = url;
+      enlace.download = `recibo-${pago.id}.pdf`;
+      enlace.click();
+      window.URL.revokeObjectURL(url);
+    }
+    catch
+    {
+      this.notificaciones.error({ title: 'Error', description: 'No se pudo generar el recibo.' });
+    }
+    finally
+    {
+      this.descargandoReciboId.set(null);
     }
   }
 

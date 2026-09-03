@@ -47,6 +47,7 @@
                 <th scope="col">Banco</th>
                 <th scope="col">Entidad de pago</th>
                 <th scope="col">Comprobante</th>
+                <th scope="col">Recibo</th>
               </tr>
             </thead>
             <tbody>
@@ -68,6 +69,65 @@
                         title="Descargar comprobante"
                       >
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+                      </button>
+                    } @else {
+                      <span class="ds-text-muted">—</span>
+                    }
+                  </td>
+                  <td data-label="Recibo">
+                    <button
+                      type="button"
+                      class="download-button"
+                      [disabled]="descargandoReciboId() === pago.id"
+                      (click)="descargarRecibo(pago)"
+                      aria-label="Descargar recibo"
+                      title="Descargar recibo"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section class="ds-card cc-card">
+      <header class="cc-card__header">
+        <h2 class="ds-heading-3">Cuotas</h2>
+      </header>
+
+      @if (cuotasCliente().length === 0) {
+        <p class="ds-text-muted">Este cliente no tiene cuotas generadas.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table class="ds-table">
+            <thead>
+              <tr>
+                <th scope="col">Nº</th>
+                <th scope="col">Vencimiento</th>
+                <th scope="col">Importe</th>
+                <th scope="col">Cubierto</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cuota of cuotasCliente(); track cuota.id) {
+                <tr>
+                  <td data-label="Nº">{{ cuota.numero }}</td>
+                  <td data-label="Vencimiento">{{ cuota.fecha_vencimiento | date: 'dd/MM/yyyy' }}</td>
+                  <td data-label="Importe">{{ cuota.importe | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Cubierto">{{ cuota.monto_cubierto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Estado">
+                    <span class="ds-badge" [class]="claseBadgeEstado(cuota.estado)">{{ cuota.estado }}</span>
+                  </td>
+                  <td data-label="Acción">
+                    @if (esCuotaPagable(cuota)) {
+                      <button type="button" class="ds-button ds-button--small ds-button--secondary" (click)="abrirPagoCuota(cuota)">
+                        {{ cuota.estado === 'Parcial' ? 'Terminar de pagar' : 'Pagar' }}
                       </button>
                     } @else {
                       <span class="ds-text-muted">—</span>
@@ -110,6 +170,51 @@
         <button type="button" class="ds-button ds-button--secondary" (click)="cerrarFormulario()">Cancelar</button>
         <button type="button" class="ds-button" [disabled]="guardando()" (click)="guardarPago()">
           {{ guardando() ? 'Guardando…' : 'Guardar pago' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}
+
+@if (cuotaSeleccionada(); as cuota) {
+  <div class="modal-backdrop" role="presentation">
+    <section class="cc-modal" role="dialog" aria-modal="true" aria-labelledby="pay-installment-title">
+      <header class="cc-modal__header">
+        <div>
+          <span class="ds-eyebrow">Cuenta corriente</span>
+          <h2 id="pay-installment-title" class="ds-heading-2">Pagar cuota Nº {{ cuota.numero }}</h2>
+        </div>
+        <button class="close-button" type="button" (click)="cerrarPagoCuota()" aria-label="Cerrar">×</button>
+      </header>
+
+      <div class="cc-modal__content">
+        <div class="cc-summary cc-summary--compact">
+          <div class="cc-summary__item">
+            <span>Importe</span>
+            <strong>{{ cuota.importe | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+          </div>
+          <span class="cc-summary__separator" aria-hidden="true">·</span>
+          <div class="cc-summary__item">
+            <span>Cubierto</span>
+            <strong>{{ cuota.monto_cubierto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+          </div>
+          <span class="cc-summary__separator" aria-hidden="true">·</span>
+          <div class="cc-summary__item">
+            <span>A pagar</span>
+            <strong>{{ restanteCuota(cuota) | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+          </div>
+        </div>
+
+        <label class="ds-field">
+          <span class="ds-label">Fecha</span>
+          <input class="ds-input" type="date" [(ngModel)]="formularioPagoCuota.fecha" />
+        </label>
+      </div>
+
+      <footer class="cc-modal__actions">
+        <button type="button" class="ds-button ds-button--secondary" (click)="cerrarPagoCuota()">Cancelar</button>
+        <button type="button" class="ds-button" [disabled]="pagandoCuota()" (click)="confirmarPagoCuota()">
+          {{ pagandoCuota() ? 'Guardando…' : 'Confirmar pago' }}
         </button>
       </footer>
     </section>
