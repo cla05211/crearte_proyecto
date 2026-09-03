@@ -30,6 +30,7 @@ insert into pagos (
     (p_pago->>'aprobado')::boolean,
     p_pago->>'banco',
     p_pago->>'entidad_pago',
+    (p_pago->>'id_documento')::bigint
   )
   returning id into v_id_pago;
 

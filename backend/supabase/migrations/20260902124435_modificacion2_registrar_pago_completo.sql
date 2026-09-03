@@ -18,18 +18,19 @@ begin
   v_motivo := p_pago->>'motivo';
 
 insert into pagos (
-    id_pedido, nro_transferencia, tipo_pago, monto, motivo, fecha, aprobado, banco, entidad_pago, id_documento
+    id_pedido, nro_transferencia, monto, motivo, fecha, aprobado, banco, enviado_banco, entidad_pago, id_documento
 )
   values (
     v_id_pedido,
     p_pago->>'nro_transferencia',
-    p_pago->>'tipo_pago',
     v_monto,
     v_motivo,
     (p_pago->>'fecha')::date,
     (p_pago->>'aprobado')::boolean,
     p_pago->>'banco',
+    (p_pago->>'enviado_banco')::boolean,
     p_pago->>'entidad_pago',
+    (p_pago->>'id_documento')::bigint
   )
   returning id into v_id_pago;
 

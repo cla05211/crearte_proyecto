@@ -11,6 +11,7 @@ import { ModificarPago } from './dto/modificarBanco.dto';
 import { GenerarExcelDTO } from 'src/reportes/excel/dto/generarExcel.dto';
 import { ExcelService } from 'src/reportes/excel/excel.service';
 import { GenerarReciboDTO } from 'src/reportes/pdf/dto/generarRecibo.dto';
+import { GenerarContratoDTO } from 'src/reportes/pdf/dto/generarContrato.dto';
 import { PdfService } from 'src/reportes/pdf/pdf.service';
 import { PagoDTO } from './dto/pago.dto';
 
@@ -99,7 +100,34 @@ export class PagosController
         });
         res.send(buffer);
     }
-    
+
+    @Get(':id/recibo')
+    @UseGuards(AuthGuard)
+    async descargarReciboPago(@Param('id', ParseIntPipe) id: number, @Res() res: Response)
+    {
+        const dto = await this.pagosService.armarDatosRecibo(id);
+        const buffer = await this.pdfService.generarReciboPago(dto);
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="recibo-${dto.numero}.pdf"`,
+        });
+        res.send(buffer);
+    }
+
+    @Post('contrato')
+    @UseGuards(AuthGuard)
+    async descargarContrato(@Body() dto: GenerarContratoDTO, @Res() res: Response)
+    {
+        const buffer = await this.pdfService.generarContratoVenta(dto);
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="contrato-${dto.colegioNombre}.pdf"`,
+        });
+        res.send(buffer);
+    }
+
     @Patch('enviado')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_bancos')

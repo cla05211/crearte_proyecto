@@ -11,6 +11,8 @@ import { PagoBancoResponse } from './dto/pagoBancoResponse.dto';
 import { ModificarPago } from './dto/modificarBanco.dto';
 import { CuotasService } from 'src/cuotas/cuotas.service';
 import { DocumentosService } from 'src/documentos/documentos.service';
+import { GenerarReciboDTO } from 'src/reportes/pdf/dto/generarRecibo.dto';
+import { DetalleCuotaPago } from './dto/detalleCuotaPago.dto';
 
 @Injectable()
 export class PagosService 
@@ -244,6 +246,112 @@ export class PagosService
         }
 
         return data.id_documento;
+    }
+
+    async armarDatosRecibo(idPago: number): Promise<GenerarReciboDTO>
+    {
+        const { data: pago, error: errPago } = await this.sb.supabase
+            .from('pagos')
+            .select('id, id_pedido, monto, fecha, motivo, detalle_cuotas')
+            .eq('id', idPago)
+            .single();
+
+        if (errPago || !pago)
+        {
+            throw new BadRequestException(errPago?.message ?? 'No se encontró el pago.');
+        }
+
+        if (!pago.id_pedido)
+        {
+            throw new BadRequestException('El pago no está asociado a ningún pedido.');
+        }
+
+        const { data: pedido, error: errPedido } = await this.sb.supabase
+            .from('pedidos')
+            .select('id_grupo')
+            .eq('id', pago.id_pedido)
+            .single();
+
+        if (errPedido || !pedido)
+        {
+            throw new BadRequestException(errPedido?.message ?? 'No se encontró el pedido del pago.');
+        }
+
+        const { data: grupo, error: errGrupo } = await this.sb.supabase
+            .from('grupos')
+            .select('turno, orientacion, nivel, colegios!inner (nombre, localidad)')
+            .eq('id', pedido.id_grupo)
+            .single();
+
+        if (errGrupo || !grupo)
+        {
+            throw new BadRequestException(errGrupo?.message ?? 'No se encontró el colegio del pago.');
+        }
+
+        const { data: padres, error: errPadres } = await this.sb.supabase
+            .from('padres_responsables')
+            .select('nombre, apellido')
+            .eq('id_grupo', pedido.id_grupo)
+            .limit(1);
+
+        if (errPadres)
+        {
+            throw new BadRequestException(errPadres.message);
+        }
+
+        const { count: nroCuotas, error: errCuotas } = await this.sb.supabase
+            .from('cuotas')
+            .select('id', { count: 'exact', head: true })
+            .eq('id_pedido', pago.id_pedido);
+
+        if (errCuotas)
+        {
+            throw new BadRequestException(errCuotas.message);
+        }
+
+        const padre = padres?.[0];
+
+        return {
+            numero: String(pago.id).padStart(6, '0'),
+            fecha: new Date(pago.fecha ?? '').toLocaleDateString('es-AR'),
+            clienteNombre: grupo.colegios.nombre,
+            localidad: grupo.colegios.localidad,
+            concepto: this.armarConceptoRecibo(pago.motivo, pago.detalle_cuotas as unknown as DetalleCuotaPago[] | null),
+            importe: pago.monto ?? 0,
+            leyendaSenia: pago.motivo === 'Seña',
+            turno: grupo.turno ?? '',
+            orientacion: grupo.orientacion ?? '-',
+            nivel: grupo.nivel ?? '',
+            nombrePadre: padre?.nombre ?? '',
+            apellidoPadre: padre?.apellido ?? '',
+            nroCuotas: nroCuotas ?? 0,
+        };
+    }
+
+    private armarConceptoRecibo(motivo: string | null, detalle: DetalleCuotaPago[] | null): string
+    {
+        if (!detalle || detalle.length === 0)
+        {
+            return motivo === 'Seña' ? 'Seña' : 'Cuota';
+        }
+
+        if (detalle.some(d => d.tipo === 'senia'))
+        {
+            return 'Seña';
+        }
+
+        const partes = detalle
+            .filter(d => d.tipo === 'completa' || d.tipo === 'parcial')
+            .map(d => d.tipo === 'parcial' ? `Cuota ${d.numero} (parcial)` : `Cuota ${d.numero}`);
+
+        return partes.length > 0 ? this.unirConY(partes) : 'Cuota';
+    }
+
+    private unirConY(items: string[]): string
+    {
+        if (items.length === 0) return '';
+        if (items.length === 1) return items[0];
+        return `${items.slice(0, -1).join(', ')} y ${items[items.length - 1]}`;
     }
 
     async traerMontoTotalMes(fechaHoy:Date):Promise<number>

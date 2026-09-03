@@ -3,6 +3,7 @@ import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
 import { PedidosService } from './pedidos.service';
+import { PedidoDTOResponse } from './dto/pedidoResponse.dto';
 
 
 @Controller('pedidos')
@@ -20,10 +21,19 @@ export class PedidosController
 
     @Get(':id')
     @UseGuards(AuthGuard,PermisosGuard)
+    async obtenerPedido(@Param('id')id: number) :Promise<PedidoDTOResponse>
+    {
+        return await this.pedidosService.obtenerPedidoGrupo(id);
+    }
+
+    @Get('vendedora/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
     async obtenerVendedora(@Param('id')id: number) :Promise<number | null>
     {
         return await this.pedidosService.obtenerVendedora(id);
     }
+
+
 
     @Get('id/:id')
     @UseGuards(AuthGuard,PermisosGuard)

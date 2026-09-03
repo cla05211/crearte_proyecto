@@ -43,7 +43,7 @@ export class GruposService
     {
         let query = this.sb.supabase
         .from("grupos")
-        .select(`id,nivel,created_at,colegios!inner (nombre),padres_responsables!inner (nombre, apellido, id_grupo, mail)`)
+        .select(`id,nivel,created_at,colegios!inner (nombre, localidad, provincia),padres_responsables!inner (nombre, apellido, id_grupo, mail)`)
         .not('padres_responsables.mail', 'is', null)
         .neq('padres_responsables.mail', '')
         .order('created_at', { ascending: false });
@@ -64,7 +64,7 @@ export class GruposService
         .map(grupo => 
             ({
                 idGrupo: grupo.id!,
-                nombreColegio: grupo.colegios.nombre!,
+                colegio: {nombre:grupo.colegios.nombre, localidad: grupo.colegios.localidad, provincia: grupo.colegios.provincia},
                 nivel: grupo.nivel!,
                 padreResponsableNombre:grupo.padres_responsables[0].nombre ?? '',
                 padreResponsableApellido:grupo.padres_responsables[0].apellido ?? ''
@@ -89,7 +89,7 @@ export class GruposService
     {
         const { data: grupo, error: errGrupo } = await this.sb.supabase
             .from("grupos")
-            .select(`*, colegios!inner (nombre)`)
+            .select(`*, colegios!inner (nombre, localidad, provincia)`)
             .eq('id', idGrupo)
             .single();
 
@@ -117,7 +117,7 @@ export class GruposService
             nivel: grupo.nivel,
             promo: grupo.promo,
             cantidad_egresados: grupo.cantidad_egresados,
-            nombre_colegio: grupo.colegios.nombre
+            colegio: {nombre: grupo.colegios.nombre, localidad: grupo.colegios.localidad, provincia: grupo.colegios.provincia}
             },
             padresResponsables,
             alumnosResponsables
