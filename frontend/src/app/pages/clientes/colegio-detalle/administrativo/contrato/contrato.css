@@ -80,7 +80,66 @@
   margin: var(--space-1) 0 0;
 }
 
+.modal-backdrop {
+  align-items: flex-start;
+  background: rgba(45, 17, 35, 0.5);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  overflow-y: auto;
+  padding: var(--space-6);
+  position: fixed;
+  z-index: 10;
+}
+
+.cc-modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  display: grid;
+  gap: var(--space-5);
+  margin: auto;
+  max-width: 28rem;
+  padding: var(--space-6);
+  width: 100%;
+}
+
+.cc-modal__header {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+  padding-bottom: var(--space-4);
+}
+
+.cc-modal__content {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.fecha-entrega-campos {
+  grid-template-columns: 1fr 1fr;
+}
+
+.cc-modal__actions {
+  align-items: center;
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+
+.close-button {
+  background: transparent;
+  border: 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 2rem;
+  line-height: 1;
+}
+
 @media (max-width: 440px) {
   .loading-state { align-items: center; flex-direction: column; text-align: center; }
   .cc-card__header { align-items: flex-start; flex-direction: column; }
+  .fecha-entrega-campos { grid-template-columns: 1fr; }
 }

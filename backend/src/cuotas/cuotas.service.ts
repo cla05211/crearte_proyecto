@@ -101,6 +101,23 @@ export class CuotasService
         return data as CuotaResponseDTO[];
     }
 
+    async traerIdCuota(idPedido: number, nroCuota:number): Promise<number>
+    {
+        const { data, error } = await this.sb.supabase
+            .from('cuotas')
+            .select(`id`)
+            .eq('id_pedido', idPedido)
+            .eq('numero', nroCuota)
+            .single()
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }        
+
+        return data.id;
+    }
+
     async modificarImporteCuotasPendientesPedido(dto: ModificarImporteCuotasDTO)
     {
         const { data, error } = await this.sb.supabase
@@ -201,6 +218,20 @@ export class CuotasService
         return data;          
     }
 
+    async modificarFechaVencimientoCuota(idCuota:number, nuevaFecha: string)
+    {
+        const { data, error } = await this.sb.supabase
+        .from("cuotas")
+        .update({ 'fecha_vencimiento': nuevaFecha})
+        .eq("id", idCuota)
+        .select()
 
+        if (error) 
+        {
+            throw new Error(error.message);
+        }
+
+        return data;        
+    }
 
 }

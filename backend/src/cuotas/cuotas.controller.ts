@@ -37,6 +37,13 @@ export class CuotasController
     {
         return await this.cuotasService.traerCuotasPorIdPedido(id);
     }
+    
+    @Get ('')
+    @UseGuards(AuthGuard,PermisosGuard)
+    async traerIdCuota(@Query('idPedido') idPedido: number, @Query('nroCuota') nroCuota: number )
+    {
+        return await this.cuotasService.traerIdCuota(idPedido, nroCuota);
+    }
 
     @Patch('importe-cuotas')
     @UseGuards(AuthGuard,PermisosGuard)
@@ -62,6 +69,15 @@ export class CuotasController
     {
         return this.cuotasService.pagarCuotaPuntual(dto);
     }   
+
+    @Patch('vencimiento/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('modificar_pedidos')
+    modificarVencimientoCuota(@Query('vencimiento') vencimiento: string, @Param('id',ParseIntPipe) id:number)
+    {
+        return this.cuotasService.modificarFechaVencimientoCuota(id, vencimiento);
+    }   
+ 
 
     @Delete('/:id')
     @UseGuards(AuthGuard,PermisosGuard)

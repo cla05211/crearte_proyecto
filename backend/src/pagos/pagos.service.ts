@@ -341,10 +341,18 @@ export class PagosService
         }
 
         const partes = detalle
-            .filter(d => d.tipo === 'completa' || d.tipo === 'parcial')
-            .map(d => d.tipo === 'parcial' ? `Cuota ${d.numero} (parcial)` : `Cuota ${d.numero}`);
+            .filter(d => d.tipo === 'completa' || (d.tipo === 'parcial' && (d.monto ?? 0) >= 0.01))
+            .map(d => {
+                const monto = this.formatearMontoRecibo(d.monto);
+                return d.tipo === 'parcial' ? `Cuota ${d.numero} (parcial) ($ ${monto})` : `Cuota ${d.numero} ($ ${monto})`;
+            });
 
         return partes.length > 0 ? this.unirConY(partes) : 'Cuota';
+    }
+
+    private formatearMontoRecibo(monto?: number): string
+    {
+        return (monto ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     private unirConY(items: string[]): string

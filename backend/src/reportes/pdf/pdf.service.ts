@@ -329,7 +329,6 @@ export class PdfService
                     columns: columnas,
                     columnGap: 20,
                     margin: [0, 30, 0, 0],
-                    ...(i === 0 ? { pageBreak: 'before' as const } : {}),
                 });
             }
 
@@ -385,7 +384,7 @@ export class PdfService
                         alignment: 'justify',
                     },
 
-                    { text: 'SEGUNDA:', bold: true, margin: [0, 10, 0, 4], pageBreak: 'before' },
+                    { text: 'SEGUNDA:', bold: true, margin: [0, 10, 0, 4] },
 
                     ...(dto.tieneSenia ? ([
                         {
@@ -428,7 +427,7 @@ export class PdfService
                     { text: 'La empresa vendedora, no se responsabiliza por error en la información enviada y aprobada del boceto y/o diseño por la parte compradora. La misma se responsabiliza de entregar los productos tal como figuran en el boceto firmado.', bold: true, alignment: 'justify', margin: [0, 0, 0, 10] },
                     { text: '*Tener en cuenta que el atraso de la parte compradora en la entrega de la confirmación de envío a producción; planilla de talles o boceto de diseño perjudicará directamente en la fecha de entrega de las prendas.', italics: true, alignment: 'justify' },
 
-                    { text: 'TERCERA:', bold: true, margin: [0, 14, 0, 4], pageBreak: 'before' },
+                    { text: 'TERCERA:', bold: true, margin: [0, 14, 0, 4] },
                     {
                         text: [{ text: 'Valores / cotización: ', bold: true }, `El precio convenido por dicha operación es de $ ${formatearMonto(dto.montoTotal)} el cual será abonado de la siguiente manera:`],
                         alignment: 'justify',
@@ -445,7 +444,7 @@ export class PdfService
                         alignment: 'justify',
                     },
 
-                    { text: 'CUARTA:', bold: true, margin: [0, 14, 0, 4], pageBreak: 'before' },
+                    { text: 'CUARTA:', bold: true, margin: [0, 14, 0, 4] },
                     {
                         text: [
                             { text: 'Entrega: ', bold: true },
@@ -469,7 +468,7 @@ export class PdfService
                     { text: [{ text: 'Garantía: ', bold: true }, 'Todos los productos tienen un 1 (un) año de garantía ante cualquier falla relacionada a fábrica, producción o equivocación de la empresa vendedora, no así por mal uso de la prenda.'], alignment: 'justify', margin: [0, 0, 0, 10] },
                     { text: [{ text: 'Agregados: ', bold: true }, 'Una vez entregado el pedido, el colegio si desea, puede solicitar agregados de combos con un mínimo de 5 unidades. La empresa NO producirá prendas inferiores al mínimo estipulado en esta cláusula. El precio de cada combo será el de la lista vigente a esa fecha, es decir, la actual. La confirmación de dicho pedido de agregados y confección de los mismos quedará sujeta a la disponibilidad de producción de ese momento.'], alignment: 'justify' },
 
-                    { text: 'QUINTA:', bold: true, margin: [0, 14, 0, 4], pageBreak: 'before' },
+                    { text: 'QUINTA:', bold: true, margin: [0, 14, 0, 4] },
                     { text: 'Incumplimientos:', bold: true, margin: [0, 0, 0, 6] },
                     { text: [{ text: 'En la entrega de planillas de talles, firma de boceto digital o confirmación de envío a producción: ', decoration: 'underline' }, 'El mismo afectará directamente a la fecha de Entrega de los productos.-'], alignment: 'justify', margin: [0, 0, 0, 6] },
                     { text: [{ text: 'En el pago de las cuotas: ', decoration: 'underline' }, 'En caso de atraso, en algunas de las cuotas pactadas en la cláusula tercera, se cobrará un interés punitorio mensual del 5% dado que los artículos sufren aumentos inflacionarios permanentemente. - Ambas partes acuerdan darle a este contrato el carácter de Título ejecutivo, para hacer efectivo el cobro en caso de Mora y/o no pago de los productos, y su reclamo se ajustará expresamente al procedimiento ejecutivo que establece nuestro código de procedimiento Civil y comercial.-'], alignment: 'justify', margin: [0, 0, 0, 6] },

@@ -22,7 +22,7 @@ begin
   set estado = 'Pendiente', monto_cubierto = 0
   where id_pedido = v_id_pedido;
 
-  select coalesce(sum(monto), 0) into v_restante
+  select round(coalesce(sum(monto), 0), 2) into v_restante
   from pagos
   where id_pedido = v_id_pedido
     and motivo != 'Seña';
@@ -34,14 +34,14 @@ begin
   loop
     exit when v_restante <= 0;
 
-    v_falta_cuota := cuota.importe - coalesce(cuota.monto_cubierto, 0);
+    v_falta_cuota := round(cuota.importe - coalesce(cuota.monto_cubierto, 0), 2);
 
     if v_restante >= v_falta_cuota then
       update cuotas
       set estado = 'Pagada', monto_cubierto = cuota.importe
       where id_pedido = v_id_pedido and numero = cuota.numero;
 
-      v_restante := v_restante - v_falta_cuota;
+      v_restante := round(v_restante - v_falta_cuota, 2);
     else
       update cuotas
       set estado = 'Parcial', monto_cubierto = coalesce(cuota.monto_cubierto, 0) + v_restante

@@ -25,6 +25,11 @@ export class CuotasService
     return this.http.get<CuotaResponseDTO[]>((`${environment.apiUrl}/cuotas/${idPedido}`));
   }
 
+  traerIdCuota(idPedido: number, nroCuota:number): Observable<number>
+  {
+    return this.http.get<number>(`${environment.apiUrl}/cuotas`, {params: {idPedido:idPedido, nroCuota:nroCuota}});
+  }
+
   traerCuotasPendientesIdPedido(idPedido: number): Observable<CuotaResponseDTO[]>
   {
     return this.http.get<CuotaResponseDTO[]>((`${environment.apiUrl}/cuotas/pendientes/${idPedido}`));
@@ -38,6 +43,11 @@ export class CuotasService
   modificarImporteUnaCuotasPedido(dto: ModificarImporteCuotaDTO)
   {
     return this.http.patch((`${environment.apiUrl}/cuotas/importe-cuota`), dto);
+  }
+
+  modificarVencimientoCuota(idCuota:number, nuevoVencimiento: string)
+  {
+    return this.http.patch(`${environment.apiUrl}/cuotas/vencimiento/${idCuota}`, {}, {params:{vencimiento:nuevoVencimiento}} );
   }
 
   pagarCuotasPedido(dto: PagarCuotaDTO)

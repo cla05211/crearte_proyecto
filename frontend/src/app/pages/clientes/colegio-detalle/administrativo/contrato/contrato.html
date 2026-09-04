@@ -15,7 +15,7 @@
   <section class="ds-card cc-card">
     <header class="cc-card__header">
       <h2 class="ds-heading-3">Contrato</h2>
-      <button type="button" class="ds-button" [disabled]="descargando()" (click)="descargarContrato()">
+      <button type="button" class="ds-button" [disabled]="descargando()" (click)="abrirFechaEntrega()">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
         {{ descargando() ? 'Generando…' : 'Descargar contrato' }}
       </button>
@@ -40,4 +40,47 @@
       </div>
     </dl>
   </section>
+}
+
+@if (vistaFechaEntrega()) {
+  <div class="modal-backdrop" role="presentation">
+    <section class="cc-modal" role="dialog" aria-modal="true" aria-labelledby="fecha-entrega-title">
+      <header class="cc-modal__header">
+        <div>
+          <span class="ds-eyebrow">Contrato</span>
+          <h2 id="fecha-entrega-title" class="ds-heading-2">Fecha de entrega aproximada</h2>
+        </div>
+        <button class="close-button" type="button" (click)="cerrarFechaEntrega()" aria-label="Cerrar">×</button>
+      </header>
+
+      <div class="cc-modal__content fecha-entrega-campos">
+        <label class="ds-field">
+          <span class="ds-label">Mes</span>
+          <select class="ds-select" [(ngModel)]="formularioFechaEntrega.mes">
+            <option [ngValue]="null">Seleccioná un mes</option>
+            @for (mes of mesesDisponibles; track mes.numero) {
+              <option [ngValue]="mes.numero">{{ mes.nombre }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="ds-field">
+          <span class="ds-label">Año</span>
+          <select class="ds-select" [(ngModel)]="formularioFechaEntrega.anio">
+            <option [ngValue]="null">Seleccioná un año</option>
+            @for (anio of aniosDisponibles; track anio) {
+              <option [ngValue]="anio">{{ anio }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <footer class="cc-modal__actions">
+        <button type="button" class="ds-button ds-button--secondary" (click)="cerrarFechaEntrega()">Cancelar</button>
+        <button type="button" class="ds-button" [disabled]="descargando()" (click)="confirmarFechaEntrega()">
+          {{ descargando() ? 'Generando…' : 'Generar contrato' }}
+        </button>
+      </footer>
+    </section>
+  </div>
 }
