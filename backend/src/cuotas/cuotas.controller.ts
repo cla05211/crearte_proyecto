@@ -38,9 +38,9 @@ export class CuotasController
         return await this.cuotasService.traerCuotasPorIdPedido(id);
     }
     
-    @Get ('')
+    @Get ('id')
     @UseGuards(AuthGuard,PermisosGuard)
-    async traerIdCuota(@Query('idPedido') idPedido: number, @Query('nroCuota') nroCuota: number )
+    async traerIdCuota(@Query('idPedido') idPedido: number, @Query('nroCuota') nroCuota: number)
     {
         return await this.cuotasService.traerIdCuota(idPedido, nroCuota);
     }

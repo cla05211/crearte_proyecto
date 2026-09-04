@@ -22,6 +22,7 @@ const MESES = [
 const ESTADO_APROBADO = 'Aprobado';
 const CANTIDAD_MAXIMA_COMPRADORES = 3;
 const CANTIDAD_ANIOS_DISPONIBLES = 4;
+const SIN_BENEFICIO = 'Sin Beneficio';
 
 interface FormularioFechaEntrega {
   mes: number | null;
@@ -134,7 +135,7 @@ export class Contrato implements OnInit
     const beneficios = [...new Set(
       presupuesto.productosPedido
         .map((producto) => producto.beneficio)
-        .filter((beneficio): beneficio is string => !!beneficio),
+        .filter((beneficio): beneficio is string => !!beneficio && beneficio !== SIN_BENEFICIO),
     )];
 
     const montoSenia = presupuesto.productosPedido
