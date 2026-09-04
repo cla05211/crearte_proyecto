@@ -48,6 +48,7 @@
                 <th scope="col">Entidad de pago</th>
                 <th scope="col">Comprobante</th>
                 <th scope="col">Recibo</th>
+                <th scope="col">Eliminar</th>
               </tr>
             </thead>
             <tbody>
@@ -84,6 +85,18 @@
                       title="Descargar recibo"
                     >
                       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+                    </button>
+                  </td>
+                  <td data-label="Eliminar">
+                    <button
+                      type="button"
+                      class="download-button"
+                      [disabled]="eliminandoId() === pago.id"
+                      (click)="eliminarPago(pago)"
+                      aria-label="Eliminar pago"
+                      title="Eliminar pago"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.7 12.1a2 2 0 0 1-2 1.9H9.7a2 2 0 0 1-2-1.9L7 7" /></svg>
                     </button>
                   </td>
                 </tr>

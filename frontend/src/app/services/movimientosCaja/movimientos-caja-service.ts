@@ -39,12 +39,12 @@ export class MovimientosCajaService
     return this.http.get<MovimientoCajaResponseDTO[]>(`${environment.apiUrl}/movimientos-caja`, {params});
   }
 
-  obtenerTotalIngresos()
+  obtenerTotalIngresos():Observable<number>
   {
     return this.http.get<number>(`${environment.apiUrl}/movimientos-caja/ingresos`);
   }
 
-  obtenerTotalEgresos()
+  obtenerTotalEgresos():Observable<number>
   {
     return this.http.get<number>(`${environment.apiUrl}/movimientos-caja/egresos`);
   }

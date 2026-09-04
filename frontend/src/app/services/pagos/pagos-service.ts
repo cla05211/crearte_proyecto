@@ -39,6 +39,11 @@ export class PagosService
     return this.http.post(`${environment.apiUrl}/pagos/`, dto);
   }
 
+  eliminarPago(idPago:number)
+  {
+    return this.http.delete(`${environment.apiUrl}/pagos/${idPago}`);
+  }
+
   modificarAprobado(dto: ModificarPago)
   {
     return this.http.patch((`${environment.apiUrl}/pagos/aprobado`), dto);
@@ -48,7 +53,6 @@ export class PagosService
   {
     return this.http.patch((`${environment.apiUrl}/pagos/enviado`), dto);
   }
-
 
   descargarExcel(dto: GenerarExcelDTO): Observable<Blob>
   {

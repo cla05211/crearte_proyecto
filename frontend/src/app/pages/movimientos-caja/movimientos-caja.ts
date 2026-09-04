@@ -434,19 +434,38 @@ export class MovimientosCaja implements OnInit
 
     if (!confirmado) return;
 
-    this.movimientosCajaService.eliminarMovimiento(idNumero)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.notificaciones.success({ title: 'Movimiento eliminado', description: 'El movimiento se eliminó correctamente.' });
-          this.cargarMovimientos();
-          this.cargarTotales();
-        },
-        error: () => {
-          this.notificaciones.error({ title: 'Error', description: 'No se pudo eliminar el movimiento.' });
-        },
-      });
+    if(movimiento.origen == 'movimientos_caja')
+    {
+        this.movimientosCajaService.eliminarMovimiento(idNumero)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.notificaciones.success({ title: 'Movimiento eliminado', description: 'El movimiento se eliminó correctamente.' });
+            this.cargarMovimientos();
+            this.cargarTotales();
+          },
+          error: () => {
+            this.notificaciones.error({ title: 'Error', description: 'No se pudo eliminar el movimiento.' });
+          },
+        });
+    }
+    else if(movimiento.origen == 'pagos')
+    {
+        this.pagosService.eliminarPago(idNumero)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.notificaciones.success({ title: 'Movimiento eliminado', description: 'El movimiento se eliminó correctamente.' });
+            this.cargarMovimientos();
+            this.cargarTotales();
+          },
+          error: () => {
+            this.notificaciones.error({ title: 'Error', description: 'No se pudo eliminar el movimiento.' });
+          },
+        });
+    }
   }
+
 
   modificarMovimiento(): void
   {

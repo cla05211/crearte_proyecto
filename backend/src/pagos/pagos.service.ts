@@ -379,4 +379,18 @@ export class PagosService
         
         return total;  
     }
+
+    async eliminarPago(idPago:number)
+    {
+        const { data, error } = await this.sb.supabase.rpc(
+            'eliminar_pago_completo',
+            {p_id_pago: idPago}
+        );
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+        return data;        
+    }
 }

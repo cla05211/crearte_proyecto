@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import type { Response } from 'express';
 import { PagosService } from './pagos.service';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -128,6 +128,14 @@ export class PagosController
         res.send(buffer);
     }
 
+    @Delete(':id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_clientes_presupuesto')
+    async eliminarPago(@Param('id', ParseIntPipe) id:number)
+    {
+        return await this.pagosService.eliminarPago(id);
+    }
+
     @Patch('enviado')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_bancos')
@@ -143,5 +151,4 @@ export class PagosController
     {
         return await this.pagosService.modificarAprobadoBanco(dto);
     }
-
 }

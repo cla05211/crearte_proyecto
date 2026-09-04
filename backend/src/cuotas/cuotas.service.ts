@@ -169,7 +169,7 @@ export class CuotasService
                     id_pedido: idPedido,
                     numero: cuota.numero!,
                     importe: cuota.importe!,
-                    nuevoEstado: "Pagado",
+                    nuevoEstado: "Pagada",
                 });
                 restante -= faltaCuota;
             }
@@ -200,4 +200,7 @@ export class CuotasService
 
         return data;          
     }
+
+
+
 }

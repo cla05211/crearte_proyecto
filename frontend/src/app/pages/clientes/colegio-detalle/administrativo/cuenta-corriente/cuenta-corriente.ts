@@ -15,6 +15,7 @@ import { CuotaResponseDTO } from '../../../../../services/cuotas/dto/CuotaRespon
 import { DocumentosService } from '../../../../../services/documentos/documentos-service';
 import { StorageService } from '../../../../../services/storage/storage-service';
 import { NotificationService } from '../../../../../shared/notifications/notification.service';
+import { ConfirmationService } from '../../../../../services/confirmation/confirmation.service';
 
 interface FormularioPago {
   fecha: string;
@@ -41,6 +42,7 @@ export class CuentaCorriente implements OnInit
   private readonly documentosService = inject(DocumentosService);
   private readonly storageService = inject(StorageService);
   private readonly notificaciones = inject(NotificationService);
+  private readonly confirmationService = inject(ConfirmationService);
   private readonly destroyRef = inject(DestroyRef);
 
   private idPedido = 0;
@@ -62,6 +64,7 @@ export class CuentaCorriente implements OnInit
   readonly guardando = signal(false);
   readonly descargandoId = signal<number | null>(null);
   readonly descargandoReciboId = signal<number | null>(null);
+  readonly eliminandoId = signal<number | null>(null);
   formularioPago: FormularioPago = this.crearFormularioVacio();
 
   readonly cuotasCliente = signal<CuotaResponseDTO[]>([]);
@@ -163,14 +166,14 @@ export class CuentaCorriente implements OnInit
 
   esCuotaPagable(cuota: CuotaResponseDTO): boolean
   {
-    return cuota.estado !== 'Pagado';
+    return cuota.estado !== 'Pagada';
   }
 
   claseBadgeEstado(estado: string): string
   {
     switch (estado)
     {
-      case 'Pagado': return 'ds-badge--success';
+      case 'Pagada': return 'ds-badge--success';
       case 'Parcial': return 'ds-badge--warning';
       case 'Adeudada': return 'ds-badge--danger';
       default: return '';
@@ -325,6 +328,33 @@ export class CuentaCorriente implements OnInit
     {
       this.descargandoReciboId.set(null);
     }
+  }
+
+  async eliminarPago(pago: PagoResponseDTO): Promise<void>
+  {
+    const confirmado = await this.confirmationService.confirm({
+      title: 'Eliminar pago',
+      description: '¿Está seguro de que desea eliminar este pago? Las cuotas del cliente se van a actualizar.',
+    });
+
+    if (!confirmado) return;
+
+    this.eliminandoId.set(pago.id);
+
+    this.pagosService.eliminarPago(pago.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.eliminandoId.set(null);
+          this.notificaciones.success({ title: 'Pago eliminado', description: 'El pago se eliminó correctamente.' });
+          this.cargarPagos();
+          this.cargarCuotas();
+        },
+        error: () => {
+          this.eliminandoId.set(null);
+          this.notificaciones.error({ title: 'Error', description: 'No se pudo eliminar el pago.' });
+        },
+      });
   }
 
   private notificarErrorGuardado(err: HttpErrorResponse): void
