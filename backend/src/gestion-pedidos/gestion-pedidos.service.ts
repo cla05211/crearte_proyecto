@@ -26,6 +26,7 @@ import { presupuestoPedidoClientesPage } from './dto/PresupuestoPedidoClientePag
 import { ProductoPedidoResponseConNombreOriginalDTO } from 'src/productos-pedido/dto/ProductoPedidoResponse.dto';
 import { AgregadosGlobalesPedidoService } from 'src/agregados-globales-pedido/agregados-globales-pedido.service';
 import { AgregadoGlobalPedidoResponseDTO } from 'src/agregados-globales-pedido/dto/AgregadoGlobalPedidoResponse.dto';
+import { ControlTallesDisenioDTO } from './dto/ControlTallesDisenioDTO';
 
 @Injectable()
 export class GestionPedidosService
@@ -173,5 +174,61 @@ export class GestionPedidosService
         };
 
         return presupuestoPedido;
+    }
+
+    async obtenerDatosPedidosControlTallesDisenio(rangoDesde: number, rangoHasta:number, mes:number, promo:number,busqueda?:string): Promise<ControlTallesDisenioDTO[]>
+    {
+        const primerDiaMes = new Date(promo, mes - 1, 1);
+        const primerDiaMesSiguiente = new Date(primerDiaMes.getFullYear(),primerDiaMes.getMonth() + 1,1);
+
+        let query = this.sb.supabase
+        .from("pedidos")
+        .select(`*,
+            productos_pedidos(
+                productos(nombre)),
+            cuotas(id),
+            grupos!inner(
+                created_at,
+                promo,
+                colegios!inner(nombre),
+                padres_responsables(telefono),
+                alumnos_responsables(telefono))`)
+        .eq("estado_general", "Venta realizada")
+        .gte("grupos.promo", primerDiaMes.toISOString())
+        .lt("grupos.promo", primerDiaMesSiguiente.toISOString())
+        .order("id", { ascending: false });
+
+        if(busqueda)
+        {
+            query = query.or(`nombre.ilike.%${busqueda}%`, { referencedTable: "grupos.colegios" });
+        }
+
+        const { data, error } = await query.range(rangoDesde, rangoHasta);
+
+        if (error)
+        {
+            throw new Error(error.message);
+        }
+
+        const pedidos: ControlTallesDisenioDTO[] = data.map(pedido => ({
+            id: pedido.id,
+            nroCuotas: pedido.cuotas.length,
+            promo: pedido.grupos.promo!,
+            nombreColegio: pedido.grupos.colegios.nombre,
+            nrosContactoAlumnos: pedido.grupos.alumnos_responsables.length > 0
+                ? pedido.grupos.alumnos_responsables.map(alumno => alumno.telefono).filter((t): t is string => !!t)
+                : null,
+            nrosContactoPadres: pedido.grupos.padres_responsables.length > 0
+                ? pedido.grupos.padres_responsables.map(padre => padre.telefono).filter((t): t is string => !!t)
+                : null,
+            productos: pedido.productos_pedidos.map(pp => pp.productos?.nombre).filter(Boolean).join(", "),
+            estadoBoceto:pedido.estado_boceto,
+            estadoTalles:pedido.estado_talles,
+            fechaAprobacionBoceto: pedido.fecha_aprobacion_boceto ? new Date(pedido.fecha_aprobacion_boceto) : null,
+            fechaAprobacionTalles: pedido.fecha_aprobacion_talles ? new Date(pedido.fecha_aprobacion_talles) : null,
+            fechaVenta: new Date(pedido.grupos.created_at!)
+        }));
+
+        return pedidos;
     }
 }

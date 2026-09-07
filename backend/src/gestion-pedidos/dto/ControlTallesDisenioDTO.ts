@@ -1,4 +1,4 @@
-import { PedidoDTO } from "./pedido.dto";
+import { PedidoDTO } from "../../pedidos/dto/pedido.dto";
 
 export class ControlTallesDisenioDTO
 {
