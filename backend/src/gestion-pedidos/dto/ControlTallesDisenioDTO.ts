@@ -14,4 +14,5 @@ export class ControlTallesDisenioDTO
     fechaAprobacionBoceto!: Date|null;
     fechaAprobacionTalles!: Date|null;    
     fechaVenta!: Date;
+    diseniadora!: number|null;
 }

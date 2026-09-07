@@ -176,7 +176,7 @@ export class GestionPedidosService
         return presupuestoPedido;
     }
 
-    async obtenerDatosPedidosControlTallesDisenio(rangoDesde: number, rangoHasta:number, mes:number, promo:number,busqueda?:string): Promise<ControlTallesDisenioDTO[]>
+    async obtenerDatosPedidosControlTallesDisenio(mes:number, promo:number,busqueda?:string): Promise<ControlTallesDisenioDTO[]>
     {
         const primerDiaMes = new Date(promo, mes - 1, 1);
         const primerDiaMesSiguiente = new Date(primerDiaMes.getFullYear(),primerDiaMes.getMonth() + 1,1);
@@ -203,7 +203,7 @@ export class GestionPedidosService
             query = query.or(`nombre.ilike.%${busqueda}%`, { referencedTable: "grupos.colegios" });
         }
 
-        const { data, error } = await query.range(rangoDesde, rangoHasta);
+        const { data, error } = await query;
 
         if (error)
         {
@@ -226,7 +226,8 @@ export class GestionPedidosService
             estadoTalles:pedido.estado_talles,
             fechaAprobacionBoceto: pedido.fecha_aprobacion_boceto ? new Date(pedido.fecha_aprobacion_boceto) : null,
             fechaAprobacionTalles: pedido.fecha_aprobacion_talles ? new Date(pedido.fecha_aprobacion_talles) : null,
-            fechaVenta: new Date(pedido.grupos.created_at!)
+            fechaVenta: new Date(pedido.grupos.created_at!),
+            diseniadora: pedido.id_disenadora
         }));
 
         return pedidos;

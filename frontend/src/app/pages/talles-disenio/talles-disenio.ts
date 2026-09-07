@@ -27,12 +27,12 @@ export class TallesDisenio
   ngOnInit(): void
   {
     this.traerPedidosTallesDisenio();
-    this.traerVendedoras();
+    this.traerDiseñadoras();
   }
 
   traerPedidosTallesDisenio(): void
   {
-    this.gestionPedidosService.obtenerDatosPedidosControlTallesDisenio(0,10,this.mesActual,this.añoActual)
+    this.gestionPedidosService.obtenerDatosPedidosControlTallesDisenio(this.mesActual,this.añoActual)
       .subscribe({
         next: (pedidos) => {
           this.pedidosTallesDisenio.set(pedidos);
@@ -40,7 +40,7 @@ export class TallesDisenio
       })
   }
 
-  traerVendedoras():void
+  traerDiseñadoras():void
   {
     this.usuariosService.traerUsuarios(4)
       .subscribe({
@@ -54,6 +54,22 @@ export class TallesDisenio
   {
     //llama a this.pedidosService.modificarDiseniadora()
   }
+
+  modificarEstadoTalles()
+  {
+    //llama a this.pedidosService.modificarEstadoTalles()
+  }
+
+  modificarEstadoDiseño()
+  {
+    //llama a this.pedidosService.modificarEstadoDisenio()
+  }
+
+  modificarFechaAprobacionDisenio()
+  {
+    //llama a this.pedidosService.modificarFechaAprobacionDisenio()
+  }
+
 
 
 }
