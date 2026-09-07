@@ -54,6 +54,12 @@ export const routes: Routes = [
         data: { permiso: 'ver_clientes' },
       },
       {
+        path: "talles-diseño",
+        loadComponent: () => import('./pages/talles-disenio/talles-disenio').then((archivo) => archivo.TallesDisenio),
+        canActivate: [PermisosGuard],
+        data: { permiso: 'ver_talles_disenio' },
+      },
+      {
         path: "clientes/:id",
         loadComponent: () => import('./pages/clientes/colegio-detalle/colegio-detalle').then((archivo) => archivo.ColegioDetalle),
         canActivate: [PermisosGuard],
@@ -90,11 +96,11 @@ export const routes: Routes = [
             ],
           },
           {
-            path: "talles-diseño",
+            path: "clientes-talles-diseño",
             loadComponent: () => import('./pages/clientes/colegio-detalle/talles-disenio/talles-disenio').then((archivo) => archivo.TallesDisenio),
             canActivate: [PermisosGuard],
             data: { permiso: 'ver_clientes_talles_disenio' },
-          }
+          },
         ]
       },
       { path: "", redirectTo: "home", pathMatch: 'full' },

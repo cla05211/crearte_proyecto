@@ -1,5 +1,3 @@
-import { PedidoDTO } from "./pedido.dto";
-
 export class ControlTallesDisenioDTO
 {
     id!: number;

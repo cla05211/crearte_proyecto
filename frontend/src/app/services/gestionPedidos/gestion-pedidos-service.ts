@@ -8,6 +8,7 @@ import { ModificarBeneficioDto } from './dto/modficaciones/modficiarBeneficio.dt
 import { ModificarPlanPedidoDTO } from './dto/modficaciones/ModificarPlanPedido';
 import { presupuestoPedidoClientesPage } from './dto/PresupuestoPedidoClientePage.dto';
 import { PedidoDTOResponse } from '../pedidos/dto/pedidoResponse.dto';
+import { ControlTallesDisenioDTO } from './dto/ControlTallesDisenioDTO';
 
 @Injectable({
   providedIn: 'root',
@@ -63,4 +64,15 @@ export class GestionPedidosService
     return this.http.get<number>(`${environment.apiUrl}/gestion-pedidos/importe/${idPedido}`);
   }
 
+  obtenerDatosPedidosControlTallesDisenio(rangoDesde: number, rangoHasta:number, mes:number, promo:number,busqueda?:string):Observable<ControlTallesDisenioDTO[]>
+  {
+    let params: any = {rangoDesde, rangoHasta, mes, promo};
+
+    if (busqueda !== undefined) 
+    {
+      params.busqueda = busqueda;
+    }
+
+    return this.http.get<ControlTallesDisenioDTO[]>(`${environment.apiUrl}/gestion-pedidos/control-talles-disenio`, {params});
+  }
 }

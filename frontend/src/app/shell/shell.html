@@ -63,6 +63,9 @@
       @if (tienePermiso('ver_caja')) {
         <a routerLink="/movimientos-caja" routerLinkActive="activo" (click)="cerrarSidebar()">Caja</a>
       }
+      @if (tienePermiso('ver_talles_disenio')) {
+        <a routerLink="/talles-diseño" routerLinkActive="activo" (click)="cerrarSidebar()">Talles y Diseño</a>
+      }
     </nav>
   </aside>
 
