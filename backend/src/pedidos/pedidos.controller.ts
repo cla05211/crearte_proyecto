@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
@@ -33,12 +33,42 @@ export class PedidosController
         return await this.pedidosService.obtenerVendedora(id);
     }
 
-
-
     @Get('id/:id')
     @UseGuards(AuthGuard,PermisosGuard)
     async obtenerPedidoGrupo(@Param('id')id: number) :Promise<number>
     {
         return await this.pedidosService.obtenerIdPedidoGrupo(id);
+    }
+
+    @Patch('diseniadora')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_talles_disenio')
+    async modificarDiseniadora(@Query('idDiseniadora', ParseIntPipe) idDiseniadora: number, @Query('idPedido', ParseIntPipe) idPedido: number) 
+    {
+        await this.pedidosService.modificarDiseniadora(idDiseniadora, idPedido);
+    }
+
+    @Patch('estado-talles')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_talles_disenio')
+    modificarEstadoTalles(@Query('nuevoEstado') nuevoEstado: string, @Query('idPedido', ParseIntPipe) idPedido: number,  @Query('fechaConfirmacion') fechaConfirmacion?: string)
+    {
+        this.modificarEstadoTalles(nuevoEstado,idPedido, fechaConfirmacion)
+    }
+    
+    @Patch('estado-disenio')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_talles_disenio')
+    modificarEstadoDisenio(@Query('nuevoEstado') nuevoEstado: string, @Query('idPedido', ParseIntPipe) idPedido: number)
+    {
+        this.modificarEstadoDisenio(nuevoEstado,idPedido)
+    }
+
+    @Patch('fecha-disenio')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_talles_disenio')
+    modificarFechaAprobacionDisenio(@Query('fecha') fecha: string, @Query('idPedido', ParseIntPipe) idPedido: number)
+    {
+        this.modificarFechaAprobacionDisenio(fecha,idPedido)
     }
 }

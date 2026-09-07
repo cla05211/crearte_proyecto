@@ -25,4 +25,31 @@ export class PedidosService
   {
     return this.http.get<number>(`${environment.apiUrl}/pedidos/id/${idGrupo}`);    
   }
+
+  modificarDiseniadora(idDiseniadora:number, idPedido:number)
+  {
+    this.http.patch(`${environment.apiUrl}/pedidos/id/diseniadora`, {idDiseniadora:idDiseniadora, idPedido:idPedido});    
+  }
+
+  async modificarEstadoTalles(nuevoEstado:string, idPedido: number, fechaConfirmacion?:string)
+  {
+    let params: any = {nuevoEstado, idPedido};
+
+    if (fechaConfirmacion !== undefined) 
+    {
+      params.fechaConfirmacion = fechaConfirmacion;
+    }
+
+    this.http.patch(`${environment.apiUrl}/pedidos/estado-talles`, {params});    
+  }
+
+  async modificarEstadoDisenio(nuevoEstado:string, idPedido: number)
+  {
+    this.http.patch(`${environment.apiUrl}/pedidos/estado-disenio`, {nuevoEstado:nuevoEstado, idPedido:idPedido});  
+  }
+
+  async modificarFechaAprobacionDisenio(fecha:string, idPedido: number)
+  {
+    this.http.patch(`${environment.apiUrl}/pedidos/fecha-disenio`, {fecha:fecha, idPedido:idPedido});  
+  }
 }

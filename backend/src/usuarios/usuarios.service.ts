@@ -60,9 +60,9 @@ export class UsuariosService {
         };
     }
 
-    async obtenerUsuarios():Promise<UsuarioResponseNombreRolDTO[]>
+    async obtenerUsuarios(rol?:number):Promise<UsuarioResponseNombreRolDTO[]>
     {
-        const { data, error } = await this.sb.supabase
+        let query = this.sb.supabase
             .from('usuarios')
             .select(`
                 id,
@@ -70,23 +70,30 @@ export class UsuariosService {
                 nombre,
                 apellido,
                 aprobado,
-                roles (
+                roles (rol,
                     nombre_rol
                 )
             `)
-            .returns<UsuarioSupabaseDTO[]>();
 
-        if (error) {
+        if(rol)
+        {
+            query = query.eq("roles.rol", rol);
+        }
+
+        const { data, error } = await query;
+
+        if (error) 
+        {
             throw new Error(error.message);
         }
 
         return data.map(u => ({
             id: u.id,
-            idAuth: u.idAuth,
-            nombre: u.nombre,
-            apellido: u.apellido,
+            idAuth: u.id_auth,
+            nombre: u.nombre ?? '',
+            apellido: u.apellido ?? '',
             aprobado: u.aprobado,
-            rol: u.roles.nombre_rol
+            rol: u.roles!.nombre_rol
         }));
     }
 

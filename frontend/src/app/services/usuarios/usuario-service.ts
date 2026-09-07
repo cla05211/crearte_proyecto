@@ -23,9 +23,15 @@ export class UsuarioService
     return this.http.delete(`${environment.apiUrl}/usuarios/${idUsuario}`);
   }
 
-  traerUsuarios()
+  traerUsuarios(rol?:number)
   {
-    return this.http.get<UsuarioResponseConNombreRol[]>(`${environment.apiUrl}/usuarios`);
+    let params: any = {};
+
+    if (rol !== undefined) 
+    {
+      params.rol = rol;
+    }
+    return this.http.get<UsuarioResponseConNombreRol[]>(`${environment.apiUrl}/usuarios`, {params});
   }
 
   traerUsuarioPorId(idUsuario: number)

@@ -72,4 +72,74 @@ export class PedidosService
 
         return data.id;
     }
+
+    async modificarDiseniadora(idDiseniadora:number, idPedido: number)
+    {
+        const { data, error } = await this.sb.supabase
+        .from("pedidos")
+        .update({ id_disenadora: idDiseniadora })
+        .eq("id", idPedido);
+
+        if (error)
+        {
+            throw new Error(error.message);
+        }
+    }
+
+    async modificarEstadoTalles(nuevoEstado:string, idPedido: number, fechaConfirmacion?:string)
+    {
+        const { data, error } = await this.sb.supabase
+        .from("pedidos")
+        .update({ estado_talles: nuevoEstado})
+        .eq("id", idPedido);
+
+        if(fechaConfirmacion)
+        {
+            await this.modificarFechaConfirmacionTalles(fechaConfirmacion,idPedido)
+        }
+
+        if (error)
+        {
+            throw new Error(error.message);
+        }
+    }
+
+    async modificarEstadoDisenio(nuevoEstado:string, idPedido: number)
+    {
+        const { data, error } = await this.sb.supabase
+        .from("pedidos")
+        .update({ estado_boceto: nuevoEstado})
+        .eq("id", idPedido);
+
+        if (error)
+        {
+            throw new Error(error.message);
+        }
+    }
+
+    async modificarFechaAprobacionDisenio(fecha:string, idPedido: number)
+    {
+        const { data, error } = await this.sb.supabase
+        .from("pedidos")
+        .update({ fecha_aprobacion_boceto: fecha})
+        .eq("id", idPedido);
+
+        if (error)
+        {
+            throw new Error(error.message);
+        }
+    }
+
+    private async modificarFechaConfirmacionTalles(fecha:string, idPedido: number)
+    {
+        const { data, error } = await this.sb.supabase
+        .from("pedidos")
+        .update({ fecha_aprobacion_talles: fecha})
+        .eq("id", idPedido);
+
+        if (error)
+        {
+            throw new Error(error.message);
+        }
+    }
 }
