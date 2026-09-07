@@ -22,6 +22,14 @@
             <dd>{{ datosColegio()!.grupo.colegio!.nombre!}}</dd>
           </div>
           <div class="datos-grid__item">
+            <dt>Localidad</dt>
+            <dd>{{ datosColegio()!.grupo.colegio!.localidad || '—' }}</dd>
+          </div>
+          <div class="datos-grid__item">
+            <dt>Provincia</dt>
+            <dd>{{ datosColegio()!.grupo.colegio!.provincia || '—' }}</dd>
+          </div>
+          <div class="datos-grid__item">
             <dt>Nivel</dt>
             <dd>{{ datosColegio()!.grupo.nivel }}</dd>
           </div>
