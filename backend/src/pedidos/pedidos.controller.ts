@@ -51,32 +51,32 @@ export class PedidosController
     @Patch('estado-talles')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_talles_disenio')
-    modificarEstadoTalles(@Query('nuevoEstado') nuevoEstado: string, @Query('idPedido', ParseIntPipe) idPedido: number,  @Query('fechaConfirmacion') fechaConfirmacion?: string)
+    async modificarEstadoTalles(@Query('nuevoEstado') nuevoEstado: string, @Query('idPedido', ParseIntPipe) idPedido: number,  @Query('fechaConfirmacion') fechaConfirmacion?: string)
     {
-        this.modificarEstadoTalles(nuevoEstado,idPedido, fechaConfirmacion)
+        await this.pedidosService.modificarEstadoTalles(nuevoEstado,idPedido, fechaConfirmacion)
     }
-    
+
     @Patch('estado-disenio')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_talles_disenio')
-    modificarEstadoDisenio(@Query('nuevoEstado') nuevoEstado: string, @Query('idPedido', ParseIntPipe) idPedido: number)
+    async modificarEstadoDisenio(@Query('nuevoEstado') nuevoEstado: string, @Query('idPedido', ParseIntPipe) idPedido: number)
     {
-        this.modificarEstadoDisenio(nuevoEstado,idPedido)
+        await this.pedidosService.modificarEstadoDisenio(nuevoEstado,idPedido)
     }
 
     @Patch('fecha-disenio')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_talles_disenio')
-    modificarFechaAprobacionDisenio(@Query('fecha') fecha: string, @Query('idPedido', ParseIntPipe) idPedido: number)
+    async modificarFechaAprobacionDisenio(@Query('fecha') fecha: string, @Query('idPedido', ParseIntPipe) idPedido: number)
     {
-        this.modificarFechaAprobacionDisenio(fecha,idPedido)
+        await this.pedidosService.modificarFechaAprobacionDisenio(fecha,idPedido)
     }
 
     @Patch('numero')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_talles_disenio')
-    modificarTelefonoPrincipal(@Query('nuevoNro') nuevoNro: string, @Query('idPedido', ParseIntPipe) idPedido: number)
+    async modificarTelefonoPrincipal(@Query('nuevoNro') nuevoNro: string, @Query('idPedido', ParseIntPipe) idPedido: number)
     {
-        this.modificarTelefonoPrincipal(nuevoNro, idPedido)
+        await this.pedidosService.modificarTelefonoPrincipal(nuevoNro, idPedido)
     }
 }

@@ -1,1 +1,263 @@
-<p>talles-disenio works!</p>
+<main class="talles-disenio-page">
+  <section class="ds-container talles-disenio-container">
+    <header class="talles-disenio-header">
+      <div>
+        <span class="ds-eyebrow">Producción</span>
+        <h1 class="ds-heading-1">Talles y Diseño</h1>
+      </div>
+      <div class="filtros-bar">
+        <label class="ds-field search-field">
+          <span class="ds-label">Buscar</span>
+          <input
+            class="ds-input"
+            type="search"
+            placeholder="Nombre del colegio…"
+            [ngModel]="busquedaInput()"
+            (ngModelChange)="actualizarBusqueda($any($event))"
+          />
+        </label>
+        <label class="ds-field">
+          <span class="ds-label">Mes</span>
+          <select class="ds-select" [ngModel]="mesSeleccionado()" (ngModelChange)="cambiarMes($any($event))">
+            @for (mes of meses; track mes.value) {
+              <option [value]="mes.value">{{ mes.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label class="ds-field">
+          <span class="ds-label">Año</span>
+          <select class="ds-select" [ngModel]="anioSeleccionado()" (ngModelChange)="cambiarAnio($any($event))">
+            @for (anio of this.anios; track anio) {
+              <option [value]="anio">{{ anio }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </header>
+
+    @if (cargando()) {
+      <div class="loading-state" role="status" aria-live="polite">
+        <span class="loading-state__spinner" aria-hidden="true"></span>
+        <div>
+          <h2>Cargando pedidos</h2>
+          <p>Estamos preparando la información de talles y diseño.</p>
+        </div>
+      </div>
+    } @else {
+      <button type="button" class="resumen-toggle" (click)="alternarResumen()" [attr.aria-expanded]="resumenExpandido()">
+        <span>Resumen general</span>
+        <svg class="resumen-toggle__chevron" [class.resumen-toggle__chevron--abierto]="resumenExpandido()" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+
+      @if (resumenExpandido()) {
+        <div class="resumen-panel">
+          <div class="kpis-grid">
+            <div class="ds-card kpi-card">
+              <span class="ds-label">Total cargados</span>
+              <strong class="kpi-valor">{{ totalCargados() }}</strong>
+            </div>
+            <div class="ds-card kpi-card">
+              <span class="ds-label">Diseños aprobados</span>
+              <strong class="kpi-valor">{{ disenosAprobados() }}</strong>
+            </div>
+            <div class="ds-card kpi-card">
+              <span class="ds-label">Planillas talles confirmadas</span>
+              <strong class="kpi-valor">{{ planillasTallesConfirmadas() }}</strong>
+            </div>
+            <div class="ds-card kpi-card">
+              <span class="ds-label">Enviados a producción</span>
+              <strong class="kpi-valor">{{ enviadosProduccion() }}</strong>
+            </div>
+          </div>
+
+          <div class="ds-table-wrapper resumen-table-wrapper">
+            <table class="ds-table resumen-table">
+              <colgroup>
+                <col style="width: 60%" />
+                <col style="width: 20%" />
+                <col style="width: 20%" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Plan de cuotas</th>
+                  <th>Vendidos</th>
+                  <th>Subidos a producción</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (plan of resumenPlanesCuotas(); track plan.etiqueta) {
+                  <tr>
+                    <td data-label="Plan de cuotas">{{ plan.etiqueta }}</td>
+                    <td data-label="Vendidos">{{ plan.vendidos }}</td>
+                    <td data-label="Subidos a producción">{{ plan.subidosProduccion }}</td>
+                  </tr>
+                }
+                @if (!resumenPlanesCuotas().length) {
+                  <tr><td colspan="3">No hay pedidos cargados para este período.</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+
+      @if (!totalCargados()) {
+        <div class="empty-state">
+          <div class="empty-state__illustration" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <h2>No hay pedidos cargados.</h2>
+          <p>No se encontraron ventas para el mes y año seleccionados.</p>
+        </div>
+      } @else {
+        <div class="ds-table-wrapper pedidos-table-wrapper">
+          <table class="ds-table talles-table">
+            <colgroup>
+              <col style="width: 15%" />
+              <col style="width: 11%" />
+              <col style="width: 15%" />
+              <col style="width: 12%" />
+              <col style="width: 8%" />
+              <col style="width: 9%" />
+              <col style="width: 12%" />
+              <col style="width: 8%" />
+              <col style="width: 10%" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Colegio</th>
+                <th>Contacto</th>
+                <th>Prendas</th>
+                <th>Estado Boceto</th>
+                <th>Aprobación</th>
+                <th>Fecha Aprob. Boceto</th>
+                <th>Estado Talles</th>
+                <th>Enviado a producción</th>
+                <th>Diseñado por</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (grupo of gruposPorPromo(); track grupo.promo) {
+                <tr class="section-row section-row--promo">
+                  <td [attr.colspan]="totalColumnas">
+                    <button type="button" class="section-toggle" (click)="alternarPromo(grupo.promo)" [attr.aria-expanded]="!estaPromoColapsada(grupo.promo)">
+                      <span>Colegios {{ grupo.promo }}</span>
+                      <svg class="section-toggle__chevron" [class.section-toggle__chevron--colapsado]="estaPromoColapsada(grupo.promo)" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" />
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+                @if (!estaPromoColapsada(grupo.promo)) {
+                  @for (plan of grupo.planes; track plan.etiqueta) {
+                    <tr class="section-row section-row--plan">
+                      <td [attr.colspan]="totalColumnas">
+                        <button type="button" class="section-toggle" (click)="alternarPlan(grupo.promo, plan.etiqueta)" [attr.aria-expanded]="!estaPlanColapsado(grupo.promo, plan.etiqueta)">
+                          <span>{{ plan.etiqueta }}</span>
+                          <svg class="section-toggle__chevron" [class.section-toggle__chevron--colapsado]="estaPlanColapsado(grupo.promo, plan.etiqueta)" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M6 9l6 6 6-6" />
+                          </svg>
+                        </button>
+                      </td>
+                    </tr>
+                    @if (!estaPlanColapsado(grupo.promo, plan.etiqueta)) {
+                      @for (fila of plan.filas; track fila.pedido.id) {
+                        <tr [class.fila-par]="fila.par">
+                          @let pedido = fila.pedido;
+                      <td data-label="Colegio">{{ pedido.nombreColegio }}</td>
+                      <td data-label="Contacto">
+                        @if (edicionTelefonoId() === pedido.id) {
+                          <div class="cell-inline">
+                            <input class="ds-input" [(ngModel)]="telefonoEnEdicion" />
+                            <button class="ds-button ds-button--small" type="button" (click)="guardarTelefono(pedido)">Guardar</button>
+                            <button class="ds-button ds-button--ghost ds-button--small" type="button" (click)="cancelarEdicionTelefono()">Cancelar</button>
+                          </div>
+                        } @else {
+                          <div class="cell-inline">
+                            <span>{{ telefonoContacto(pedido) || 'Sin datos' }}</span>
+                            <button class="icon-edit" type="button" title="Editar teléfono" (click)="abrirEdicionTelefono(pedido)">
+                              <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                              </svg>
+                            </button>
+                          </div>
+                        }
+                      </td>
+                      <td data-label="Prendas">{{ pedido.productos }}</td>
+                      <td data-label="Estado Boceto">
+                        <select class="ds-select" [ngModel]="pedido.estadoBoceto" (ngModelChange)="modificarEstadoBoceto(pedido, $any($event))">
+                          <option [ngValue]="null" disabled>Sin definir</option>
+                          @for (estado of estadosDisenio; track estado) {
+                            <option [value]="estado">{{ estado }}</option>
+                          }
+                        </select>
+                      </td>
+                      <td data-label="Aprobación">
+                        <span class="ds-badge" [class.ds-badge--success]="pedido.fechaAprobacionBoceto" [class.ds-badge--warning]="!pedido.fechaAprobacionBoceto">
+                          {{ pedido.fechaAprobacionBoceto ? 'Aprobado' : 'Desaprobado' }}
+                        </span>
+                      </td>
+                      <td data-label="Fecha Aprob. Boceto">
+                        <input class="ds-input" type="date" [ngModel]="formatearFechaInput(pedido.fechaAprobacionBoceto)" (ngModelChange)="modificarFechaAprobacion(pedido, $any($event))" />
+                      </td>
+                      <td data-label="Estado Talles">
+                        <select class="ds-select" [ngModel]="pedido.estadoTalles" (ngModelChange)="cambiarEstadoTalles(pedido, $any($event))">
+                          <option [ngValue]="null" disabled>Sin definir</option>
+                          @for (estado of estadosTalles; track estado) {
+                            <option [value]="estado">{{ estado }}</option>
+                          }
+                        </select>
+                      </td>
+                      <td data-label="Enviado a producción">
+                        <span class="ds-badge" [class.ds-badge--success]="enviadoAProduccion(pedido)" [class.ds-badge--warning]="!enviadoAProduccion(pedido)">
+                          {{ enviadoAProduccion(pedido) ? 'Sí' : 'No' }}
+                        </span>
+                      </td>
+                      <td data-label="Diseñado por">
+                        <select class="ds-select" [ngModel]="pedido.diseniadora ?? 0" (ngModelChange)="cambiarDiseniadora(pedido, $any($event))">
+                          <option [ngValue]="0">Sin asignar</option>
+                          @for (d of diseniadoras(); track d.id) {
+                            <option [ngValue]="d.id">{{ d.nombre }}</option>
+                          }
+                        </select>
+                      </td>
+                        </tr>
+                      }
+                    }
+                  }
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  </section>
+
+  @if (edicionFechaTalles(); as edicion) {
+    <div class="modal-backdrop" role="presentation">
+      <section class="sale-modal fecha-talles-modal" role="dialog" aria-modal="true" aria-labelledby="fecha-talles-title">
+        <header class="sale-modal__header">
+          <div>
+            <span class="ds-eyebrow">{{ edicion.pedido.nombreColegio }}</span>
+            <h2 id="fecha-talles-title" class="ds-heading-2">Confirmar fecha de talles</h2>
+          </div>
+          <button class="close-button" type="button" (click)="cancelarFechaTalles()" aria-label="Cerrar">×</button>
+        </header>
+        <div class="wizard-content fecha-talles-content">
+          <label class="ds-field">
+            <span class="ds-label">Fecha de confirmación</span>
+            <input class="ds-input" type="date" [ngModel]="edicion.fecha" (ngModelChange)="actualizarFechaEdicionTalles($any($event))" />
+          </label>
+        </div>
+        <footer class="wizard-actions">
+          <button type="button" class="ds-button ds-button--secondary" (click)="cancelarFechaTalles()">Cancelar</button>
+          <button type="button" class="ds-button" [disabled]="!edicion.fecha" (click)="confirmarFechaTalles()">Confirmar</button>
+        </footer>
+      </section>
+    </div>
+  }
+</main>

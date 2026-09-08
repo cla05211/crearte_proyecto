@@ -194,8 +194,8 @@ export class GestionPedidosService
                 padres_responsables(telefono),
                 alumnos_responsables(telefono))`)
         .eq("estado_general", "Venta realizada")
-        .gte("grupos.promo", primerDiaMes.toISOString())
-        .lt("grupos.promo", primerDiaMesSiguiente.toISOString())
+        .gte("grupos.created_at", primerDiaMes.toISOString())
+        .lt("grupos.created_at", primerDiaMesSiguiente.toISOString())
         .order("id", { ascending: false });
 
         if(busqueda)

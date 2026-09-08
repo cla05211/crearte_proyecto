@@ -43,9 +43,9 @@ export class GestionPedidosController
         return await this.gestionService.obtenerImporteTotalPedido(idPedido);
     }
         
-    @Get ('contol-talles-disenio')
+    @Get ('control-talles-disenio')
     @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('ver_clientes_administrativo')
+    @RequierePermiso('ver_talles_disenio')
     async obtenerDatosPedidosControlTallesDisenio(@Query('promo', ParseIntPipe) promo: number, @Query('mes', ParseIntPipe) mes: number, @Query('busqueda') busqueda?: string)
     {
         return await this.gestionService.obtenerDatosPedidosControlTallesDisenio(mes,promo,busqueda);

@@ -143,7 +143,7 @@ export class PedidosService
         }
     }
 
-    private async modificarTelefonoPrincipal(nuevoNro: string,idPedido:number)
+    async modificarTelefonoPrincipal(nuevoNro: string,idPedido:number)
     {
         const { data, error } = await this.sb.supabase
         .from("pedidos")

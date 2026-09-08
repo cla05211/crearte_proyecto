@@ -26,35 +26,35 @@ export class PedidosService
     return this.http.get<number>(`${environment.apiUrl}/pedidos/id/${idGrupo}`);    
   }
 
-  modificarDiseniadora(idDiseniadora:number, idPedido:number)
+  modificarDiseniadora(idDiseniadora:number, idPedido:number): Observable<void>
   {
-    this.http.patch(`${environment.apiUrl}/pedidos/id/diseniadora`, {idDiseniadora:idDiseniadora, idPedido:idPedido});    
+    return this.http.patch<void>(`${environment.apiUrl}/pedidos/diseniadora`, null, {params: {idDiseniadora, idPedido}});
   }
 
-  async modificarEstadoTalles(nuevoEstado:string, idPedido: number, fechaConfirmacion?:string)
+  modificarEstadoTalles(nuevoEstado:string, idPedido: number, fechaConfirmacion?:string): Observable<void>
   {
     let params: any = {nuevoEstado, idPedido};
 
-    if (fechaConfirmacion !== undefined) 
+    if (fechaConfirmacion !== undefined)
     {
       params.fechaConfirmacion = fechaConfirmacion;
     }
 
-    this.http.patch(`${environment.apiUrl}/pedidos/estado-talles`, {params});    
+    return this.http.patch<void>(`${environment.apiUrl}/pedidos/estado-talles`, null, {params});
   }
 
-  async modificarEstadoDisenio(nuevoEstado:string, idPedido: number)
+  modificarEstadoDisenio(nuevoEstado:string, idPedido: number): Observable<void>
   {
-    this.http.patch(`${environment.apiUrl}/pedidos/estado-disenio`, {nuevoEstado:nuevoEstado, idPedido:idPedido});  
+    return this.http.patch<void>(`${environment.apiUrl}/pedidos/estado-disenio`, null, {params: {nuevoEstado, idPedido}});
   }
 
-  async modificarFechaAprobacionDisenio(fecha:string, idPedido: number)
+  modificarFechaAprobacionDisenio(fecha:string, idPedido: number): Observable<void>
   {
-    this.http.patch(`${environment.apiUrl}/pedidos/fecha-disenio`, {fecha:fecha, idPedido:idPedido});  
+    return this.http.patch<void>(`${environment.apiUrl}/pedidos/fecha-disenio`, null, {params: {fecha, idPedido}});
   }
 
-  async modificarTelefonoPrincipal(nuevoNro:string, idPedido: number)
+  modificarTelefonoPrincipal(nuevoNro:string, idPedido: number): Observable<void>
   {
-    this.http.patch(`${environment.apiUrl}/pedidos/fecha-disenio`, {nuevoNro:nuevoNro, idPedido:idPedido});  
+    return this.http.patch<void>(`${environment.apiUrl}/pedidos/numero`, null, {params: {nuevoNro, idPedido}});
   }
 }

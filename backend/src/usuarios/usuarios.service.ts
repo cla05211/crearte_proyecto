@@ -70,7 +70,7 @@ export class UsuariosService {
                 nombre,
                 apellido,
                 aprobado,
-                roles (rol,
+                roles!inner (rol,
                     nombre_rol
                 )
             `)
