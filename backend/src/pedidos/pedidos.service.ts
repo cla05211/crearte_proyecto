@@ -142,4 +142,17 @@ export class PedidosService
             throw new Error(error.message);
         }
     }
+
+    private async modificarTelefonoPrincipal(nuevoNro: string,idPedido:number)
+    {
+        const { data, error } = await this.sb.supabase
+        .from("pedidos")
+        .update({ telefono_principal: nuevoNro})
+        .eq("id", idPedido);
+
+        if (error)
+        {
+            throw new Error(error.message);
+        }
+    }
 }

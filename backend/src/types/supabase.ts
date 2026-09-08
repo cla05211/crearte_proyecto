@@ -487,6 +487,7 @@ export type Database = {
           observaciones: string | null
           porcentaje_descuento_hermanos: number | null
           talles: string | null
+          telefono_principal: string | null
         }
         Insert: {
           cantidad_hermanos?: number | null
@@ -505,6 +506,7 @@ export type Database = {
           observaciones?: string | null
           porcentaje_descuento_hermanos?: number | null
           talles?: string | null
+          telefono_principal?: string | null
         }
         Update: {
           cantidad_hermanos?: number | null
@@ -523,6 +525,7 @@ export type Database = {
           observaciones?: string | null
           porcentaje_descuento_hermanos?: number | null
           talles?: string | null
+          telefono_principal?: string | null
         }
         Relationships: [
           {

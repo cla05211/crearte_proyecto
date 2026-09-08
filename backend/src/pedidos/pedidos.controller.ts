@@ -71,4 +71,12 @@ export class PedidosController
     {
         this.modificarFechaAprobacionDisenio(fecha,idPedido)
     }
+
+    @Patch('numero')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_talles_disenio')
+    modificarTelefonoPrincipal(@Query('nuevoNro') nuevoNro: string, @Query('idPedido', ParseIntPipe) idPedido: number)
+    {
+        this.modificarTelefonoPrincipal(nuevoNro, idPedido)
+    }
 }
