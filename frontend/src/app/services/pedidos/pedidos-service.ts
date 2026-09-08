@@ -52,4 +52,9 @@ export class PedidosService
   {
     this.http.patch(`${environment.apiUrl}/pedidos/fecha-disenio`, {fecha:fecha, idPedido:idPedido});  
   }
+
+  async modificarTelefonoPrincipal(nuevoNro:string, idPedido: number)
+  {
+    this.http.patch(`${environment.apiUrl}/pedidos/fecha-disenio`, {nuevoNro:nuevoNro, idPedido:idPedido});  
+  }
 }

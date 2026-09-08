@@ -70,6 +70,8 @@ export class TallesDisenio
     //llama a this.pedidosService.modificarFechaAprobacionDisenio()
   }
 
-
-
+  modificarTelefonoPrincipal()
+  {
+    //llama a this.pedidosService.modificarTelefonoPrincipal()
+  }
 }
