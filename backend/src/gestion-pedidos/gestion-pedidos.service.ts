@@ -184,7 +184,7 @@ export class GestionPedidosService
         let query = this.sb.supabase
         .from("pedidos")
         .select(`*,
-            productos_pedidos(
+            productos_pedidos(valor_senia,valor_cuota,
                 productos(nombre)),
             cuotas(id),
             grupos!inner(
@@ -213,6 +213,7 @@ export class GestionPedidosService
         const pedidos: ControlTallesDisenioDTO[] = data.map(pedido => ({
             id: pedido.id,
             nroCuotas: pedido.cuotas.length,
+            senia: pedido.productos_pedidos[0].valor_senia != pedido.productos_pedidos[0].valor_cuota,
             promo: pedido.grupos.promo!,
             nombreColegio: pedido.grupos.colegios.nombre,
             nrosContactoAlumnos: pedido.grupos.alumnos_responsables.length > 0
@@ -227,7 +228,8 @@ export class GestionPedidosService
             fechaAprobacionBoceto: pedido.fecha_aprobacion_boceto ? new Date(pedido.fecha_aprobacion_boceto) : null,
             fechaAprobacionTalles: pedido.fecha_aprobacion_talles ? new Date(pedido.fecha_aprobacion_talles) : null,
             fechaVenta: new Date(pedido.grupos.created_at!),
-            diseniadora: pedido.id_disenadora
+            diseniadora: pedido.id_disenadora,
+            telefono_principal: pedido.telefono_principal
         }));
 
         return pedidos;
