@@ -170,9 +170,12 @@
                       <td data-label="Contacto">
                         @if (edicionTelefonoId() === pedido.id) {
                           <div class="cell-inline">
-                            <input class="ds-input" [(ngModel)]="telefonoEnEdicion" />
-                            <button class="ds-button ds-button--small" type="button" (click)="guardarTelefono(pedido)">Guardar</button>
-                            <button class="ds-button ds-button--ghost ds-button--small" type="button" (click)="cancelarEdicionTelefono()">Cancelar</button>
+                            <input class="ds-input" [(ngModel)]="telefonoEnEdicion" (blur)="cancelarEdicionTelefono()" />
+                            <button class="icon-action icon-action--save" type="button" title="Guardar" (mousedown)="$event.preventDefault()" (click)="guardarTelefono(pedido)">
+                              <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M20 6 9 17l-5-5" />
+                              </svg>
+                            </button>
                           </div>
                         } @else {
                           <div class="cell-inline">

@@ -57,4 +57,9 @@ export class PedidosService
   {
     return this.http.patch<void>(`${environment.apiUrl}/pedidos/numero`, null, {params: {nuevoNro, idPedido}});
   }
+
+  enviarPedidoFabrica(idPedido:number):Observable<{ nroFabrica: number }>
+  {
+    return this.http.post<{ nroFabrica: number }>(`${environment.apiUrl}/pedidos/fabrica/${idPedido}`,null);
+  }
 }

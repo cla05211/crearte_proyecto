@@ -79,4 +79,13 @@ export class PedidosController
     {
         await this.pedidosService.modificarTelefonoPrincipal(nuevoNro, idPedido)
     }
+
+    @Patch('fabrica/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_talles_disenio')
+    async enviarPedidoFabrica(@Param('idPedido', ParseIntPipe) idPedido: number)
+    {
+        return await this.pedidosService.enviarPedidoFabrica(idPedido);
+    }
+
 }

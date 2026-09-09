@@ -484,6 +484,7 @@ export type Database = {
           id_grupo: number
           id_vendedora: number | null
           molderias: string | null
+          nro_fabrica: number | null
           observaciones: string | null
           porcentaje_descuento_hermanos: number | null
           talles: string | null
@@ -503,6 +504,7 @@ export type Database = {
           id_grupo: number
           id_vendedora?: number | null
           molderias?: string | null
+          nro_fabrica?: number | null
           observaciones?: string | null
           porcentaje_descuento_hermanos?: number | null
           talles?: string | null
@@ -522,6 +524,7 @@ export type Database = {
           id_grupo?: number
           id_vendedora?: number | null
           molderias?: string | null
+          nro_fabrica?: number | null
           observaciones?: string | null
           porcentaje_descuento_hermanos?: number | null
           talles?: string | null
@@ -814,6 +817,10 @@ export type Database = {
     Functions: {
       crear_pedido_completo: { Args: { payload: Json }; Returns: number }
       eliminar_pago_completo: { Args: { p_id_pago: number }; Returns: number }
+      enviar_pedido_a_fabrica: {
+        Args: { p_id_pedido: number }
+        Returns: number
+      }
       modificar_plan_pedido: { Args: { payload: Json }; Returns: Json }
       registrar_pago_completo: { Args: { p_pago: Json }; Returns: number }
     }

@@ -155,4 +155,20 @@ export class PedidosService
             throw new Error(error.message);
         }
     }
+
+    async enviarPedidoFabrica(idPedido: number)
+    {
+        const { data, error } = await this.sb.supabase.rpc(
+        'enviar_pedido_a_fabrica',
+        {
+            p_id_pedido: idPedido,
+        }
+        );
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+        return data;
+    }
 }

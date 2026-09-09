@@ -73,9 +73,9 @@
 }
 .kpis-grid {
   display: grid;
-  flex: 0 0 auto;
+  flex: 3;
   gap: var(--space-2);
-  grid-template-columns: repeat(2, minmax(9rem, 10rem));
+  grid-template-columns: repeat(2, minmax(12rem, 11rem));
 }
 .kpi-card {
   display: grid;
@@ -83,14 +83,15 @@
   padding: var(--space-2) var(--space-3);
 }
 .kpi-card .ds-label {
-  font-size: 0.65rem;
+  font-size: 0.78rem;
 }
 .kpi-valor {
   color: var(--color-primary-700);
   font-size: var(--font-size-lg);
 }
 .resumen-table-wrapper {
-  flex: 1 1 28rem;
+  flex: 7;
+  min-width: 0;
 }
 .resumen-table {
   min-width: 0;
@@ -253,6 +254,40 @@
   stroke-width: 2;
   width: 0.85rem;
 }
+.icon-action {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  height: var(--control-height-sm);
+  justify-content: center;
+  padding: 0;
+  width: var(--control-height-sm);
+}
+.icon-action svg {
+  fill: none;
+  height: 0.9rem;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+  width: 0.9rem;
+}
+.icon-action--save {
+  border-color: var(--color-primary-700);
+  color: var(--color-primary-700);
+}
+.icon-action--save:hover,
+.icon-action--save:focus-visible {
+  background-color: var(--color-primary-100);
+}
+.icon-action:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: 0;
+}
 .cell-inline {
   align-items: center;
   display: flex;
@@ -260,8 +295,9 @@
   gap: var(--space-2);
 }
 .cell-inline .ds-input {
+  flex: 1 1 auto;
   min-height: var(--control-height-sm);
-  min-width: 8rem;
+  min-width: 0;
 }
 
 .modal-backdrop {
