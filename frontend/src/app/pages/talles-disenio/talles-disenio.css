@@ -122,7 +122,7 @@
   overflow-x: auto;
 }
 .talles-table {
-  min-width: 0;
+  min-width: 95rem;
   table-layout: fixed;
 }
 .talles-table th,
@@ -157,6 +157,10 @@
 .talles-table td[data-label='Colegio'] {
   color: var(--color-primary-700);
   font-weight: var(--font-weight-semibold);
+}
+.talles-table td[data-label='Fecha Aprob. Talles'],
+.talles-table td[data-label='Enviado a producción'] {
+  text-align: center;
 }
 .talles-table select,
 .talles-table input[type='date'] {

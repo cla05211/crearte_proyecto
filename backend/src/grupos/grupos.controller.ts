@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
@@ -12,9 +12,10 @@ export class GruposController
     @Get('clientes-page')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_clientes')
-    async obtenerGruposClientes(@Query('rangoDesde', ParseIntPipe) rangoDesde: number, @Query('rangoHasta', ParseIntPipe) rangoHasta: number,   @Query('busqueda') busqueda?: string)
+    async obtenerGruposClientes(@Req() req: any,@Query('rangoDesde', ParseIntPipe) rangoDesde: number, @Query('rangoHasta', ParseIntPipe) rangoHasta: number,   @Query('busqueda') busqueda?: string)
     {
-        return await this.grupos.traerGruposClientePage(rangoDesde, rangoHasta, busqueda);
+        const esFabrica = req.usuario.rol === 5;
+        return await this.grupos.traerGruposClientePage(rangoDesde, rangoHasta, esFabrica, busqueda);
     }
 
     @Get('egresados/:id')

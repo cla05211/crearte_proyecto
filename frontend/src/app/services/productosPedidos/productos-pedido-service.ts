@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment.development';
 import { ModificarDescripcionProductoPedido } from './dto/ModificarDescripcionProductoPedido.dto copy';
 import { ModificarCantidadProductoPedido } from './dto/ModificarCantidadProductoPedido.dto';
 import { ProductoPedidoDTO } from './dto/ProductoPedido.dto';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -32,4 +33,10 @@ export class ProductosPedidoService
   {
     return this.http.patch((`${environment.apiUrl}/productos-pedido/cantidad`), dto);
   }
+
+  traerSeniaTotal(idPedido:number): Observable<number>
+  {
+    return this.http.get<number>((`${environment.apiUrl}/productos-pedido/senia/${idPedido}`));
+  }
+
 }

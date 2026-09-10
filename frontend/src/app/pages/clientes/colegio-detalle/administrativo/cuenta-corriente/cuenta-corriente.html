@@ -112,7 +112,7 @@
         <h2 class="ds-heading-3">Cuotas</h2>
       </header>
 
-      @if (cuotasCliente().length === 0) {
+      @if (cuotasCliente().length === 0 && !seniaTotal()) {
         <p class="ds-text-muted">Este cliente no tiene cuotas generadas.</p>
       } @else {
         <div class="table-wrapper">
@@ -128,6 +128,26 @@
               </tr>
             </thead>
             <tbody>
+              @if (seniaTotal(); as senia) {
+                <tr>
+                  <td data-label="Nº">Seña</td>
+                  <td data-label="Vencimiento">—</td>
+                  <td data-label="Importe">{{ senia | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Cubierto">{{ seniaPagada() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Estado">
+                    <span class="ds-badge" [class]="claseBadgeEstado(estadoSenia())">{{ estadoSenia() }}</span>
+                  </td>
+                  <td data-label="Acción">
+                    @if (seniaFaltante() > 0) {
+                      <button type="button" class="ds-button ds-button--small ds-button--secondary" (click)="abrirPagoSenia()">
+                        {{ estadoSenia() === 'Parcial' ? 'Terminar de pagar' : 'Pagar' }}
+                      </button>
+                    } @else {
+                      <span class="ds-text-muted">—</span>
+                    }
+                  </td>
+                </tr>
+              }
               @for (cuota of cuotasCliente(); track cuota.id) {
                 <tr>
                   <td data-label="Nº">{{ cuota.numero }}</td>
@@ -183,6 +203,51 @@
         <button type="button" class="ds-button ds-button--secondary" (click)="cerrarFormulario()">Cancelar</button>
         <button type="button" class="ds-button" [disabled]="guardando()" (click)="guardarPago()">
           {{ guardando() ? 'Guardando…' : 'Guardar pago' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}
+
+@if (pagoSeniaAbierto()) {
+  <div class="modal-backdrop" role="presentation">
+    <section class="cc-modal" role="dialog" aria-modal="true" aria-labelledby="pay-senia-title">
+      <header class="cc-modal__header">
+        <div>
+          <span class="ds-eyebrow">Cuenta corriente</span>
+          <h2 id="pay-senia-title" class="ds-heading-2">Pagar seña</h2>
+        </div>
+        <button class="close-button" type="button" (click)="cerrarPagoSenia()" aria-label="Cerrar">×</button>
+      </header>
+
+      <div class="cc-modal__content">
+        <div class="cc-summary cc-summary--compact">
+          <div class="cc-summary__item">
+            <span>Importe</span>
+            <strong>{{ seniaTotal() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+          </div>
+          <span class="cc-summary__separator" aria-hidden="true">·</span>
+          <div class="cc-summary__item">
+            <span>Cubierto</span>
+            <strong>{{ seniaPagada() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+          </div>
+          <span class="cc-summary__separator" aria-hidden="true">·</span>
+          <div class="cc-summary__item">
+            <span>A pagar</span>
+            <strong>{{ seniaFaltante() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+          </div>
+        </div>
+
+        <label class="ds-field">
+          <span class="ds-label">Fecha</span>
+          <input class="ds-input" type="date" [(ngModel)]="formularioPagoSenia.fecha" />
+        </label>
+      </div>
+
+      <footer class="cc-modal__actions">
+        <button type="button" class="ds-button ds-button--secondary" (click)="cerrarPagoSenia()">Cancelar</button>
+        <button type="button" class="ds-button" [disabled]="pagandoSenia()" (click)="confirmarPagoSenia()">
+          {{ pagandoSenia() ? 'Guardando…' : 'Confirmar pago' }}
         </button>
       </footer>
     </section>

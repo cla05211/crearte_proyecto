@@ -735,6 +735,17 @@
                   </div>
                 }
               }
+              @if (!archivosSenia.length && pago.pagadaEfectivo) {
+                <label class="ds-field"
+                  ><span class="ds-label">Monto de seña pagado ahora *</span
+                  ><input
+                    class="ds-input"
+                    type="number"
+                    min="0"
+                    [ngModel]="montoSeniaPagadoEfectivo()"
+                    (ngModelChange)="actualizarMontoSeniaPagado($any($event))" /></label
+                >
+              }
               <label class="ds-field"
                 ><span class="ds-label">Fecha de pago de la seña *</span
                 ><input
@@ -752,7 +763,16 @@
                   <strong>{{
                     totalSenia() | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
                   }}</strong></span
-                ><span
+                >
+                @if (!archivosSenia.length && pago.pagadaEfectivo && montoSeniaPagadoEfectivo() < totalSenia()) {
+                  <span
+                    >Falta de seña
+                    <strong>{{
+                      totalSenia() - montoSeniaPagadoEfectivo() | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
+                    }}</strong></span
+                  >
+                }
+                <span
                   >Total por cuota
                   <strong>{{
                     totalCuotas() | currency: 'ARS' : 'symbol-narrow' : '1.0-0'

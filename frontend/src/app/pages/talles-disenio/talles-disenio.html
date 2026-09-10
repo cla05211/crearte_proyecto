@@ -115,15 +115,16 @@
         <div class="ds-table-wrapper pedidos-table-wrapper">
           <table class="ds-table talles-table">
             <colgroup>
-              <col style="width: 15%" />
+              <col style="width: 13%" />
+              <col style="width: 9%" />
+              <col style="width: 13%" />
               <col style="width: 11%" />
-              <col style="width: 15%" />
-              <col style="width: 12%" />
               <col style="width: 8%" />
               <col style="width: 9%" />
-              <col style="width: 12%" />
-              <col style="width: 8%" />
+              <col style="width: 11%" />
+              <col style="width: 7%" />
               <col style="width: 10%" />
+              <col style="width: 9%" />
             </colgroup>
             <thead>
               <tr>
@@ -134,6 +135,7 @@
                 <th>Aprobación</th>
                 <th>Fecha Aprob. Boceto</th>
                 <th>Estado Talles</th>
+                <th>Fecha Aprob. Talles</th>
                 <th>Enviado a producción</th>
                 <th>Diseñado por</th>
               </tr>
@@ -214,9 +216,17 @@
                           }
                         </select>
                       </td>
+                      <td data-label="Fecha Aprob. Talles">
+                        {{ pedido.fechaAprobacionTalles ? (pedido.fechaAprobacionTalles | date: 'dd/MM/yyyy') : '—' }}
+                      </td>
                       <td data-label="Enviado a producción">
-                        <span class="ds-badge" [class.ds-badge--success]="enviadoAProduccion(pedido)" [class.ds-badge--warning]="!enviadoAProduccion(pedido)">
-                          {{ enviadoAProduccion(pedido) ? 'Sí' : 'No' }}
+                        <span
+                          class="ds-badge"
+                          [class.ds-badge--success]="enviadoAProduccion(pedido)"
+                          [class.ds-badge--danger]="pendientePago(pedido)"
+                          [class.ds-badge--warning]="!enviadoAProduccion(pedido) && !pendientePago(pedido)"
+                        >
+                          {{ enviadoAProduccion(pedido) ? 'Sí' : (pendientePago(pedido) ? 'Pendiente de pago' : 'No') }}
                         </span>
                       </td>
                       <td data-label="Diseñado por">

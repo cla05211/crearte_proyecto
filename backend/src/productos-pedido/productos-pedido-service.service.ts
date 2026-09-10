@@ -124,4 +124,26 @@ export class ProductosPedidoService
 
         return productos;  
     }
+
+    async traerSeniaTotal(idPedido: number): Promise<number|null>
+    {
+        let senia: number|null = null;
+
+        const {data,error} = await this.sb.supabase
+        .from('productos_pedidos')
+        .select('valor_senia, cantidad')
+        .eq('id_pedido',idPedido);
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        if(data.length > 0)
+        {
+            senia = data.reduce((suma, producto) => suma + producto.valor_senia * producto.cantidad,0);
+        }
+
+        return senia;  
+    }
 }

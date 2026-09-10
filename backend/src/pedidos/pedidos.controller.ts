@@ -40,6 +40,14 @@ export class PedidosController
         return await this.pedidosService.obtenerIdPedidoGrupo(id);
     }
 
+    @Post('fabrica/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_talles_disenio')
+    async enviarPedidoFabrica(@Param('id', ParseIntPipe) idPedido: number)
+    {
+        return await this.pedidosService.enviarPedidoFabrica(idPedido);
+    }
+
     @Patch('diseniadora')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_talles_disenio')
@@ -78,14 +86,6 @@ export class PedidosController
     async modificarTelefonoPrincipal(@Query('nuevoNro') nuevoNro: string, @Query('idPedido', ParseIntPipe) idPedido: number)
     {
         await this.pedidosService.modificarTelefonoPrincipal(nuevoNro, idPedido)
-    }
-
-    @Patch('fabrica/:id')
-    @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('ver_talles_disenio')
-    async enviarPedidoFabrica(@Param('idPedido', ParseIntPipe) idPedido: number)
-    {
-        return await this.pedidosService.enviarPedidoFabrica(idPedido);
     }
 
 }

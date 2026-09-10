@@ -1,5 +1,6 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -43,7 +44,7 @@ interface EdicionFechaTalles
 
 @Component({
   selector: 'app-talles-disenio',
-  imports: [FormsModule],
+  imports: [FormsModule, DatePipe],
   templateUrl: './talles-disenio.html',
   styleUrl: './talles-disenio.css',
 })
@@ -98,7 +99,7 @@ export class TallesDisenio
     'Confirmado',
   ];
 
-  readonly totalColumnas = 9;
+  readonly totalColumnas = 10;
 
   readonly estadosDisenio = [
     'Diseñado',
@@ -223,7 +224,15 @@ export class TallesDisenio
 
   enviadoAProduccion(pedido: ControlTallesDisenioDTO): boolean
   {
-    return pedido.estadoTalles === 'Confirmado' && pedido.fechaAprobacionBoceto !== null;
+    return pedido.estadoTalles === 'Confirmado' && pedido.fechaAprobacionBoceto !== null && !this.pendientePago(pedido);
+  }
+
+  pendientePago(pedido: ControlTallesDisenioDTO): boolean
+  {
+    if (pedido.estadoTalles !== 'Confirmado' || pedido.fechaAprobacionBoceto === null) return false;
+    if (pedido.senia && pedido.estadoPrimerCuota !== 'Pagada') return true;
+    if (!pedido.senia && pedido.seniaPaga === false) return true;
+    return false;
   }
 
   telefonoContacto(pedido: ControlTallesDisenioDTO): string | null

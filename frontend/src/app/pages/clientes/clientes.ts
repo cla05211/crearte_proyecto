@@ -7,6 +7,7 @@ import { catchError, debounceTime, distinctUntilChanged, map, switchMap } from '
 import { GruposService } from '../../services/grupos/grupos-service';
 import { NotificationService } from '../../shared/notifications/notification.service';
 import { grupoClientePageResponseDTO } from '../../services/grupos/dtos/grupoClientePage.dto copy';
+import { AuthService } from '../../services/Auth/auth-service';
 
 interface PaginaClientes
 {
@@ -23,6 +24,7 @@ interface PaginaClientes
 })
 export class Clientes implements OnInit
 {
+  private readonly authService = inject(AuthService);
   private readonly gruposClientesSerivce = inject(GruposService);
   private readonly notificaciones = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
@@ -33,6 +35,7 @@ export class Clientes implements OnInit
   private readonly paginaVacia: PaginaClientes = { clientes: [], pagina: 0, hayMasPaginas: false };
   readonly datosPagina = signal<PaginaClientes>({ ...this.paginaVacia });
   readonly cargando = signal(false);
+  rolUsuario = 0;
   readonly clientesVisibles = computed(() => this.datosPagina().clientes);
 
   private readonly solicitudPagina$ = new Subject<number>();
@@ -43,9 +46,16 @@ export class Clientes implements OnInit
 
   ngOnInit(): void
   {
+    this.determinarRol();
     this.inicializarPipelineClientes();
     this.inicializarBusquedaConDebounce();
     this.cargarGruposClientes();
+  }
+
+  private determinarRol()
+  {
+    const usuario = this.authService.cargarUsuarioDesdeStorage();
+    this.rolUsuario = usuario?.rol!;
   }
 
   private inicializarPipelineClientes(): void

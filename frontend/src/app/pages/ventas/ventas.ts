@@ -482,6 +482,14 @@ export class Ventas implements OnInit {
     );
   }
 
+  montoSeniaPagadoEfectivo(): number {
+    return this.pago.montoSeniaPagado ?? this.totalSenia();
+  }
+
+  actualizarMontoSeniaPagado(valor: number): void {
+    this.pago.montoSeniaPagado = valor;
+  }
+
   descuentoCuotas(): number {
     const porcentaje = Number(this.detallePedido.porcentaje_descuento_hermanos) || 0;
     const hermanos = Number(this.detallePedido.cantidad_hermanos) || 0;
@@ -844,7 +852,7 @@ export class Ventas implements OnInit {
             comprobantes.every((c) => c.datos && !c.verificando && !c.error && c.entidadPago);
           return todosListos;
         }
-        return this.pago.pagadaEfectivo;
+        return this.pago.pagadaEfectivo && this.montoSeniaPagadoEfectivo() > 0;
       },
     };
     for (let indice = 1; indice <= paso; indice += 1) {
@@ -939,7 +947,7 @@ export class Ventas implements OnInit {
       {
         id_pedido: idPedido,
         nro_transferencia: '',
-        monto: this.totalSenia(),
+        monto: this.montoSeniaPagadoEfectivo(),
         motivo: 'Seña',
         fecha,
         aprobado: true,
@@ -1022,7 +1030,7 @@ export class Ventas implements OnInit {
   }
 
   private crearPago() {
-    return { fechaSenia: '', fechaPrimeraCuota: '', pagadaEfectivo: false };
+    return { fechaSenia: '', fechaPrimeraCuota: '', pagadaEfectivo: false, montoSeniaPagado: null as number | null };
   }
 
   abrirEdicion(producto: any) 

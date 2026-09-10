@@ -186,14 +186,16 @@ export class GestionPedidosService
         .select(`*,
             productos_pedidos(valor_senia,valor_cuota,
                 productos(nombre)),
-            cuotas(id),
+            cuotas(id, estado),
             grupos!inner(
                 created_at,
                 promo,
                 colegios!inner(nombre),
                 padres_responsables(telefono),
-                alumnos_responsables(telefono))`)
+                alumnos_responsables(telefono))
+                ,pagos(monto, motivo)`)
         .eq("estado_general", "Venta realizada")
+        .eq("pagos.motivo", "Seña")
         .gte("grupos.created_at", primerDiaMes.toISOString())
         .lt("grupos.created_at", primerDiaMesSiguiente.toISOString())
         .order("id", { ascending: false });
@@ -213,7 +215,9 @@ export class GestionPedidosService
         const pedidos: ControlTallesDisenioDTO[] = data.map(pedido => ({
             id: pedido.id,
             nroCuotas: pedido.cuotas.length,
+            estadoPrimerCuota: pedido.cuotas[0].estado,
             senia: pedido.productos_pedidos[0].valor_senia != pedido.productos_pedidos[0].valor_cuota,
+            seniaPaga:  pedido.pagos.reduce((total, pago) => total + pago.monto!, 0) >= pedido.productos_pedidos.reduce((total, producto) => total + producto.valor_senia, 0),
             promo: pedido.grupos.promo!,
             nombreColegio: pedido.grupos.colegios.nombre,
             nrosContactoAlumnos: pedido.grupos.alumnos_responsables.length > 0

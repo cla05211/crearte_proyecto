@@ -16,6 +16,7 @@ import { DocumentosService } from '../../../../../services/documentos/documentos
 import { StorageService } from '../../../../../services/storage/storage-service';
 import { NotificationService } from '../../../../../shared/notifications/notification.service';
 import { ConfirmationService } from '../../../../../services/confirmation/confirmation.service';
+import { ProductosPedidoService } from '../../../../../services/productosPedidos/productos-pedido-service';
 
 interface FormularioPago {
   fecha: string;
@@ -38,6 +39,7 @@ export class CuentaCorriente implements OnInit
   private readonly pedidosService = inject(PedidosService);
   private readonly pagosService = inject(PagosService);
   private readonly gestionPedidosService = inject(GestionPedidosService);
+  private readonly productosPedidosService = inject(ProductosPedidoService);
   private readonly cuotasService = inject(CuotasService);
   private readonly documentosService = inject(DocumentosService);
   private readonly storageService = inject(StorageService);
@@ -50,6 +52,7 @@ export class CuentaCorriente implements OnInit
   readonly cargando = signal(false);
   readonly pagosCliente = signal<PagoResponseDTO[]>([]);
   readonly importeTotal = signal<number | null>(null);
+  readonly seniaTotal = signal<number | null>(null);
 
   readonly totalPagado = computed(() =>
     this.pagosCliente().reduce((total, pago) => total + (pago.monto ?? 0), 0),
@@ -72,6 +75,18 @@ export class CuentaCorriente implements OnInit
   readonly pagandoCuota = signal(false);
   formularioPagoCuota: FormularioPagoCuota = this.crearFormularioPagoCuotaVacio();
 
+  readonly seniaPagada = computed(() =>
+    this.pagosCliente()
+      .filter((pago) => pago.motivo === 'Seña')
+      .reduce((total, pago) => total + (pago.monto ?? 0), 0),
+  );
+
+  readonly seniaFaltante = computed(() => Math.max((this.seniaTotal() ?? 0) - this.seniaPagada(), 0));
+
+  readonly pagoSeniaAbierto = signal(false);
+  readonly pagandoSenia = signal(false);
+  formularioPagoSenia: FormularioPagoCuota = this.crearFormularioPagoCuotaVacio();
+
   ngOnInit(): void
   {
     this.inicializar();
@@ -88,6 +103,7 @@ export class CuentaCorriente implements OnInit
       this.idPedido = await firstValueFrom(this.pedidosService.obtenerIdPedidoGrupo(idGrupo));
       this.cargarPagos();
       this.cargarImporteTotal();
+      this.cargarSeniaTotal();
       this.cargarCuotas();
     }
     catch
@@ -104,6 +120,22 @@ export class CuentaCorriente implements OnInit
       .subscribe({
         next: (pagos) => {
           this.pagosCliente.set(pagos);
+          this.cargando.set(false);
+        },
+        error: () => {
+          this.cargando.set(false);
+          this.notificaciones.error({ title: 'Error', description: 'No se pudieron obtener los pagos del cliente.' });
+        },
+      });
+  }
+
+  private cargarSeniaTotal(): void
+  {
+    this.productosPedidosService.traerSeniaTotal(this.idPedido)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (senia) => {
+          this.seniaTotal.set(senia);
           this.cargando.set(false);
         },
         error: () => {
@@ -178,6 +210,69 @@ export class CuentaCorriente implements OnInit
       case 'Adeudada': return 'ds-badge--danger';
       default: return '';
     }
+  }
+
+  estadoSenia(): string
+  {
+    if (this.seniaFaltante() <= 0) return 'Pagada';
+    if (this.seniaPagada() > 0) return 'Parcial';
+    return 'Pendiente';
+  }
+
+  abrirPagoSenia(): void
+  {
+    this.formularioPagoSenia = this.crearFormularioPagoCuotaVacio();
+    this.pagoSeniaAbierto.set(true);
+  }
+
+  cerrarPagoSenia(): void
+  {
+    this.pagoSeniaAbierto.set(false);
+  }
+
+  confirmarPagoSenia(): void
+  {
+    if (!this.formularioPagoSenia.fecha)
+    {
+      this.notificaciones.error({ title: 'Falta la fecha', description: 'Ingresá la fecha del pago.' });
+      return;
+    }
+
+    const monto = this.seniaFaltante();
+
+    if (monto <= 0)
+    {
+      this.notificaciones.error({ title: 'Seña sin saldo', description: 'La seña ya está totalmente pagada.' });
+      return;
+    }
+
+    const dto: PagoDTO = {
+      id_pedido: this.idPedido,
+      nro_transferencia: '',
+      monto,
+      motivo: 'Seña',
+      fecha: new Date(`${this.formularioPagoSenia.fecha}T00:00:00`),
+      aprobado: true,
+      banco: 'Efectivo',
+      entidad_pago: '',
+    };
+
+    this.pagandoSenia.set(true);
+
+    this.pagosService.crearPago(dto)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.pagandoSenia.set(false);
+          this.notificaciones.success({ title: 'Seña pagada', description: 'El pago se registró correctamente.' });
+          this.cerrarPagoSenia();
+          this.cargarPagos();
+        },
+        error: (err: HttpErrorResponse) => {
+          this.pagandoSenia.set(false);
+          this.notificarErrorGuardado(err);
+        },
+      });
   }
 
   abrirPagoCuota(cuota: CuotaResponseDTO): void

@@ -1,4 +1,4 @@
-import { Body, Post, Controller, Delete, Param, ParseIntPipe, Patch, UseGuards } from '@nestjs/common';
+import { Body, Post, Controller, Delete, Param, ParseIntPipe, Patch, UseGuards, Get } from '@nestjs/common';
 import { ProductosPedidoService } from './productos-pedido-service.service';
 import { EliminarProductoPedidoDTO } from './dto/EliminarProductoPedido.dto';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -12,6 +12,14 @@ import { ProductoPedidoDTO } from './dto/ProductoPedido.dto';
 export class ProductosPedidoController 
 {
     constructor(private productosPedidosService: ProductosPedidoService){}
+
+    @Get('senia/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_clientes_administrativo')
+    async traerSeniaTotal(@Param('id', ParseIntPipe)idPedido: number)
+    {
+        return await this.productosPedidosService.traerSeniaTotal(idPedido);
+    }
 
     @Post()
     @UseGuards(AuthGuard,PermisosGuard)

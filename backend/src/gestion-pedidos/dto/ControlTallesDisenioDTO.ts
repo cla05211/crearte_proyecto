@@ -5,6 +5,8 @@ export class ControlTallesDisenioDTO
     id!: number;
     nroCuotas!: number;
     senia!:boolean;
+    seniaPaga!: boolean|null;
+    estadoPrimerCuota!: string|null;
     promo!:number;
     nombreColegio!: string;
     nrosContactoPadres!: string[] | null;

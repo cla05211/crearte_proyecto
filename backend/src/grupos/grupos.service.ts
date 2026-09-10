@@ -5,6 +5,7 @@ import { BadRequestException } from '@nestjs/common';
 import { ConflictException } from '@nestjs/common';
 import { grupoClientePageResponseDTO } from './dto/grupoClientePage.dto copy';
 import { grupoDatosClienteResponse } from './dto/grupoClienteDatosPage.dto';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class GruposService 
@@ -39,11 +40,11 @@ export class GruposService
         return data.id;
     }
 
-    async traerGruposClientePage(rangoDesde: number, rangoHasta:number, busqueda?:string):Promise<grupoClientePageResponseDTO[]>
+    async traerGruposClientePage(rangoDesde: number, rangoHasta:number, esFabrica:boolean, busqueda?:string):Promise<grupoClientePageResponseDTO[]>
     {
         let query = this.sb.supabase
         .from("grupos")
-        .select(`id,nivel,created_at,colegios!inner (nombre, localidad, provincia),padres_responsables!inner (nombre, apellido, id_grupo, mail)`)
+        .select(`id,nivel,created_at,colegios!inner (nombre, localidad, provincia),padres_responsables!inner (nombre, apellido, id_grupo, mail), pedidos!inner(nro_fabrica)`)
         .not('padres_responsables.mail', 'is', null)
         .neq('padres_responsables.mail', '')
         .order('created_at', { ascending: false });
@@ -51,6 +52,10 @@ export class GruposService
         if(busqueda)
         {
             query = query.ilike('colegios.nombre', `%${busqueda}%`);
+        }
+        if(esFabrica)
+        {
+            query = query.not('pedidos.nro_fabrica', 'is', null);
         }
 
         const { data, error } = await query.range(rangoDesde, rangoHasta);
@@ -65,6 +70,7 @@ export class GruposService
             ({
                 idGrupo: grupo.id!,
                 colegio: {nombre:grupo.colegios.nombre, localidad: grupo.colegios.localidad, provincia: grupo.colegios.provincia},
+                nroFabrica:grupo.pedidos[0].nro_fabrica,
                 nivel: grupo.nivel!,
                 padreResponsableNombre:grupo.padres_responsables[0].nombre ?? '',
                 padreResponsableApellido:grupo.padres_responsables[0].apellido ?? ''
