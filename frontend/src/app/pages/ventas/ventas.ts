@@ -482,8 +482,21 @@ export class Ventas implements OnInit {
     );
   }
 
+  totalComprobantesSenia(): number {
+    return this.comprobantesSenia().reduce((total, comprobante) => total + (comprobante.datos?.monto ?? 0), 0);
+  }
+
   montoSeniaPagadoEfectivo(): number {
-    return this.pago.montoSeniaPagado ?? this.totalSenia();
+    if (this.pago.montoSeniaPagado !== null) return this.pago.montoSeniaPagado;
+    if (this.archivosSenia.length > 0) {
+      return Math.max(this.totalSenia() - this.totalComprobantesSenia(), 0);
+    }
+    return this.totalSenia();
+  }
+
+  totalSeniaIngresada(): number {
+    const efectivo = this.pago.pagadaEfectivo ? this.montoSeniaPagadoEfectivo() : 0;
+    return this.totalComprobantesSenia() + efectivo;
   }
 
   actualizarMontoSeniaPagado(valor: number): void {
@@ -845,6 +858,7 @@ export class Ventas implements OnInit {
       5: () => Boolean(this.detallePedido.talles),
       6: () => {
         if (!this.pago.fechaSenia || !this.pago.fechaPrimeraCuota) return false;
+        if (this.pago.pagadaEfectivo && this.montoSeniaPagadoEfectivo() <= 0) return false;
         if (this.archivosSenia.length > 0) {
           const comprobantes = this.comprobantesSenia();
           const todosListos =
@@ -929,22 +943,20 @@ export class Ventas implements OnInit {
     const fecha = new Date(`${this.pago.fechaSenia}T00:00:00`);
     const comprobantes = this.comprobantesSenia();
 
-    if (comprobantes.length > 0) {
-      return comprobantes.map((comprobante, indice) => ({
-        id_pedido: idPedido,
-        nro_transferencia: comprobante.datos?.nro_transferencia ?? '',
-        monto: comprobante.datos?.monto ?? 0,
-        motivo: 'Seña',
-        fecha,
-        aprobado: true,
-        banco: comprobante.datos?.banco ?? '',
-        entidad_pago: comprobante.entidadPago,
-        documentoDTO: urlsSenia[indice] ? { tipo: 'senia', archivo_url: urlsSenia[indice] } : undefined,
-      }));
-    }
+    const pagos: PagoDTO[] = comprobantes.map((comprobante, indice) => ({
+      id_pedido: idPedido,
+      nro_transferencia: comprobante.datos?.nro_transferencia ?? '',
+      monto: comprobante.datos?.monto ?? 0,
+      motivo: 'Seña',
+      fecha,
+      aprobado: true,
+      banco: comprobante.datos?.banco ?? '',
+      entidad_pago: comprobante.entidadPago,
+      documentoDTO: urlsSenia[indice] ? { tipo: 'senia', archivo_url: urlsSenia[indice] } : undefined,
+    }));
 
-    return [
-      {
+    if (this.pago.pagadaEfectivo && this.montoSeniaPagadoEfectivo() > 0) {
+      pagos.push({
         id_pedido: idPedido,
         nro_transferencia: '',
         monto: this.montoSeniaPagadoEfectivo(),
@@ -953,8 +965,10 @@ export class Ventas implements OnInit {
         aprobado: true,
         banco: 'Efectivo',
         entidad_pago: '',
-      },
-    ];
+      });
+    }
+
+    return pagos;
   }
 
   private totalCuotasSinDescuento(): number {

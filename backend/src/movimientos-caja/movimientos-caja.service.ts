@@ -55,7 +55,8 @@ export class MovimientosCajaService
         let query = this.sb.supabase
         .from("vista_caja")
         .select(`*`)
-        .order("fecha", {ascending: false,});
+        .order("fecha", {ascending: false,})
+        .order("orden", {ascending: false,});
 
         if(busqueda)
         {
