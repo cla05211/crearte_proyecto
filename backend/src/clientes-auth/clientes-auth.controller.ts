@@ -1,14 +1,15 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { ClientesAuthService } from './clientes-auth-service.service';
+import { LoginClienteDto } from './dto/loginCliente.dto';
 
 @Controller('clientes-auth')
-export class ClientesAuthController 
+export class ClientesAuthController
 {
     constructor(private clientesAuth: ClientesAuthService){}
 
-    @Get()
-    iniciarSesion(@Query('nombreUsuario')nombreUsuario:string, @Query('contrasena')contrasena:string)
+    @Post('login')
+    async iniciarSesion(@Body() body: LoginClienteDto)
     {
-        return this.clientesAuth.iniciarSesion(nombreUsuario, contrasena);
+        return await this.clientesAuth.iniciarSesion(body.usuario, body.contraseña);
     }
 }

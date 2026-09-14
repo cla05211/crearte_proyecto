@@ -17,7 +17,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req2).pipe(
     catchError((error: HttpErrorResponse) => {
-      const esRutaAuth = req.url.includes('/auth/refresh') || req.url.includes('/auth/login');
+      const esRutaAuth = req.url.includes('/auth/refresh') || req.url.includes('/auth/login') || req.url.includes('/clientes-auth');
 
       if (error.status !== 401 || esRutaAuth) 
       {

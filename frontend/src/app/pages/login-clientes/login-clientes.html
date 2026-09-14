@@ -1,1 +1,68 @@
-<p>login-clientes works!</p>
+<main class="login-page">
+  <section class="login-card" aria-labelledby="login-title">
+    <aside class="brand-panel" aria-label="Crearte, buzos de egresados">
+      <div class="brand-shape brand-shape--top"></div>
+      <div class="brand-content">
+        <img
+          class="brand-logo"
+          src="/crearte-logo.png"
+          alt="Crearte, 10 años"
+        />
+        <p class="brand-tagline">Diseñamos recuerdos para llevar puestos.</p>
+      </div>
+      <div class="brand-shape brand-shape--bottom"></div>
+    </aside>
+
+    <div class="form-panel">
+      <div class="form-heading">
+        <span class="eyebrow">Acceso de clientes</span>
+        <h1 id="login-title">Iniciar sesión</h1>
+        <p>Ingresá tus datos para continuar.</p>
+      </div>
+
+      <form [formGroup]="formularioLogin" class="login-form">
+        <div class="field-group">
+          <label for="usuario">Usuario</label>
+          <input
+            type="text"
+            id="usuario"
+            formControlName="usuario"
+            autocomplete="username"
+            placeholder="Ingresá tu usuario"
+          />
+          <div *ngIf="verficarCampo('usuario') as error" class="field-error">
+            <small>{{ error }}</small>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="contraseña">Contraseña</label>
+          <div class="password-field">
+            <input
+              [type]="verClave ? 'text' : 'password'"
+              id="contraseña"
+              formControlName="contraseña"
+              autocomplete="current-password"
+              placeholder="Ingresá tu contraseña"
+            />
+            <button
+              class="password-toggle"
+              type="button"
+              [attr.aria-label]="verClave ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              (click)="toggleClave()"
+            >
+              <fa-icon [icon]="verClave ? faEyeSlash : faEye"></fa-icon>
+            </button>
+          </div>
+          <div *ngIf="verficarCampo('contraseña') as error" class="field-error">
+            <small>{{ error }}</small>
+          </div>
+        </div>
+
+        <button class="submit-button" type="button" (click)="iniciarSesion()">
+          Ingresar
+        </button>
+      </form>
+    </div>
+  </section>
+</main>

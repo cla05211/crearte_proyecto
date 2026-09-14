@@ -685,7 +685,11 @@ export class Ventas implements OnInit {
         if (recursos.length) pedido.documentoDTO = recursos;
 
         this.gestionPedidosService.agregarPedido(pedido).subscribe({
-          next: () => {
+          next: (respuesta) => {
+            // TODO: por ahora es solo para pruebas. Cuando se arme el envío
+            // por WhatsApp al padre responsable, esto se reemplaza por eso.
+            console.log('Credenciales del cliente creado ->', 'usuario:', respuesta.usuario, '| contraseña:', respuesta.contrasenaPlana);
+
             this.guardando.set(false);
             this.notificaciones.success({
               title: 'Venta guardada',
