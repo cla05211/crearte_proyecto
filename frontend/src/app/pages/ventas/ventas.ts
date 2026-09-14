@@ -387,16 +387,21 @@ export class Ventas implements OnInit {
     this.calcularProducto();
   }
 
-  etiquetaPlanCuotas(cuotas: number, idProducto: number, cantidad: number): string {
+  etiquetaPlanCuotas(cuotas: number, idProducto: number, cantidad: number): string 
+  {
     const precio = this.productosDisponibles().find(
       (item) =>
         item.id_producto === idProducto &&
-        item.cuotas === cuotas &&
+        Number(item.cuotas) === Number(cuotas) &&
         cantidad >= item.cantidad_desde &&
         cantidad <= item.cantidad_hasta,
     );
     if (!precio) return `${cuotas} cuotas`;
-    if (precio.valor_senia === precio.valor_cuota) return `${cuotas + 1} cuotas`;
+
+    const senia = Number(precio.valor_senia);
+    const valorCuota = Number(precio.valor_cuota);
+
+    if (senia === valorCuota) return `${cuotas + 1} cuotas`;
     return `${cuotas} cuotas + Seña`;
   }
 

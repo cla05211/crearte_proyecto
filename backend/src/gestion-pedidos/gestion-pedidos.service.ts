@@ -27,6 +27,8 @@ import { ProductoPedidoResponseConNombreOriginalDTO } from 'src/productos-pedido
 import { AgregadosGlobalesPedidoService } from 'src/agregados-globales-pedido/agregados-globales-pedido.service';
 import { AgregadoGlobalPedidoResponseDTO } from 'src/agregados-globales-pedido/dto/AgregadoGlobalPedidoResponse.dto';
 import { ControlTallesDisenioDTO } from './dto/ControlTallesDisenioDTO';
+import * as bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class GestionPedidosService
@@ -40,10 +42,16 @@ export class GestionPedidosService
 
     async crearPedido(dto:CrearPedidoDTO)
     {
+        const usuarioBase = this.normalizarUsuario(dto.colegioDTO.nombre, dto.grupoDTO.promo);
+        const contrasenaPlana = this.generarContrasenaAleatoria();
+        const contrasenaHash = await bcrypt.hash(contrasenaPlana, 10);
+
+        const payload = { ...dto, usuario: usuarioBase, contrasena_hash: contrasenaHash };
+
         const { data, error } = await this.sb.supabase.rpc(
         'crear_pedido_completo',
         {
-            payload: dto as unknown as Json
+            payload: payload as unknown as Json
         }
         );
 
@@ -51,7 +59,37 @@ export class GestionPedidosService
         {
             throw new BadRequestException(error.message);
         }
-        return data;
+
+        const resultado = data as unknown as { id_pedido: number; usuario: string };
+
+        // La contraseña en texto plano nunca se guarda: solo vive en memoria
+        // durante esta request. Por ahora viaja en la respuesta para poder
+        // mostrarla; cuando se arme el envío por WhatsApp al padre
+        // responsable, se dispara desde acá mismo usando contrasenaPlana.
+        return { id_pedido: resultado.id_pedido, usuario: resultado.usuario, contrasenaPlana };
+    }
+
+    private normalizarUsuario(colegio: string, promo: number | null): string
+    {
+        return `${colegio}${promo ?? ''}`
+            .normalize('NFD')
+            .replace(/[̀-ͯ]/g, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '');
+    }
+
+    private generarContrasenaAleatoria(longitud = 8): string
+    {
+        // Sin 0/o/1/i/l: son las contraseñas que un padre va a tener que
+        // volver a tipear a mano desde un papel o un mensaje.
+        const alfabeto = 'abcdefghjkmnpqrstuvwxyz23456789';
+        const bytes = randomBytes(longitud);
+        let contrasena = '';
+        for (let i = 0; i < longitud; i++)
+        {
+            contrasena += alfabeto[bytes[i] % alfabeto.length];
+        }
+        return contrasena;
     }
 
     async obtenerPedidosVentas(rangoDesde: number, rangoHasta:number, busqueda?:string, promo?:number):Promise<PedidoResponseVentas[]>

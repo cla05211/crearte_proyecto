@@ -156,6 +156,38 @@ export type Database = {
         }
         Relationships: []
       }
+      clientes: {
+        Row: {
+          contrasena_hash: string
+          created_at: string
+          id: number
+          id_grupo: number
+          usuario: string
+        }
+        Insert: {
+          contrasena_hash: string
+          created_at?: string
+          id?: number
+          id_grupo: number
+          usuario: string
+        }
+        Update: {
+          contrasena_hash?: string
+          created_at?: string
+          id?: number
+          id_grupo?: number
+          usuario?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_id_grupo_fkey"
+            columns: ["id_grupo"]
+            isOneToOne: true
+            referencedRelation: "grupos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       colegios: {
         Row: {
           id: number
@@ -762,6 +794,38 @@ export type Database = {
           },
         ]
       }
+      sesiones_clientes: {
+        Row: {
+          creado_en: string
+          expira_en: string
+          id: string
+          id_cliente: number
+          token_hash: string
+        }
+        Insert: {
+          creado_en?: string
+          expira_en: string
+          id?: string
+          id_cliente: number
+          token_hash: string
+        }
+        Update: {
+          creado_en?: string
+          expira_en?: string
+          id?: string
+          id_cliente?: number
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sesiones_clientes_id_cliente_fkey"
+            columns: ["id_cliente"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usuarios: {
         Row: {
           apellido: string | null
@@ -807,6 +871,7 @@ export type Database = {
           id: string | null
           id_pedido: number | null
           monto: number | null
+          orden: number | null
           origen: string | null
           tipo: string | null
           usuario: number | null
@@ -815,7 +880,7 @@ export type Database = {
       }
     }
     Functions: {
-      crear_pedido_completo: { Args: { payload: Json }; Returns: number }
+      crear_pedido_completo: { Args: { payload: Json }; Returns: Json }
       eliminar_pago_completo: { Args: { p_id_pago: number }; Returns: number }
       enviar_pedido_a_fabrica: {
         Args: { p_id_pedido: number }
