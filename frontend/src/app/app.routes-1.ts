@@ -16,7 +16,7 @@ export const routes: Routes = [
     path: "",
     loadComponent: () => import('./shell-clientes/shell-clientes').then((archivo) => archivo.ShellClientes),
     canActivate: [ClienteLogueadoGuard],
-    children: 
+    children:
     [
       {path: "portal-cliente", loadComponent: () => import('./pages/portal-cliente/portal-cliente')
         .then((archivo) => archivo.PortalCliente), canActivate: [ClienteLogueadoGuard]
