@@ -51,15 +51,17 @@ import { ClientesService } from './clientes-service/clientes.service';
 import { ClientesAuthService } from './clientes-auth/clientes-auth-service.service';
 import { ClientesAuthController } from './clientes-auth/clientes-auth.controller';
 import { ClientesAuthModule } from './clientes-auth/clientes-auth.module';
+import { ClientesPortalController } from './clientes-portal/clientes-portal.controller';
+import { ClientesPortalService } from './clientes-portal/clientes-portal.service';
 
 
 @Module({
   imports: [ConfigModule.forRoot({
       isGlobal: true,
     }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule, MovimientosCajaModule, GruposModule, AgregadosGlobalesPedidoModule, ClientesAuthModule],
-  controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController, MovimientosCajaController, GruposController, ClientesAuthController],
+  controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController, MovimientosCajaController, GruposController, ClientesAuthController, ClientesPortalController],
   providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService,
      ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, 
-     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, ClientesService, ClientesAuthService, ClientesService],
+     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, ClientesService, ClientesAuthService, ClientesService, ClientesPortalService],
 })
 export class AppModule {}

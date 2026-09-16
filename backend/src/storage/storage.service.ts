@@ -1,18 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { SubirArchivoStorage } from './dto/SubirArchivoStorage.dto';
-
-export interface ArchivoSubido {
-    buffer: Buffer;
-    mimetype: string;
-    originalname: string;
-}
+import { ArchivoSubidoDTO } from './dto/ArchivoSubidoDTO';
 
 @Injectable()
 export class StorageService {
   constructor(private supabaseService: SupabaseService) {}
 
-    async guardarImagen(dto: SubirArchivoStorage, archivo: ArchivoSubido):Promise<string>
+    async guardarImagen(dto: SubirArchivoStorage, archivo: ArchivoSubidoDTO):Promise<string>
     {
         if (!archivo) throw new BadRequestException('No se recibió ningún archivo.');
 

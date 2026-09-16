@@ -6,7 +6,7 @@ import { ClienteLogueadoGuard } from '../guards/clienteLogueado';
 export const routes: Routes = [
   // ---- Rutas públicas (sin navbar/sidebar) ----
   { path: "login", loadComponent: () => import('./pages/login/login').then((archivo) => archivo.Login) },
-  { path: "login-clientes", loadComponent: () => import('./pages/login-clientes/login-clientes').then((archivo) => archivo.LoginClientes) },
+  { path: "login-clientes", loadComponent: () => import('./pages/pages-clientes/login-clientes/login-clientes').then((archivo) => archivo.LoginClientes) },
   { path: "registro", loadComponent: () => import('./pages/registro/registro').then((archivo) => archivo.Registro) },
   { path: "olvido-clave", loadComponent: () => import('./pages/olvido-clave/olvido-clave').then((archivo) => archivo.OlvidoClave) },
   { path: "resetear-clave", loadComponent: () => import('./pages/resetear-clave/resetear-clave').then((archivo) => archivo.ResetearClave) },
@@ -18,7 +18,7 @@ export const routes: Routes = [
     canActivate: [ClienteLogueadoGuard],
     children:
     [
-      {path: "portal-cliente", loadComponent: () => import('./pages/portal-cliente/portal-cliente')
+      {path: "portal-cliente", loadComponent: () => import('./pages/pages-clientes/portal-cliente/portal-cliente')
         .then((archivo) => archivo.PortalCliente), canActivate: [ClienteLogueadoGuard]
       },
   ]

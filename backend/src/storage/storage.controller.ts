@@ -5,7 +5,7 @@ import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
 import { SubirArchivoStorage } from './dto/SubirArchivoStorage.dto';
 import { StorageService } from './storage.service';
-import type { ArchivoSubido } from './storage.service';
+import { ArchivoSubidoDTO } from './dto/ArchivoSubidoDTO';
 
 @Controller('storage')
 export class StorageController
@@ -16,7 +16,7 @@ export class StorageController
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('crear_pedido') //POR AHORA
     @UseInterceptors(FileInterceptor('archivo'))
-    async agregarProducto(@UploadedFile() archivo: ArchivoSubido, @Body() dto: SubirArchivoStorage)
+    async agregarProducto(@UploadedFile() archivo: ArchivoSubidoDTO, @Body() dto: SubirArchivoStorage)
     {
         const ruta = await this.storageService.guardarImagen(dto, archivo);
         return {ruta};

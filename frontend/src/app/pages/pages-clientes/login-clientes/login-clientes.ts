@@ -3,8 +3,8 @@ import { FormsModule, FormControl, FormGroup, Validators, ReactiveFormsModule } 
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
-import { ClientesAuthService } from '../../services/clientes-auth-service/clientes-auth-service';
-import { NotificationService } from '../../shared/notifications/notification.service';
+import { ClientesAuthService } from '../../../services/clientes-auth-service/clientes-auth-service';
+import { NotificationService } from '../../../shared/notifications/notification.service';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 

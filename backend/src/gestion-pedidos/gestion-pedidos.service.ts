@@ -62,10 +62,6 @@ export class GestionPedidosService
 
         const resultado = data as unknown as { id_pedido: number; usuario: string };
 
-        // La contraseña en texto plano nunca se guarda: solo vive en memoria
-        // durante esta request. Por ahora viaja en la respuesta para poder
-        // mostrarla; cuando se arme el envío por WhatsApp al padre
-        // responsable, se dispara desde acá mismo usando contrasenaPlana.
         return { id_pedido: resultado.id_pedido, usuario: resultado.usuario, contrasenaPlana };
     }
 
