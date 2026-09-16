@@ -26,5 +26,6 @@ import { AgregadosGlobalesPedidoModule } from 'src/agregados-globales-pedido/agr
             GruposService, PedidosService, ProductosPedidoService, PadreResponsableService,
             AlumnoResponsableService, PagosService, DocumentosService, PagosService, CuentaCorrienteService,
             CuotasService, SupabaseService, AuditoriasService],
+  exports:[GestionPedidosService]
 })
 export class GestionPedidosModule {}

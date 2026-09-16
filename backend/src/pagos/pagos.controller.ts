@@ -6,7 +6,6 @@ import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { OcrService } from '../ocr/ocr.service';
-import type { ArchivoSubido } from 'src/storage/storage.service';
 import { ModificarPago } from './dto/modificarBanco.dto';
 import { GenerarExcelDTO } from 'src/reportes/excel/dto/generarExcel.dto';
 import { ExcelService } from 'src/reportes/excel/excel.service';
@@ -14,6 +13,7 @@ import { GenerarReciboDTO } from 'src/reportes/pdf/dto/generarRecibo.dto';
 import { GenerarContratoDTO } from 'src/reportes/pdf/dto/generarContrato.dto';
 import { PdfService } from 'src/reportes/pdf/pdf.service';
 import { PagoDTO } from './dto/pago.dto';
+import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
 
 @Controller('pagos')
 export class PagosController 
@@ -70,7 +70,7 @@ export class PagosController
 
     @Post('ocr')
     @UseInterceptors(FileInterceptor('comprobante'))
-    async testOcr(@UploadedFile() file: ArchivoSubido) 
+    async testOcr(@UploadedFile() file: ArchivoSubidoDTO) 
     {
         return await this.pagosService.comprobarComprobantePago(file.buffer)
     }

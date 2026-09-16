@@ -182,7 +182,7 @@ export class PagosService
         let codigo = "";
         const REGEX_NRO_OPERACION = new RegExp(
             '(?:' +
-                '(?:N[°º]?\\.?|Nro\\.?|Número)\\s*de\\s*(?:operación|transacción|comprobante)' +
+                '(?:N\\.?[°º]?|Nro\\.?|Número)\\s*de\\s*(?:operación|transacción|comprobante)' +
                 '(?:\\s*de\\s*Mercado\\s*Pago)?' +
                 '|' +
                 'Código\\s*de\\s*(?:transacción|referencia)' +

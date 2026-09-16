@@ -8,6 +8,7 @@ import { PermisosService } from 'src/permisos/permisos.service';
 @Module({
     imports:[SupabaseModule],
     controllers:[StorageController],
-    providers:[StorageService, UsuariosService, PermisosService]
+    providers:[StorageService, UsuariosService, PermisosService],
+    exports:[StorageService]
 })
 export class StorageModule {}

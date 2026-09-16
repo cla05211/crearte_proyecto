@@ -8,4 +8,5 @@ export class presupuestoPedidoClientesPage
     productosPedido!: ProductoPedidoResponseConNombreOriginalDTO[];
     agregadosGlobales!: AgregadoGlobalPedidoResponseDTO[];
     nroCuotas!: number;
+    cantidadEgresados!: number;
 }

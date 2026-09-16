@@ -198,13 +198,16 @@ export class GestionPedidosService
         const productosPedido: ProductoPedidoResponseConNombreOriginalDTO[] = await this.productosPedido.traerProductosPedidoConNombreProducto(pedido.id);
         const agregadosGlobales: AgregadoGlobalPedidoResponseDTO[] = await this.agregadosGlobalesPedido.obtenerPorPedido(pedido.id);
         const cuotas: number = ((await this.cuotas.traerCuotasPorIdPedido(pedido.id)).length);
-    
+        // Solo hace falta la cantidad de egresados si hay algún agregado global que repartir entre ellos.
+        const cantidadEgresados: number = agregadosGlobales.length ? (await this.grupos.traerCantidadEgresados(idGrupo)) ?? 0 : 0;
+
         const presupuestoPedido: presupuestoPedidoClientesPage =
         {
             pedido: pedido,
             productosPedido: productosPedido,
             agregadosGlobales: agregadosGlobales,
-            nroCuotas: cuotas
+            nroCuotas: cuotas,
+            cantidadEgresados: cantidadEgresados
         };
 
         return presupuestoPedido;

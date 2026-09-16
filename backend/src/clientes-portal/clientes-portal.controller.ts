@@ -9,9 +9,9 @@ import { ProductosPedidoService } from 'src/productos-pedido/productos-pedido-se
 import { DocumentosService } from 'src/documentos/documentos.service';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { StorageService } from 'src/storage/storage.service';
-import type { ArchivoSubido } from 'src/storage/storage.service';
 import { DocumentoDTO } from 'src/documentos/dto/documento.dto';
 import { CrearPagoClienteDto } from './dto/crearPagoCliente.dto';
+import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
 
 // Todos los endpoints de este controller son para el portal del cliente
 // (padres/colegios), no para el staff. La autorización acá NO es por
@@ -74,20 +74,23 @@ export class ClientesPortalController
         return await this.productosPedidoService.traerSeniaTotal(idPedido);
     }
 
-    // El comprobante viaja como multipart/form-data (campo "comprobante"),
-    // nunca adentro del JSON del DTO — un Buffer no existe como tipo en
-    // JSON, así que hace falta FileInterceptor + @UploadedFile() para que
-    // llegue bien. El resto de los campos del pago sí llegan por @Body(),
-    // pero en form-data todo viaja como string, por eso el Number(...) de
-    // monto antes de mandarlo a pagosService.
-    //
-    // La carpeta de guardado, el tipo de documento y el nombre de archivo
-    // se arman acá adentro, no se reciben del cliente: no hay ningún
-    // motivo real para confiarle esos valores al frontend pudiendo
-    // calcularlos nosotros mismos con datos que ya verificamos.
+    // A diferencia del resto de los endpoints de este controller, acá NO se
+    // deriva primero un idPedido: obtenerPresupuestoPedidosClientes() espera
+    // el id del GRUPO (así lo usa también la versión staff, en
+    // GestionPedidosController), así que se le pasa req.cliente.id_grupo
+    // directo. Pasarle un idPedido acá era un bug: buscaba el pedido
+    // filtrando pedidos.id_grupo = idPedido, que solo "funcionaba" de
+    // casualidad si el id del pedido coincidía con el id del grupo.
+    @Get('presupuesto')
+    async obtenerPresupuesto(@Req() req)
+    {
+        return await this.gestionPedidosService.obtenerPresupuestoPedidosClientes(req.cliente.id_grupo);
+    }
+
+
     @Post('pagos')
     @UseInterceptors(FileInterceptor('comprobante'))
-    async crearPago(@Req() req, @Body() dtoPago: CrearPagoClienteDto, @UploadedFile() archivo: ArchivoSubido)
+    async crearPago(@Req() req, @Body() dtoPago: CrearPagoClienteDto, @UploadedFile() archivo: ArchivoSubidoDTO)
     {
         const idPedido = await this.obtenerIdPedidoCliente(req);
         const idGrupo = req.cliente.id_grupo;
@@ -117,12 +120,6 @@ export class ClientesPortalController
         });
     }
 
-    // Igual que en crearPago: nunca confiamos en un id que mande el
-    // cliente, así que antes de devolver la URL comprobamos que el
-    // documento pedido realmente pertenezca a un pago de SU pedido.
-    // archivo_url en la tabla documentos guarda la ruta cruda (no una URL
-    // firmada — esas expiran), así que la firma se genera acá, recién al
-    // momento de mostrarla/descargarla.
     @Get('documento/:id')
     async obtenerUrlDocumento(@Req() req, @Param('id', ParseIntPipe) idDocumento: number)
     {
@@ -141,6 +138,6 @@ export class ClientesPortalController
         }
 
         const ruta = await this.documentosService.obtenerArchivoUrl(idDocumento);
-        return { url: await this.storageService.obtenerUrlArchivo(ruta) };
+        return { url: await this.storageService.obtenerUrlArchivo(ruta!) };
     }
 }

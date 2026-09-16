@@ -86,7 +86,7 @@ export class Presupuesto implements OnInit
 
   readonly beneficioPedido = computed(() => this.presupuestoGrupo()?.productosPedido[0]?.beneficio || 'Sin beneficio');
 
-  //Datos para edición
+
   readonly productosDisponibles = signal<ProductoConPrecioResponseDTO[]>([]);
   readonly agregadosDisponibles = signal<AgregadoDBDTO[]>([]);
   readonly beneficiosDisponibles = signal<string[]>([]);

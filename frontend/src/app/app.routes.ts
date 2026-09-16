@@ -11,7 +11,7 @@ export const routes: Routes = [
   { path: "olvido-clave", loadComponent: () => import('./pages/olvido-clave/olvido-clave').then((archivo) => archivo.OlvidoClave) },
   { path: "resetear-clave", loadComponent: () => import('./pages/resetear-clave/resetear-clave').then((archivo) => archivo.ResetearClave) },
 
-  // ---- Portal de clientes (sin el Shell de staff) ----
+  //  Portal de clientes
   {
     path: "",
     loadComponent: () => import('./shell-clientes/shell-clientes').then((archivo) => archivo.ShellClientes),
@@ -23,6 +23,9 @@ export const routes: Routes = [
       },
       {path: "cuenta-corriente", loadComponent: () => import('./pages/pages-clientes/cuenta-corriente/cuenta-corriente')
         .then((archivo) => archivo.CuentaCorriente), canActivate: [ClienteLogueadoGuard]
+      },
+      {path: "presupuesto", loadComponent: () => import('./pages/pages-clientes/presupuesto/presupuesto')
+        .then((archivo) => archivo.Presupuesto), canActivate: [ClienteLogueadoGuard]
       },
   ]
   },

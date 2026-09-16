@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment.development';
 import { PagoResponseDTO } from '../pagos/dto/pagoResponse.dto';
 import { CuotaResponseDTO } from '../cuotas/dto/CuotaResponseDTO';
+import { presupuestoPedidoClientesPage } from '../gestionPedidos/dto/PresupuestoPedidoClientePage.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -38,9 +39,11 @@ export class ClientesPortalService
     return this.http.get<number | null>(`${this.base}/senia-total`);
   }
 
-  // Va como multipart/form-data (no JSON): el backend espera el archivo
-  // "comprobante" con FileInterceptor, más los campos monto/motivo/fecha/
-  // banco/entidad_pago/nroTransferencia como texto plano en el mismo form.
+  obtenerPresupuesto():Observable<presupuestoPedidoClientesPage>
+  {
+    return this.http.get<presupuestoPedidoClientesPage>(`${this.base}/presupuesto`);
+  }
+
   crearPago(formData: FormData)
   {
     return this.http.post(`${this.base}/pagos`, formData);

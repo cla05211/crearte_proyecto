@@ -10,4 +10,8 @@ export class presupuestoPedidoClientesPage
     productosPedido!: ProductoPedidoResponseConNombreOriginalDTO[];
     agregadosGlobales!: AgregadoGlobalPedidoResponseDTO[];
     nroCuotas!: number;
+    // Cantidad de egresados del grupo — la necesita el front (staff y portal
+    // de clientes) para repartir el precio grupal de cada agregado global
+    // (ej. la bandera) entre los egresados y mostrar su costo individual.
+    cantidadEgresados!: number;
 }

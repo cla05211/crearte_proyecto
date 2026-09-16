@@ -52,16 +52,16 @@ import { ClientesAuthService } from './clientes-auth/clientes-auth-service.servi
 import { ClientesAuthController } from './clientes-auth/clientes-auth.controller';
 import { ClientesAuthModule } from './clientes-auth/clientes-auth.module';
 import { ClientesPortalController } from './clientes-portal/clientes-portal.controller';
-import { ClientesPortalService } from './clientes-portal/clientes-portal.service';
+import { ClientesPortalModule } from './clientes-portal/clientes-portal.module';
 
 
 @Module({
   imports: [ConfigModule.forRoot({
       isGlobal: true,
-    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule, MovimientosCajaModule, GruposModule, AgregadosGlobalesPedidoModule, ClientesAuthModule],
+    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule, MovimientosCajaModule, GruposModule, AgregadosGlobalesPedidoModule, ClientesAuthModule, ClientesPortalModule],
   controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController, MovimientosCajaController, GruposController, ClientesAuthController, ClientesPortalController],
   providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService,
      ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, 
-     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, ClientesService, ClientesAuthService, ClientesService, ClientesPortalService],
+     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, ClientesService, ClientesAuthService, ClientesService],
 })
 export class AppModule {}

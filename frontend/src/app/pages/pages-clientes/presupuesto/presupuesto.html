@@ -1,0 +1,117 @@
+<main class="presupuesto-page">
+  <section class="ds-container presupuesto-page-container">
+    @if (cargando()) {
+      <div class="loading-state" role="status" aria-live="polite">
+        <span class="loading-state__spinner" aria-hidden="true"></span>
+        <div>
+          <h2>Cargando presupuesto</h2>
+          <p>Estamos preparando el presupuesto del pedido.</p>
+        </div>
+      </div>
+    } @else if (!presupuestoGrupo()) {
+      <div class="empty-state">
+        <h2>No se encontró presupuesto para este pedido.</h2>
+        <p>Probá recargar la página o volver más tarde.</p>
+      </div>
+    } @else {
+      <div class="presupuesto-stack">
+        <section class="ds-card presupuesto-card">
+          <div class="presupuesto-card__title">
+            <h2 class="ds-heading-3">Productos del pedido y beneficio</h2>
+          </div>
+          <div class="presupuesto-card__body">
+            <div class="cuotas-destacado">
+              <span>Plan de Cuotas</span>
+              <strong>{{ presupuestoGrupo()!.nroCuotas }} Cuotas + Seña</strong>
+            </div>
+            @if (productosConTotales().length === 0 && agregadosGlobalesConCuota().length === 0) {
+              <p class="ds-text-muted">No hay productos cargados en este pedido.</p>
+            } @else {
+              <div class="table-wrapper">
+                <table class="ds-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Producto</th>
+                      <th scope="col">Cantidad</th>
+                      <th scope="col">Seña individual</th>
+                      <th scope="col">Seña grupal</th>
+                      <th scope="col">Cuota individual</th>
+                      <th scope="col">Cuota grupal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (producto of productosConTotales(); track producto.id) {
+                      <tr>
+                        <td data-label="Producto">
+                          <div class="producto-cell">
+                            <strong>{{ producto.nombreProductoOriginal }}</strong>
+                            @if (producto.descripcion) {
+                              <span class="ds-text-muted">{{ producto.descripcion }}</span>
+                            }
+                          </div>
+                        </td>
+                        <td data-label="Cantidad">{{ producto.cantidad }}</td>
+                        <td data-label="Seña individual">{{ producto.valorSeniaIndividual | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                        <td data-label="Seña grupal">{{ producto.valorSeniaGrupal | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                        <td data-label="Cuota individual">{{ producto.valorCuotaIndividual | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                        <td data-label="Cuota grupal">{{ producto.valorCuotaGrupal | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                      </tr>
+                    }
+                    @for (agregado of agregadosGlobalesConCuota(); track agregado.id) {
+                      <tr>
+                        <td data-label="Producto">
+                          <div class="producto-cell">
+                            <strong>{{ agregado.nombre }}</strong>
+                            <span class="ds-text-muted">Cargo adicional del pedido</span>
+                          </div>
+                        </td>
+                        <td data-label="Cantidad"></td>
+                        <td data-label="Seña individual"></td>
+                        <td data-label="Seña grupal"></td>
+                        <td data-label="Cuota individual">{{ agregado.cuotaIndividual | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                        <td data-label="Cuota grupal">{{ agregado.cuotaGrupal | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                  <tfoot>
+                    <tr class="fila-totales">
+                      <td data-label="Producto">Total</td>
+                      <td data-label="Cantidad"></td>
+                      <td data-label="Seña individual">{{ totalSeniaIndividual() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                      <td data-label="Seña grupal">{{ totalSenia() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                      <td data-label="Cuota individual">{{ totalCuotaIndividual() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                      <td data-label="Cuota grupal">{{ totalCuota() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <div class="beneficio-pedido">
+                <span>Beneficio del pedido</span>
+                <div class="beneficio-pedido__valor">
+                  <strong>{{ beneficioPedido() }}</strong>
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+
+       
+        <section class="ds-card presupuesto-card">
+          <h2 class="ds-heading-3 presupuesto-card__title">Plan de pago</h2>
+          <div class="presupuesto-card__body">
+            <dl class="presupuesto-grid">
+              <div class="presupuesto-grid__item">
+                <dt>Valor de la seña</dt>
+                <dd>{{ totalSenia() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</dd>
+              </div>
+              <div class="presupuesto-grid__item">
+                <dt>Valor de cada cuota</dt>
+                <dd>{{ totalCuota() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</dd>
+              </div>
+            </dl>
+          </div>
+        </section>
+      </div>
+    }
+  </section>
+</main>
