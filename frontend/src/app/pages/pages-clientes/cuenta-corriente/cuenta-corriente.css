@@ -188,6 +188,60 @@
   line-height: 1;
 }
 
+/* Selector de comprobante (mismo patrón que .resource-upload de ventas.css) */
+.resource-upload {
+  align-content: start;
+  position: relative;
+}
+
+.resource-upload .file-input-hidden {
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
+}
+
+.file-picker-button {
+  background: var(--color-primary-100);
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-primary-700);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  justify-self: start;
+  padding: var(--space-2) var(--space-3);
+}
+
+.file-list {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+}
+
+.file-list li {
+  align-items: center;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  gap: var(--space-2);
+  justify-content: space-between;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+}
+
+.file-list__name {
+  color: var(--color-text-strong);
+  font-size: var(--font-size-sm);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 680px) {
   .cc-page { padding: var(--space-8) var(--space-4); }
 }

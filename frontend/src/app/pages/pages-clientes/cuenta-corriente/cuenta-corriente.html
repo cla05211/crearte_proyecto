@@ -141,20 +141,126 @@
       <header class="cc-modal__header">
         <div>
           <span class="ds-eyebrow">Cuenta corriente</span>
-          <h2 id="new-payment-title" class="ds-heading-2">Agregar pago en efectivo</h2>
+          <h2 id="new-payment-title" class="ds-heading-2">Agregar pago</h2>
         </div>
         <button class="close-button" type="button" (click)="cerrarFormulario()" aria-label="Cerrar">×</button>
       </header>
 
       <div class="cc-modal__content">
-        <label class="ds-field">
-          <span class="ds-label">Fecha</span>
-          <input class="ds-input" type="date" [(ngModel)]="formularioPago.fecha" />
-        </label>
+        <div class="ds-field resource-upload">
+          <span class="ds-label">Comprobante de transferencia *</span>
+          <input
+            class="file-input-hidden"
+            type="file"
+            #archivoComprobanteInput
+            (change)="seleccionarArchivoComprobante($event)" />
+          @if (comprobantePago().archivo; as archivo) {
+            <ul class="file-list">
+              <li>
+                <span class="file-list__name">{{ archivo.name }}</span>
+                <button type="button" class="ds-button ds-button--ghost ds-button--small" (click)="quitarArchivoComprobante()">
+                  Quitar
+                </button>
+              </li>
+            </ul>
+          } @else {
+            <button type="button" class="file-picker-button" (click)="archivoComprobanteInput.click()">
+              Elegir archivo
+            </button>
+          }
+        </div>
+
+        @if (comprobantePago().archivo) {
+          <label class="ds-field">
+            <span class="ds-label">Entidad de pago *</span>
+            <span class="cc-field-hint">Banco o billetera desde la que hacés la transferencia</span>
+            <select
+              class="ds-select"
+              [ngModel]="comprobantePago().entidadPagoPersonalizada ? 'Otra' : comprobantePago().entidadPago"
+              (ngModelChange)="actualizarEntidadComprobante($any($event))"
+            >
+              <option value="">Seleccioná una entidad</option>
+              @for (entidad of entidadesPago; track entidad) {
+                <option [value]="entidad">{{ entidad }}</option>
+              }
+            </select>
+          </label>
+
+          @if (comprobantePago().entidadPagoPersonalizada) {
+            <label class="ds-field">
+              <span class="ds-label">Especificá la entidad de pago *</span>
+              <input
+                class="ds-input"
+                type="text"
+                [ngModel]="comprobantePago().entidadPago"
+                (ngModelChange)="actualizarEntidadPagoPersonalizada($any($event))" />
+            </label>
+          }
+
+          @if (comprobantePago().verificando) {
+            <span class="ds-text-muted">Verificando comprobante…</span>
+          }
+
+          @if (comprobantePago().requiereIngresoManual) {
+            @if (comprobantePago().error) {
+              <span class="ds-alert ds-alert--danger">{{ comprobantePago().error }}</span>
+            }
+            <label class="ds-field">
+              <span class="ds-label">Nro. de transferencia *</span>
+              <input
+                class="ds-input"
+                type="text"
+                [ngModel]="comprobantePago().manualNroTransferencia"
+                (ngModelChange)="actualizarDatoManualComprobante('nro_transferencia', $any($event))" />
+            </label>
+            <label class="ds-field">
+              <span class="ds-label">Monto *</span>
+              <input
+                class="ds-input"
+                type="number"
+                min="0"
+                [ngModel]="comprobantePago().manualMonto"
+                (ngModelChange)="actualizarDatoManualComprobante('monto', $any($event))" />
+            </label>
+            <label class="ds-field">
+              <span class="ds-label">Banco *</span>
+              <span class="cc-field-hint">Cuenta de Crearte a la que enviaste el pago (no tu banco)</span>
+              <select
+                class="ds-select"
+                [ngModel]="comprobantePago().manualBanco"
+                (ngModelChange)="actualizarDatoManualComprobante('banco', $any($event))"
+              >
+                <option value="">Seleccioná un banco</option>
+                @for (banco of bancosComprobante; track banco) {
+                  <option [value]="banco">{{ banco }}</option>
+                }
+              </select>
+            </label>
+          }
+
+          @if (comprobantePago().datos; as datos) {
+            <div class="cc-summary cc-summary--compact">
+              <div class="cc-summary__item">
+                <span>Banco{{ comprobantePago().requiereIngresoManual ? '' : ' detectado' }}</span>
+                <strong>{{ datos.banco }}</strong>
+              </div>
+              <span class="cc-summary__separator" aria-hidden="true">·</span>
+              <div class="cc-summary__item">
+                <span>Nro. comprobante{{ comprobantePago().requiereIngresoManual ? '' : ' detectado' }}</span>
+                <strong>{{ datos.nro_transferencia }}</strong>
+              </div>
+              <span class="cc-summary__separator" aria-hidden="true">·</span>
+              <div class="cc-summary__item">
+                <span>Monto{{ comprobantePago().requiereIngresoManual ? '' : ' detectado' }}</span>
+                <strong>{{ datos.monto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+              </div>
+            </div>
+          }
+        }
 
         <label class="ds-field">
-          <span class="ds-label">Monto</span>
-          <input class="ds-input" type="number" min="0" step="0.01" [(ngModel)]="formularioPago.monto" />
+          <span class="ds-label">Fecha *</span>
+          <input class="ds-input" type="date" [(ngModel)]="formularioPago.fecha" />
         </label>
       </div>
 
@@ -162,96 +268,6 @@
         <button type="button" class="ds-button ds-button--secondary" (click)="cerrarFormulario()">Cancelar</button>
         <button type="button" class="ds-button" [disabled]="guardando()" (click)="guardarPago()">
           {{ guardando() ? 'Guardando…' : 'Guardar pago' }}
-        </button>
-      </footer>
-    </section>
-  </div>
-}
-
-@if (pagoSeniaAbierto()) {
-  <div class="modal-backdrop" role="presentation">
-    <section class="cc-modal" role="dialog" aria-modal="true" aria-labelledby="pay-senia-title">
-      <header class="cc-modal__header">
-        <div>
-          <span class="ds-eyebrow">Cuenta corriente</span>
-          <h2 id="pay-senia-title" class="ds-heading-2">Pagar seña</h2>
-        </div>
-        <button class="close-button" type="button" (click)="cerrarPagoSenia()" aria-label="Cerrar">×</button>
-      </header>
-
-      <div class="cc-modal__content">
-        <div class="cc-summary cc-summary--compact">
-          <div class="cc-summary__item">
-            <span>Importe</span>
-            <strong>{{ seniaTotal() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
-          </div>
-          <span class="cc-summary__separator" aria-hidden="true">·</span>
-          <div class="cc-summary__item">
-            <span>Cubierto</span>
-            <strong>{{ seniaPagada() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
-          </div>
-          <span class="cc-summary__separator" aria-hidden="true">·</span>
-          <div class="cc-summary__item">
-            <span>A pagar</span>
-            <strong>{{ seniaFaltante() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
-          </div>
-        </div>
-
-        <label class="ds-field">
-          <span class="ds-label">Fecha</span>
-          <input class="ds-input" type="date" [(ngModel)]="formularioPagoSenia.fecha" />
-        </label>
-      </div>
-
-      <footer class="cc-modal__actions">
-        <button type="button" class="ds-button ds-button--secondary" (click)="cerrarPagoSenia()">Cancelar</button>
-        <button type="button" class="ds-button" [disabled]="pagandoSenia()" (click)="confirmarPagoSenia()">
-          {{ pagandoSenia() ? 'Guardando…' : 'Confirmar pago' }}
-        </button>
-      </footer>
-    </section>
-  </div>
-}
-
-@if (cuotaSeleccionada(); as cuota) {
-  <div class="modal-backdrop" role="presentation">
-    <section class="cc-modal" role="dialog" aria-modal="true" aria-labelledby="pay-installment-title">
-      <header class="cc-modal__header">
-        <div>
-          <span class="ds-eyebrow">Cuenta corriente</span>
-          <h2 id="pay-installment-title" class="ds-heading-2">Pagar cuota Nº {{ cuota.numero }}</h2>
-        </div>
-        <button class="close-button" type="button" (click)="cerrarPagoCuota()" aria-label="Cerrar">×</button>
-      </header>
-
-      <div class="cc-modal__content">
-        <div class="cc-summary cc-summary--compact">
-          <div class="cc-summary__item">
-            <span>Importe</span>
-            <strong>{{ cuota.importe | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
-          </div>
-          <span class="cc-summary__separator" aria-hidden="true">·</span>
-          <div class="cc-summary__item">
-            <span>Cubierto</span>
-            <strong>{{ cuota.monto_cubierto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
-          </div>
-          <span class="cc-summary__separator" aria-hidden="true">·</span>
-          <div class="cc-summary__item">
-            <span>A pagar</span>
-            <strong>{{ restanteCuota(cuota) | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
-          </div>
-        </div>
-
-        <label class="ds-field">
-          <span class="ds-label">Fecha</span>
-          <input class="ds-input" type="date" [(ngModel)]="formularioPagoCuota.fecha" />
-        </label>
-      </div>
-
-      <footer class="cc-modal__actions">
-        <button type="button" class="ds-button ds-button--secondary" (click)="cerrarPagoCuota()">Cancelar</button>
-        <button type="button" class="ds-button" [disabled]="pagandoCuota()" (click)="confirmarPagoCuota()">
-          {{ pagandoCuota() ? 'Guardando…' : 'Confirmar pago' }}
         </button>
       </footer>
     </section>
