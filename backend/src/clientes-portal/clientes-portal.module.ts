@@ -13,11 +13,12 @@ import { OcrModule } from 'src/ocr/ocr.module';
 import { ReportesModule } from 'src/reportes/reportes.module';
 import { GestionPedidosModule } from 'src/gestion-pedidos/gestion-pedidos.module';
 import { StorageModule } from 'src/storage/storage.module';
+import { GruposService } from 'src/grupos/grupos.service';
 
 @Module({
     imports:[SupabaseModule, OcrModule, ReportesModule, GestionPedidosModule, StorageModule],
     controllers: [ClientesPortalController],
-    providers:[PedidosService, PagosService, CuotasService, ProductosPedidoService, DocumentosService, SupabaseService]
+    providers:[PedidosService, PagosService, CuotasService, ProductosPedidoService, DocumentosService, SupabaseService, GruposService]
 })
 export class ClientesPortalModule {
 

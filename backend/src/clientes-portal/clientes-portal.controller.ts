@@ -12,6 +12,7 @@ import { StorageService } from 'src/storage/storage.service';
 import { DocumentoDTO } from 'src/documentos/dto/documento.dto';
 import { CrearPagoClienteDto } from './dto/crearPagoCliente.dto';
 import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
+import { GruposService } from 'src/grupos/grupos.service';
 
 // Todos los endpoints de este controller son para el portal del cliente
 // (padres/colegios), no para el staff. La autorización acá NO es por
@@ -27,6 +28,7 @@ export class ClientesPortalController
     constructor(
         private pedidosService: PedidosService,
         private pagosService: PagosService,
+        private gruposService: GruposService,
         private gestionPedidosService: GestionPedidosService,
         private cuotasService: CuotasService,
         private productosPedidoService: ProductosPedidoService,
@@ -74,19 +76,17 @@ export class ClientesPortalController
         return await this.productosPedidoService.traerSeniaTotal(idPedido);
     }
 
-    // A diferencia del resto de los endpoints de este controller, acá NO se
-    // deriva primero un idPedido: obtenerPresupuestoPedidosClientes() espera
-    // el id del GRUPO (así lo usa también la versión staff, en
-    // GestionPedidosController), así que se le pasa req.cliente.id_grupo
-    // directo. Pasarle un idPedido acá era un bug: buscaba el pedido
-    // filtrando pedidos.id_grupo = idPedido, que solo "funcionaba" de
-    // casualidad si el id del pedido coincidía con el id del grupo.
     @Get('presupuesto')
     async obtenerPresupuesto(@Req() req)
     {
         return await this.gestionPedidosService.obtenerPresupuestoPedidosClientes(req.cliente.id_grupo);
     }
 
+    @Get('nivel')
+    async determinarSecundaria(@Req() req): Promise<boolean>
+    {
+        return await this.gruposService.determinarSecundaria(req.cliente.id_grupo);
+    }
 
     @Post('pagos')
     @UseInterceptors(FileInterceptor('comprobante'))

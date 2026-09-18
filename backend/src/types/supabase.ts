@@ -641,36 +641,82 @@ export type Database = {
       prendas_pedido: {
         Row: {
           id: number
+          id_pedido: number
+          id_producto: number | null
+          id_producto_pedido: number | null
           inscripcion: string | null
-          pedido: number
-          producto: number | null
           talle: string | null
         }
         Insert: {
           id?: number
+          id_pedido: number
+          id_producto?: number | null
+          id_producto_pedido?: number | null
           inscripcion?: string | null
-          pedido: number
-          producto?: number | null
           talle?: string | null
         }
         Update: {
           id?: number
+          id_pedido?: number
+          id_producto?: number | null
+          id_producto_pedido?: number | null
           inscripcion?: string | null
-          pedido?: number
-          producto?: number | null
           talle?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "prendas_pedido_pedido_fkey"
-            columns: ["pedido"]
+            columns: ["id_pedido"]
             isOneToOne: false
             referencedRelation: "pedidos"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "prendas_pedido_producto_fkey"
-            columns: ["producto"]
+            columns: ["id_producto"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prendas_pedido_producto_pedido_fkey"
+            columns: ["id_producto_pedido"]
+            isOneToOne: false
+            referencedRelation: "productos_pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      producto_componentes: {
+        Row: {
+          cantidad: number
+          id: number
+          id_producto_combo: number
+          id_producto_componente: number
+        }
+        Insert: {
+          cantidad?: number
+          id?: number
+          id_producto_combo: number
+          id_producto_componente: number
+        }
+        Update: {
+          cantidad?: number
+          id?: number
+          id_producto_combo?: number
+          id_producto_componente?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "producto_componentes_combo_fkey"
+            columns: ["id_producto_combo"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "producto_componentes_componente_fkey"
+            columns: ["id_producto_componente"]
             isOneToOne: false
             referencedRelation: "productos"
             referencedColumns: ["id"]

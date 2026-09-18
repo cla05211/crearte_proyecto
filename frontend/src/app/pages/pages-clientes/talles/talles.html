@@ -1,0 +1,20 @@
+<main class="colegio-page">
+  <div class="colegio-page__shape colegio-page__shape--left" aria-hidden="true"></div>
+  <div class="colegio-page__shape colegio-page__shape--right" aria-hidden="true"></div>
+
+  <section class="ds-container colegio-container">
+
+    <header class="colegio-header">
+      <h1 class="ds-heading-1">Talles</h1>
+    </header>
+
+    <nav class="colegio-tabs" aria-label="Secciones del colegio">
+        <a routerLink="tutorial" routerLinkActive="is-active">¿Cómo tomar las medidas?</a>
+        <a routerLink="carga" routerLinkActive="is-active">Cargar talles</a>
+    </nav>
+
+    <section class="colegio-content">
+      <router-outlet></router-outlet>
+    </section>
+  </section>
+</main>

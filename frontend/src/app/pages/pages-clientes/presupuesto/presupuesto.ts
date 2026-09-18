@@ -100,6 +100,15 @@ export class Presupuesto implements OnInit
     return productos + agregadosGlobales;
   });
 
+  readonly etiquetaPlanCuotas = computed(() => {
+    const presupuesto = this.presupuestoGrupo();
+    if (!presupuesto) return '';
+
+    const nroCuotas = presupuesto.nroCuotas;
+    if (this.totalSeniaIndividual() === this.totalCuotaIndividual()) return `${nroCuotas + 1} Cuotas iguales`;
+    return `${nroCuotas} Cuotas + Seña`;
+  });
+
   ngOnInit(): void
   {
     this.traerPresupuestoGrupo();

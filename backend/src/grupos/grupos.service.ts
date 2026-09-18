@@ -130,4 +130,22 @@ export class GruposService
         };
 
     }
+
+    async determinarSecundaria(idGrupo: number):Promise<boolean>
+    {
+        let secundaria = false;
+
+        const {data, error} = await this.sb.supabase
+            .from("grupos")
+            .select(`nivel`)
+            .eq('id', idGrupo)
+            .single();
+        
+        if (data?.nivel == "Secundaria")
+        {
+            secundaria = true;
+        }
+
+        return secundaria;
+    }
 }

@@ -1,0 +1,112 @@
+<section class="tutorial">
+  <header class="tutorial__intro">
+    <span class="ds-eyebrow">Guía de talles</span>
+    <h2 class="ds-heading-2">¿Cómo tomar tus medidas?</h2>
+    <p class="ds-text-muted">
+      Mirá el video y guiate por las tablas de talles para elegir la medida correcta antes de cargar el pedido.
+    </p>
+  </header>
+
+  @if (cargando()) {
+    <div class="tutorial__loading" role="status" aria-live="polite">
+      <span class="tutorial__spinner" aria-hidden="true"></span>
+      Cargando tutorial...
+    </div>
+  } @else {
+    <div class="tutorial__widget">
+      <nav class="tutorial__tabs" aria-label="Ver video o tabla de medidas">
+        <button
+          type="button"
+          [class.is-active]="vista() === 'video'"
+          (click)="cambiarVista('video')"
+        >
+          Tutorial
+        </button>
+        <button
+          type="button"
+          [class.is-active]="vista() === 'tablas'"
+          (click)="cambiarVista('tablas')"
+        >
+          Tabla de medidas
+        </button>
+      </nav>
+
+      <div class="tutorial__panel">
+        @if (vista() === 'video') {
+          <h3 class="ds-heading-3">Video tutorial</h3>
+          <div class="tutorial__video-wrapper">
+            <video
+              class="tutorial__video"
+              [src]="videoSrc()"
+              controls
+              playsinline
+              preload="metadata"
+            ></video>
+          </div>
+        } @else {
+          <h3 class="ds-heading-3">Tablas de talles</h3>
+          <p class="tutorial__tablas-hint">Tocá una imagen para verla en grande.</p>
+
+          <div class="tutorial__grid">
+            <figure class="tutorial__card">
+              <button
+                type="button"
+                class="tutorial__image-button"
+                (click)="ampliarImagen(imagenCampera(), 'Tabla de talles de campera')"
+              >
+                <img
+                  class="tutorial__image"
+                  [src]="imagenCampera()"
+                  alt="Tabla de talles de campera"
+                  loading="lazy"
+                />
+              </button>
+              <figcaption class="tutorial__caption">Campera</figcaption>
+            </figure>
+
+            <figure class="tutorial__card">
+              <button
+                type="button"
+                class="tutorial__image-button"
+                (click)="ampliarImagen(imagenRemera(), 'Tabla de talles de remera')"
+              >
+                <img
+                  class="tutorial__image"
+                  [src]="imagenRemera()"
+                  alt="Tabla de talles de remera"
+                  loading="lazy"
+                />
+              </button>
+              <figcaption class="tutorial__caption">Remera</figcaption>
+            </figure>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  @if (imagenAmpliada(); as imagen) {
+    <div
+      class="tutorial__lightbox"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="imagen.alt"
+      (click)="cerrarImagenAmpliada()"
+    >
+      <button
+        type="button"
+        class="tutorial__lightbox-close"
+        aria-label="Cerrar"
+        (click)="cerrarImagenAmpliada()"
+      >
+        &times;
+      </button>
+      <img
+        class="tutorial__lightbox-image"
+        [src]="imagen.src"
+        [alt]="imagen.alt"
+        (click)="$event.stopPropagation()"
+      />
+    </div>
+  }
+</section>

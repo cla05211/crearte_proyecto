@@ -153,6 +153,15 @@ export class Presupuesto implements OnInit
     return productos + agregadosGlobales;
   });
 
+  readonly etiquetaPlanCuotas = computed(() => {
+    const presupuesto = this.presupuestoGrupo();
+    if (!presupuesto) return '';
+
+    const nroCuotas = presupuesto.nroCuotas;
+    if (this.totalSeniaIndividual() === this.totalCuotaIndividual()) return `${nroCuotas + 1} Cuotas iguales`;
+    return `${nroCuotas} Cuotas + Seña`;
+  });
+
   ngOnInit(): void
   {
     this.traerPresupuestoGrupo();
@@ -670,6 +679,12 @@ export class Presupuesto implements OnInit
       .filter((agregado) => ids.includes(agregado.id))
       .map((agregado) => agregado.agregado)
       .join(', ');
+  }
+
+  etiquetaCuotasProducto(producto: ProductoCarrito): string
+  {
+    if (producto.valorSenia === producto.valorCuota) return `${producto.cuotas + 1} cuotas iguales`;
+    return `${producto.cuotas} cuotas + Seña`;
   }
 
   totalSeniaPlan(): number

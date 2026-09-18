@@ -7,6 +7,7 @@ import { ModificarDescripcionProductoPedido } from './dto/ModificarDescripcionPr
 import { ModificarCantidadProductoPedido } from './dto/ModificarCantidadProductoPedido';
 import { ProductoPedidoResponseDTO } from './dto/ProductoPedidoResponse.dto copy';
 import { ProductoPedidoResponseConNombreOriginalDTO } from './dto/ProductoPedidoResponse.dto';
+import { productosPedidoPortalClienteDTO } from './dto/productosPedidoPortalClienteDTO';
 
 @Injectable()
 export class ProductosPedidoService 
@@ -145,5 +146,31 @@ export class ProductosPedidoService
         }
 
         return senia;  
+    }
+
+    async traerProductosPedidosPortalCliente(idPedido:number): Promise<productosPedidoPortalClienteDTO[]>
+    {
+        const {data,error} = await this.sb.supabase
+            .from('productos_pedidos')
+            .select('id, productos(id, nombre)')
+            .eq('id_pedido',idPedido);
+
+        if (error) 
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        const productos: productosPedidoPortalClienteDTO[] = data.map(p => ({
+            id: p.id,
+            idProductoOriginal: p.productos.id,
+            nombreProducto: p.productos.nombre,
+        }));
+
+        return productos;  
+    }
+
+    private async determinarProductoCombo()
+    {
+
     }
 }

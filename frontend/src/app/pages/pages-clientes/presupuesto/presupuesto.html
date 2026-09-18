@@ -22,7 +22,7 @@
           <div class="presupuesto-card__body">
             <div class="cuotas-destacado">
               <span>Plan de Cuotas</span>
-              <strong>{{ presupuestoGrupo()!.nroCuotas }} Cuotas + Seña</strong>
+              <strong>{{ etiquetaPlanCuotas() }}</strong>
             </div>
             @if (productosConTotales().length === 0 && agregadosGlobalesConCuota().length === 0) {
               <p class="ds-text-muted">No hay productos cargados en este pedido.</p>

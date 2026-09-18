@@ -33,7 +33,7 @@
       <div class="presupuesto-card__body">
         <div class="cuotas-destacado">
           <span>Plan de Cuotas</span>
-          <strong>{{ presupuestoGrupo()!.nroCuotas }} Cuotas + Seña</strong>
+          <strong>{{ etiquetaPlanCuotas() }}</strong>
         </div>
         @if (presupuestoGrupo()!.productosPedido.length === 0 && presupuestoGrupo()!.agregadosGlobales.length === 0) {
           <p class="ds-text-muted">No hay productos cargados en este pedido.</p>
@@ -359,7 +359,7 @@
             <div class="cart__row" [class.is-editing]="indiceEdicionProductoPlan() === i">
               <div>
                 <strong>{{ producto.nombre }}</strong>
-                <span>{{ producto.cantidad }} unidades · {{ producto.cuotas }} cuotas</span>
+                <span>{{ producto.cantidad }} unidades · {{ etiquetaCuotasProducto(producto) }}</span>
                 @if (producto.agregados.length) {
                   <span>Agregados: {{ nombresAgregados(producto.agregados) }}</span>
                 }

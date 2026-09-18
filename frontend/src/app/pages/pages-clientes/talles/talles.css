@@ -1,0 +1,92 @@
+:host {
+  display: block;
+  min-height: 100%;
+}
+
+.colegio-page {
+  background: var(--color-primary-100);
+  min-height: 100%;
+  overflow: hidden;
+  padding: clamp(2rem, 5vw, 4.5rem) var(--space-6);
+  position: relative;
+}
+
+.colegio-page__shape {
+  border: 1px solid rgba(105, 4, 70, 0.12);
+  border-radius: 45% 55% 58% 42%;
+  pointer-events: none;
+  position: absolute;
+}
+
+.colegio-page__shape--left {
+  height: 18rem;
+  left: -11rem;
+  top: 4.5rem;
+  transform: rotate(-20deg);
+  width: 18rem;
+}
+
+.colegio-page__shape--right {
+  bottom: -9rem;
+  height: 20rem;
+  right: -11rem;
+  transform: rotate(28deg);
+  width: 20rem;
+}
+
+.colegio-container {
+  position: relative;
+  z-index: 1;
+}
+
+.back-link {
+  align-items: center;
+  color: var(--color-primary-700);
+  display: inline-flex;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+  text-decoration: none;
+}
+
+.back-link:hover { text-decoration: underline; }
+
+.back-link svg {
+  fill: none;
+  height: 1rem;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+  width: 1rem;
+}
+
+.colegio-header { margin-bottom: var(--space-6); }
+
+.colegio-tabs {
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+.colegio-tabs a {
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-bold);
+  padding: var(--space-3) var(--space-2);
+  text-decoration: none;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.colegio-tabs a:hover { color: var(--color-primary-700); }
+.colegio-tabs a.is-active { border-color: var(--color-primary-700); color: var(--color-primary-700); }
+.colegio-tabs a:focus-visible { box-shadow: var(--focus-ring); outline: 0; }
+
+@media (max-width: 680px) {
+  .colegio-page { padding: var(--space-8) var(--space-4); }
+  .colegio-tabs { gap: 0; }
+  .colegio-tabs a { flex: 1 1 auto; text-align: center; }
+}

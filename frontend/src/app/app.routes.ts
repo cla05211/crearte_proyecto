@@ -27,6 +27,21 @@ export const routes: Routes = [
       {path: "presupuesto", loadComponent: () => import('./pages/pages-clientes/presupuesto/presupuesto')
         .then((archivo) => archivo.Presupuesto), canActivate: [ClienteLogueadoGuard]
       },
+      {path: "talles", loadComponent: () => import('./pages/pages-clientes/talles/talles')
+        .then((archivo) => archivo.Talles), canActivate: [ClienteLogueadoGuard],
+        children:
+        [
+          { path: '', redirectTo: 'tutorial', pathMatch: 'full' },
+          {
+            path: "tutorial",
+            loadComponent: () => import('./pages/pages-clientes/talles/tutorial/tutorial').then((archivo) => archivo.Tutorial),
+          },
+          {
+            path: "carga",
+            loadComponent: () => import('./pages/pages-clientes/talles/carga/carga').then((archivo) => archivo.Carga),
+          },
+        ]
+      },
   ]
   },
 

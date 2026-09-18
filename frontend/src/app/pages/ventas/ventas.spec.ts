@@ -49,7 +49,7 @@ describe('Ventas', () => {
     });
 
     it('muestra cuotas + 1 cuando la seña vale lo mismo que la cuota', () => {
-      expect(component.etiquetaPlanCuotas(1, 1, 5)).toBe('2 cuotas');
+      expect(component.etiquetaPlanCuotas(1, 1, 5)).toBe('2 cuotas iguales');
     });
 
     it('muestra "cuotas + Seña" cuando la seña vale distinto a la cuota', () => {
@@ -58,6 +58,38 @@ describe('Ventas', () => {
 
     it('muestra el texto plano si no encuentra el precio para esa combinación', () => {
       expect(component.etiquetaPlanCuotas(6, 1, 5)).toBe('6 cuotas');
+    });
+  });
+
+  describe('etiquetaCuotasProducto', () => {
+    it('muestra "cuotas iguales" cuando la seña vale lo mismo que la cuota', () => {
+      expect(
+        component.etiquetaCuotasProducto({
+          idProducto: 1,
+          nombre: 'Producto A',
+          descripcion: '',
+          cantidad: 5,
+          cuotas: 1,
+          valorSenia: 100,
+          valorCuota: 100,
+          agregados: [],
+        }),
+      ).toBe('2 cuotas iguales');
+    });
+
+    it('muestra "cuotas + Seña" cuando la seña vale distinto a la cuota', () => {
+      expect(
+        component.etiquetaCuotasProducto({
+          idProducto: 1,
+          nombre: 'Producto A',
+          descripcion: '',
+          cantidad: 5,
+          cuotas: 3,
+          valorSenia: 50,
+          valorCuota: 200,
+          agregados: [],
+        }),
+      ).toBe('3 cuotas + Seña');
     });
   });
 });

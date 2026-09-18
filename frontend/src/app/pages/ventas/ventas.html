@@ -499,7 +499,7 @@
                   <div class="cart__row">
                     <div>
                       <strong>{{ producto.nombre }}</strong
-                      ><span>{{ producto.cantidad }} alumnos · {{ producto.cuotas }} cuotas</span
+                      ><span>{{ producto.cantidad }} alumnos · {{ etiquetaCuotasProducto(producto) }}</span
                       ><span
                         >Seña
                         {{
@@ -1033,7 +1033,7 @@
               <div class="cart__row" [class.is-editing]="indiceEdicionProductoPlan() === i">
                 <div>
                   <strong>{{ producto.nombre }}</strong
-                  ><span>{{ producto.cantidad }} unidades · {{ producto.cuotas }} cuotas</span
+                  ><span>{{ producto.cantidad }} unidades · {{ etiquetaCuotasProducto(producto) }}</span
                   >@if (producto.agregados.length) {
                     <span>Agregados: {{ nombresAgregados(producto.agregados) }}</span>
                   }

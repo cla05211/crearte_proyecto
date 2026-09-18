@@ -401,8 +401,14 @@ export class Ventas implements OnInit {
     const senia = Number(precio.valor_senia);
     const valorCuota = Number(precio.valor_cuota);
 
-    if (senia === valorCuota) return `${cuotas + 1} cuotas`;
+    if (senia === valorCuota) return `${cuotas + 1} cuotas iguales`;
     return `${cuotas} cuotas + Seña`;
+  }
+
+  etiquetaCuotasProducto(producto: ProductoCarrito): string
+  {
+    if (producto.valorSenia === producto.valorCuota) return `${producto.cuotas + 1} cuotas iguales`;
+    return `${producto.cuotas} cuotas + Seña`;
   }
 
   calcularProducto(): void {

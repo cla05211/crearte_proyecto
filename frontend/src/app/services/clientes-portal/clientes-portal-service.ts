@@ -39,6 +39,11 @@ export class ClientesPortalService
     return this.http.get<number | null>(`${this.base}/senia-total`);
   }
 
+  determinarSecundaria(): Observable<boolean>
+  {
+    return this.http.get<boolean>(`${this.base}/nivel`);
+  }
+
   obtenerPresupuesto():Observable<presupuestoPedidoClientesPage>
   {
     return this.http.get<presupuestoPedidoClientesPage>(`${this.base}/presupuesto`);
