@@ -53,6 +53,7 @@ import { ClientesAuthController } from './clientes-auth/clientes-auth.controller
 import { ClientesAuthModule } from './clientes-auth/clientes-auth.module';
 import { ClientesPortalController } from './clientes-portal/clientes-portal.controller';
 import { ClientesPortalModule } from './clientes-portal/clientes-portal.module';
+import { PrendasPedidoTallesService } from './prendas-pedido-talles/prendas-pedido-talles.service';
 
 
 @Module({
@@ -62,6 +63,6 @@ import { ClientesPortalModule } from './clientes-portal/clientes-portal.module';
   controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController, MovimientosCajaController, GruposController, ClientesAuthController, ClientesPortalController],
   providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService,
      ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, 
-     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, ClientesService, ClientesAuthService, ClientesService],
+     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, ClientesService, ClientesAuthService, ClientesService, PrendasPedidoTallesService],
 })
 export class AppModule {}

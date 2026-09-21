@@ -5,6 +5,8 @@ import { environment } from '../../../environments/environment.development';
 import { PagoResponseDTO } from '../pagos/dto/pagoResponse.dto';
 import { CuotaResponseDTO } from '../cuotas/dto/CuotaResponseDTO';
 import { presupuestoPedidoClientesPage } from '../gestionPedidos/dto/PresupuestoPedidoClientePage.dto';
+import { productosPedidoIdNombreDTO } from '../productosPedidos/dto/ProductoPedidoIdNombre.dto';
+import { PrendaPedidoDTO } from './dto/prenda.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -22,6 +24,11 @@ export class ClientesPortalService
   obtenerPagos(): Observable<PagoResponseDTO[]>
   {
     return this.http.get<PagoResponseDTO[]>(`${this.base}/pagos`);
+  }
+
+  obtenerProductosPedidosComponentes(): Observable<productosPedidoIdNombreDTO[]>
+  {
+    return this.http.get<productosPedidoIdNombreDTO[]>(`${this.base}/productos-componentes`);
   }
 
   obtenerCuotas(): Observable<CuotaResponseDTO[]>
@@ -49,13 +56,19 @@ export class ClientesPortalService
     return this.http.get<presupuestoPedidoClientesPage>(`${this.base}/presupuesto`);
   }
 
-  crearPago(formData: FormData)
-  {
-    return this.http.post(`${this.base}/pagos`, formData);
-  }
-
   obtenerUrlDocumento(idDocumento: number): Observable<{ url: string }>
   {
     return this.http.get<{ url: string }>(`${this.base}/documento/${idDocumento}`);
   }
+
+  obtenerPrendasPedido(): Observable<PrendaPedidoDTO[]>
+  {
+    return this.http.get<PrendaPedidoDTO[]>(`${this.base}/prendas`);
+  }
+
+  guardarPrendas(prendas: PrendaPedidoDTO[])
+  {
+    return this.http.post(`${this.base}/prendas`, prendas);
+  }
+
 }

@@ -7,7 +7,8 @@ import { ModificarDescripcionProductoPedido } from './dto/ModificarDescripcionPr
 import { ModificarCantidadProductoPedido } from './dto/ModificarCantidadProductoPedido';
 import { ProductoPedidoResponseDTO } from './dto/ProductoPedidoResponse.dto copy';
 import { ProductoPedidoResponseConNombreOriginalDTO } from './dto/ProductoPedidoResponse.dto';
-import { productosPedidoPortalClienteDTO } from './dto/productosPedidoPortalClienteDTO';
+import { productosPedidoIdNombreDTO } from './dto/productosPedidoPortalClienteDTO';
+import { table } from 'console';
 
 @Injectable()
 export class ProductosPedidoService 
@@ -148,29 +149,60 @@ export class ProductosPedidoService
         return senia;  
     }
 
-    async traerProductosPedidosPortalCliente(idPedido:number): Promise<productosPedidoPortalClienteDTO[]>
+    async traerProductosPedidosComponentes(idPedido: number): Promise<productosPedidoIdNombreDTO[]>
     {
-        const {data,error} = await this.sb.supabase
+        const { data, error } = await this.sb.supabase
             .from('productos_pedidos')
-            .select('id, productos(id, nombre)')
-            .eq('id_pedido',idPedido);
+            .select('productos(id, nombre)')
+            .eq('id_pedido', idPedido);
 
-        if (error) 
+        if (error)
         {
             throw new BadRequestException(error.message);
         }
 
-        const productos: productosPedidoPortalClienteDTO[] = data.map(p => ({
-            id: p.id,
-            idProductoOriginal: p.productos.id,
-            nombreProducto: p.productos.nombre,
-        }));
+        const productos: productosPedidoIdNombreDTO[] = [];
 
-        return productos;  
+        for (const productoPedido of data)
+        {
+            const componentes = await this.traerComponentesCombo(productoPedido.productos.id);
+
+            if (componentes.length > 0)
+            {
+                for (const componente of componentes)
+                {
+                    productos.push({
+                        idProductoOriginal: componente.id,
+                        nombreProducto: componente.nombre,
+                    });
+                }
+            }
+            else
+            {
+                productos.push({
+                    idProductoOriginal: productoPedido.productos.id,
+                    nombreProducto: productoPedido.productos.nombre,
+                });
+            }
+        }
+
+        const sinRepetidos = productos.filter((elemento, index, self) => index === self.findIndex(e => e.idProductoOriginal === elemento.idProductoOriginal));
+
+        return sinRepetidos;
     }
 
-    private async determinarProductoCombo()
+    private async traerComponentesCombo(idProducto: number): Promise<{ id: number; nombre: string }[]>
     {
+        const { data, error } = await this.sb.supabase
+            .from('producto_componentes')
+            .select('productos!id_producto_componente(id, nombre)')
+            .eq('id_producto_combo', idProducto);
 
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        return data.map(item => ({ id: item.productos.id, nombre: item.productos.nombre }));
     }
 }

@@ -28,7 +28,7 @@ export class Tutorial implements OnInit
   imagenCampera = computed(() =>
     this.secundaria()
       ? '/talles-secundaria-campera.jpeg'
-      : '/talles-primaria- campera.jpeg'
+      : '/talles-primaria-campera.jpeg'
   );
 
   imagenRemera = computed(() =>

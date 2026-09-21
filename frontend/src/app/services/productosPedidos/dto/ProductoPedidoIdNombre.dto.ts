@@ -1,5 +1,3 @@
-import { ProductoPedidoResponseDTO } from "./ProductoPedidoResponse.dto copy";
-
 export class productosPedidoIdNombreDTO
 {
     idProductoOriginal!: number;

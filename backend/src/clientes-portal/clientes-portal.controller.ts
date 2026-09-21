@@ -13,14 +13,9 @@ import { DocumentoDTO } from 'src/documentos/dto/documento.dto';
 import { CrearPagoClienteDto } from './dto/crearPagoCliente.dto';
 import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
 import { GruposService } from 'src/grupos/grupos.service';
+import { PrendaPedidoDTO } from 'src/prendas-pedido-talles/dto/PrendasPedido.dto';
+import { PrendasPedidoTallesService } from 'src/prendas-pedido-talles/prendas-pedido-talles.service';
 
-// Todos los endpoints de este controller son para el portal del cliente
-// (padres/colegios), no para el staff. La autorización acá NO es por
-// permiso/rol como en el resto del sistema: es por pertenencia. Nunca se
-// recibe un id de pedido/grupo del frontend — siempre se deriva de
-// req.cliente (que puso ClienteAuthGuard a partir del token validado
-// contra sesiones_clientes), así un cliente no puede pedir ni tocar datos
-// de otro colegio aunque manipule la request a mano.
 @Controller('clientes-portal')
 @UseGuards(ClienteAuthGuard)
 export class ClientesPortalController
@@ -35,6 +30,7 @@ export class ClientesPortalController
         private documentosService: DocumentosService,
         private sb: SupabaseService,
         private storageService: StorageService,
+        private prendasService: PrendasPedidoTallesService,
     ) {}
 
     private async obtenerIdPedidoCliente(req: any): Promise<number>
@@ -46,6 +42,13 @@ export class ClientesPortalController
     async obtenerIdPedido(@Req() req)
     {
         return await this.obtenerIdPedidoCliente(req);
+    }
+
+    @Get('productos-componentes')
+    async obtenerProductosPedidosComponentes(@Req() req)
+    {
+        const idPedido = await this.obtenerIdPedidoCliente(req);
+        return await this.productosPedidoService.traerProductosPedidosComponentes(idPedido);
     }
 
     @Get('pagos')
@@ -88,6 +91,34 @@ export class ClientesPortalController
         return await this.gruposService.determinarSecundaria(req.cliente.id_grupo);
     }
 
+    @Get('documento/:id')
+    async obtenerUrlDocumento(@Req() req, @Param('id', ParseIntPipe) idDocumento: number)
+    {
+        const idPedido = await this.obtenerIdPedidoCliente(req);
+
+        const { data, error } = await this.sb.supabase
+            .from('pagos')
+            .select('id')
+            .eq('id_documento', idDocumento)
+            .eq('id_pedido', idPedido)
+            .maybeSingle();
+
+        if (error || !data)
+        {
+            throw new ForbiddenException('No tenés acceso a este documento.');
+        }
+
+        const ruta = await this.documentosService.obtenerArchivoUrl(idDocumento);
+        return { url: await this.storageService.obtenerUrlArchivo(ruta!) };
+    }
+
+    @Get('prendas')
+    async traerPrendasPedido(@Req() req): Promise<PrendaPedidoDTO[]>
+    {
+        const idPedido = await this.obtenerIdPedidoCliente(req);
+        return await this.prendasService.traerPrendasPedido(idPedido);
+    }
+    
     @Post('pagos')
     @UseInterceptors(FileInterceptor('comprobante'))
     async crearPago(@Req() req, @Body() dtoPago: CrearPagoClienteDto, @UploadedFile() archivo: ArchivoSubidoDTO)
@@ -120,24 +151,9 @@ export class ClientesPortalController
         });
     }
 
-    @Get('documento/:id')
-    async obtenerUrlDocumento(@Req() req, @Param('id', ParseIntPipe) idDocumento: number)
+    @Post('prendas')
+    async guardarPrendasPedido(@Body() prendas: PrendaPedidoDTO[])
     {
-        const idPedido = await this.obtenerIdPedidoCliente(req);
-
-        const { data, error } = await this.sb.supabase
-            .from('pagos')
-            .select('id')
-            .eq('id_documento', idDocumento)
-            .eq('id_pedido', idPedido)
-            .maybeSingle();
-
-        if (error || !data)
-        {
-            throw new ForbiddenException('No tenés acceso a este documento.');
-        }
-
-        const ruta = await this.documentosService.obtenerArchivoUrl(idDocumento);
-        return { url: await this.storageService.obtenerUrlArchivo(ruta!) };
+        return await this.prendasService.guardarPrendasPedido(prendas);
     }
 }

@@ -4,7 +4,7 @@
 
 .tutorial {
   display: grid;
-  gap: var(--space-8);
+  gap: var(--space-0);
 }
 
 .tutorial__intro {
@@ -36,17 +36,24 @@
   to { transform: rotate(360deg); }
 }
 
+.tutorial__widget {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .tutorial__tabs {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
   justify-content: flex-end;
+  margin: 0;
 }
 
 .tutorial__tabs button {
   background-color: var(--color-primary-600);
   border: 0;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-radius: var(--radius-full);
   color: var(--color-surface);
   cursor: pointer;
   font: inherit;
@@ -67,7 +74,7 @@
 
 .tutorial__panel {
   background-color: var(--color-primary-700);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   padding: var(--space-6);
 }
@@ -100,29 +107,32 @@
 .tutorial__grid {
   display: grid;
   gap: var(--space-4);
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  margin-inline: auto;
-  max-width: 24rem;
+  grid-template-columns: repeat(2, 1fr);
 }
 
 .tutorial__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   margin: 0;
 }
 
 .tutorial__image-button {
-  background: var(--color-surface-muted);
-  border: 1px solid var(--color-border);
+  background: var(--color-primary-700);
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
   cursor: zoom-in;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
-  padding: 0;
+  padding: var(--space-3);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
   width: 100%;
 }
 
 .tutorial__image-button:hover {
-  border-color: var(--color-primary-300);
+  border-color: rgba(255, 255, 255, 0.45);
   box-shadow: var(--shadow-sm);
   transform: translateY(-2px);
 }
@@ -133,17 +143,18 @@
 }
 
 .tutorial__image {
-  aspect-ratio: 3 / 4;
   display: block;
-  height: auto;
-  object-fit: cover;
-  width: 100%;
+  max-height: 260px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
 }
 
 .tutorial__caption {
   color: var(--color-surface);
+  flex: none;
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
-  margin-top: var(--space-3);
   text-align: center;
 }
 
@@ -198,5 +209,7 @@
   .tutorial__tabs { gap: 0; }
   .tutorial__tabs button { flex: 1 1 auto; text-align: center; }
   .tutorial__panel { padding: var(--space-4); }
+  .tutorial__grid { grid-template-columns: 1fr; }
+  .tutorial__image { max-height: 220px; }
   .tutorial__lightbox-close { right: var(--space-4); top: var(--space-4); }
 }
