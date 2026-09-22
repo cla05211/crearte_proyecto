@@ -71,4 +71,13 @@ export class ClientesPortalService
     return this.http.post(`${this.base}/prendas`, prendas);
   }
 
+  obtenerResumenTalles(): Observable<Blob>
+  {
+    return this.http.get(`${this.base}/resumen-talles`, { responseType: 'blob' });
+  }
+
+  crearPago(formData: FormData)
+  {
+    return this.http.post(`${this.base}/pagos`, formData);
+  }
 }

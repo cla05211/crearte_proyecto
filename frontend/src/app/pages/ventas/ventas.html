@@ -346,7 +346,7 @@
                     [(ngModel)]="productoEnEdicion.cuotas"
                     (change)="calcularProducto()">
                     @for (cuotas of cuotasDisponibles(); track cuotas) {
-                      <option [value]="cuotas">
+                      <option [ngValue]="cuotas">
                         {{ etiquetaPlanCuotas(cuotas, productoEnEdicion.idProducto, productoEnEdicion.cantidad) }}
                       </option>
                     }

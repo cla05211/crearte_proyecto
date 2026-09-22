@@ -1,0 +1,13 @@
+<div class="firma-wrapper">
+  <canvas
+    #canvasFirma
+    class="firma-canvas"
+    [style.width.px]="ancho()"
+    [style.height.px]="alto()">
+  </canvas>
+
+  <div class="firma-acciones">
+    <button type="button" (click)="limpiar()">Limpiar</button>
+    <button type="button" (click)="guardar()">Guardar firma</button>
+  </div>
+</div>

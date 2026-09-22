@@ -1,0 +1,153 @@
+:host {
+  display: block;
+}
+
+.carga-page {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.carga-loading {
+  align-items: center;
+  color: var(--color-text-muted);
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+  padding: var(--space-12) 0;
+}
+
+.carga-spinner {
+  animation: carga-spin 0.8s linear infinite;
+  border: 3px solid var(--color-primary-200);
+  border-radius: 50%;
+  border-top-color: var(--color-primary-700);
+  display: inline-block;
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+@keyframes carga-spin {
+  to { transform: rotate(360deg); }
+}
+
+.carga-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+
+.carga-productos {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.carga-producto__titulo {
+  margin-bottom: var(--space-4);
+}
+
+.carga-tabla-wrapper {
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+}
+
+.carga-tabla {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 32rem;
+  width: 100%;
+}
+
+/* Con border-collapse: separate evitamos el desajuste entre el borde de la tabla
+   y el recorte redondeado del wrapper (que dejaba las puntas más finas que el
+   resto de la línea): cada celda dibuja solo su borde derecho e inferior, y el
+   borde izquierdo/superior se agrega aparte en la primera columna/fila, así el
+   grosor queda parejo en todos lados, incluidas las esquinas redondeadas. */
+.carga-tabla th,
+.carga-tabla td {
+  border-bottom: 1px solid var(--color-primary-700);
+  border-right: 1px solid var(--color-primary-700);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+}
+
+.carga-tabla th:first-child,
+.carga-tabla td:first-child {
+  border-left: 1px solid var(--color-primary-700);
+}
+
+.carga-tabla thead th {
+  background-color: var(--color-primary-100);
+  border-top: 1px solid var(--color-primary-700);
+  color: var(--color-primary-700);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.carga-tabla thead th:first-child { border-top-left-radius: var(--radius-lg); }
+.carga-tabla thead th:last-child { border-top-right-radius: var(--radius-lg); }
+.carga-tabla tbody tr:last-child td:first-child { border-bottom-left-radius: var(--radius-lg); }
+.carga-tabla tbody tr:last-child td:last-child { border-bottom-right-radius: var(--radius-lg); }
+
+.carga-tabla tbody tr {
+  background-color: var(--color-surface-muted);
+}
+
+.carga-tabla__talle {
+  color: var(--color-primary-700);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+  width: 1%;
+}
+
+.carga-tabla__cantidad {
+  color: var(--color-primary-700);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  width: 1%;
+}
+
+.carga-tabla td .ds-input {
+  min-height: var(--control-height-sm);
+}
+
+.carga-input-cantidad {
+  max-width: 8rem;
+  text-align: center;
+}
+
+.carga-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.carga-resumen {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.carga-resumen__visor {
+  background-color: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.carga-resumen__iframe {
+  border: none;
+  display: block;
+  height: 75vh;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .carga-header { justify-content: stretch; }
+  .carga-header .ds-button { flex: 1 1 auto; }
+  .carga-footer .ds-button { width: 100%; }
+  .carga-resumen__iframe { height: 65vh; }
+}

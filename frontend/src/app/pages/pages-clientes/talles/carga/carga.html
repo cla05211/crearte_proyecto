@@ -1,1 +1,105 @@
-<p>carga works!</p>
+<main class="carga-page">
+  @if (cargando()) {
+    <div class="carga-loading" role="status" aria-live="polite">
+      <span class="carga-spinner" aria-hidden="true"></span>
+      Cargando talles del pedido...
+    </div>
+  } @else if (vistaResumen()) {
+    <section class="carga-resumen">
+      <header class="carga-header">
+        <h2 class="ds-heading-3">Resumen de talles del pedido</h2>
+        <button type="button" class="ds-button ds-button--secondary" (click)="cerrarResumen()">Volver a editar</button>
+      </header>
+
+      <div class="carga-resumen__visor">
+        <iframe [src]="urlResumenSegura()" class="carga-resumen__iframe" title="Resumen de talles del pedido"></iframe>
+      </div>
+
+      <footer class="carga-footer">
+        <button type="button" class="ds-button ds-button--large" (click)="confirmarTalles()">Confirmar</button>
+      </footer>
+    </section>
+  } @else {
+    <header class="carga-header">
+      <h2 class="ds-heading-3">Elegí el talle, la cantidad y los nombres de cada prenda</h2>
+      <button
+        type="button"
+        class="ds-button ds-button--secondary"
+        [disabled]="generandoResumen() || guardando()"
+        (click)="verTallesCargados()"
+      >
+        {{ guardando() ? 'Guardando...' : (generandoResumen() ? 'Generando...' : '¡Talles Cargados!') }}
+      </button>
+    </header>
+
+    @if (productosConTalles().length === 0) {
+      <p class="ds-text-muted">Este pedido todavía no tiene productos cargados.</p>
+    } @else {
+      <div class="carga-productos">
+        @for (producto of productosConTalles(); track producto.idProductoOriginal) {
+          <section class="ds-card carga-producto">
+            <h3 class="ds-heading-3 carga-producto__titulo">{{ producto.nombreProducto }}</h3>
+
+            <div class="carga-tabla-wrapper">
+              <table class="carga-tabla">
+                <thead>
+                  <tr>
+                    <th scope="col">Talle</th>
+                    <th scope="col">Cantidad por talle</th>
+                    @if (!producto.esPantalon) {
+                      <th scope="col">Nombres o apodos</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (talle of producto.talles; track talle) {
+                    <tr>
+                      <td class="carga-tabla__talle">{{ talle }}</td>
+
+                      @if (producto.esPantalon) {
+                        <td>
+                          <input
+                            type="number"
+                            class="ds-input carga-input-cantidad"
+                            min="0"
+                            step="1"
+                            [attr.aria-label]="'Cantidad de ' + producto.nombreProducto + ' talle ' + talle"
+                            [value]="valor(clave(producto.idProductoOriginal, talle))"
+                            (input)="onInputCantidad($event, clave(producto.idProductoOriginal, talle))"
+                          />
+                        </td>
+                      } @else {
+                        <td class="carga-tabla__cantidad">{{ cantidadNombres(clave(producto.idProductoOriginal, talle)) }}</td>
+                        <td>
+                          <input
+                            type="text"
+                            class="ds-input"
+                            placeholder="Separá cada nombre con un espacio"
+                            [attr.aria-label]="'Nombres para ' + producto.nombreProducto + ' talle ' + talle"
+                            [value]="valor(clave(producto.idProductoOriginal, talle))"
+                            (input)="onInputNombres($event, clave(producto.idProductoOriginal, talle))"
+                          />
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+        }
+      </div>
+
+      <footer class="carga-footer">
+        <button
+          type="button"
+          class="ds-button ds-button--large"
+          [disabled]="guardando()"
+          (click)="guardarProgreso()"
+        >
+          {{ guardando() ? 'Guardando...' : 'Guardar Progreso' }}
+        </button>
+      </footer>
+    }
+  }
+</main>
