@@ -171,4 +171,20 @@ export class PedidosService
         }
         return data;
     }
+
+    async determinartipoTalles(idPedido: number): Promise<string>
+    {
+        const { data, error } = await this.sb.supabase
+        .from("pedidos")
+        .select('talles')
+        .eq("id", idPedido)
+        .single();
+
+        if (error)
+        {
+            throw new Error(error.message);
+        }
+
+        return data.talles!;
+    }
 }

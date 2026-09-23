@@ -44,4 +44,7 @@ export class GenerarResumenTallesDTO
     sueltas!: ProductoSueltoDTO[];
     prendas!: ProductoTallesDTO[];
     beneficios!: string[];
+    // Firma del cliente al confirmar los talles (PNG en base64). Si no hay, el PDF sale como resumen previo.
+    firmaBase64?: string | null;
+    fechaFirma?: string | null;
 }

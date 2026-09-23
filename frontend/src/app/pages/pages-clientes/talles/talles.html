@@ -8,13 +8,23 @@
       <h1 class="ds-heading-1">Talles</h1>
     </header>
 
-    <nav class="colegio-tabs" aria-label="Secciones del colegio">
-        <a routerLink="tutorial" routerLinkActive="is-active">¿Cómo tomar las medidas?</a>
-        <a routerLink="carga" routerLinkActive="is-active">Cargar talles</a>
-    </nav>
+    @if (confirmacion.confirmados() === null) {
+      <p class="ds-text-muted talles-cargando" role="status" aria-live="polite">Cargando...</p>
+    } @else if (confirmacion.confirmados()) {
+      <section class="colegio-content">
+        <app-resumen-firmado />
+      </section>
+    } @else {
+      <nav class="colegio-tabs" aria-label="Secciones del colegio">
+          @if (!muestrasFisicas()) {
+            <a routerLink="tutorial" routerLinkActive="is-active">¿Cómo tomar las medidas?</a>
+          }
+          <a routerLink="carga" routerLinkActive="is-active">Cargar talles</a>
+      </nav>
 
-    <section class="colegio-content">
-      <router-outlet></router-outlet>
-    </section>
+      <section class="colegio-content">
+        <router-outlet></router-outlet>
+      </section>
+    }
   </section>
 </main>

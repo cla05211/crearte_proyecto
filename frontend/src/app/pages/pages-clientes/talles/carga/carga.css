@@ -145,6 +145,11 @@
   width: 100%;
 }
 
+.carga-firma {
+  display: grid;
+  gap: var(--space-3);
+}
+
 @media (max-width: 600px) {
   .carga-header { justify-content: stretch; }
   .carga-header .ds-button { flex: 1 1 auto; }

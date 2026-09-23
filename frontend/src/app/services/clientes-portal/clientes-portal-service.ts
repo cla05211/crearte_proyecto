@@ -7,7 +7,6 @@ import { CuotaResponseDTO } from '../cuotas/dto/CuotaResponseDTO';
 import { presupuestoPedidoClientesPage } from '../gestionPedidos/dto/PresupuestoPedidoClientePage.dto';
 import { productosPedidoIdNombreDTO } from '../productosPedidos/dto/ProductoPedidoIdNombre.dto';
 import { PrendaPedidoDTO } from './dto/prenda.dto';
-import { ProductoPrendasResumenDTO } from '../productosPedidos/dto/ResumenPrendasPedidoDTO';
 
 @Injectable({
   providedIn: 'root',
@@ -77,13 +76,27 @@ export class ClientesPortalService
     return this.http.get(`${this.base}/resumen-talles`, { responseType: 'blob' });
   }
 
+  determinartipoTalles(): Observable<string>
+  {
+    // El back devuelve el texto plano (no JSON), por eso se pide como 'text'
+    return this.http.get(`${this.base}/tipo-talles`, { responseType: 'text' });
+  }
+
   crearPago(formData: FormData)
   {
     return this.http.post(`${this.base}/pagos`, formData);
   }
 
-  confirmarTalles(prendas: ProductoPrendasResumenDTO[])
+  obtenerTallesConfirmados(): Observable<boolean>
   {
-    return this.http.post(`${this.base}/confirmar-talles`, prendas);
+    return this.http.get<boolean>(`${this.base}/talles-confirmados`);
+  }
+
+  confirmarTalles(firma: Blob)
+  {
+    const formData = new FormData();
+    formData.append('firma', firma, 'firma-talles.png');
+
+    return this.http.post(`${this.base}/confirmar-talles`, formData);
   }
 }

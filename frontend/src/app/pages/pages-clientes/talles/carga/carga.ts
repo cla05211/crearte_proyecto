@@ -1,10 +1,13 @@
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
 import { ClientesPortalService } from '../../../../services/clientes-portal/clientes-portal-service';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
 import { productosPedidoIdNombreDTO } from '../../../../services/productosPedidos/dto/ProductoPedidoIdNombre.dto';
 import { PrendaPedidoDTO } from '../../../../services/clientes-portal/dto/prenda.dto';
+import { ConfirmationService } from '../../../../services/confirmation/confirmation.service';
+import { FirmaComponent } from '../../../../firma/firma';
+import { TallesConfirmacionService } from '../talles-confirmacion.service';
 
 const ID_PANTALON = 72;
 const ID_BANDERA = 73;
@@ -42,7 +45,7 @@ interface ProductoConTalles
 
 @Component({
   selector: 'app-carga',
-  imports: [],
+  imports: [FirmaComponent],
   templateUrl: './carga.html',
   styleUrl: './carga.css',
 })
@@ -51,6 +54,10 @@ export class Carga implements OnInit, OnDestroy
     private readonly clientesPortalService = inject(ClientesPortalService);
     private readonly notificaciones = inject(NotificationService);
     private readonly sanitizer = inject(DomSanitizer);
+    private readonly confirmationService = inject(ConfirmationService);
+    private readonly tallesConfirmacion = inject(TallesConfirmacionService);
+
+    private readonly firma = viewChild(FirmaComponent);
 
     readonly cargando = signal(true);
     readonly guardando = signal(false);
@@ -59,6 +66,9 @@ export class Carga implements OnInit, OnDestroy
     readonly vistaResumen = signal(false);
     readonly urlResumenSegura = signal<SafeResourceUrl | null>(null);
     private urlResumenBlob: string | null = null;
+
+    readonly confirmando = signal(false);
+    readonly firmaFaltante = signal(false);
 
     private readonly idPedido = signal<number | null>(null);
     private readonly secundaria = signal(false);
@@ -264,7 +274,16 @@ export class Carga implements OnInit, OnDestroy
             return;
         }
 
+        if (await this.cargarResumen())
+        {
+            this.vistaResumen.set(true);
+        }
+    }
+
+    private async cargarResumen(): Promise<boolean>
+    {
         this.generandoResumen.set(true);
+        let exito = false;
 
         try
         {
@@ -272,7 +291,7 @@ export class Carga implements OnInit, OnDestroy
             this.liberarUrlResumen();
             this.urlResumenBlob = URL.createObjectURL(blob);
             this.urlResumenSegura.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.urlResumenBlob));
-            this.vistaResumen.set(true);
+            exito = true;
         }
         catch
         {
@@ -285,6 +304,8 @@ export class Carga implements OnInit, OnDestroy
         {
             this.generandoResumen.set(false);
         }
+
+        return exito;
     }
 
     cerrarResumen()
@@ -296,7 +317,60 @@ export class Carga implements OnInit, OnDestroy
 
     async confirmarTalles()
     {
+        if (this.confirmando())
+        {
+            return;
+        }
 
+        const imagenFirma = await this.firma()?.obtenerImagen();
+
+        if (!imagenFirma)
+        {
+            this.firmaFaltante.set(true);
+            this.notificaciones.error({
+                title: 'Falta la firma',
+                description: 'Firmá en el recuadro antes de confirmar los talles.',
+            });
+            return;
+        }
+
+        this.firmaFaltante.set(false);
+
+        const confirmado = await this.confirmationService.confirm({
+            title: 'Confirmar talles',
+            description: 'Una vez confirmados, los talles ya no se van a poder modificar. ¿Querés continuar?',
+        });
+
+        if (!confirmado)
+        {
+            return;
+        }
+
+        this.confirmando.set(true);
+
+        try
+        {
+            await firstValueFrom(this.clientesPortalService.confirmarTalles(imagenFirma));
+
+            this.notificaciones.success({
+                title: 'Talles confirmados',
+                description: 'El pedido quedó confirmado con tu firma.',
+            });
+
+            // La página de Talles pasa a mostrar solo el PDF firmado (sin pestañas)
+            this.tallesConfirmacion.confirmados.set(true);
+        }
+        catch
+        {
+            this.notificaciones.error({
+                title: 'No se pudieron confirmar los talles',
+                description: 'Revisá tu conexión e intentá de nuevo.',
+            });
+        }
+        finally
+        {
+            this.confirmando.set(false);
+        }
     }
 
     private liberarUrlResumen()

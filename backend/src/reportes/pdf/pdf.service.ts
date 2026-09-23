@@ -642,15 +642,52 @@ export class PdfService
                 ? [{ ul: dto.beneficios, fontSize: 9, margin: [0, 0, 0, 0] }]
                 : [{ text: 'No hay beneficios ni bonificaciones aplicados a este pedido.', italics: true, fontSize: 9, color: '#777777' }];
 
+            // Si el cliente ya firmó, la firma va al final del documento y los textos
+            // dejan de decir que es un resumen previo a la confirmación.
+            const firmado = !!dto.firmaBase64;
+            const imagenes: Record<string, string> = { logoCrearte: `data:image/png;base64,${this.logoBase64}` };
+            const firmaContent: Content[] = [];
+
+            if (firmado)
+            {
+                imagenes['firmaCliente'] = `data:image/png;base64,${dto.firmaBase64}`;
+                const fecha = dto.fechaFirma ? new Date(dto.fechaFirma).toLocaleDateString('es-AR') : null;
+
+                firmaContent.push(
+                    seccionTitulo('Confirmación de talles'),
+                    {
+                        unbreakable: true,
+                        stack: [
+                            { text: 'Con esta firma se confirma la planilla de talles detallada en este documento. Una vez confirmada no se podrán realizar más modificaciones.', fontSize: 9, alignment: 'justify', margin: [0, 0, 0, 10] },
+                            {
+                                columns: [
+                                    {
+                                        width: 200,
+                                        stack: [
+                                            { image: 'firmaCliente', width: 180, alignment: 'center' },
+                                            { canvas: [{ type: 'line' as const, x1: 0, y1: 2, x2: 200, y2: 2, lineWidth: 0.8, lineColor: '#555555' }] },
+                                            { text: 'Firma', bold: true, fontSize: 8, alignment: 'center', margin: [0, 4, 0, 0] },
+                                            ...(dto.padreResponsable ? [{ text: `Aclaración: ${dto.padreResponsable}`, fontSize: 8, alignment: 'center' as const }] : []),
+                                            ...(fecha ? [{ text: `Fecha: ${fecha}`, fontSize: 8, alignment: 'center' as const }] : []),
+                                        ],
+                                    },
+                                    { width: '*', text: '' },
+                                ],
+                            },
+                        ],
+                    },
+                );
+            }
+
             const docDefinition: TDocumentDefinitions = {
                 pageSize: 'A4',
                 pageMargins: [40, 40, 40, 50],
                 defaultStyle: { font: 'Roboto', fontSize: 9 },
-                images: { logoCrearte: `data:image/png;base64,${this.logoBase64}` },
+                images: imagenes,
                 footer: (currentPage: number, pageCount: number) => ({
                     margin: [40, 0, 40, 20],
                     columns: [
-                        { text: 'Resumen previo a la confirmación de talles — no reemplaza la planilla firmada.', fontSize: 7, italics: true, color: '#999999' },
+                        { text: firmado ? 'Planilla de talles confirmada y firmada.' : 'Resumen previo a la confirmación de talles — no reemplaza la planilla firmada.', fontSize: 7, italics: true, color: '#999999' },
                         { text: `${currentPage} / ${pageCount}`, fontSize: 7, alignment: 'right', color: '#999999' },
                     ],
                 }),
@@ -662,7 +699,7 @@ export class PdfService
                                 width: '*',
                                 stack: [
                                     { text: 'RESUMEN DE TALLES', bold: true, fontSize: 18, color: COLOR_MARCA, alignment: 'right' },
-                                    { text: 'Documento de verificación previo a la confirmación', fontSize: 9, alignment: 'right', color: '#777777' },
+                                    { text: firmado ? 'Planilla de talles confirmada' : 'Documento de verificación previo a la confirmación', fontSize: 9, alignment: 'right', color: '#777777' },
                                 ],
                                 margin: [0, 6, 0, 0],
                             },
@@ -680,6 +717,8 @@ export class PdfService
 
                     seccionTitulo('Beneficios del pedido'),
                     ...beneficiosContent,
+
+                    ...firmaContent,
                 ],
             };
 

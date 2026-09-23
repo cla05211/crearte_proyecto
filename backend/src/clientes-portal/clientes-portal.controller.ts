@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Get, Param, ParseIntPipe, Post, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ConflictException, ForbiddenException, Get, Param, ParseIntPipe, Post, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ClienteAuthGuard } from 'src/clientes-auth/guards/clientesAuthGuard';
@@ -24,6 +24,8 @@ import { ProductosService } from 'src/productos/productos.service';
 
 const IDS_CAMPERA_BUZO = [63, 64, 71];
 const IDS_REMERA_CHOMBA = [65, 66];
+
+const TIPO_DOCUMENTO_FIRMA_TALLES = 'Firma Talles';
 
 @Controller('clientes-portal')
 @UseGuards(ClienteAuthGuard)
@@ -130,6 +132,13 @@ export class ClientesPortalController
         return await this.prendasService.traerPrendasPedido(idPedido);
     }
 
+    @Get('tipo-talles')
+    async determinartipoTalles(@Req() req): Promise<string>
+    {
+        const idPedido = await this.obtenerIdPedidoCliente(req);
+        return await this.pedidosService.determinartipoTalles(idPedido);
+    }
+
     @Get('resumen-talles')
     async obtenerResumenTalles(@Req() req, @Res() res: Response)
     {
@@ -157,6 +166,12 @@ export class ClientesPortalController
 
         const { combos, sueltas } = this.construirCombosYSueltas(prendas);
 
+        // Si los talles ya se confirmaron, el PDF sale con la firma del cliente al final
+        const documentoFirma = await this.documentosService.obtenerDocumentoPorTipo(idGrupo, TIPO_DOCUMENTO_FIRMA_TALLES);
+        const firmaBase64 = documentoFirma?.archivo_url
+            ? (await this.storageService.descargarArchivo(documentoFirma.archivo_url)).toString('base64')
+            : null;
+
         const dto: GenerarResumenTallesDTO = {
             colegioNombre: datosGrupo.grupo.colegio?.nombre ?? '',
             localidad: datosGrupo.grupo.colegio?.localidad ?? null,
@@ -169,6 +184,8 @@ export class ClientesPortalController
             sueltas,
             prendas: prendas.map(p => ({ nombreProducto: p.nombreProducto, talles: p.talles, total: p.total })),
             beneficios,
+            firmaBase64,
+            fechaFirma: documentoFirma?.created_at ?? null,
         };
 
         const buffer = await this.pdfService.generarResumenTalles(dto);
@@ -264,11 +281,35 @@ export class ClientesPortalController
         return await this.prendasService.guardarPrendasPedido(idPedido, prendas);
     }
 
+    @Get('talles-confirmados')
+    async obtenerTallesConfirmados(@Req() req): Promise<boolean>
+    {
+        const documentoFirma = await this.documentosService.obtenerDocumentoPorTipo(req.cliente.id_grupo, TIPO_DOCUMENTO_FIRMA_TALLES);
+        return !!documentoFirma;
+    }
+
     @Post('confirmar-talles')
-    async confirmarTalles(@Req() req)
+    @UseInterceptors(FileInterceptor('firma'))
+    async confirmarTalles(@Req() req, @UploadedFile() firma: ArchivoSubidoDTO)
     {
         const idGrupo = req.cliente.id_grupo;
         const idPedido = await this.obtenerIdPedidoCliente(req);
+
+        if (!firma || firma.mimetype !== 'image/png')
+        {
+            throw new BadRequestException('Falta la firma o no es una imagen PNG.');
+        }
+
+        if (await this.documentosService.obtenerDocumentoPorTipo(idGrupo, TIPO_DOCUMENTO_FIRMA_TALLES))
+        {
+            throw new ConflictException('Los talles de este pedido ya fueron confirmados.');
+        }
+
+        //Guardar firma en storage
+        const rutaFirma = await this.storageService.guardarImagen(
+            { pedidoId: idPedido.toString(), nombreArchivo: `firma-talles-${idPedido}-${Date.now()}.png`, carpetaGuardado: 'firmas-talles' },
+            firma,
+        );
 
         //Obtener cantidad prendas
         const prendas = await this.prendasService.traerResumenPrendasPedido(idPedido);
@@ -303,7 +344,7 @@ export class ClientesPortalController
         const hermanos = Number(presupuesto.pedido.cantidad_hermanos) || 0;
         const totalCuota = totalCuotaSinDescuento - totalCuotaSinDescuento * (porcentaje / 100) * hermanos;
 
-        return await this.gestionPedidosService.modificarPlanPedido({
+        const resultado = await this.gestionPedidosService.modificarPlanPedido({
             id_pedido: idPedido,
             productos,
             agregadosGlobales: presupuesto.agregadosGlobales.map(a => ({ id_agregado: a.id_agregado })),
@@ -311,5 +352,15 @@ export class ClientesPortalController
             valor_cuota_nuevo: totalCuota,
             valor_senia_nuevo: totalSenia,
         });
+
+        //Marcar talles como confirmados, con la fecha de la firma (día en Argentina, formato YYYY-MM-DD)
+        const fechaFirma = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+        await this.pedidosService.modificarEstadoTalles('Confirmado', idPedido, fechaFirma);
+
+        //Registrar documento de la firma (va al final: es lo que marca los talles como confirmados,
+        //así si algo de lo anterior falla el cliente puede volver a intentar)
+        await this.documentosService.subirDocumento({ id_grupo: idGrupo, tipo: TIPO_DOCUMENTO_FIRMA_TALLES, archivo_url: rutaFirma });
+
+        return resultado;
     }
 }

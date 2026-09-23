@@ -23,6 +23,26 @@ export class DocumentosService
         return data.map(d => d.id);
     } 
     
+    // Devuelve el documento más reciente de ese tipo para el grupo, o null si no hay ninguno
+    async obtenerDocumentoPorTipo(idGrupo: number, tipo: string)
+    {
+        const { data, error } = await this.sb.supabase
+            .from('documentos')
+            .select('id, archivo_url, created_at')
+            .eq('id_grupo', idGrupo)
+            .eq('tipo', tipo)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        return data;
+    }
+
     async obtenerArchivoUrl(idArchivo:number)
     {
         const { data, error } = await this.sb.supabase

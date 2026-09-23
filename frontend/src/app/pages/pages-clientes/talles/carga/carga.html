@@ -8,15 +8,26 @@
     <section class="carga-resumen">
       <header class="carga-header">
         <h2 class="ds-heading-3">Resumen de talles del pedido</h2>
-        <button type="button" class="ds-button ds-button--secondary" (click)="cerrarResumen()">Volver a editar</button>
+        <button type="button" class="ds-button ds-button--secondary" [disabled]="confirmando()" (click)="cerrarResumen()">Volver a editar</button>
       </header>
 
       <div class="carga-resumen__visor">
         <iframe [src]="urlResumenSegura()" class="carga-resumen__iframe" title="Resumen de talles del pedido"></iframe>
       </div>
 
+      <section class="ds-card carga-firma">
+        <h3 class="ds-heading-3">Firma</h3>
+        <p class="ds-text-muted">Revisá el resumen y firmá en el recuadro para confirmar los talles del pedido.</p>
+        <app-firma [ancho]="480" [alto]="200" (trazo)="firmaFaltante.set(false)" />
+        @if (firmaFaltante()) {
+          <span class="ds-alert ds-alert--danger" role="alert">Falta la firma para poder confirmar.</span>
+        }
+      </section>
+
       <footer class="carga-footer">
-        <button type="button" class="ds-button ds-button--large" (click)="confirmarTalles()">Confirmar</button>
+        <button type="button" class="ds-button ds-button--large" [disabled]="confirmando()" (click)="confirmarTalles()">
+          {{ confirmando() ? 'Confirmando...' : 'Confirmar' }}
+        </button>
       </footer>
     </section>
   } @else {

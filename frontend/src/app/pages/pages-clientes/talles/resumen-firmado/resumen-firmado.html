@@ -1,0 +1,19 @@
+<section class="resumen-firmado">
+  <header class="resumen-firmado__header">
+    <h2 class="ds-heading-3">Resumen de talles del pedido</h2>
+    <span class="ds-badge ds-badge--success">Confirmado</span>
+  </header>
+
+  @if (cargando()) {
+    <div class="resumen-firmado__loading" role="status" aria-live="polite">
+      <span class="resumen-firmado__spinner" aria-hidden="true"></span>
+      Cargando resumen...
+    </div>
+  } @else if (urlResumenSegura()) {
+    <div class="resumen-firmado__visor">
+      <iframe [src]="urlResumenSegura()" class="resumen-firmado__iframe" title="Resumen de talles del pedido"></iframe>
+    </div>
+  } @else {
+    <p class="ds-text-muted">Los talles ya fueron confirmados, pero no se pudo cargar el resumen. Recargá la página para intentarlo de nuevo.</p>
+  }
+</section>

@@ -5,4 +5,13 @@
   background: #fff;
   touch-action: none;
   cursor: crosshair;
+  display: block;
+  max-width: 100%;
+}
+
+.firma-wrapper
+{
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
 }

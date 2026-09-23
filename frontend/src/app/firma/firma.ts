@@ -1,4 +1,4 @@
-import { Component, viewChild, ElementRef, afterNextRender, input, inject } from '@angular/core';
+import { Component, viewChild, ElementRef, afterNextRender, input, inject, output } from '@angular/core';
 import SignaturePad from 'signature_pad';
 import { StorageService } from '../services/storage/storage-service';
 import { SubirArchivoStorage } from '../services/storage/dtos/SubirArchivoStorage';
@@ -6,13 +6,17 @@ import { SubirArchivoStorage } from '../services/storage/dtos/SubirArchivoStorag
 @Component({
     selector: 'app-firma',
     standalone: true,
-    template: `<canvas #canvasFirma class="border rounded"></canvas>`,
+    templateUrl: './firma.html',
+    styleUrl: './firma.css',
 })
 
 export class FirmaComponent 
 {
 	ancho = input(400);
   	alto = input(200);
+
+	// Avisa al padre cada vez que se termina un trazo (por ej. para limpiar un aviso de "falta la firma")
+	trazo = output<void>();
 
 	private storageService = inject(StorageService);
 	canvasRef = viewChild.required<ElementRef<HTMLCanvasElement>>('canvasFirma');
@@ -25,6 +29,7 @@ export class FirmaComponent
 		const canvas = this.canvasRef().nativeElement;
 		this.resizeCanvas(canvas);
 		this.pad = new SignaturePad(canvas, { minWidth: 0.5, maxWidth: 2.5 });
+		this.pad.addEventListener('endStroke', () => this.trazo.emit());
 		});
 	}
 
@@ -39,6 +44,20 @@ export class FirmaComponent
 	limpiar() 
 	{
 		this.pad?.clear();
+	}
+
+	estaVacia(): boolean
+	{
+		return !this.pad || this.pad.isEmpty();
+	}
+
+	// Devuelve la firma como PNG sin subirla, para que el componente que la usa decida a dónde mandarla
+	async obtenerImagen(): Promise<Blob | null>
+	{
+		if (!this.pad || this.pad.isEmpty()) return null;
+
+		const dataUrl = this.pad.toDataURL('image/png');
+		return await (await fetch(dataUrl)).blob();
 	}
 
 	async guardar(nombreArchivo:string, carpetaGuardado:string): Promise<Blob | void>

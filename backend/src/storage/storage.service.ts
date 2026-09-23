@@ -26,6 +26,20 @@ export class StorageService {
         return ruta;
     }
 
+    async descargarArchivo(ruta: string): Promise<Buffer>
+    {
+        const { data, error } = await this.supabaseService.supabase.storage
+        .from('imagenes')
+        .download(ruta);
+
+        if (error)
+        {
+            throw new Error(error.message);
+        }
+
+        return Buffer.from(await data.arrayBuffer());
+    }
+
     async obtenerUrlArchivo(ruta: string): Promise<string> 
     {
         const { data, error } = await this.supabaseService.supabase.storage
