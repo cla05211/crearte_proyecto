@@ -7,6 +7,7 @@ import { CuotaResponseDTO } from '../cuotas/dto/CuotaResponseDTO';
 import { presupuestoPedidoClientesPage } from '../gestionPedidos/dto/PresupuestoPedidoClientePage.dto';
 import { productosPedidoIdNombreDTO } from '../productosPedidos/dto/ProductoPedidoIdNombre.dto';
 import { PrendaPedidoDTO } from './dto/prenda.dto';
+import { ProductoPrendasResumenDTO } from '../productosPedidos/dto/ResumenPrendasPedidoDTO';
 
 @Injectable({
   providedIn: 'root',
@@ -79,5 +80,10 @@ export class ClientesPortalService
   crearPago(formData: FormData)
   {
     return this.http.post(`${this.base}/pagos`, formData);
+  }
+
+  confirmarTalles(prendas: ProductoPrendasResumenDTO[])
+  {
+    return this.http.post(`${this.base}/confirmar-talles`, prendas);
   }
 }

@@ -14,11 +14,14 @@ import { ReportesModule } from 'src/reportes/reportes.module';
 import { GestionPedidosModule } from 'src/gestion-pedidos/gestion-pedidos.module';
 import { StorageModule } from 'src/storage/storage.module';
 import { GruposService } from 'src/grupos/grupos.service';
+import { PrendasPedidoTallesService } from 'src/prendas-pedido-talles/prendas-pedido-talles.service';
+import { PdfService } from 'src/reportes/pdf/pdf.service';
+import { ProductosService } from 'src/productos/productos.service';
 
 @Module({
     imports:[SupabaseModule, OcrModule, ReportesModule, GestionPedidosModule, StorageModule],
     controllers: [ClientesPortalController],
-    providers:[PedidosService, PagosService, CuotasService, ProductosPedidoService, DocumentosService, SupabaseService, GruposService]
+    providers:[PrendasPedidoTallesService,PedidosService, PagosService, CuotasService, ProductosPedidoService, DocumentosService, SupabaseService, GruposService, ProductosService]
 })
 export class ClientesPortalModule {
 

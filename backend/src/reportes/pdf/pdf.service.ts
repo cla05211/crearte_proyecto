@@ -3,6 +3,7 @@ import * as path from 'path';
 import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { GenerarReciboDTO } from './dto/generarRecibo.dto';
 import { GenerarContratoDTO } from './dto/generarContrato.dto';
+import { GenerarResumenTallesDTO } from './dto/generarResumenTalles.dto';
 import { numeroALetras } from 'src/reportes/excel/nroALetras.util';
 import * as fs from 'fs'
 
@@ -43,6 +44,11 @@ const LEYENDA_SENIA =
     'confirmatoria del acto, excepto que las partes convengan la facultad de arrepentirse; en tal caso, quien entregó la señal la pierde en beneficio de la otra, y quien la ' +
     'recibió, debe restituirla doblada…").-'
 
+// Color institucional de Crearte, tomado del design-system del front (--color-primary-700).
+const COLOR_MARCA = '#690446';
+const COLOR_MARCA_SUAVE = '#FBEFF5';
+const COLOR_GRIS_SUAVE = '#F4F4F5';
+
 const logoPath = path.join(__dirname, '..', 'assets', 'logo-crearte.png');
  
 @Injectable()
@@ -58,6 +64,10 @@ export class PdfService
         this.logoBase64 = fs.readFileSync(path.join(__dirname, '..', '..', 'assets', 'logo-crearte.png')).toString('base64');
         const PdfPrinter = require('pdfmake');
         const carpetaFuentes = path.join(path.dirname(require.resolve('pdfmake/package.json')), 'build', 'fonts', 'Roboto');
+        // Fuente oficial de bordado (la misma tipografía con la que se bordan las prendas), usada
+        // solo para las inscripciones/nombres en el PDF de resumen de talles.
+        const carpetaFuenteBordado = path.join(__dirname, '..', '..', 'assets', 'fonts');
+        const rutaFuenteBordado = path.join(carpetaFuenteBordado, 'College-Block.otf');
  
         PdfPrinter.fonts = {
             Roboto: {
@@ -66,8 +76,14 @@ export class PdfService
                 italics: path.join(carpetaFuentes, 'Roboto-Italic.ttf'),
                 bolditalics: path.join(carpetaFuentes, 'Roboto-MediumItalic.ttf'),
             },
+            CollegeBlock: {
+                normal: rutaFuenteBordado,
+                bold: rutaFuenteBordado,
+                italics: rutaFuenteBordado,
+                bolditalics: rutaFuenteBordado,
+            },
         };
-        PdfPrinter.setLocalAccessPolicy((rutaArchivo: string) => rutaArchivo.startsWith(carpetaFuentes));
+        PdfPrinter.setLocalAccessPolicy((rutaArchivo: string) => rutaArchivo.startsWith(carpetaFuentes) || rutaArchivo.startsWith(carpetaFuenteBordado));
  
         this.printer = PdfPrinter;
         const rutaLogo = path.join(__dirname, '..', '..', 'assets', 'logo-crearte.png');
@@ -486,6 +502,193 @@ export class PdfService
         catch (error)
         {
             this.logger.error('Error al generar el PDF del contrato', error);
+            throw error;
+        }
+    }
+
+    async generarResumenTalles(dto: GenerarResumenTallesDTO): Promise<Buffer>
+    {
+        try
+        {
+            const SIN_BORDE: [boolean, boolean, boolean, boolean] = [false, false, false, false];
+            const filasDatosColegio: any[][] = [
+                [
+                    { text: [{ text: 'Colegio: ', bold: true }, dto.colegioNombre], border: SIN_BORDE },
+                    { text: [{ text: 'Localidad: ', bold: true }, [dto.localidad, dto.provincia].filter(Boolean).join(', ') || '-'], border: SIN_BORDE },
+                ],
+                [
+                    { text: [{ text: 'Turno: ', bold: true }, dto.turno ?? '-'], border: SIN_BORDE },
+                    { text: [{ text: 'Nivel: ', bold: true }, dto.nivel ?? '-'], border: SIN_BORDE },
+                ],
+            ];
+            if (dto.orientacion)
+            {
+                filasDatosColegio.push([
+                    { text: [{ text: 'Modalidad: ', bold: true }, dto.orientacion], border: SIN_BORDE },
+                    { text: [{ text: 'Padre/madre responsable: ', bold: true }, dto.padreResponsable ?? '-'], border: SIN_BORDE },
+                ]);
+            }
+            else
+            {
+                filasDatosColegio.push([
+                    { text: [{ text: 'Padre/madre responsable: ', bold: true }, dto.padreResponsable ?? '-'], border: SIN_BORDE },
+                    { text: '', border: SIN_BORDE },
+                ]);
+            }
+
+            const datosColegio: Content = {
+                margin: [0, 0, 0, 14],
+                table: {
+                    widths: ['*', '*'],
+                    body: filasDatosColegio,
+                },
+                layout: {
+                    fillColor: () => COLOR_MARCA_SUAVE,
+                    paddingLeft: () => 12,
+                    paddingRight: () => 12,
+                    paddingTop: () => 6,
+                    paddingBottom: () => 6,
+                    hLineWidth: () => 0,
+                    vLineWidth: () => 0,
+                },
+            };
+
+            const seccionTitulo = (texto: string): Content => ({
+                margin: [0, 16, 0, 8],
+                table: { widths: ['*'], body: [[{ text: texto.toUpperCase(), color: 'white', bold: true, fontSize: 10, margin: [10, 5, 0, 5] }]] },
+                layout: { fillColor: () => COLOR_MARCA, hLineWidth: () => 0, vLineWidth: () => 0, paddingLeft: () => 0, paddingRight: () => 0, paddingTop: () => 0, paddingBottom: () => 0 },
+            });
+
+            // Una tabla por prenda real: talle / cantidad / nombres, con las inscripciones
+            // renderizadas en la tipografía oficial de bordado.
+            const tablasPrendas: Content[] = dto.prendas.flatMap((producto): Content[] => [
+                {
+                    margin: [0, 4, 0, 4],
+                    columns: [
+                        { text: producto.nombreProducto, bold: true, fontSize: 11, color: COLOR_MARCA },
+                        { text: `Total: ${producto.total}`, bold: true, fontSize: 9, alignment: 'right', color: COLOR_MARCA },
+                    ],
+                },
+                {
+                    table: {
+                        headerRows: 1,
+                        widths: [55, 55, '*'],
+                        body: [
+                            [
+                                { text: 'Talle', bold: true, fontSize: 8, color: 'white' },
+                                { text: 'Cant.', bold: true, fontSize: 8, color: 'white' },
+                                { text: 'Nombres o apodos', bold: true, fontSize: 8, color: 'white' },
+                            ],
+                            ...producto.talles.map((t, i): any[] => [
+                                { text: t.talle, bold: true, fontSize: 9 },
+                                { text: String(t.cantidad), fontSize: 9 },
+                                { text: t.inscripciones.length > 0 ? t.inscripciones.join('   ') : '-', font: t.inscripciones.length > 0 ? 'CollegeBlock' : 'Roboto', fontSize: t.inscripciones.length > 0 ? 11 : 9 },
+                            ]),
+                        ],
+                    },
+                    layout: {
+                        fillColor: (rowIndex: number) => (rowIndex === 0 ? COLOR_MARCA : (rowIndex % 2 === 0 ? COLOR_GRIS_SUAVE : null)),
+                        hLineWidth: () => 0.5,
+                        vLineWidth: () => 0,
+                        hLineColor: () => '#E2E2E2',
+                        paddingLeft: () => 6,
+                        paddingRight: () => 6,
+                        paddingTop: () => 4,
+                        paddingBottom: () => 4,
+                    },
+                    margin: [0, 0, 0, 10],
+                },
+            ]);
+
+            // Combos y productos sueltos, tal como quedaron definidos en productos_pedidos.
+            const filasCombos: any[] = dto.combos.map(combo => [
+                { text: combo.nombreCombo, bold: true, fontSize: 9 },
+                { text: combo.componentes.map(c => c.nombre).join(' + '), fontSize: 8, color: '#555555' },
+                { text: String(combo.cantidad), fontSize: 9, alignment: 'center' },
+            ]);
+            const filasSueltas: any[] = dto.sueltas.map(suelto => [
+                { text: suelto.nombre, bold: true, fontSize: 9 },
+                { text: 'Producto individual', fontSize: 8, color: '#555555' },
+                { text: String(suelto.cantidad), fontSize: 9, alignment: 'center' },
+            ]);
+
+            const tablaCombosYSueltas: Content[] = (filasCombos.length + filasSueltas.length) > 0 ? [{
+                table: {
+                    headerRows: 1,
+                    widths: ['*', '*', 60],
+                    body: [
+                        [
+                            { text: 'Producto', bold: true, fontSize: 8, color: 'white' },
+                            { text: 'Detalle', bold: true, fontSize: 8, color: 'white' },
+                            { text: 'Cant.', bold: true, fontSize: 8, color: 'white', alignment: 'center' },
+                        ],
+                        ...filasCombos,
+                        ...filasSueltas,
+                    ],
+                },
+                layout: {
+                    fillColor: (rowIndex: number) => (rowIndex === 0 ? COLOR_MARCA : (rowIndex % 2 === 0 ? COLOR_GRIS_SUAVE : null)),
+                    hLineWidth: () => 0.5,
+                    vLineWidth: () => 0,
+                    hLineColor: () => '#E2E2E2',
+                    paddingLeft: () => 6,
+                    paddingRight: () => 6,
+                    paddingTop: () => 4,
+                    paddingBottom: () => 4,
+                },
+            }] : [{ text: 'No hay productos cargados en el pedido.', italics: true, fontSize: 9, color: '#777777' }];
+
+            const beneficiosContent: Content[] = dto.beneficios.length > 0
+                ? [{ ul: dto.beneficios, fontSize: 9, margin: [0, 0, 0, 0] }]
+                : [{ text: 'No hay beneficios ni bonificaciones aplicados a este pedido.', italics: true, fontSize: 9, color: '#777777' }];
+
+            const docDefinition: TDocumentDefinitions = {
+                pageSize: 'A4',
+                pageMargins: [40, 40, 40, 50],
+                defaultStyle: { font: 'Roboto', fontSize: 9 },
+                images: { logoCrearte: `data:image/png;base64,${this.logoBase64}` },
+                footer: (currentPage: number, pageCount: number) => ({
+                    margin: [40, 0, 40, 20],
+                    columns: [
+                        { text: 'Resumen previo a la confirmación de talles — no reemplaza la planilla firmada.', fontSize: 7, italics: true, color: '#999999' },
+                        { text: `${currentPage} / ${pageCount}`, fontSize: 7, alignment: 'right', color: '#999999' },
+                    ],
+                }),
+                content: [
+                    {
+                        columns: [
+                            { image: 'logoCrearte', width: 110 },
+                            {
+                                width: '*',
+                                stack: [
+                                    { text: 'RESUMEN DE TALLES', bold: true, fontSize: 18, color: COLOR_MARCA, alignment: 'right' },
+                                    { text: 'Documento de verificación previo a la confirmación', fontSize: 9, alignment: 'right', color: '#777777' },
+                                ],
+                                margin: [0, 6, 0, 0],
+                            },
+                        ],
+                    },
+                    { canvas: [{ type: 'line' as const, x1: 0, y1: 8, x2: 515, y2: 8, lineWidth: 1.5, lineColor: COLOR_MARCA }] },
+
+                    datosColegio,
+
+                    seccionTitulo('Prendas y talles'),
+                    ...tablasPrendas,
+
+                    seccionTitulo('Combos y productos sueltos'),
+                    ...tablaCombosYSueltas,
+
+                    seccionTitulo('Beneficios del pedido'),
+                    ...beneficiosContent,
+                ],
+            };
+
+            const pdfDoc = this.printer.createPdf(docDefinition);
+            return await pdfDoc.getBuffer();
+        }
+        catch (error)
+        {
+            this.logger.error('Error al generar el PDF del resumen de talles', error);
             throw error;
         }
     }

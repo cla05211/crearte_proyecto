@@ -212,8 +212,6 @@ export class Carga implements OnInit, OnDestroy
 		return prendas;
 	}
 
-    // Devuelve si el guardado tuvo éxito: verTallesCargados() necesita saberlo
-    // para no abrir un resumen desactualizado si el guardado falló.
     async guardarProgreso(): Promise<boolean>
     {
 		const idPedido = this.idPedido();
@@ -259,8 +257,6 @@ export class Carga implements OnInit, OnDestroy
             return;
         }
 
-        // Antes de mostrar el resumen, guardamos el progreso actual: así el PDF
-        // siempre refleja lo último que cargó el cliente, no una versión vieja.
         const guardadoOk = await this.guardarProgreso();
 
         if (!guardadoOk)
@@ -298,9 +294,9 @@ export class Carga implements OnInit, OnDestroy
         this.vistaResumen.set(false);
     }
 
-    confirmarTalles()
+    async confirmarTalles()
     {
-        // Todavía no hace nada: la confirmación (con firma) se define en un paso posterior.
+
     }
 
     private liberarUrlResumen()
