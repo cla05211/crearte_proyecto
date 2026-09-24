@@ -38,6 +38,41 @@
   justify-content: space-between;
 }
 
+.carga-header__acciones {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: flex-end;
+}
+
+.carga-totales {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.carga-totales__item {
+  background-color: var(--color-primary-100);
+  border: 1px solid var(--color-primary-700);
+  border-radius: var(--radius-lg);
+  color: var(--color-primary-700);
+  font-size: var(--font-size-sm);
+  padding: var(--space-1) var(--space-3);
+  white-space: nowrap;
+}
+
+.carga-totales__nombre {
+  margin-right: var(--space-1);
+}
+
+.carga-totales__numero {
+  font-weight: var(--font-weight-bold);
+}
+
 .carga-productos {
   display: grid;
   gap: var(--space-6);
@@ -112,6 +147,19 @@
   width: 1%;
 }
 
+.carga-tabla__celda-cantidad {
+  white-space: nowrap;
+  width: 1%;
+}
+
+.carga-tabla__celda-cantidad .carga-input-cantidad {
+  width: 5rem;
+}
+
+.carga-tabla__cantidad--error {
+  color: var(--color-danger);
+}
+
 .carga-tabla td .ds-input {
   min-height: var(--control-height-sm);
 }
@@ -152,6 +200,7 @@
 
 @media (max-width: 600px) {
   .carga-header { justify-content: stretch; }
+  .carga-header__acciones { justify-content: stretch; width: 100%; }
   .carga-header .ds-button { flex: 1 1 auto; }
   .carga-footer .ds-button { width: 100%; }
   .carga-resumen__iframe { height: 65vh; }

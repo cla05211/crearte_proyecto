@@ -33,14 +33,26 @@
   } @else {
     <header class="carga-header">
       <h2 class="ds-heading-3">Elegí el talle, la cantidad y los nombres de cada prenda</h2>
-      <button
-        type="button"
-        class="ds-button ds-button--secondary"
-        [disabled]="generandoResumen() || guardando()"
-        (click)="verTallesCargados()"
-      >
-        {{ guardando() ? 'Guardando...' : (generandoResumen() ? 'Generando...' : '¡Talles Cargados!') }}
-      </button>
+      <div class="carga-header__acciones">
+        @if (totalesPorProducto().length > 0) {
+          <ul class="carga-totales" aria-label="Total de prendas por producto">
+            @for (total of totalesPorProducto(); track total.idProductoOriginal) {
+              <li class="carga-totales__item">
+                <span class="carga-totales__nombre">{{ total.nombreProducto }}:</span>
+                <span class="carga-totales__numero">{{ total.total }}</span>
+              </li>
+            }
+          </ul>
+        }
+        <button
+          type="button"
+          class="ds-button ds-button--secondary"
+          [disabled]="generandoResumen() || guardando()"
+          (click)="verTallesCargados()"
+        >
+          {{ guardando() ? 'Guardando...' : (generandoResumen() ? 'Generando...' : '¡Talles Cargados!') }}
+        </button>
+      </div>
     </header>
 
     @if (productosConTalles().length === 0) {
@@ -59,6 +71,8 @@
                     <th scope="col">Cantidad por talle</th>
                     @if (!producto.esPantalon) {
                       <th scope="col">Nombres o apodos</th>
+                      <th scope="col">Sin inscripción</th>
+                      <th scope="col">Con inscripción</th>
                     }
                   </tr>
                 </thead>
@@ -80,7 +94,17 @@
                           />
                         </td>
                       } @else {
-                        <td class="carga-tabla__cantidad">{{ cantidadNombres(clave(producto.idProductoOriginal, talle)) }}</td>
+                        <td class="carga-tabla__celda-cantidad">
+                          <input
+                            type="number"
+                            class="ds-input carga-input-cantidad"
+                            min="0"
+                            step="1"
+                            [attr.aria-label]="'Cantidad de ' + producto.nombreProducto + ' talle ' + talle"
+                            [value]="cantidadInput(clave(producto.idProductoOriginal, talle))"
+                            (input)="onInputCantidadTotal($event, clave(producto.idProductoOriginal, talle))"
+                          />
+                        </td>
                         <td>
                           <input
                             type="text"
@@ -91,6 +115,12 @@
                             (input)="onInputNombres($event, clave(producto.idProductoOriginal, talle))"
                           />
                         </td>
+                        <td class="carga-tabla__cantidad">{{ cantidadSinInscripcion(clave(producto.idProductoOriginal, talle)) }}</td>
+                        <td
+                          class="carga-tabla__cantidad"
+                          [class.carga-tabla__cantidad--error]="excedeCantidad(clave(producto.idProductoOriginal, talle))"
+                          [attr.title]="excedeCantidad(clave(producto.idProductoOriginal, talle)) ? 'Hay más nombres que la cantidad elegida' : null"
+                        >{{ cantidadNombres(clave(producto.idProductoOriginal, talle)) }}</td>
                       }
                     </tr>
                   }

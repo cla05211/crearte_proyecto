@@ -13,10 +13,10 @@ const ID_PANTALON = 72;
 const ID_BANDERA = 73;
 const IDS_CAMPERA_BUZO = [63, 64, 71];
 
-const TALLES_CAMPERA_BUZO_SECUNDARIA = ['XS', 'S', 'M', 'M ESP.', 'L', 'XL', 'XXL'];
-const TALLES_CAMPERA_BUZO_PRIMARIA = ['10', '12', '14', '16', '18', 'L'];
-const TALLES_REMERA_CHOMBA_SECUNDARIA = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-const TALLES_REMERA_CHOMBA_PRIMARIA = ['10', '12', '14', '16', '18', 'L'];
+const TALLES_CAMPERA_BUZO_SECUNDARIA = ['XS', 'S', 'M', 'M ESP.', 'L', 'XL', 'XXL', 'XXXL'];
+const TALLES_CAMPERA_BUZO_PRIMARIA = ['10', '12', '14', '16', '18', 'L', 'XL'];
+const TALLES_REMERA_CHOMBA_SECUNDARIA = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+const TALLES_REMERA_CHOMBA_PRIMARIA = ['10', '12', '14', '16', '18', 'L', 'XL'];
 const TALLES_PANTALON = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
 
@@ -41,6 +41,13 @@ interface ProductoConTalles
     nombreProducto: string;
     esPantalon: boolean;
     talles: string[];
+}
+
+interface TotalProducto
+{
+    idProductoOriginal: number;
+    nombreProducto: string;
+    total: number;
 }
 
 @Component({
@@ -74,7 +81,11 @@ export class Carga implements OnInit, OnDestroy
     private readonly secundaria = signal(false);
     private readonly productos = signal<productosPedidoIdNombreDTO[]>([]);
 
+    // Pantalón: cantidad escrita. Resto de prendas: nombres separados por espacio.
     readonly valores = signal<Record<string, string>>({});
+
+    // Cantidad total elegida por talle (solo prendas que no son pantalón).
+    readonly cantidades = signal<Record<string, string>>({});
 
     readonly productosConTalles = computed<ProductoConTalles[]>(() =>
     {
@@ -90,6 +101,18 @@ export class Carga implements OnInit, OnDestroy
             }));
     });
 
+    readonly totalesPorProducto = computed<TotalProducto[]>(() =>
+        this.productosConTalles().map(producto => ({
+            idProductoOriginal: producto.idProductoOriginal,
+            nombreProducto: producto.nombreProducto,
+            total: producto.talles.reduce((suma, talle) =>
+            {
+                const clave = this.clave(producto.idProductoOriginal, talle);
+                return suma + (producto.esPantalon ? this.aEntero(this.valor(clave)) : this.cantidadSeleccionada(clave));
+            }, 0),
+        }))
+    );
+
     async ngOnInit()
     {
         try
@@ -104,7 +127,9 @@ export class Carga implements OnInit, OnDestroy
             this.idPedido.set(idPedido);
             this.secundaria.set(secundaria);
             this.productos.set(productos);
-            this.valores.set(this.reconstruirValores(prendas));
+            const { valores, cantidades } = this.reconstruirValores(prendas);
+            this.valores.set(valores);
+            this.cantidades.set(cantidades);
         }
         catch
         {
@@ -119,7 +144,7 @@ export class Carga implements OnInit, OnDestroy
         }
     }
 
-    private reconstruirValores(prendas: PrendaPedidoDTO[]): Record<string, string>
+    private reconstruirValores(prendas: PrendaPedidoDTO[]): { valores: Record<string, string>; cantidades: Record<string, string> }
     {
         const porClave = new Map<string, PrendaPedidoDTO[]>();
 
@@ -132,20 +157,33 @@ export class Carga implements OnInit, OnDestroy
         }
 
         const valores: Record<string, string> = {};
+        const cantidades: Record<string, string> = {};
 
         for (const [clave, lista] of porClave)
         {
             const esPantalon = lista[0].id_producto === ID_PANTALON;
 
-            valores[clave] = esPantalon
-                ? String(lista.length)
-                : lista
+            if (esPantalon)
+            {
+                valores[clave] = String(lista.length);
+            }
+            else
+            {
+                // Cada fila guardada es una prenda (con o sin inscripción)
+                cantidades[clave] = String(lista.length);
+                valores[clave] = lista
                     .filter(prenda => prenda.inscripcion !== null)
                     .map(prenda => prenda.inscripcion)
                     .join(' ');
+            }
         }
 
-        return valores;
+        return { valores, cantidades };
+    }
+
+    private aEntero(valor: string): number
+    {
+        return Math.max(0, Math.trunc(Number(valor)) || 0);
     }
 
     clave(idProducto: number, talle: string): string
@@ -162,6 +200,32 @@ export class Carga implements OnInit, OnDestroy
     {
         const texto = this.valor(clave).trim();
         return texto.length === 0 ? 0 : texto.split(/\s+/).length;
+    }
+
+    cantidadInput(clave: string): string
+    {
+        return this.cantidades()[clave] ?? '';
+    }
+
+    cantidadSeleccionada(clave: string): number
+    {
+        return this.aEntero(this.cantidadInput(clave));
+    }
+
+    cantidadSinInscripcion(clave: string): number
+    {
+        return Math.max(0, this.cantidadSeleccionada(clave) - this.cantidadNombres(clave));
+    }
+
+    excedeCantidad(clave: string): boolean
+    {
+        return this.cantidadNombres(clave) > this.cantidadSeleccionada(clave);
+    }
+
+    onInputCantidadTotal(event: Event, clave: string)
+    {
+        const valor = (event.target as HTMLInputElement).value;
+        this.cantidades.update(actual => ({ ...actual, [clave]: valor }));
     }
 
     actualizarValor(clave: string, valor: string)
@@ -199,7 +263,7 @@ export class Carga implements OnInit, OnDestroy
 
 				if (producto.esPantalon)
 				{
-					const cantidad = Math.max(0, Math.trunc(Number(valor)) || 0);
+					const cantidad = this.aEntero(valor);
 
 					for (let i = 0; i < cantidad; i++)
 					{
@@ -215,6 +279,14 @@ export class Carga implements OnInit, OnDestroy
 						const nombreMayus = nombre.toUpperCase();
 						prendas.push({ id_pedido: idPedido, id_producto: producto.idProductoOriginal, talle, inscripcion: nombreMayus });
 					}
+
+					// El resto de la cantidad elegida son prendas sin inscripción
+					const sinInscripcion = this.cantidadSinInscripcion(clave);
+
+					for (let i = 0; i < sinInscripcion; i++)
+					{
+						prendas.push({ id_pedido: idPedido, id_producto: producto.idProductoOriginal, talle, inscripcion: null });
+					}
 				}
 			}
 		}
@@ -222,12 +294,44 @@ export class Carga implements OnInit, OnDestroy
 		return prendas;
 	}
 
+    private primerTalleExcedido(): { producto: string; talle: string } | null
+    {
+        for (const producto of this.productosConTalles())
+        {
+            if (producto.esPantalon)
+            {
+                continue;
+            }
+
+            for (const talle of producto.talles)
+            {
+                if (this.excedeCantidad(this.clave(producto.idProductoOriginal, talle)))
+                {
+                    return { producto: producto.nombreProducto, talle };
+                }
+            }
+        }
+
+        return null;
+    }
+
     async guardarProgreso(): Promise<boolean>
     {
 		const idPedido = this.idPedido();
 
 		if (this.guardando() || idPedido === null)
 		{
+			return false;
+		}
+
+		const excedido = this.primerTalleExcedido();
+
+		if (excedido)
+		{
+			this.notificaciones.error({
+				title: 'Hay más nombres que prendas',
+				description: `En ${excedido.producto} talle ${excedido.talle} ingresaste más nombres que la cantidad elegida. Aumentá la cantidad o quitá nombres.`,
+			});
 			return false;
 		}
 
