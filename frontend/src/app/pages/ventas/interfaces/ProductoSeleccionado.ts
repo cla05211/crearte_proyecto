@@ -12,8 +12,6 @@ export interface ProductoSeleccionado
 
     valorCuota: number;
 
-    beneficio: string;
-
     descripcion: string;
 
     agregados: AgregadoDBDTO[];

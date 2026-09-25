@@ -189,31 +189,40 @@ export class PrendasPedidoTallesService
         return prendasFinales;
     }
 
-    restarLiberadas(prendas: ProductoPrendasResumenDTO[], beneficios: BeneficioPedidoDTO[])
+    /**
+     * Descuenta de cada producto las prendas liberadas por beneficios (id_producto != null),
+     * para que no se cobren ni se cuenten en combos/sueltas. No modifica el array original.
+     * estricto = true (confirmar talles): error si faltan talles del producto liberado.
+     * estricto = false (resumen previo): descuenta lo que haya, sin cortar.
+     */
+    restarLiberadas(prendas: ProductoPrendasResumenDTO[], beneficios: BeneficioPedidoDTO[], estricto = true): ProductoPrendasResumenDTO[]
     {
-        let prendasSueltas: {idProducto: number, cantidad: number}[] = [];
-        let prendasCopia = prendas.map(prenda => ({ ...prenda }));
-
+        const liberadas = new Map<number, number>();
         for (const beneficio of beneficios)
         {
             if (beneficio.id_producto != null)
             {
-                prendasSueltas.push({idProducto: beneficio.id_producto, cantidad: beneficio.cantidad});
-                for (const prenda of prendasCopia)
+                liberadas.set(beneficio.id_producto, (liberadas.get(beneficio.id_producto) ?? 0) + beneficio.cantidad);
+            }
+        }
+
+        if (estricto)
+        {
+            for (const [idProducto, cantidad] of liberadas)
+            {
+                const prenda = prendas.find(p => p.idProducto === idProducto);
+                // Las liberadas siempre son de más: tiene que quedar al menos 1 prenda paga.
+                if (!prenda || prenda.total - cantidad < 1)
                 {
-                    if (prenda.idProducto == beneficio.id_producto)
-                    {
-                        prenda.total -= beneficio.cantidad;
-                        if (prenda.total < 1)
-                        {
-                            throw new BadRequestException(
-                                `El pedido tiene ${beneficio.cantidad} prenda(s) liberada(s) de ${prenda?.nombreProducto ?? 'un producto'} pero solo hay ${prenda.total += beneficio.cantidad} cargada(s) en los talles.`);
-                        }
-                    }
+                    const nombre = prenda?.nombreProducto ?? beneficios.find(b => b.id_producto === idProducto)?.beneficio ?? 'un producto';
+                    throw new BadRequestException(
+                        `El pedido tiene ${cantidad} prenda(s) liberada(s) de ${nombre} pero solo hay ${prenda?.total ?? 0} cargada(s) en los talles.`);
                 }
             }
         }
 
-        return prendasCopia;
+        return prendas
+            .map(prenda => ({ ...prenda, total: Math.max(prenda.total - (liberadas.get(prenda.idProducto) ?? 0), 0) }))
+            .filter(prenda => prenda.total > 0);
     }
 }

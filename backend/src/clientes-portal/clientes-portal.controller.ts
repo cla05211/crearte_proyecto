@@ -164,7 +164,8 @@ export class ClientesPortalController
             ...presupuesto.agregadosGlobales.map(a => a.agregado).filter((a): a is string => !!a),
         ];
 
-        const prendasCobrables = this.prendasService.restarLiberadas(prendas, presupuesto.beneficios);
+        // Resumen previo: el cliente puede estar todavía cargando talles, así que no se corta el PDF.
+        const prendasCobrables = this.prendasService.restarLiberadas(prendas, presupuesto.beneficios, false);
         const { combos, sueltas } = this.construirCombosYSueltas(prendasCobrables);
 
         // Si los talles ya se confirmaron, el PDF sale con la firma del cliente al final
@@ -307,24 +308,26 @@ export class ClientesPortalController
             throw new ConflictException('Los talles de este pedido ya fueron confirmados.');
         }
 
+        //Obtener cantidad prendas (antes de subir la firma: si faltan talles de prendas liberadas, corta acá)
+        const prendas = await this.prendasService.traerResumenPrendasPedido(idPedido);
+        const prendasCobrables = this.prendasService.restarLiberadas(prendas, presupuesto.beneficios);
+        // Se cobran las cobrables, pero el tramo de precio se elige con el total (las liberadas son gratis pero cuentan en cantidad).
+        const productosFinales = await this.prendasService.traerProductosFinalesPedido(prendasCobrables);
+        const productosFinalesTotales = await this.prendasService.traerProductosFinalesPedido(prendas);
+
         //Guardar firma en storage
         const rutaFirma = await this.storageService.guardarImagen(
             { pedidoId: idPedido.toString(), nombreArchivo: `firma-talles-${idPedido}-${Date.now()}.png`, carpetaGuardado: 'firmas-talles' },
             firma,
         );
 
-        //Obtener cantidad prendas
-        const prendas = await this.prendasService.traerResumenPrendasPedido(idPedido);
-        const prendasCobrables = this.prendasService.restarLiberadas(prendas, presupuesto.beneficios);
-        const productosFinales = await this.prendasService.traerProductosFinalesPedido(prendasCobrables);
-
         //Modificar cantidad
         const nroCuotas = presupuesto.nroCuotas;
-        const beneficios = presupuesto.beneficios ?? 'Sin Beneficio';
 
         const productos = await Promise.all(productosFinales.map(async producto =>
         {
-            const precios = await this.productosService.obtenerPreciosId(producto.idProducto, nroCuotas, producto.cantidadPedida);
+            const cantidadTramo = productosFinalesTotales.find(p => p.idProducto === producto.idProducto)?.cantidadPedida ?? producto.cantidadPedida;
+            const precios = await this.productosService.obtenerPreciosId(producto.idProducto, nroCuotas, Math.max(cantidadTramo, producto.cantidadPedida));
             const anterior = presupuesto.productosPedido.find(p => p.id_producto_original === producto.idProducto);
 
             return {

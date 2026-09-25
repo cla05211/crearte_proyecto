@@ -9,6 +9,7 @@ import { PagoDTO } from "./pago.dto";
 import { PedidoDTO } from "../../pedidos/dto/pedido.dto";
 import { ProductoPedidoDTO } from "../../productosPedidos/dto/ProductoPedido.dto";
 import { AgregadoGlobalPedidoPostDTO } from "./AgregadoGlobalPedidoPost.dto";
+import { BeneficioPedidoPostDTO } from "./BeneficioPedido.dto";
 
 export interface CrearPedidoDTO
 {
@@ -24,4 +25,5 @@ export interface CrearPedidoDTO
     documentoDTO?: DocumentoDTO | DocumentoDTO[];
     primerCuota: CuotaInicioVentaDTO;
     nroCuotas: number;
+    beneficiosDTO: BeneficioPedidoPostDTO[];
 }

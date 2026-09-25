@@ -17,7 +17,8 @@ import { GruposService } from '../../../../services/grupos/grupos-service';
 import { ActivatedRoute } from '@angular/router';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
 import { PermisosService } from '../../../../services/permisos/permisos';
-import { ModificarBeneficioDto } from '../../../../services/gestionPedidos/dto/modficaciones/modficiarBeneficio.dto';
+import { BeneficioResponseDTO } from '../../../../services/gestionPedidos/dto/BeneficioResponse.dto';
+import { BeneficioPedidoPostDTO, cantidadSinCargo, formatearBeneficios, liberadasSinFila as filtrarLiberadasSinFila } from '../../../../services/gestionPedidos/dto/BeneficioPedido.dto';
 import { ModificarPlanPedidoDTO } from '../../../../services/gestionPedidos/dto/modficaciones/ModificarPlanPedido';
 
 const SEPARADOR_AGREGADOS = ' · Agregado: ';
@@ -33,6 +34,7 @@ interface AgregadoConPrecio
 interface ProductoPedidoConPrecios
 {
   id: number;
+  sinCargo: number;
   nombreProductoOriginal: string;
   descripcion: string | null;
   cantidad: number;
@@ -57,7 +59,8 @@ interface ProductoCarrito
 
 interface BeneficioSeleccionado
 {
-  nombre: string;
+  id_beneficio: number;
+  beneficio: string;
   cantidad: number;
 }
 
@@ -84,12 +87,24 @@ export class Presupuesto implements OnInit
   readonly cargandoPrecios = signal(false);
   readonly productosConAgregadosAbiertos = signal<ReadonlySet<number>>(new Set());
 
-  readonly beneficioPedido = computed(() => this.presupuestoGrupo()?.productosPedido[0]?.beneficio || 'Sin beneficio');
+  readonly beneficioPedido = computed(() => formatearBeneficios(this.presupuestoGrupo()?.beneficios));
+
+  /** Prendas liberadas cuyo producto no tiene fila propia (quedaron dentro de combos): se muestran aparte. */
+  readonly liberadasSinFila = computed(() => {
+    const presupuesto = this.presupuestoGrupo();
+    return filtrarLiberadasSinFila(presupuesto?.beneficios, (presupuesto?.productosPedido ?? []).map((p) => p.id_producto_original));
+  });
+
+  /** Prendas sin cargo (beneficio) de un producto del pedido. */
+  sinCargoProducto(idProducto: number): number
+  {
+    return cantidadSinCargo(this.presupuestoGrupo()?.beneficios, idProducto);
+  }
 
 
   readonly productosDisponibles = signal<ProductoConPrecioResponseDTO[]>([]);
   readonly agregadosDisponibles = signal<AgregadoDBDTO[]>([]);
-  readonly beneficiosDisponibles = signal<string[]>([]);
+  readonly beneficiosDisponibles = signal<BeneficioResponseDTO[]>([]);
   readonly cuotasDisponibles = signal<number[]>([]);
 
   readonly agregadosIndividuales = computed(() =>
@@ -223,7 +238,12 @@ export class Presupuesto implements OnInit
     const precios$ = presupuesto.productosPedido.length
       ? forkJoin(
           presupuesto.productosPedido.map((producto) =>
-            this.productosService.obtenerPreciosProducto(producto.id_producto_original, presupuesto.nroCuotas, producto.cantidad),
+            // El tramo se elige contando las prendas sin cargo (gratis pero cuentan en cantidad).
+            this.productosService.obtenerPreciosProducto(
+              producto.id_producto_original,
+              presupuesto.nroCuotas,
+              producto.cantidad + cantidadSinCargo(presupuesto.beneficios, producto.id_producto_original),
+            ),
           ),
         )
       : of([] as ProductoPreciosDTO[]);
@@ -283,6 +303,7 @@ export class Presupuesto implements OnInit
 
     return {
       id: producto.id,
+      sinCargo: cantidadSinCargo(this.presupuestoGrupo()?.beneficios, producto.id_producto_original),
       nombreProductoOriginal: producto.nombreProductoOriginal,
       descripcion: descripcionBase || null,
       cantidad: producto.cantidad,
@@ -321,7 +342,7 @@ export class Presupuesto implements OnInit
   private obtenerBeneficiosDisponibles(): void
   {
     this.gestionPedidosService.obtenerBeneficios().subscribe({
-      next: (beneficios) => this.beneficiosDisponibles.set([...beneficios, 'Sin beneficio']),
+      next: (beneficios) => this.beneficiosDisponibles.set(beneficios),
     });
   }
 
@@ -396,7 +417,7 @@ export class Presupuesto implements OnInit
 
   private crearBeneficioEnEdicion()
   {
-    return { nombre: '', cantidad: 1 };
+    return { idBeneficio: 0, cantidad: 1 };
   }
 
   abrirEdicionBeneficio(): void
@@ -404,7 +425,9 @@ export class Presupuesto implements OnInit
     const presupuesto = this.presupuestoGrupo();
     if (!presupuesto) return;
 
-    this.beneficiosSeleccionadosEdicion.set(this.parsearBeneficios(presupuesto.productosPedido[0]?.beneficio ?? ''));
+    this.beneficiosSeleccionadosEdicion.set(
+      (presupuesto.beneficios ?? []).map((b) => ({ id_beneficio: b.id_beneficio, beneficio: b.beneficio, cantidad: b.cantidad })),
+    );
     this.beneficioEnEdicionForm = this.crearBeneficioEnEdicion();
     this.edicionBeneficioAbierta.set(true);
   }
@@ -418,13 +441,14 @@ export class Presupuesto implements OnInit
 
   agregarBeneficioEdicion(): void
   {
-    const nombre = this.beneficioEnEdicionForm.nombre;
+    const idBeneficio = Number(this.beneficioEnEdicionForm.idBeneficio);
     const cantidad = Number(this.beneficioEnEdicionForm.cantidad);
-    if (!nombre || cantidad < 1) return;
+    const catalogo = this.beneficiosDisponibles().find((beneficio) => beneficio.id === idBeneficio);
+    if (!catalogo || cantidad < 1) return;
 
     this.beneficiosSeleccionadosEdicion.update((beneficios) => {
-      const indice = beneficios.findIndex((beneficio) => beneficio.nombre === nombre);
-      if (indice === -1) return [...beneficios, { nombre, cantidad }];
+      const indice = beneficios.findIndex((beneficio) => beneficio.id_beneficio === idBeneficio);
+      if (indice === -1) return [...beneficios, { id_beneficio: idBeneficio, beneficio: catalogo.beneficio, cantidad }];
 
       return beneficios.map((beneficio, i) =>
         i === indice ? { ...beneficio, cantidad: beneficio.cantidad + cantidad } : beneficio,
@@ -442,10 +466,7 @@ export class Presupuesto implements OnInit
 
   textoBeneficiosEdicion(): string
   {
-    if (!this.beneficiosSeleccionadosEdicion().length) return 'Sin Beneficio';
-    return this.beneficiosSeleccionadosEdicion()
-      .map((beneficio) => `${beneficio.cantidad} ${beneficio.nombre}`)
-      .join(' - ');
+    return formatearBeneficios(this.beneficiosSeleccionadosEdicion());
   }
 
   guardarEdicionBeneficio(): void
@@ -454,15 +475,16 @@ export class Presupuesto implements OnInit
     const idPedido = presupuesto?.pedido.id;
     if (!presupuesto || !idPedido) return;
 
-    const dto: ModificarBeneficioDto = { beneficio: this.textoBeneficiosEdicion() };
+    const beneficios: BeneficioPedidoPostDTO[] = this.beneficiosSeleccionadosEdicion()
+      .map((beneficio) => ({ id_beneficio: beneficio.id_beneficio, cantidad: beneficio.cantidad }));
 
     this.guardandoBeneficio.set(true);
-    this.gestionPedidosService.modificarBeneficio(dto, idPedido).subscribe({
+    this.gestionPedidosService.modificarBeneficios(beneficios, idPedido).subscribe({
       next: () => {
         this.guardandoBeneficio.set(false);
         this.notificaciones.success({
-          title: 'Beneficio actualizado',
-          description: 'El beneficio del pedido se modificó correctamente.',
+          title: 'Beneficios actualizados',
+          description: 'Los beneficios del pedido se modificaron correctamente.',
         });
         this.cerrarEdicionBeneficio();
         this.traerPresupuestoGrupo();
@@ -472,22 +494,6 @@ export class Presupuesto implements OnInit
         this.notificarErrorGuardado(err);
       },
     });
-  }
-
-  private parsearBeneficios(texto: string): BeneficioSeleccionado[]
-  {
-    if (!texto || texto.trim().toLowerCase() === 'sin beneficio') return [];
-
-    return texto
-      .split(' - ')
-      .map((parte) => parte.trim())
-      .filter(Boolean)
-      .map((parte) => {
-        const coincidencia = parte.match(/^(\d+)\s+(.+)$/);
-        return coincidencia
-          ? { cantidad: Number(coincidencia[1]), nombre: coincidencia[2] }
-          : { cantidad: 1, nombre: parte };
-      });
   }
 
   //--- Productos y plan de cuotas ---
@@ -554,7 +560,11 @@ export class Presupuesto implements OnInit
 
     const recalculos = productos.map((producto) =>
       this.productosService
-        .obtenerPrecioBeneficioProducto(producto.idProducto, nuevasCuotas, producto.cantidad)
+        .obtenerPrecioBeneficioProducto(
+          producto.idProducto,
+          nuevasCuotas,
+          producto.cantidad + this.sinCargoProducto(producto.idProducto),
+        )
         .pipe(
           map((precio) => {
             const costoExtras = this.agregadosIndividuales()
@@ -603,7 +613,8 @@ export class Presupuesto implements OnInit
       return;
     }
 
-    this.productosService.obtenerPrecioBeneficioProducto(idProducto, cuotas, cantidad).subscribe({
+    const cantidadTramo = Number(cantidad) + this.sinCargoProducto(Number(idProducto));
+    this.productosService.obtenerPrecioBeneficioProducto(idProducto, cuotas, cantidadTramo).subscribe({
       next: (precio) => {
         const producto = this.productosParaElegir().find((item) => item.id_producto === idProducto);
         const extras = this.agregadosIndividuales().filter((item) => agregados.includes(item.id));
@@ -722,15 +733,12 @@ export class Presupuesto implements OnInit
     const productos = this.carritoEdicionPlan();
     if (!presupuesto || !idPedido || !productos.length) return;
 
-    const beneficioActual = presupuesto.productosPedido[0]?.beneficio ?? 'Sin Beneficio';
-
     const dto: ModificarPlanPedidoDTO = {
       id_pedido: idPedido,
       productos: productos.map((producto) => ({
         id_pedido: idPedido,
         id_producto_original: producto.idProducto,
         descripcion: producto.descripcion,
-        beneficio: beneficioActual,
         valor_senia: producto.valorSenia,
         valor_cuota: producto.valorCuota,
         cantidad: producto.cantidad,

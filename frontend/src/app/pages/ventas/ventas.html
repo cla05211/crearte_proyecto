@@ -111,7 +111,7 @@
                       </td>
                       <td data-label="Beneficio">
                         <div class="cell-inline">
-                          <span>{{ venta.productosPedidoDTO[0]?.beneficio }}</span>
+                          <span>{{ textoBeneficiosVenta(venta) }}</span>
                           <button
                             type="button"
                             class="icon-edit"
@@ -455,10 +455,10 @@
                 <div class="benefits__editor">
                   <label class="ds-field">
                     <span class="ds-label">Beneficio</span>
-                    <select class="ds-select" [(ngModel)]="beneficioEnEdicion.nombre">
-                      <option value="">Seleccioná un beneficio</option>
-                      @for (beneficio of beneficiosDisponibles(); track beneficio) {
-                        <option [value]="beneficio">{{ beneficio }}</option>
+                    <select class="ds-select" [(ngModel)]="beneficioEnEdicion.idBeneficio">
+                      <option [ngValue]="0">Seleccioná un beneficio</option>
+                      @for (beneficio of beneficiosDisponibles(); track beneficio.id) {
+                        <option [ngValue]="beneficio.id">{{ beneficio.beneficio }}</option>
                       }
                     </select>
                   </label>
@@ -477,9 +477,9 @@
                 </div>
                 @if (beneficiosSeleccionados().length) {
                   <ul class="benefits__list">
-                    @for (beneficio of beneficiosSeleccionados(); track beneficio.nombre; let i = $index) {
+                    @for (beneficio of beneficiosSeleccionados(); track beneficio.id_beneficio; let i = $index) {
                       <li>
-                        <span>{{ beneficio.cantidad }} {{ beneficio.nombre }}</span>
+                        <span>{{ beneficio.cantidad }} {{ beneficio.beneficio }}</span>
                         <button
                           class="ds-button ds-button--ghost ds-button--small"
                           type="button"
@@ -499,7 +499,7 @@
                   <div class="cart__row">
                     <div>
                       <strong>{{ producto.nombre }}</strong
-                      ><span>{{ producto.cantidad }} alumnos · {{ etiquetaCuotasProducto(producto) }}</span
+                      ><span>{{ producto.cantidad + sinCargoAlta(producto.idProducto) }} alumnos@if (sinCargoAlta(producto.idProducto)) { ({{ sinCargoAlta(producto.idProducto) }} sin cargo)} · {{ etiquetaCuotasProducto(producto) }}</span
                       ><span
                         >Seña
                         {{
@@ -858,10 +858,10 @@
             <div class="benefits__editor">
               <label class="ds-field">
                 <span class="ds-label">Beneficio</span>
-                <select class="ds-select" [(ngModel)]="beneficioEnEdicionForm.nombre">
-                  <option value="">Seleccioná un beneficio</option>
-                  @for (beneficio of beneficiosDisponibles(); track beneficio) {
-                    <option [value]="beneficio">{{ beneficio }}</option>
+                <select class="ds-select" [(ngModel)]="beneficioEnEdicionForm.idBeneficio">
+                  <option [ngValue]="0">Seleccioná un beneficio</option>
+                  @for (beneficio of beneficiosDisponibles(); track beneficio.id) {
+                    <option [ngValue]="beneficio.id">{{ beneficio.beneficio }}</option>
                   }
                 </select>
               </label>
@@ -875,9 +875,9 @@
             </div>
             @if (beneficiosSeleccionadosEdicion().length) {
               <ul class="benefits__list">
-                @for (beneficio of beneficiosSeleccionadosEdicion(); track beneficio.nombre; let i = $index) {
+                @for (beneficio of beneficiosSeleccionadosEdicion(); track beneficio.id_beneficio; let i = $index) {
                   <li>
-                    <span>{{ beneficio.cantidad }} {{ beneficio.nombre }}</span>
+                    <span>{{ beneficio.cantidad }} {{ beneficio.beneficio }}</span>
                     <button
                       class="ds-button ds-button--ghost ds-button--small"
                       type="button"
@@ -1033,7 +1033,7 @@
               <div class="cart__row" [class.is-editing]="indiceEdicionProductoPlan() === i">
                 <div>
                   <strong>{{ producto.nombre }}</strong
-                  ><span>{{ producto.cantidad }} unidades · {{ etiquetaCuotasProducto(producto) }}</span
+                  ><span>{{ producto.cantidad + sinCargoPlan(producto.idProducto) }} unidades@if (sinCargoPlan(producto.idProducto)) { ({{ sinCargoPlan(producto.idProducto) }} sin cargo)} · {{ etiquetaCuotasProducto(producto) }}</span
                   >@if (producto.agregados.length) {
                     <span>Agregados: {{ nombresAgregados(producto.agregados) }}</span>
                   }
@@ -1128,10 +1128,17 @@
               <strong>{{ nombreProducto(producto.id_producto_original) }}</strong>
               <span>{{ producto.descripcion }}</span>
               <span
-                >{{ producto.cantidad }} unidades · Seña
+                >{{ producto.cantidad + sinCargoVenta(venta, producto.id_producto_original) }} unidades@if (sinCargoVenta(venta, producto.id_producto_original)) { ({{ sinCargoVenta(venta, producto.id_producto_original) }} sin cargo)} · Seña
                 {{ producto.valor_senia | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }} · Cuota
                 {{ producto.valor_cuota | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</span
               >
+            </li>
+          }
+          @for (liberada of liberadasSinFilaVenta(venta); track liberada.id_beneficio) {
+            <li>
+              <strong>{{ liberada.beneficio }}</strong>
+              <span>Beneficio del pedido</span>
+              <span>{{ liberada.cantidad }} unidades · Sin cargo</span>
             </li>
           }
           @for (agregado of venta.agregadosGlobalesDTO; track agregado.id) {

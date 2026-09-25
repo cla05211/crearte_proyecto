@@ -50,11 +50,31 @@
                             }
                           </div>
                         </td>
-                        <td data-label="Cantidad">{{ producto.cantidad }}</td>
+                        <td data-label="Cantidad">
+                          {{ producto.cantidad + producto.sinCargo }}
+                          @if (producto.sinCargo) {
+                            <span class="ds-text-muted">({{ producto.sinCargo }} sin cargo)</span>
+                          }
+                        </td>
                         <td data-label="Seña individual">{{ producto.valorSeniaIndividual | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                         <td data-label="Seña grupal">{{ producto.valorSeniaGrupal | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                         <td data-label="Cuota individual">{{ producto.valorCuotaIndividual | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                         <td data-label="Cuota grupal">{{ producto.valorCuotaGrupal | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                      </tr>
+                    }
+                    @for (liberada of liberadasSinFila(); track liberada.id_beneficio) {
+                      <tr>
+                        <td data-label="Producto">
+                          <div class="producto-cell">
+                            <strong>{{ liberada.beneficio }}</strong>
+                            <span class="ds-text-muted">Beneficio del pedido</span>
+                          </div>
+                        </td>
+                        <td data-label="Cantidad">{{ liberada.cantidad }} <span class="ds-text-muted">(sin cargo)</span></td>
+                        <td data-label="Seña individual"></td>
+                        <td data-label="Seña grupal"></td>
+                        <td data-label="Cuota individual"></td>
+                        <td data-label="Cuota grupal"></td>
                       </tr>
                     }
                     @for (agregado of agregadosGlobalesConCuota(); track agregado.id) {

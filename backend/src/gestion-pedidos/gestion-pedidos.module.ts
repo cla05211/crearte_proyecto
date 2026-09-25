@@ -18,6 +18,7 @@ import { SupabaseService } from 'src/supabase/supabase.service';
 import { AuditoriasService } from 'src/auditorias/auditorias.service';
 import { OcrModule } from 'src/ocr/ocr.module';
 import { AgregadosGlobalesPedidoModule } from 'src/agregados-globales-pedido/agregados-globales-pedido.module';
+import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
 
 @Module({
   imports: [SupabaseModule, PermisosModule, OcrModule, AgregadosGlobalesPedidoModule],
@@ -25,7 +26,7 @@ import { AgregadosGlobalesPedidoModule } from 'src/agregados-globales-pedido/agr
   providers: [GestionPedidosService, UsuariosService, ColegiosService,
             GruposService, PedidosService, ProductosPedidoService, PadreResponsableService,
             AlumnoResponsableService, PagosService, DocumentosService, PagosService, CuentaCorrienteService,
-            CuotasService, SupabaseService, AuditoriasService],
+            CuotasService, SupabaseService, AuditoriasService, BeneficiosPedidoService],
   exports:[GestionPedidosService]
 })
 export class GestionPedidosModule {}

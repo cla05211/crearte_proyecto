@@ -4,7 +4,8 @@ import { CrearPedidoDTO } from './dto/crearPedidoPost.dto';
 import { environment } from '../../../environments/environment.development';
 import { PedidoResponseVentas } from './dto/PedidoResponseVentas.dto';
 import { Observable } from 'rxjs';
-import { ModificarBeneficioDto } from './dto/modficaciones/modficiarBeneficio.dto';
+import { BeneficioResponseDTO } from './dto/BeneficioResponse.dto';
+import { BeneficioPedidoPostDTO } from './dto/BeneficioPedido.dto';
 import { ModificarPlanPedidoDTO } from './dto/modficaciones/ModificarPlanPedido';
 import { presupuestoPedidoClientesPage } from './dto/PresupuestoPedidoClientePage.dto';
 import { PedidoDTOResponse } from '../pedidos/dto/pedidoResponse.dto';
@@ -39,9 +40,9 @@ export class GestionPedidosService
     return this.http.get<PedidoResponseVentas[]>(`${environment.apiUrl}/gestion-pedidos`, {params});
   }
 
-  obtenerBeneficios(): Observable<string[]>
+  obtenerBeneficios(): Observable<BeneficioResponseDTO[]>
   {
-    return this.http.get<string[]>(`${environment.apiUrl}/beneficios`);
+    return this.http.get<BeneficioResponseDTO[]>(`${environment.apiUrl}/beneficios`);
   }
 
   obtenerPresupuestoPedidoClientesPage(idGrupo: number): Observable<presupuestoPedidoClientesPage>
@@ -49,9 +50,9 @@ export class GestionPedidosService
     return this.http.get<presupuestoPedidoClientesPage>(`${environment.apiUrl}/gestion-pedidos/presupuesto-clientes/${idGrupo}`);
   }
 
-  modificarBeneficio(dto: ModificarBeneficioDto, idPedido: number): Observable<{'nuevoBeneficio':string}>
+  modificarBeneficios(beneficios: BeneficioPedidoPostDTO[], idPedido: number): Observable<{ nuevosBeneficios: BeneficioPedidoPostDTO[] }>
   {
-    return this.http.patch<{'nuevoBeneficio': string}>((`${environment.apiUrl}/beneficios/${idPedido}`), dto);
+    return this.http.patch<{ nuevosBeneficios: BeneficioPedidoPostDTO[] }>(`${environment.apiUrl}/beneficios-pedido/${idPedido}`, beneficios);
   }
 
   modificarProductosCuotas(dto: ModificarPlanPedidoDTO)
