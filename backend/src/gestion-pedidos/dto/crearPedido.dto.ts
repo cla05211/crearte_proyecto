@@ -9,6 +9,7 @@ import { PedidoDTO } from "src/pedidos/dto/pedido.dto";
 import { ProductoPedidoDTO } from "src/productos-pedido/dto/ProductoPedido.dto";
 import { CuotaInicioVentaDTO } from "src/cuotas/dto/cuotaInicioVenta.dto";
 import { AgregadoGlobalPedidoPostDTO } from "src/agregados-globales-pedido/dto/AgregadoGlobalPedidoPost.dto";
+import { AgregarBeneficioDto } from "src/beneficios/dto/agregarBeneficio.dto";
 
 export class CrearPedidoDTO
 {
@@ -24,4 +25,5 @@ export class CrearPedidoDTO
     documentoDTO?: DocumentoDTO | DocumentoDTO[];
     primerCuota!: CuotaInicioVentaDTO;
     nroCuotas!: number;
+    beneficios!: AgregarBeneficioDto[];
 }

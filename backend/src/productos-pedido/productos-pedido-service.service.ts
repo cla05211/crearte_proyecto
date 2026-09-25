@@ -117,7 +117,6 @@ export class ProductosPedidoService
             id_pedido: p.id_pedido,
             id_producto_original: p.id_producto_original,
             descripcion: p.descripcion,
-            beneficio: p.beneficio,
             valor_senia: p.valor_senia,
             valor_cuota: p.valor_cuota,
             cantidad: p.cantidad,

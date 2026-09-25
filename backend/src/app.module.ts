@@ -55,15 +55,17 @@ import { ClientesPortalController } from './clientes-portal/clientes-portal.cont
 import { ClientesPortalModule } from './clientes-portal/clientes-portal.module';
 import { PrendasPedidoTallesService } from './prendas-pedido-talles/prendas-pedido-talles.service';
 import { PrendasPedidoTallesModule } from './prendas-pedido-talles/prendas-pedido-talles.module';
+import { BeneficiosPedidoService } from './beneficios-pedido/beneficios-pedido.service';
+import { BeneficiosPedidoModule } from './beneficios-pedido/beneficios-pedido.module';
 
 
 @Module({
   imports: [ConfigModule.forRoot({
       isGlobal: true,
-    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, ClientesPortalModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule, MovimientosCajaModule, GruposModule, AgregadosGlobalesPedidoModule, ClientesAuthModule, PrendasPedidoTallesModule],
+    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, ClientesPortalModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule, MovimientosCajaModule, GruposModule, AgregadosGlobalesPedidoModule, ClientesAuthModule, PrendasPedidoTallesModule, BeneficiosPedidoModule],
   controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController, MovimientosCajaController, GruposController, ClientesAuthController],
   providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService,
      ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, 
-     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, ClientesService, ClientesAuthService, ClientesService, PrendasPedidoTallesService],
+     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, ClientesService, ClientesAuthService, ClientesService, PrendasPedidoTallesService, BeneficiosPedidoService],
 })
 export class AppModule {}

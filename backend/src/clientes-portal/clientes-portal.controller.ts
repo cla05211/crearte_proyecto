@@ -20,6 +20,8 @@ import { PdfService } from 'src/reportes/pdf/pdf.service';
 import { GenerarResumenTallesDTO } from 'src/reportes/pdf/dto/generarResumenTalles.dto';
 import { ProductoPrendasResumenDTO } from 'src/prendas-pedido-talles/dto/ResumenPrendasPedido.dto';
 import { ProductosService } from 'src/productos/productos.service';
+import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
+import { BeneficioPedidoDTO } from 'src/beneficios-pedido/dto/beneficioPedidoDTO';
 
 
 const IDS_CAMPERA_BUZO = [63, 64, 71];
@@ -43,7 +45,8 @@ export class ClientesPortalController
         private storageService: StorageService,
         private prendasService: PrendasPedidoTallesService,
         private pdfService: PdfService,
-        private productosService: ProductosService
+        private productosService: ProductosService,
+        private beneficiosPedidoService: BeneficiosPedidoService
     ) {}
 
     private async obtenerIdPedidoCliente(req: any): Promise<number>
@@ -156,15 +159,13 @@ export class ClientesPortalController
             ? `${padreResponsable.nombre ?? ''} ${padreResponsable.apellido ?? ''}`.trim() || null
             : null;
 
-        // El beneficio queda guardado repetido en cada renglón de productos_pedidos
-        // (es el mismo beneficio para todo el pedido), así que alcanza con el primero.
-        const beneficio = presupuesto.productosPedido.find(p => p.beneficio)?.beneficio;
         const beneficios = [
-            ...(beneficio ? [beneficio] : []),
+            ...presupuesto.beneficios.map(b => `${b.cantidad} ${b.beneficio}`),
             ...presupuesto.agregadosGlobales.map(a => a.agregado).filter((a): a is string => !!a),
         ];
 
-        const { combos, sueltas } = this.construirCombosYSueltas(prendas);
+        const prendasCobrables = this.prendasService.restarLiberadas(prendas, presupuesto.beneficios);
+        const { combos, sueltas } = this.construirCombosYSueltas(prendasCobrables);
 
         // Si los talles ya se confirmaron, el PDF sale con la firma del cliente al final
         const documentoFirma = await this.documentosService.obtenerDocumentoPorTipo(idGrupo, TIPO_DOCUMENTO_FIRMA_TALLES);
@@ -294,6 +295,7 @@ export class ClientesPortalController
     {
         const idGrupo = req.cliente.id_grupo;
         const idPedido = await this.obtenerIdPedidoCliente(req);
+        const presupuesto = await this.gestionPedidosService.obtenerPresupuestoPedidosClientes(idGrupo);
 
         if (!firma || firma.mimetype !== 'image/png')
         {
@@ -313,12 +315,12 @@ export class ClientesPortalController
 
         //Obtener cantidad prendas
         const prendas = await this.prendasService.traerResumenPrendasPedido(idPedido);
-        const productosFinales = await this.prendasService.traerProductosFinalesPedido(prendas);
+        const prendasCobrables = this.prendasService.restarLiberadas(prendas, presupuesto.beneficios);
+        const productosFinales = await this.prendasService.traerProductosFinalesPedido(prendasCobrables);
 
         //Modificar cantidad
-        const presupuesto = await this.gestionPedidosService.obtenerPresupuestoPedidosClientes(idGrupo);
         const nroCuotas = presupuesto.nroCuotas;
-        const beneficio = presupuesto.productosPedido[0]?.beneficio ?? 'Sin Beneficio';
+        const beneficios = presupuesto.beneficios ?? 'Sin Beneficio';
 
         const productos = await Promise.all(productosFinales.map(async producto =>
         {
@@ -329,17 +331,14 @@ export class ClientesPortalController
                 id_pedido: idPedido,
                 id_producto_original: producto.idProducto,
                 descripcion: anterior?.descripcion ?? producto.nombreProducto,
-                beneficio,
                 valor_senia: precios!.valor_senia,
                 valor_cuota: precios!.valor_cuota,
                 cantidad: producto.cantidadPedida,
             };
         }));
 
-        //Modificar presupuesto
         const totalSenia = productos.reduce((total, p) => total + p.valor_senia * p.cantidad, 0);
         const totalCuotaSinDescuento = productos.reduce((total, p) => total + p.valor_cuota * p.cantidad, 0)
-            + /* precio de los agregados globales actuales (bandera) */ 0;
         const porcentaje = Number(presupuesto.pedido.porcentaje_descuento_hermanos) || 0;
         const hermanos = Number(presupuesto.pedido.cantidad_hermanos) || 0;
         const totalCuota = totalCuotaSinDescuento - totalCuotaSinDescuento * (porcentaje / 100) * hermanos;
@@ -353,12 +352,9 @@ export class ClientesPortalController
             valor_senia_nuevo: totalSenia,
         });
 
-        //Marcar talles como confirmados, con la fecha de la firma (día en Argentina, formato YYYY-MM-DD)
         const fechaFirma = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
         await this.pedidosService.modificarEstadoTalles('Confirmado', idPedido, fechaFirma);
 
-        //Registrar documento de la firma (va al final: es lo que marca los talles como confirmados,
-        //así si algo de lo anterior falla el cliente puede volver a intentar)
         await this.documentosService.subirDocumento({ id_grupo: idGrupo, tipo: TIPO_DOCUMENTO_FIRMA_TALLES, archivo_url: rutaFirma });
 
         return resultado;

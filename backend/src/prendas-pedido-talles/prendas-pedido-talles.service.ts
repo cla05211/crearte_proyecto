@@ -1,8 +1,9 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { PrendaPedidoDTO } from './dto/PrendasPedido.dto';
 import { ProductoPrendasResumenDTO, TalleCantidadResumenDTO } from './dto/ResumenPrendasPedido.dto';
 import { ProductoCantidadDTO } from 'src/productos-pedido/dto/ProductoCantidad.dto';
+import { BeneficioPedidoDTO } from 'src/beneficios-pedido/dto/beneficioPedidoDTO';
 
 const ID_BANDERA = 73;
 
@@ -186,5 +187,33 @@ export class PrendasPedidoTallesService
         prendasFinales.push(...prendasNoComponentes.map(prenda => ({idProducto: prenda.idProducto, nombreProducto: prenda.nombreProducto, cantidadPedida: prenda.total})))
         
         return prendasFinales;
+    }
+
+    restarLiberadas(prendas: ProductoPrendasResumenDTO[], beneficios: BeneficioPedidoDTO[])
+    {
+        let prendasSueltas: {idProducto: number, cantidad: number}[] = [];
+        let prendasCopia = prendas.map(prenda => ({ ...prenda }));
+
+        for (const beneficio of beneficios)
+        {
+            if (beneficio.id_producto != null)
+            {
+                prendasSueltas.push({idProducto: beneficio.id_producto, cantidad: beneficio.cantidad});
+                for (const prenda of prendasCopia)
+                {
+                    if (prenda.idProducto == beneficio.id_producto)
+                    {
+                        prenda.total -= beneficio.cantidad;
+                        if (prenda.total < 1)
+                        {
+                            throw new BadRequestException(
+                                `El pedido tiene ${beneficio.cantidad} prenda(s) liberada(s) de ${prenda?.nombreProducto ?? 'un producto'} pero solo hay ${prenda.total += beneficio.cantidad} cargada(s) en los talles.`);
+                        }
+                    }
+                }
+            }
+        }
+
+        return prendasCopia;
     }
 }

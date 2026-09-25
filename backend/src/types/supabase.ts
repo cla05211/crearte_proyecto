@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      _backup_beneficio_texto_pedido: {
+        Row: {
+          beneficio_texto: string | null
+          id_pedido: number | null
+        }
+        Insert: {
+          beneficio_texto?: string | null
+          id_pedido?: number | null
+        }
+        Update: {
+          beneficio_texto?: string | null
+          id_pedido?: number | null
+        }
+        Relationships: []
+      }
       agregados: {
         Row: {
           agregado: string | null
@@ -145,16 +160,63 @@ export type Database = {
         Row: {
           beneficio: string | null
           id: number
+          id_producto: number | null
         }
         Insert: {
           beneficio?: string | null
           id?: number
+          id_producto?: number | null
         }
         Update: {
           beneficio?: string | null
           id?: number
+          id_producto?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "beneficios_id_producto_fkey"
+            columns: ["id_producto"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      beneficios_pedido: {
+        Row: {
+          cantidad: number
+          id: number
+          id_beneficio: number
+          id_pedido: number
+        }
+        Insert: {
+          cantidad?: number
+          id?: number
+          id_beneficio: number
+          id_pedido: number
+        }
+        Update: {
+          cantidad?: number
+          id?: number
+          id_beneficio?: number
+          id_pedido?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beneficios_pedido_id_beneficio_fkey"
+            columns: ["id_beneficio"]
+            isOneToOne: false
+            referencedRelation: "beneficios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "beneficios_pedido_id_pedido_fkey"
+            columns: ["id_pedido"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clientes: {
         Row: {
@@ -743,7 +805,6 @@ export type Database = {
       }
       productos_pedidos: {
         Row: {
-          beneficio: string | null
           cantidad: number
           descripcion: string | null
           id: number
@@ -753,7 +814,6 @@ export type Database = {
           valor_senia: number
         }
         Insert: {
-          beneficio?: string | null
           cantidad: number
           descripcion?: string | null
           id?: number
@@ -763,7 +823,6 @@ export type Database = {
           valor_senia: number
         }
         Update: {
-          beneficio?: string | null
           cantidad?: number
           descripcion?: string | null
           id?: number
@@ -931,6 +990,10 @@ export type Database = {
       enviar_pedido_a_fabrica: {
         Args: { p_id_pedido: number }
         Returns: number
+      }
+      modificar_beneficios_pedido: {
+        Args: { p_beneficios: Json; p_id_pedido: number }
+        Returns: undefined
       }
       modificar_plan_pedido: { Args: { payload: Json }; Returns: Json }
       registrar_pago_completo: { Args: { p_pago: Json }; Returns: number }

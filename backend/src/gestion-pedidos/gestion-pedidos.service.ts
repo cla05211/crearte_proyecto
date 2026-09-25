@@ -29,6 +29,8 @@ import { AgregadoGlobalPedidoResponseDTO } from 'src/agregados-globales-pedido/d
 import { ControlTallesDisenioDTO } from './dto/ControlTallesDisenioDTO';
 import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
+import { BeneficioPedidoDTO } from 'src/beneficios-pedido/dto/beneficioPedidoDTO';
+import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
 
 @Injectable()
 export class GestionPedidosService
@@ -38,7 +40,8 @@ export class GestionPedidosService
         private padres:PadreResponsableService, private alumnos:AlumnoResponsableService,
         private documentos:DocumentosService, private pagos:PagosService, private cuentaCorriente: CuentaCorrienteService,
         private cuotas: CuotasService, private sb: SupabaseService, private auditoriaService: AuditoriasService,
-        private pedidosService: PedidosService, private agregadosGlobalesPedido: AgregadosGlobalesPedidoService){}
+        private pedidosService: PedidosService, private agregadosGlobalesPedido: AgregadosGlobalesPedidoService,
+        private beneficiosPedidoService: BeneficiosPedidoService){}
 
     async crearPedido(dto:CrearPedidoDTO)
     {
@@ -94,6 +97,7 @@ export class GestionPedidosService
         .from("pedidos")
         .select(`
             *,
+            beneficios_pedido(id_beneficio, cantidad, beneficios(beneficio, id_producto)),
             grupos!inner(
                 *,
                 colegios(*)
@@ -134,7 +138,10 @@ export class GestionPedidosService
                 precio: a.agregados?.precio,
                 individual: a.agregados?.individual,
             })),
-            nroCuotas: pedido.cuotas.length
+            nroCuotas: pedido.cuotas.length,
+            beneficios: pedido.beneficios_pedido.map((b): BeneficioPedidoDTO => ({id_beneficio: b.id_beneficio,cantidad: b.cantidad,
+                beneficio: b.beneficios?.beneficio ?? '',
+                id_producto: b.beneficios?.id_producto ?? null,})),
         }));
 
         return pedidosVentas;
@@ -192,14 +199,15 @@ export class GestionPedidosService
         return importe;
     }
 
-    async obtenerPresupuestoPedidosClientes(idGrupo: number)
+    async obtenerPresupuestoPedidosClientes(idGrupo: number):Promise<presupuestoPedidoClientesPage>
     {
         const pedido: PedidoDTOResponse = await this.pedidosService.obtenerPedidoGrupo(idGrupo);
         const productosPedido: ProductoPedidoResponseConNombreOriginalDTO[] = await this.productosPedido.traerProductosPedidoConNombreProducto(pedido.id);
         const agregadosGlobales: AgregadoGlobalPedidoResponseDTO[] = await this.agregadosGlobalesPedido.obtenerPorPedido(pedido.id);
         const cuotas: number = ((await this.cuotas.traerCuotasPorIdPedido(pedido.id)).length);
-        // Solo hace falta la cantidad de egresados si hay algún agregado global que repartir entre ellos.
         const cantidadEgresados: number = agregadosGlobales.length ? (await this.grupos.traerCantidadEgresados(idGrupo)) ?? 0 : 0;
+        const beneficios: BeneficioPedidoDTO[] = await this.beneficiosPedidoService.traerBeneficiosPedido(pedido.id);
+
 
         const presupuestoPedido: presupuestoPedidoClientesPage =
         {
@@ -207,7 +215,8 @@ export class GestionPedidosService
             productosPedido: productosPedido,
             agregadosGlobales: agregadosGlobales,
             nroCuotas: cuotas,
-            cantidadEgresados: cantidadEgresados
+            cantidadEgresados: cantidadEgresados,
+            beneficios: beneficios
         };
 
         return presupuestoPedido;

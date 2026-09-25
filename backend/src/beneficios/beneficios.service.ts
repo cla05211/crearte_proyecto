@@ -1,38 +1,25 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { SupabaseService } from 'src/supabase/supabase.service';
+import { BeneficioResponseDTO } from './dto/beneficioResponse.dto';
+import { Json } from 'src/types/supabase';
 
 @Injectable()
 export class BeneficiosService 
 {
     constructor(private sb: SupabaseService){}
 
-    async traerBeneficiosDisponibles():Promise<string[]>
+    async traerBeneficiosDisponibles():Promise<BeneficioResponseDTO[]>
     {
         const { data, error } = await this.sb.supabase
         .from('beneficios')
-        .select('beneficio')
+        .select('*')
 
         if (error) 
         {
             throw new Error(error.message);
         }
 
-        return data.map(d => d.beneficio).filter((b): b is string => b !== null);
-    }
-
-    async modificarBeneficios(nuevoBeneficio: string, idPedido: number):Promise<{'nuevoBeneficio':string}>
-    {
-        const { data, error } = await this.sb.supabase
-        .from("productos_pedidos")
-        .update({ beneficio: nuevoBeneficio })
-        .eq("id_pedido", idPedido);
-
-        if (error)
-        {
-            throw new Error(error.message);
-        }
-
-        return {'nuevoBeneficio': nuevoBeneficio};
+        return data as BeneficioResponseDTO[]
     }
 }
 
