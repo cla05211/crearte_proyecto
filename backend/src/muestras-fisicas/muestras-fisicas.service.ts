@@ -12,7 +12,7 @@ export class MuestrasFisicasService
     {
         const { data, error } = await this.sb.supabase
             .from('muestras_fisicas')
-            .select(`id, id_pedido, estado, muestras, fecha_entrega, fecha_devolucion,
+            .select(`id, id_pedido, estado, muestras, envio, fecha_entrega, fecha_devolucion,
                 pedido:pedidos!inner(
                     vendedora:usuarios!pedidos_id_vendedora_fkey ( nombre ),
                     grupo:grupos ( nivel, colegio:colegios ( nombre ) ),
@@ -28,7 +28,7 @@ export class MuestrasFisicasService
         }  
 
         const muestras: MuestrasTablaDTO[] = data.map((d) => ({
-            muestra: {id: d.id, id_pedido: d.id_pedido, estado: d.estado, muestras: d.muestras, fecha_entrega: d.fecha_entrega, fecha_devolucion: d.fecha_devolucion},
+            muestra: {id: d.id, id_pedido: d.id_pedido, estado: d.estado, muestras: d.muestras, fecha_entrega: d.fecha_entrega, fecha_devolucion: d.fecha_devolucion, envio: d.envio},
             colegio: d.pedido.grupo.colegio.nombre,
             nivel: d.pedido.grupo.nivel!,
             vendedora: d.pedido.vendedora?.nombre!,
@@ -49,6 +49,7 @@ export class MuestrasFisicasService
         {
             throw new BadRequestException(error.message);
         }
+
     }    
 
     async modificarEstado(nuevoEstado: string, id: number):Promise<void>

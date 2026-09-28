@@ -6,4 +6,5 @@ export class MuestrasFisicasResponseDTO
     muestras!: string | null;
     fecha_entrega!: string | null;
     fecha_devolucion!:string | null;
+    envio!: boolean | null;
 }

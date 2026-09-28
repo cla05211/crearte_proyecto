@@ -452,6 +452,7 @@ export type Database = {
       }
       muestras_fisicas: {
         Row: {
+          envio: boolean | null
           estado: string | null
           fecha_devolucion: string | null
           fecha_entrega: string | null
@@ -460,6 +461,7 @@ export type Database = {
           muestras: string | null
         }
         Insert: {
+          envio?: boolean | null
           estado?: string | null
           fecha_devolucion?: string | null
           fecha_entrega?: string | null
@@ -468,6 +470,7 @@ export type Database = {
           muestras?: string | null
         }
         Update: {
+          envio?: boolean | null
           estado?: string | null
           fecha_devolucion?: string | null
           fecha_entrega?: string | null
