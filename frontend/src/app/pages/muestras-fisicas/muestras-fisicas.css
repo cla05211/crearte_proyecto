@@ -1,0 +1,265 @@
+.muestras-page {
+  min-height: 100vh;
+  padding: var(--space-10) 0;
+}
+.muestras-container {
+  display: grid;
+  gap: var(--space-6);
+  max-width: min(100%, 100rem);
+}
+.muestras-header {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+
+/* Carteles de totales (mismo estilo que Talles y Diseño) */
+.kpis-grid {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(3, minmax(11rem, 13rem));
+}
+.kpi-card {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+}
+.kpi-card .ds-label {
+  font-size: 0.78rem;
+}
+.kpi-valor {
+  color: var(--color-primary-700);
+  font-size: var(--font-size-lg);
+}
+
+/* Pestañas (mismo estilo que Cuentas Bancarias) */
+.muestras-tabs {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  width: fit-content;
+}
+.muestras-tabs button {
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--radius-md) - 2px);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-4);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+.muestras-tabs button:hover { color: var(--color-primary-700); }
+.muestras-tabs button.is-active { background: var(--color-primary-700); box-shadow: var(--shadow-sm); color: var(--color-surface); }
+.muestras-tabs button:focus-visible { box-shadow: var(--focus-ring); outline: 0; }
+
+/* Tabla */
+.muestras-table-wrapper {
+  overflow-x: auto;
+}
+.muestras-table {
+  min-width: 80rem;
+  table-layout: fixed;
+}
+.muestras-table th,
+.muestras-table td {
+  border-right: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  overflow: hidden;
+  padding: var(--space-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.muestras-table th:last-child,
+.muestras-table td:last-child {
+  border-right: 0;
+}
+.muestras-table thead th {
+  font-size: var(--font-size-xs);
+  letter-spacing: 0;
+  line-height: 1.25;
+  overflow: visible;
+  position: sticky;
+  text-align: center;
+  top: 0;
+  white-space: normal;
+  word-break: break-word;
+  z-index: 1;
+}
+.muestras-table td[data-label='Colegio'] {
+  color: var(--color-primary-700);
+  font-weight: var(--font-weight-semibold);
+  white-space: normal;
+}
+.muestras-table td[data-label='Nivel'],
+.muestras-table td[data-label='Cuotas'] {
+  text-align: center;
+}
+.muestras-table select,
+.muestras-table input[type='date'] {
+  font-size: var(--font-size-sm);
+  min-height: var(--control-height-sm);
+  padding-inline: var(--space-2);
+  width: 100%;
+}
+.muestras-table tbody tr.fila-par {
+  background-color: rgba(105, 4, 70, 0.05);
+}
+.muestras-table tbody tr.fila-par:hover {
+  background-color: var(--color-surface-muted);
+}
+
+.cell-inline {
+  align-items: center;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+}
+.cell-inline--centro {
+  justify-content: center;
+}
+.icon-edit {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  justify-content: center;
+  padding: 2px;
+}
+.icon-edit:hover,
+.icon-edit:focus-visible {
+  color: var(--color-primary-700);
+}
+.icon-edit:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: 0;
+}
+.icon-edit svg {
+  fill: none;
+  height: 0.85rem;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  width: 0.85rem;
+}
+
+/* Estados de carga y vacío (mismo estilo que Cuentas Bancarias) */
+.loading-state,
+.empty-state {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 23rem;
+  padding: var(--space-10);
+  text-align: center;
+}
+
+.loading-state { flex-direction: row; gap: var(--space-4); text-align: left; }
+.loading-state h2,
+.empty-state h2 { color: var(--color-text-strong); font-size: var(--font-size-xl); margin: 0; }
+.loading-state p,
+.empty-state p { color: var(--color-text-muted); font-size: var(--font-size-sm); margin: var(--space-2) 0 0; }
+
+.loading-state__spinner {
+  animation: spin 750ms linear infinite;
+  border: 3px solid var(--color-primary-200);
+  border-radius: 50%;
+  border-top-color: var(--color-primary-700);
+  flex: 0 0 auto;
+  height: 2.25rem;
+  width: 2.25rem;
+}
+
+.empty-state__illustration {
+  align-items: end;
+  background: var(--color-primary-100);
+  border-radius: 48% 52% 44% 56%;
+  display: flex;
+  gap: 0.35rem;
+  height: 5.5rem;
+  justify-content: center;
+  margin-bottom: var(--space-5);
+  padding-bottom: 1.3rem;
+  transform: rotate(-4deg);
+  width: 6.5rem;
+}
+
+.empty-state__illustration span { background: var(--color-primary-600); border-radius: var(--radius-full) var(--radius-full) 0 0; display: block; width: 0.7rem; }
+.empty-state__illustration span:nth-child(1) { height: 1.35rem; }
+.empty-state__illustration span:nth-child(2) { background: var(--color-primary-700); height: 2.45rem; }
+.empty-state__illustration span:nth-child(3) { height: 1.8rem; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Modal (mismo estilo que Talles y Diseño) */
+.modal-backdrop {
+  align-items: flex-start;
+  background: rgba(45, 17, 35, 0.5);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  overflow-y: auto;
+  padding: var(--space-6);
+  position: fixed;
+  z-index: 10;
+}
+.sale-modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  margin: auto;
+  max-width: 26rem;
+  padding: var(--space-6);
+  width: 100%;
+}
+.sale-modal__header {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+  padding-bottom: var(--space-4);
+}
+.close-button {
+  background: transparent;
+  border: 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 2rem;
+  line-height: 1;
+}
+.wizard-content {
+  padding-top: var(--space-4);
+}
+.wizard-actions {
+  align-items: center;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+}
+
+@media (max-width: 700px) {
+  .muestras-page {
+    padding: var(--space-6) 0;
+  }
+  .kpis-grid {
+    grid-template-columns: 1fr;
+  }
+}

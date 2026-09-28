@@ -95,6 +95,12 @@ export const routes: Routes = [
         data: { permiso: 'ver_talles_disenio' },
       },
       {
+        path: "muestras-fisicas",
+        loadComponent: () => import('./pages/muestras-fisicas/muestras-fisicas').then((archivo) => archivo.MuestrasFisicas),
+        canActivate: [PermisosGuard],
+        data: { permiso: 'ver_tabla_muestras_fisicas' },
+      },
+      {
         path: "clientes/:id",
         loadComponent: () => import('./pages/clientes/colegio-detalle/colegio-detalle').then((archivo) => archivo.ColegioDetalle),
         canActivate: [PermisosGuard],

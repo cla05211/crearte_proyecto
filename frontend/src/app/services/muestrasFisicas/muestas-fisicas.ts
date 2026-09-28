@@ -16,23 +16,28 @@ export class MuestasFisicas
         return this.http.get<MuestrasTablaDTO[]>(`${environment.apiUrl}/muestras-fisicas`);
     }
     
-    modificarMuestras(idMuestra:number, muestras:string)
+    modificarMuestras(idMuestra: number, muestras: string): Observable<void>
     {
-        this.http.patch((`${environment.apiUrl}/muestras-fisicas/muestras/${idMuestra}`), muestras);
-    }
-    
-    modificarEstado(idMuestra:number, estado:string)
-    {
-        this.http.patch((`${environment.apiUrl}/muestras-fisicas/muestras/${idMuestra}`), estado);
+        return this.http.patch<void>(`${environment.apiUrl}/muestras-fisicas/muestras/${idMuestra}`, null, { params: { muestras } });
     }
 
-    modificarFechaEntrega(idMuestra:number, fechaEntrega:string)
+    modificarEstado(idMuestra: number, estado: string): Observable<void>
     {
-        this.http.patch((`${environment.apiUrl}/muestras-fisicas/fecha-entrega/${idMuestra}`), fechaEntrega);
+        return this.http.patch<void>(`${environment.apiUrl}/muestras-fisicas/estado/${idMuestra}`, null, { params: { estado } });
     }
 
-    modificarFechaDevolucion(idMuestra:number, fecheDevolucion:string)
+    modificarFechaEntrega(idMuestra: number, fechaEntrega: string): Observable<void>
     {
-        this.http.patch((`${environment.apiUrl}/muestras-fisicas/fecha-devolucion/${idMuestra}`), fecheDevolucion);
+        return this.http.patch<void>(`${environment.apiUrl}/muestras-fisicas/fecha-entrega/${idMuestra}`, null, { params: { fechaEntrega } });
+    }
+
+    modificarFechaDevolucion(idMuestra: number, fechaDevolucion: string): Observable<void>
+    {
+        return this.http.patch<void>(`${environment.apiUrl}/muestras-fisicas/fecha-devolucion/${idMuestra}`, null, { params: { fechaDevolucion } });
+    }
+
+    modificarEnvio(idMuestra: number, envio: boolean): Observable<void>
+    {
+        return this.http.patch<void>(`${environment.apiUrl}/muestras-fisicas/envio/${idMuestra}`, null, { params: { envio } });
     }
 }

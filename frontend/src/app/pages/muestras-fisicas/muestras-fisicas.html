@@ -1,1 +1,199 @@
-<p>muestras-fisicas works!</p>
+<main class="muestras-page">
+  <section class="ds-container muestras-container">
+    <header class="muestras-header">
+      <div>
+        <span class="ds-eyebrow">Producción</span>
+        <h1 class="ds-heading-1">Muestras físicas</h1>
+      </div>
+    </header>
+
+    @if (cargando() && !muestras()) {
+      <div class="loading-state" role="status" aria-live="polite">
+        <span class="loading-state__spinner" aria-hidden="true"></span>
+        <div>
+          <h2>Cargando muestras</h2>
+          <p>Estamos preparando la información de las muestras físicas.</p>
+        </div>
+      </div>
+    } @else {
+      <div class="kpis-grid">
+        <div class="ds-card kpi-card">
+          <span class="ds-label">Pendientes de entrega</span>
+          <strong class="kpi-valor">{{ pendientesEntrega() }}</strong>
+        </div>
+        <div class="ds-card kpi-card">
+          <span class="ds-label">Probando</span>
+          <strong class="kpi-valor">{{ probando() }}</strong>
+        </div>
+        <div class="ds-card kpi-card">
+          <span class="ds-label">Devueltas</span>
+          <strong class="kpi-valor">{{ devueltas() }}</strong>
+        </div>
+      </div>
+
+      <nav class="muestras-tabs" aria-label="Filtrar muestras">
+        <button
+          type="button"
+          [class.is-active]="pestania() === 'activas'"
+          [attr.aria-pressed]="pestania() === 'activas'"
+          (click)="cambiarPestania('activas')"
+        >
+          En curso
+        </button>
+        <button
+          type="button"
+          [class.is-active]="pestania() === 'devueltas'"
+          [attr.aria-pressed]="pestania() === 'devueltas'"
+          (click)="cambiarPestania('devueltas')"
+        >
+          Devueltas
+        </button>
+      </nav>
+
+      @if (!filas().length) {
+        <div class="empty-state">
+          <div class="empty-state__illustration" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <h2>No hay muestras para mostrar.</h2>
+          <p>{{ pestania() === 'devueltas' ? 'Todavía no se devolvió ninguna muestra.' : 'No hay muestras en curso.' }}</p>
+        </div>
+      } @else {
+        <div class="ds-table-wrapper muestras-table-wrapper">
+          <table class="ds-table muestras-table">
+            <colgroup>
+              <col style="width: 16%" />
+              <col style="width: 8%" />
+              <col style="width: 10%" />
+              <col style="width: 11%" />
+              <col style="width: 12%" />
+              <col style="width: 11%" />
+              <col style="width: 11%" />
+              <col style="width: 10%" />
+              <col style="width: 11%" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Colegio</th>
+                <th>Nivel</th>
+                <th>Vendedora</th>
+                <th>Cuotas</th>
+                <th>Estado</th>
+                <th>Fecha entrega muestras</th>
+                <th>Fecha devolución</th>
+                <th>Muestras</th>
+                <th>Envío / Retiro</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of filas(); track fila.item.muestra.id) {
+                @let item = fila.item;
+                @let muestra = item.muestra;
+                <tr [class.fila-par]="fila.par">
+                  <td data-label="Colegio">{{ item.colegio || '-' }}</td>
+                  <td data-label="Nivel">{{ item.nivel || '-' }}</td>
+                  <td data-label="Vendedora">{{ item.vendedora || '-' }}</td>
+                  <td data-label="Cuotas">{{ etiquetaCuotas(item.planCuotas) }}</td>
+
+                  <td data-label="Estado">
+                    <select class="ds-select" [ngModel]="estadoSeleccionado(muestra)" (ngModelChange)="cambiarEstado(item, $any($event))">
+                      @for (estado of estados; track estado) {
+                        <option [ngValue]="estado">{{ estado }}</option>
+                      }
+                    </select>
+                  </td>
+
+                  <td data-label="Fecha entrega muestras">
+                    @if (muestra.fecha_entrega || estaEditandoFecha(muestra.id, 'fecha_entrega')) {
+                      <input
+                        class="ds-input"
+                        type="date"
+                        [ngModel]="fechaInput(muestra.fecha_entrega)"
+                        (ngModelChange)="modificarFecha(muestra, 'fecha_entrega', $any($event))"
+                        (keydown.escape)="cerrarEdicionFecha()"
+                      />
+                    } @else {
+                      <div class="cell-inline cell-inline--centro">
+                        <span>-</span>
+                        <button class="icon-edit" type="button" title="Cargar fecha de entrega" (click)="abrirEdicionFecha(muestra.id, 'fecha_entrega')">
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                          </svg>
+                        </button>
+                      </div>
+                    }
+                  </td>
+
+                  <td data-label="Fecha devolución">
+                    @if (muestra.fecha_devolucion || estaEditandoFecha(muestra.id, 'fecha_devolucion')) {
+                      <input
+                        class="ds-input"
+                        type="date"
+                        [ngModel]="fechaInput(muestra.fecha_devolucion)"
+                        (ngModelChange)="modificarFecha(muestra, 'fecha_devolucion', $any($event))"
+                        (keydown.escape)="cerrarEdicionFecha()"
+                      />
+                    } @else {
+                      <div class="cell-inline cell-inline--centro">
+                        <span>-</span>
+                        <button class="icon-edit" type="button" title="Cargar fecha de devolución" (click)="abrirEdicionFecha(muestra.id, 'fecha_devolucion')">
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                          </svg>
+                        </button>
+                      </div>
+                    }
+                  </td>
+
+                  <td data-label="Muestras">
+                    <select class="ds-select" [ngModel]="muestra.muestras" (ngModelChange)="modificarMuestras(muestra, $any($event))">
+                      <option [ngValue]="null" disabled>-</option>
+                      @for (opcion of opcionesMuestras; track opcion) {
+                        <option [ngValue]="opcion">{{ opcion }}</option>
+                      }
+                    </select>
+                  </td>
+
+                  <td data-label="Envío / Retiro">
+                    <select class="ds-select" [ngModel]="muestra.envio" (ngModelChange)="modificarEnvio(muestra, $any($event))">
+                      <option [ngValue]="null" disabled>-</option>
+                      @for (opcion of opcionesEnvio; track opcion.valor) {
+                        <option [ngValue]="opcion.valor">{{ opcion.etiqueta }}</option>
+                      }
+                    </select>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  </section>
+
+  @if (edicionDevolucion(); as edicion) {
+    <div class="modal-backdrop" role="presentation">
+      <section class="sale-modal fecha-modal" role="dialog" aria-modal="true" aria-labelledby="fecha-devolucion-title">
+        <header class="sale-modal__header">
+          <div>
+            <span class="ds-eyebrow">{{ edicion.item.colegio }}</span>
+            <h2 id="fecha-devolucion-title" class="ds-heading-2">Fecha de devolución</h2>
+          </div>
+          <button class="close-button" type="button" (click)="cancelarDevolucion()" aria-label="Cerrar">×</button>
+        </header>
+        <div class="wizard-content">
+          <label class="ds-field">
+            <span class="ds-label">¿Cuándo se devolvieron las muestras?</span>
+            <input class="ds-input" type="date" [ngModel]="edicion.fecha" (ngModelChange)="actualizarFechaDevolucionModal($any($event))" />
+          </label>
+        </div>
+        <footer class="wizard-actions">
+          <button type="button" class="ds-button ds-button--secondary" (click)="cancelarDevolucion()">Cancelar</button>
+          <button type="button" class="ds-button" [disabled]="!edicion.fecha" (click)="confirmarDevolucion()">Confirmar</button>
+        </footer>
+      </section>
+    </div>
+  }
+</main>

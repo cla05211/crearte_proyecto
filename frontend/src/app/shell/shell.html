@@ -66,6 +66,9 @@
       @if (tienePermiso('ver_talles_disenio')) {
         <a routerLink="/talles-diseño" routerLinkActive="activo" (click)="cerrarSidebar()">Talles y Diseño</a>
       }
+      @if (tienePermiso('ver_tabla_muestras_fisicas')) {
+        <a routerLink="/muestras-fisicas" routerLinkActive="activo" (click)="cerrarSidebar()">Muestras físicas</a>
+      }
     </nav>
   </aside>
 

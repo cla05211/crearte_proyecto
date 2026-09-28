@@ -25,12 +25,21 @@ export class MuestrasFisicasController
         return this.muestrasFisicasService.modificarMuestras(muestras, id);
     }
 
-    @Patch('muestras/:id')
+    @Patch('estado/:id')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_tabla_muestras_fisicas')
     async modificarEstado(@Param('id')id: number, @Query('estado') estado: string)
     {
-        return this.muestrasFisicasService.modificarMuestras(estado, id);
+        return this.muestrasFisicasService.modificarEstado(estado, id);
+    }
+
+    @Patch('envio/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_tabla_muestras_fisicas')
+    async modificarEnvio(@Param('id')id: number, @Query('envio') envio: string)
+    {
+        // Los query params llegan como texto: "true" / "false"
+        return this.muestrasFisicasService.modificarEnvio(envio === 'true', id);
     }
 
     @Patch('fecha-entrega/:id')

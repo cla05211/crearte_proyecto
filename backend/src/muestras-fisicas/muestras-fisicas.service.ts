@@ -82,7 +82,21 @@ export class MuestrasFisicasService
     {
         const { data, error } = await this.sb.supabase
         .from("muestras_fisicas")
-        .update({'fecha_devolucion': fecha})
+        // Cargar la fecha de devolución implica que la muestra ya se devolvió
+        .update({'fecha_devolucion': fecha, 'estado': 'Devuelto'})
+        .eq("id", id)
+
+        if (error) 
+        {
+            throw new BadRequestException(error.message);
+        }
+    }
+
+    async modificarEnvio(envio: boolean, id: number):Promise<void>
+    {
+        const { error } = await this.sb.supabase
+        .from("muestras_fisicas")
+        .update({'envio': envio})
         .eq("id", id)
 
         if (error) 
