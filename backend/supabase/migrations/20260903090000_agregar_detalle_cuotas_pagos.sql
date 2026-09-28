@@ -1,17 +1,3 @@
--- Agrega detalle_cuotas a pagos: un snapshot congelado, tomado en el momento
--- en que se registra el pago, de a qué cuota(s) correspondió (según el plan
--- de cuotas vigente en ESE momento). No se actualiza si el pedido se
--- modifica después (modificar_plan_pedido puede renumerar/redefinir las
--- cuotas) -- un recibo es un comprobante histórico, no debe cambiar
--- retroactivamente porque el plan se renegoció más adelante.
---
--- Formato de detalle_cuotas (jsonb array):
---   [{ "tipo": "senia" }]
---   [{ "tipo": "completa", "numero": 2 }]
---   [{ "tipo": "parcial", "numero": 3, "monto": 1500 }]
---   [{ "tipo": "completa", "numero": 2 }, { "tipo": "parcial", "numero": 3, "monto": 800 }]
---   [{ "tipo": "excedente", "monto": 500 }]  -- sobró plata sin cuotas pendientes para cubrir
-
 alter table public.pagos add column if not exists detalle_cuotas jsonb;
 
 create or replace function registrar_pago_completo(

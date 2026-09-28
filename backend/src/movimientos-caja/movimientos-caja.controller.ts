@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
-import { MovimientoCajaDTO } from './dto/movimientoCaja.dto copy';
+import { MovimientoCajaDTO } from './dto/movimientoCaja.dto';
 import { MovimientosCajaService } from './movimientos-caja.service';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { MovimientoCajaResponseDTO } from './dto/movimientoCajaResponse.dto';

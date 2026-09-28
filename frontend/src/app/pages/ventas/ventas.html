@@ -499,7 +499,7 @@
                   <div class="cart__row">
                     <div>
                       <strong>{{ producto.nombre }}</strong
-                      ><span>{{ producto.cantidad + sinCargoAlta(producto.idProducto) }} alumnos@if (sinCargoAlta(producto.idProducto)) { ({{ sinCargoAlta(producto.idProducto) }} sin cargo)} · {{ etiquetaCuotasProducto(producto) }}</span
+                      ><span>{{ producto.cantidad + sinCargoAlta(producto.idProducto) }} alumnos · {{ etiquetaCuotasProducto(producto) }}</span
                       ><span
                         >Seña
                         {{
@@ -1033,7 +1033,7 @@
               <div class="cart__row" [class.is-editing]="indiceEdicionProductoPlan() === i">
                 <div>
                   <strong>{{ producto.nombre }}</strong
-                  ><span>{{ producto.cantidad + sinCargoPlan(producto.idProducto) }} unidades@if (sinCargoPlan(producto.idProducto)) { ({{ sinCargoPlan(producto.idProducto) }} sin cargo)} · {{ etiquetaCuotasProducto(producto) }}</span
+                  ><span>{{ producto.cantidad + sinCargoPlan(producto.idProducto) }} unidades · {{ etiquetaCuotasProducto(producto) }}</span
                   >@if (producto.agregados.length) {
                     <span>Agregados: {{ nombresAgregados(producto.agregados) }}</span>
                   }
@@ -1128,17 +1128,10 @@
               <strong>{{ nombreProducto(producto.id_producto_original) }}</strong>
               <span>{{ producto.descripcion }}</span>
               <span
-                >{{ producto.cantidad + sinCargoVenta(venta, producto.id_producto_original) }} unidades@if (sinCargoVenta(venta, producto.id_producto_original)) { ({{ sinCargoVenta(venta, producto.id_producto_original) }} sin cargo)} · Seña
+                >{{ producto.cantidad + sinCargoVenta(venta, producto.id_producto_original) }} unidades · Seña
                 {{ producto.valor_senia | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }} · Cuota
                 {{ producto.valor_cuota | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</span
               >
-            </li>
-          }
-          @for (liberada of liberadasSinFilaVenta(venta); track liberada.id_beneficio) {
-            <li>
-              <strong>{{ liberada.beneficio }}</strong>
-              <span>Beneficio del pedido</span>
-              <span>{{ liberada.cantidad }} unidades · Sin cargo</span>
             </li>
           }
           @for (agregado of venta.agregadosGlobalesDTO; track agregado.id) {

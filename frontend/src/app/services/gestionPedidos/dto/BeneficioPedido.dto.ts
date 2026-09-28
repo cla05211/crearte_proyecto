@@ -29,12 +29,3 @@ export function cantidadSinCargo(beneficios: BeneficioConProducto[] | null | und
         .filter((b) => b.id_producto === idProducto)
         .reduce((total, b) => total + b.cantidad, 0);
 }
-
-/**
- * Beneficios de prendas liberadas cuyo producto no tiene fila propia en el pedido
- * (ej: la campera de regalo quedó "adentro" de los combos). Se muestran como fila aparte.
- */
-export function liberadasSinFila<T extends BeneficioConProducto>(beneficios: T[] | null | undefined, idsProductos: number[]): T[]
-{
-    return (beneficios ?? []).filter((b) => b.id_producto != null && !idsProductos.includes(b.id_producto));
-}

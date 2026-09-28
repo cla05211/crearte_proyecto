@@ -18,7 +18,7 @@ import { ActivatedRoute } from '@angular/router';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
 import { PermisosService } from '../../../../services/permisos/permisos';
 import { BeneficioResponseDTO } from '../../../../services/gestionPedidos/dto/BeneficioResponse.dto';
-import { BeneficioPedidoPostDTO, cantidadSinCargo, formatearBeneficios, liberadasSinFila as filtrarLiberadasSinFila } from '../../../../services/gestionPedidos/dto/BeneficioPedido.dto';
+import { BeneficioPedidoPostDTO, cantidadSinCargo, formatearBeneficios } from '../../../../services/gestionPedidos/dto/BeneficioPedido.dto';
 import { ModificarPlanPedidoDTO } from '../../../../services/gestionPedidos/dto/modficaciones/ModificarPlanPedido';
 
 const SEPARADOR_AGREGADOS = ' · Agregado: ';
@@ -88,12 +88,6 @@ export class Presupuesto implements OnInit
   readonly productosConAgregadosAbiertos = signal<ReadonlySet<number>>(new Set());
 
   readonly beneficioPedido = computed(() => formatearBeneficios(this.presupuestoGrupo()?.beneficios));
-
-  /** Prendas liberadas cuyo producto no tiene fila propia (quedaron dentro de combos): se muestran aparte. */
-  readonly liberadasSinFila = computed(() => {
-    const presupuesto = this.presupuestoGrupo();
-    return filtrarLiberadasSinFila(presupuesto?.beneficios, (presupuesto?.productosPedido ?? []).map((p) => p.id_producto_original));
-  });
 
   /** Prendas sin cargo (beneficio) de un producto del pedido. */
   sinCargoProducto(idProducto: number): number

@@ -19,7 +19,7 @@ import { DocumentoDTO } from '../../services/gestionPedidos/dto/documento.dto';
 import { PagoDTO } from '../../services/gestionPedidos/dto/pago.dto';
 import { StorageService } from '../../services/storage/storage-service';
 import { BeneficioResponseDTO } from '../../services/gestionPedidos/dto/BeneficioResponse.dto';
-import { BeneficioPedidoPostDTO, cantidadSinCargo, formatearBeneficios, liberadasSinFila } from '../../services/gestionPedidos/dto/BeneficioPedido.dto';
+import { BeneficioPedidoPostDTO, cantidadSinCargo, formatearBeneficios } from '../../services/gestionPedidos/dto/BeneficioPedido.dto';
 import { ProductosPedidoService } from '../../services/productosPedidos/productos-pedido-service';
 import { ProductoPedidoDTO } from '../../services/productosPedidos/dto/ProductoPedido.dto';
 import { ModificarPlanPedidoDTO } from '../../services/gestionPedidos/dto/modficaciones/ModificarPlanPedido';
@@ -507,7 +507,7 @@ export class Ventas implements OnInit {
     });
   }
 
-  /** Prendas sin cargo de un producto del carrito de alta (para mostrar "+N sin cargo"). */
+  /** Prendas sin cargo de un producto del carrito de alta (se suman a la cantidad que se muestra). */
   sinCargoAlta(idProducto: number): number {
     return cantidadSinCargo(this.beneficiosSeleccionados(), idProducto);
   }
@@ -519,10 +519,6 @@ export class Ventas implements OnInit {
 
   sinCargoVenta(venta: PedidoResponseVentas, idProducto: number) {
     return cantidadSinCargo(venta.beneficios, idProducto);
-  }
-
-  liberadasSinFilaVenta(venta: PedidoResponseVentas) {
-    return liberadasSinFila(venta.beneficios, venta.productosPedidoDTO.map((p) => p.id_producto_original));
   }
 
   /** Agrega el beneficio elegido en el form (o suma la cantidad si ya estaba). */

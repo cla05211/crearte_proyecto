@@ -4,7 +4,7 @@ import { CurrencyPipe } from '@angular/common';
 import { presupuestoPedidoClientesPage } from '../../../services/gestionPedidos/dto/PresupuestoPedidoClientePage.dto';
 import { ClientesPortalService } from '../../../services/clientes-portal/clientes-portal-service';
 import { NotificationService } from '../../../shared/notifications/notification.service';
-import { cantidadSinCargo, formatearBeneficios, liberadasSinFila as filtrarLiberadasSinFila } from '../../../services/gestionPedidos/dto/BeneficioPedido.dto';
+import { cantidadSinCargo, formatearBeneficios } from '../../../services/gestionPedidos/dto/BeneficioPedido.dto';
 
 interface ProductoPedidoConTotales
 {
@@ -43,12 +43,6 @@ export class Presupuesto implements OnInit
   readonly cargando = signal(false);
 
   readonly beneficioPedido = computed(() => formatearBeneficios(this.presupuestoGrupo()?.beneficios));
-
-  /** Prendas liberadas cuyo producto no tiene fila propia (quedaron dentro de combos): se muestran aparte. */
-  readonly liberadasSinFila = computed(() => {
-    const presupuesto = this.presupuestoGrupo();
-    return filtrarLiberadasSinFila(presupuesto?.beneficios, (presupuesto?.productosPedido ?? []).map((p) => p.id_producto_original));
-  });
 
   // A diferencia de la versión staff (pages/clientes/colegio-detalle/presupuesto), acá no se
   // recalculan precios "en vivo" contra /productos (son endpoints de staff, con AuthGuard, a

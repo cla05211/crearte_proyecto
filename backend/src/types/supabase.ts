@@ -14,21 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _backup_beneficio_texto_pedido: {
-        Row: {
-          beneficio_texto: string | null
-          id_pedido: number | null
-        }
-        Insert: {
-          beneficio_texto?: string | null
-          id_pedido?: number | null
-        }
-        Update: {
-          beneficio_texto?: string | null
-          id_pedido?: number | null
-        }
-        Relationships: []
-      }
       agregados: {
         Row: {
           agregado: string | null
@@ -461,6 +446,41 @@ export type Database = {
             columns: ["usuario"]
             isOneToOne: false
             referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      muestras_fisicas: {
+        Row: {
+          estado: string | null
+          fecha_devolucion: string | null
+          fecha_entrega: string | null
+          id: number
+          id_pedido: number
+          muestras: string | null
+        }
+        Insert: {
+          estado?: string | null
+          fecha_devolucion?: string | null
+          fecha_entrega?: string | null
+          id?: number
+          id_pedido: number
+          muestras?: string | null
+        }
+        Update: {
+          estado?: string | null
+          fecha_devolucion?: string | null
+          fecha_entrega?: string | null
+          id?: number
+          id_pedido?: number
+          muestras?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "muestras_fisicas_id_pedido_fkey"
+            columns: ["id_pedido"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
             referencedColumns: ["id"]
           },
         ]

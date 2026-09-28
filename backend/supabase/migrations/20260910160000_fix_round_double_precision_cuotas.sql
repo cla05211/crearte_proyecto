@@ -1,10 +1,3 @@
--- cuotas.importe y cuotas.monto_cubierto son double precision. Al usarlos
--- directo desde el "record" del loop (cuota.importe - coalesce(...)) el
--- resultado queda como double precision, y round(double precision, integer)
--- no existe en Postgres (solo round(numeric, integer)). Esto ya estaba en
--- registrar_pago_completo y en eliminar_pago_completo desde antes, pero
--- nunca se había disparado porque ningún pago real había llegado a recorrer
--- el loop de cuotas. Se arregla casteando a numeric antes de redondear.
 create or replace function registrar_pago_completo(
   p_pago jsonb
 )
