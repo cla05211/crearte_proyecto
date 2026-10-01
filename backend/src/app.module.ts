@@ -60,15 +60,17 @@ import { BeneficiosPedidoModule } from './beneficios-pedido/beneficios-pedido.mo
 import { MuestrasFisicasService } from './muestras-fisicas/muestras-fisicas.service';
 import { MuestrasFisicasController } from './muestras-fisicas/muestras-fisicas.controller';
 import { MuestrasFisicasModule } from './muestras-fisicas/muestras-fisicas.module';
+import { WatsappService } from './watsapp/watsapp.service';
+import { WatsappModule } from './watsapp/watsapp.module';
 
 
 @Module({
   imports: [ConfigModule.forRoot({
       isGlobal: true,
-    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, ClientesPortalModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule, MovimientosCajaModule, GruposModule, AgregadosGlobalesPedidoModule, ClientesAuthModule, PrendasPedidoTallesModule, BeneficiosPedidoModule, MuestrasFisicasModule],
+    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, ClientesPortalModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule, MovimientosCajaModule, GruposModule, AgregadosGlobalesPedidoModule, ClientesAuthModule, PrendasPedidoTallesModule, BeneficiosPedidoModule, MuestrasFisicasModule, WatsappModule],
   controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController, MovimientosCajaController, GruposController, ClientesAuthController, MuestrasFisicasController],
   providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService,
      ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, 
-     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, ClientesService, ClientesAuthService, ClientesService, PrendasPedidoTallesService, BeneficiosPedidoService, MuestrasFisicasService],
+     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, ClientesService, ClientesAuthService, ClientesService, PrendasPedidoTallesService, BeneficiosPedidoService, MuestrasFisicasService, WatsappService],
 })
 export class AppModule {}
