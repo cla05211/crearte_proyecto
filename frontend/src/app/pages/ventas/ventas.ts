@@ -766,9 +766,10 @@ export class Ventas implements OnInit {
 
         this.gestionPedidosService.agregarPedido(pedido).subscribe({
           next: (respuesta) => {
-            // TODO: por ahora es solo para pruebas. Cuando se arme el envío
-            // por WhatsApp al padre responsable, esto se reemplaza por eso.
-            console.log('Credenciales del cliente creado ->', 'usuario:', respuesta.usuario, '| contraseña:', respuesta.contrasenaPlana);
+            // TODO: solo para pruebas. El cliente se crea sin contraseña; el link para
+            // crearla se genera con POST /clientes-auth/grupos/:idGrupo/link-activacion
+            // (más adelante lo va a disparar el envío por WhatsApp).
+            console.log('Cliente creado ->', 'usuario:', respuesta.usuario, '| pedido:', respuesta.id_pedido);
 
             this.guardando.set(false);
             this.notificaciones.success({

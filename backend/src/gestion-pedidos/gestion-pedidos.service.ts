@@ -27,8 +27,6 @@ import { ProductoPedidoResponseConNombreOriginalDTO } from 'src/productos-pedido
 import { AgregadosGlobalesPedidoService } from 'src/agregados-globales-pedido/agregados-globales-pedido.service';
 import { AgregadoGlobalPedidoResponseDTO } from 'src/agregados-globales-pedido/dto/AgregadoGlobalPedidoResponse.dto';
 import { ControlTallesDisenioDTO } from './dto/ControlTallesDisenioDTO';
-import * as bcrypt from 'bcryptjs';
-import { randomBytes } from 'crypto';
 import { BeneficioPedidoDTO } from 'src/beneficios-pedido/dto/beneficioPedidoDTO';
 import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
 
@@ -45,11 +43,11 @@ export class GestionPedidosService
 
     async crearPedido(dto:CrearPedidoDTO)
     {
+        // El cliente se crea sin contraseña: la elige él mismo desde el link de activación
+        // que le llega por WhatsApp (ver ClientesAuthService.generarLinkActivacion).
         const usuarioBase = this.normalizarUsuario(dto.colegioDTO.nombre, dto.grupoDTO.promo);
-        const contrasenaPlana = this.generarContrasenaAleatoria();
-        const contrasenaHash = await bcrypt.hash(contrasenaPlana, 10);
 
-        const payload = { ...dto, usuario: usuarioBase, contrasena_hash: contrasenaHash };
+        const payload = { ...dto, usuario: usuarioBase, contrasena_hash: null };
 
         const { data, error } = await this.sb.supabase.rpc(
         'crear_pedido_completo',
@@ -65,7 +63,7 @@ export class GestionPedidosService
 
         const resultado = data as unknown as { id_pedido: number; usuario: string };
 
-        return { id_pedido: resultado.id_pedido, usuario: resultado.usuario, contrasenaPlana };
+        return { id_pedido: resultado.id_pedido, usuario: resultado.usuario };
     }
 
     private normalizarUsuario(colegio: string, promo: number | null): string
@@ -75,20 +73,6 @@ export class GestionPedidosService
             .replace(/[̀-ͯ]/g, '')
             .toLowerCase()
             .replace(/[^a-z0-9]/g, '');
-    }
-
-    private generarContrasenaAleatoria(longitud = 8): string
-    {
-        // Sin 0/o/1/i/l: son las contraseñas que un padre va a tener que
-        // volver a tipear a mano desde un papel o un mensaje.
-        const alfabeto = 'abcdefghjkmnpqrstuvwxyz23456789';
-        const bytes = randomBytes(longitud);
-        let contrasena = '';
-        for (let i = 0; i < longitud; i++)
-        {
-            contrasena += alfabeto[bytes[i] % alfabeto.length];
-        }
-        return contrasena;
     }
 
     async obtenerPedidosVentas(rangoDesde: number, rangoHasta:number, busqueda?:string, promo?:number):Promise<PedidoResponseVentas[]>

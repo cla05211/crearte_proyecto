@@ -205,24 +205,30 @@ export type Database = {
       }
       clientes: {
         Row: {
-          contrasena_hash: string
+          contrasena_hash: string | null
           created_at: string
           id: number
           id_grupo: number
+          token_activacion_expira: string | null
+          token_activacion_hash: string | null
           usuario: string
         }
         Insert: {
-          contrasena_hash: string
+          contrasena_hash?: string | null
           created_at?: string
           id?: number
           id_grupo: number
+          token_activacion_expira?: string | null
+          token_activacion_hash?: string | null
           usuario: string
         }
         Update: {
-          contrasena_hash?: string
+          contrasena_hash?: string | null
           created_at?: string
           id?: number
           id_grupo?: number
+          token_activacion_expira?: string | null
+          token_activacion_hash?: string | null
           usuario?: string
         }
         Relationships: [
@@ -481,6 +487,51 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "muestras_fisicas_id_pedido_fkey"
+            columns: ["id_pedido"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notificaciones_whatsapp: {
+        Row: {
+          estado: string
+          fecha_programada: string | null
+          id: number
+          id_cuota: number | null
+          id_pedido: number
+          plantilla: string
+          sector: string
+        }
+        Insert: {
+          estado?: string
+          fecha_programada?: string | null
+          id?: number
+          id_cuota?: number | null
+          id_pedido: number
+          plantilla: string
+          sector?: string
+        }
+        Update: {
+          estado?: string
+          fecha_programada?: string | null
+          id?: number
+          id_cuota?: number | null
+          id_pedido?: number
+          plantilla?: string
+          sector?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificaciones_whatsapp_id_cuota_fkey"
+            columns: ["id_cuota"]
+            isOneToOne: false
+            referencedRelation: "cuotas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notificaciones_whatsapp_id_pedido_fkey"
             columns: ["id_pedido"]
             isOneToOne: false
             referencedRelation: "pedidos"

@@ -7,6 +7,7 @@ export const routes: Routes = [
   // ---- Rutas públicas (sin navbar/sidebar) ----
   { path: "login", loadComponent: () => import('./pages/login/login').then((archivo) => archivo.Login) },
   { path: "login-clientes", loadComponent: () => import('./pages/pages-clientes/login-clientes/login-clientes').then((archivo) => archivo.LoginClientes) },
+  { path: "crear-contrasena/:token", loadComponent: () => import('./pages/pages-clientes/crear-contrasena/crear-contrasena').then((archivo) => archivo.CrearContrasena) },
   { path: "registro", loadComponent: () => import('./pages/registro/registro').then((archivo) => archivo.Registro) },
   { path: "olvido-clave", loadComponent: () => import('./pages/olvido-clave/olvido-clave').then((archivo) => archivo.OlvidoClave) },
   { path: "resetear-clave", loadComponent: () => import('./pages/resetear-clave/resetear-clave').then((archivo) => archivo.ResetearClave) },

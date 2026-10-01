@@ -1,4 +1,8 @@
 import { Module } from '@nestjs/common';
+import { WatsappService } from './watsapp.service';
 
-@Module({})
+@Module({
+    providers:[WatsappService],
+    exports:[WatsappService]
+})
 export class WatsappModule {}

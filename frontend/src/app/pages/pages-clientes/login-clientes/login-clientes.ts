@@ -1,6 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { ClientesAuthService } from '../../../services/clientes-auth-service/clientes-auth-service';
@@ -14,14 +14,25 @@ import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
   templateUrl: './login-clientes.html',
   styleUrl: './login-clientes.css',
 })
-export class LoginClientes 
+export class LoginClientes implements OnInit
 {
     faEye = faEye;
     faEyeSlash = faEyeSlash;
     verClave: boolean = false;
     auth = inject(ClientesAuthService)
     router = inject(Router)
+    route = inject(ActivatedRoute)
     notificaciones = inject(NotificationService)
+
+    // Si viene de crear la contraseña, el usuario llega por query param (?usuario=...).
+    ngOnInit(): void
+    {
+        const usuario = this.route.snapshot.queryParamMap.get('usuario');
+        if (usuario)
+        {
+            this.formularioLogin.patchValue({ usuario });
+        }
+    }
 
     toggleClave(): void 
     {
@@ -67,7 +78,14 @@ export class LoginClientes
             {
                 const code = err?.error?.code; //Este es el data.error del back
 
-                if (code === 'INVALID_CREDENTIALS')
+                if (code === 'CUENTA_NO_ACTIVADA')
+                {
+                    this.notificaciones.warning({
+                        title: 'Cuenta sin activar',
+                        description: 'Todavía no creaste tu contraseña. Usá el link que te enviamos por WhatsApp.',
+                    });
+                }
+                else if (code === 'INVALID_CREDENTIALS')
                 {
                     this.notificaciones.warning({
                         title: 'Datos incorrectos',

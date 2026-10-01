@@ -62,6 +62,7 @@ import { MuestrasFisicasController } from './muestras-fisicas/muestras-fisicas.c
 import { MuestrasFisicasModule } from './muestras-fisicas/muestras-fisicas.module';
 import { WatsappService } from './watsapp/watsapp.service';
 import { WatsappModule } from './watsapp/watsapp.module';
+import { NotificacionesService } from './notificaciones/notificaciones.service';
 
 
 @Module({
@@ -71,6 +72,6 @@ import { WatsappModule } from './watsapp/watsapp.module';
   controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController, MovimientosCajaController, GruposController, ClientesAuthController, MuestrasFisicasController],
   providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService,
      ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, 
-     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, ClientesService, ClientesAuthService, ClientesService, PrendasPedidoTallesService, BeneficiosPedidoService, MuestrasFisicasService, WatsappService],
+     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, ClientesService, ClientesAuthService, ClientesService, PrendasPedidoTallesService, BeneficiosPedidoService, MuestrasFisicasService, WatsappService, NotificacionesService],
 })
 export class AppModule {}

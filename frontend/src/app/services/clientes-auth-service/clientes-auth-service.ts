@@ -34,6 +34,20 @@ export class ClientesAuthService
     );
   }
 
+  // Verifica el link de activación antes de mostrar el formulario. Devuelve el usuario del cliente.
+  validarTokenActivacion(token: string)
+  {
+    return this.http.get<{ usuario: string }>(`${environment.apiUrl}/clientes-auth/activacion/${token}`);
+  }
+
+  crearContrasena(token: string, contraseña: string)
+  {
+    return this.http.post<{ usuario: string }>(`${environment.apiUrl}/clientes-auth/crear-contrasena`, {
+      token,
+      contraseña
+    });
+  }
+
   guardarSesion()
   {
     try

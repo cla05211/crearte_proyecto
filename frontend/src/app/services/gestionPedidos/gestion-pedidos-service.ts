@@ -18,9 +18,9 @@ export class GestionPedidosService
 {
   http = inject(HttpClient);
   
-  agregarPedido(pedido: CrearPedidoDTO): Observable<{ id_pedido: number; usuario: string; contrasenaPlana: string }>
+  agregarPedido(pedido: CrearPedidoDTO): Observable<{ id_pedido: number; usuario: string }>
   {
-    return this.http.post<{ id_pedido: number; usuario: string; contrasenaPlana: string }>((`${environment.apiUrl}/gestion-pedidos/crear-pedido`), pedido);
+    return this.http.post<{ id_pedido: number; usuario: string }>((`${environment.apiUrl}/gestion-pedidos/crear-pedido`), pedido);
   }
 
   obtenerPedidos(rangoDesde:number, rangoHasta:number, busqueda?: string, promo?:number): Observable<PedidoResponseVentas[]>
