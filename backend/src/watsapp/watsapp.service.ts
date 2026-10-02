@@ -14,29 +14,46 @@ export class WatsappService
      * @param variables  valores de {{1}}, {{2}}... en orden
      * @returns id del mensaje que vuelve
      */
-    async enviarPlantilla(telefono: string, plantilla: string, variables: string[] = []): Promise<string>
+    async enviarPlantilla(telefono: string, plantilla: string, variables: string[] = [], parametroBoton?: string): Promise<string>
     {
-        const version = this.config.get<string>('WHATSAPP_API_VERSION');
-        const phoneNumberId = this.config.get<string>('WHATSAPP_PHONE_NUMBER_ID');
-        const token = this.config.get<string>('WHATSAPP_TOKEN');
+    const version = this.config.get<string>('WHATSAPP_API_VERSION');
+    const phoneNumberId = this.config.get<string>('WHATSAPP_PHONE_NUMBER_ID');
+    const token = this.config.get<string>('WHATSAPP_TOKEN');
 
-        const url = `https://graph.facebook.com/${version}/${phoneNumberId}/messages`;
+    const url = `https://graph.facebook.com/${version}/${phoneNumberId}/messages`;
 
-        const body = {
-            messaging_product: 'whatsapp',
-            to: this.normalizarTelefono(telefono),
-            type: 'template',
-            template: {
-                name: plantilla,
-                language: { code: 'es_AR' },
-                components: variables.length
-                    ? [{
-                        type: 'body',
-                        parameters: variables.map(v => ({ type: 'text', text: v })),
-                    }]
-                    : [],
-            },
-        };
+    // Se arma aparte para poder agregarle partes según lo que se mande
+    const components: any[] = [];
+
+    if (variables.length)
+    {
+        components.push({
+            type: 'body',
+            parameters: variables.map(v => ({ type: 'text', text: v })),
+        });
+    }
+
+    // Solo para plantillas con botón de URL dinámica (ej: .../crear-contrasena/{{1}})
+    if (parametroBoton)
+    {
+        components.push({
+            type: 'button',
+            sub_type: 'url',
+            index: '0',   // primer botón de la plantilla
+            parameters: [{ type: 'text', text: parametroBoton }],
+        });
+    }
+
+    const body = {
+        messaging_product: 'whatsapp',
+        to: this.normalizarTelefono(telefono),
+        type: 'template',
+        template: {
+            name: plantilla,
+            language: { code: 'es_AR' },
+            components,   // <- ahora usa la variable
+        },
+    };
 
         const respuesta = await fetch(url, {
             method: 'POST',

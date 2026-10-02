@@ -23,10 +23,7 @@ export class ClientesAuthService
 
     async iniciarSesion(usuario: string, contraseña: string)
     {
-        // .trim() defensivo: si la columna `usuario` en la tabla `clientes` quedó
-        // tipada como char(n), Postgres devuelve el valor con espacios de relleno.
-        // Lo ideal es corregir el tipo de columna a text/varchar; esto es solo
-        // para que el login no se rompa mientras tanto.
+
         const usuarioNormalizado = usuario.trim();
 
         let cliente;
@@ -62,12 +59,7 @@ export class ClientesAuthService
         return { token: tokenCrudo, cliente: { id: cliente.id, id_grupo: cliente.id_grupo, usuario: cliente.usuario } };
     }
 
-    /**
-     * Genera un link de un solo uso para que el cliente del grupo cree (o vuelva a crear) su contraseña.
-     * Cada llamada invalida el link anterior. Pensado para usarse al enviar el WhatsApp de acceso
-     * a la plataforma, y también para reenviar el link o "olvidé mi contraseña".
-     * @returns el usuario, el token crudo (va en el botón de WhatsApp) y el link completo
-     */
+
     async generarLinkActivacion(idGrupo: number)
     {
         const tokenCrudo = randomBytes(32).toString('hex');
@@ -99,10 +91,6 @@ export class ClientesAuthService
         };
     }
 
-    /**
-     * Verifica que el link sea válido antes de mostrar el formulario.
-     * @returns el usuario, para mostrarle al cliente con qué usuario va a ingresar
-     */
     async validarTokenActivacion(tokenCrudo: string)
     {
         const cliente = await this.buscarClientePorTokenActivacion(tokenCrudo);
@@ -122,8 +110,7 @@ export class ClientesAuthService
         const cliente = await this.buscarClientePorTokenActivacion(tokenCrudo);
         const contrasenaHash = await bcrypt.hash(contraseña, 10);
 
-        // Se guarda la contraseña y se borra el token en el mismo update: el link queda usado.
-        // El .eq() sobre el token evita que dos envíos simultáneos del mismo link pisen la contraseña.
+
         const { data, error } = await this.sb.supabase
             .from('clientes')
             .update({ contrasena_hash: contrasenaHash, token_activacion_hash: null, token_activacion_expira: null })
@@ -140,7 +127,6 @@ export class ClientesAuthService
             throw new BadRequestException({ code: 'TOKEN_INVALIDO', message: 'El link no es válido o ya fue usado.' });
         }
 
-        // Si es un cambio de contraseña (link reenviado), se cierran las sesiones abiertas.
         await this.sb.supabase.from('sesiones_clientes').delete().eq('id_cliente', cliente.id);
 
         return { usuario: cliente.usuario.trim() };
