@@ -47,9 +47,6 @@ import { MovimientosCajaModule } from './movimientos-caja/movimientos-caja.modul
 import { GruposController } from './grupos/grupos.controller';
 import { GruposModule } from './grupos/grupos.module';
 import { AgregadosGlobalesPedidoModule } from './agregados-globales-pedido/agregados-globales-pedido.module';
-import { ClientesService } from './clientes-service/clientes.service';
-import { ClientesAuthService } from './clientes-auth/clientes-auth-service.service';
-import { ClientesAuthController } from './clientes-auth/clientes-auth.controller';
 import { ClientesAuthModule } from './clientes-auth/clientes-auth.module';
 import { ClientesPortalController } from './clientes-portal/clientes-portal.controller';
 import { ClientesPortalModule } from './clientes-portal/clientes-portal.module';
@@ -60,9 +57,7 @@ import { BeneficiosPedidoModule } from './beneficios-pedido/beneficios-pedido.mo
 import { MuestrasFisicasService } from './muestras-fisicas/muestras-fisicas.service';
 import { MuestrasFisicasController } from './muestras-fisicas/muestras-fisicas.controller';
 import { MuestrasFisicasModule } from './muestras-fisicas/muestras-fisicas.module';
-import { WatsappService } from './watsapp/watsapp.service';
 import { WatsappModule } from './watsapp/watsapp.module';
-import { NotificacionesService } from './notificaciones/notificaciones.service';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
 
 
@@ -70,9 +65,9 @@ import { NotificacionesModule } from './notificaciones/notificaciones.module';
   imports: [ConfigModule.forRoot({
       isGlobal: true,
     }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, ClientesPortalModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule, MovimientosCajaModule, GruposModule, AgregadosGlobalesPedidoModule, ClientesAuthModule, PrendasPedidoTallesModule, BeneficiosPedidoModule, MuestrasFisicasModule, WatsappModule, NotificacionesModule],
-  controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController, MovimientosCajaController, GruposController, ClientesAuthController, MuestrasFisicasController],
+  controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController, MovimientosCajaController, GruposController, MuestrasFisicasController],
   providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService,
      ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, 
-     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, ClientesService, ClientesAuthService, ClientesService, PrendasPedidoTallesService, BeneficiosPedidoService, MuestrasFisicasService, WatsappService, NotificacionesService],
+     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, PrendasPedidoTallesService, BeneficiosPedidoService, MuestrasFisicasService],
 })
 export class AppModule {}

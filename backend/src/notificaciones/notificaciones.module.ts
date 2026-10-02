@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
 import { SupabaseModule } from 'src/supabase/supabase.module';
-import { WatsappService } from 'src/watsapp/watsapp.service';
+import { WatsappModule } from 'src/watsapp/watsapp.module';
+import { ClientesAuthModule } from 'src/clientes-auth/clientes-auth.module';
 import { NotificacionesService } from './notificaciones.service';
 
 @Module({
-    imports:[SupabaseModule],
-    providers:[NotificacionesService, WatsappService]
+    // Se importan los módulos (que exportan sus services), no los services sueltos.
+    imports: [SupabaseModule, WatsappModule, ClientesAuthModule],
+    providers: [NotificacionesService],
+    exports: [NotificacionesService],
 })
 export class NotificacionesModule {}

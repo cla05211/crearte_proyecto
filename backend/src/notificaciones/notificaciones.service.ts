@@ -13,7 +13,7 @@ export class NotificacionesService
     constructor(private sb: SupabaseService, private whatsapp: WatsappService, private clientesAuth: ClientesAuthService){}
 
     //Llamados watsapp
-    async enviarMensajesVenta(idPedido, number,telefono:string, mensajeInicialAdmin: mensajeInicialAdminDTO)
+    async enviarMensajesVenta(idPedido: number, idGrupo:number, number,telefono:string, mensajeInicialAdmin: mensajeInicialAdminDTO)
     {
         const enviados: string[]= [];
         const fallidos:string[] = [];
@@ -22,7 +22,7 @@ export class NotificacionesService
         { plantilla: 'mensaje_inicial_cuotas',          enviar: () => this.enviarMensajeInicialAdmin(telefono, mensajeInicialAdmin) },
         { plantilla: 'mensaje_inicial_datos_bancarios', enviar: () => this.enviarMensajeInicialBancoAdmin(telefono, mensajeInicialAdmin) },
         { plantilla: 'disenio_contacto_inicial',        enviar: () => this.enviarMensajesInicialesDisenio(telefono) },
-        { plantilla: 'talles_inicial_plataforma',       enviar: () => this.enviarMensajesInicialesTalles(telefono) },];
+        { plantilla: 'talles_inicial_plataforma',       enviar: () => this.enviarMensajesInicialesTalles(telefono,idGrupo) },];
         
         for (const envio of envios)
         {
