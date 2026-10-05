@@ -29,6 +29,7 @@ import { AgregadoGlobalPedidoResponseDTO } from 'src/agregados-globales-pedido/d
 import { ControlTallesDisenioDTO } from './dto/ControlTallesDisenioDTO';
 import { BeneficioPedidoDTO } from 'src/beneficios-pedido/dto/beneficioPedidoDTO';
 import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
+import { NotificacionesService } from 'src/notificaciones/notificaciones.service';
 
 @Injectable()
 export class GestionPedidosService
@@ -39,12 +40,10 @@ export class GestionPedidosService
         private documentos:DocumentosService, private pagos:PagosService, private cuentaCorriente: CuentaCorrienteService,
         private cuotas: CuotasService, private sb: SupabaseService, private auditoriaService: AuditoriasService,
         private pedidosService: PedidosService, private agregadosGlobalesPedido: AgregadosGlobalesPedidoService,
-        private beneficiosPedidoService: BeneficiosPedidoService){}
+        private beneficiosPedidoService: BeneficiosPedidoService, private notificacionesService: NotificacionesService){}
 
     async crearPedido(dto:CrearPedidoDTO)
     {
-        // El cliente se crea sin contraseña: la elige él mismo desde el link de activación
-        // que le llega por WhatsApp (ver ClientesAuthService.generarLinkActivacion).
         const usuarioBase = this.normalizarUsuario(dto.colegioDTO.nombre, dto.grupoDTO.promo);
 
         const payload = { ...dto, usuario: usuarioBase, contrasena_hash: null };
@@ -62,6 +61,10 @@ export class GestionPedidosService
         }
 
         const resultado = data as unknown as { id_pedido: number; usuario: string };
+
+        this.notificacionesService.inicializarNotificaciones();
+        this.notificacionesService.enviarMensajesVenta();
+
 
         return { id_pedido: resultado.id_pedido, usuario: resultado.usuario };
     }

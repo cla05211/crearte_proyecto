@@ -3,26 +3,34 @@ import { inicializarNotificacionesDTO } from './dto/notificacionesAdminInicializ
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { NotificacionesDTO } from './dto/notificaciones.dto copy';
 import { WatsappService } from 'src/watsapp/watsapp.service';
-import { mensajeDTO } from '../watsapp/plantillasMensajes/mensajeDto';
-import { mensajeInicialAdminDTO } from 'src/watsapp/plantillasMensajes/mensajeInicialAdminDto';
 import { ClientesAuthService } from 'src/clientes-auth/clientes-auth-service.service';
+import { DatosVentaNotisDto } from './dto/datosVenta.dto';
+import { calcularEstadoSenia } from 'src/pagos/estadoSeña.util';
 
 @Injectable()
 export class NotificacionesService 
 {
     constructor(private sb: SupabaseService, private whatsapp: WatsappService, private clientesAuth: ClientesAuthService){}
 
+    //general
+    async procesarNuevaVenta(idPedido:number)
+    {
+        const venta = await this.obtenerDatosVenta(idPedido);
+        await this.inicializarNotificaciones(venta);
+        await this.enviarMensajesVenta(venta);
+    }
+
     //Llamados watsapp
-    async enviarMensajesVenta(idPedido: number, idGrupo:number, number,telefono:string, mensajeInicialAdmin: mensajeInicialAdminDTO)
+    async enviarMensajesVenta(ventaDatos: DatosVentaNotisDto)
     {
         const enviados: string[]= [];
         const fallidos:string[] = [];
 
         const envios: { plantilla: string; enviar: () => Promise<string> }[] = [
-        { plantilla: 'mensaje_inicial_cuotas',          enviar: () => this.enviarMensajeInicialAdmin(telefono, mensajeInicialAdmin) },
-        { plantilla: 'mensaje_inicial_datos_bancarios', enviar: () => this.enviarMensajeInicialBancoAdmin(telefono, mensajeInicialAdmin) },
-        { plantilla: 'disenio_contacto_inicial',        enviar: () => this.enviarMensajesInicialesDisenio(telefono) },
-        { plantilla: 'talles_inicial_plataforma',       enviar: () => this.enviarMensajesInicialesTalles(telefono,idGrupo) },];
+        { plantilla: 'mensaje_inicial_cuotas',          enviar: () => this.enviarMensajeInicialAdmin(ventaDatos) },
+        { plantilla: 'mensaje_inicial_datos_bancarios', enviar: () => this.enviarMensajeInicialBancoAdmin(ventaDatos) },
+        { plantilla: 'disenio_contacto_inicial',        enviar: () => this.enviarMensajesInicialesDisenio(ventaDatos.telefono) },
+        { plantilla: 'talles_inicial_plataforma',       enviar: () => this.enviarMensajesInicialesTalles(ventaDatos.telefono, ventaDatos.idGrupo) },];
         
         for (const envio of envios)
         {
@@ -38,33 +46,43 @@ export class NotificacionesService
         }
 
         //Tabla notis (junto todo y le mando todo junto, el id del pedido ylas plantillas para eq)
-        this.actualizarEstadoMensajes(idPedido, enviados, fallidos);
+        this.actualizarEstadoMensajes(ventaDatos.datosNotis.id_pedido, enviados, fallidos);
     }
 
-    async enviarMensajeInicialAdmin(telefono:string, dto: mensajeInicialAdminDTO):Promise<string>
-    {
-        const variables = [`${dto.fechaPagoSenia}`]
+    private async enviarMensajeInicialAdmin(datos: DatosVentaNotisDto):Promise<string>
+    {   
+        let variableSenia = '';
 
-        const cuotasMenosUltima = dto.cuotas.slice(0, -1);
-        const textoCuotas = dto.cuotas.slice(0, -1)
-            .map(c => `${c.nro}: ${this.formatearDiaMes(c.fechaPago)}`)
+        if(datos.estadoSenia.completa)
+        {
+            variableSenia = `Ya abonada el ${datos.estadoSenia.fechaUltimoPago}`;
+        }
+        else
+        {
+            variableSenia = `Restan ${datos.estadoSenia.restante}`;
+        }
+
+        const variables = [variableSenia]
+
+        const textoCuotas = datos.datosNotis.cuotas.slice(0, -1)
+            .map(c => `${c.nro}: ${this.formatearDiaMes(c.fechaVencimiento)}`)
             .join(' / ');        
-        variables.push(textoCuotas, ((dto.cuotas).length).toString());
+        variables.push(textoCuotas, ((datos.datosNotis.cuotas).length).toString());
 
-        return this.whatsapp.enviarPlantilla(telefono,"mensaje_inicial_cuotas",variables);
+        return this.whatsapp.enviarPlantilla(datos.telefono,"mensaje_inicial_cuotas",variables);
     }
 
-    async enviarMensajeInicialBancoAdmin(telefono:string, dto: mensajeInicialAdminDTO):Promise<string>
+    private async enviarMensajeInicialBancoAdmin(datos: DatosVentaNotisDto):Promise<string>
     {
-        return await this.whatsapp.enviarPlantilla(telefono,"mensaje_inicial_datos_bancarios",this.traerDatosBanco(dto.banco));
+        return await this.whatsapp.enviarPlantilla(datos.telefono,"mensaje_inicial_datos_bancarios",this.traerDatosBanco(datos.datosNotis.banco));
     }
 
-    async enviarMensajesInicialesDisenio(telefono:string):Promise<string>
+    private async enviarMensajesInicialesDisenio(telefono:string):Promise<string>
     {
         return await this.whatsapp.enviarPlantilla(telefono,"disenio_contacto_inicial");
     }
 
-    async enviarMensajesInicialesTalles(telefono:string, idGrupo:number):Promise<string>
+    private async enviarMensajesInicialesTalles(telefono:string, idGrupo:number):Promise<string>
     {
         const { token } = await this.clientesAuth.generarLinkActivacion(idGrupo);
         //boton
@@ -97,12 +115,12 @@ export class NotificacionesService
 
     //Notificaciones
 
-    async inicializarNotificaciones(dto: inicializarNotificacionesDTO)
+    async inicializarNotificaciones(ventaDatos: DatosVentaNotisDto)
     {
         const notificaciones: NotificacionesDTO[] = [];
-        const notificacionesAdmin = this.prepararNotificacionesAdmin(dto);
-        const notificacionesTalles = this.prepararNotificacionesTalles(dto);
-        const notificacionesDisenio = this.prepararNotificacionesDisenio(dto);
+        const notificacionesAdmin = this.prepararNotificacionesAdmin(ventaDatos.datosNotis);
+        const notificacionesTalles = this.prepararNotificacionesTalles(ventaDatos.datosNotis);
+        const notificacionesDisenio = this.prepararNotificacionesDisenio(ventaDatos.datosNotis);
         notificaciones.push(...notificacionesAdmin);
         notificaciones.push(...notificacionesTalles);
         notificaciones.push(...notificacionesDisenio);
@@ -117,7 +135,7 @@ export class NotificacionesService
         }         
     }
 
-    prepararNotificacionesAdmin(dto: inicializarNotificacionesDTO): NotificacionesDTO[]
+    private prepararNotificacionesAdmin(dto: inicializarNotificacionesDTO): NotificacionesDTO[]
     {
         let notificaciones: NotificacionesDTO[] = [];
 
@@ -158,7 +176,7 @@ export class NotificacionesService
         return notificaciones;
     }
 
-    prepararNotificacionesTalles(dto: inicializarNotificacionesDTO)
+    private prepararNotificacionesTalles(dto: inicializarNotificacionesDTO)
     {
         let notificaciones: NotificacionesDTO[] = [];
         notificaciones.push({id_pedido: dto.id_pedido, plantilla: "talles_inicial_plataforma", estado: "pendiente", sector:"Talles"})
@@ -166,7 +184,7 @@ export class NotificacionesService
         return notificaciones;
     }
 
-    prepararNotificacionesDisenio(dto: inicializarNotificacionesDTO)
+    private prepararNotificacionesDisenio(dto: inicializarNotificacionesDTO)
     {
         let notificaciones: NotificacionesDTO[] = [];
         notificaciones.push({id_pedido: dto.id_pedido, plantilla: "disenio_contacto_inicial", estado: "pendiente", sector:"Disenio"})
@@ -195,5 +213,39 @@ export class NotificacionesService
                 .eq('id_pedido', idPedido)
                 .in('plantilla', fallidas);
         }
+    }
+
+    //datos
+    private async obtenerDatosVenta(idPedido:number): Promise<DatosVentaNotisDto>
+    {
+        //Por ahora hardcodeo banco
+        const banco = "Santander";
+
+        const { data, error } = await this.sb.supabase
+            .from('pedidos')
+            .select(`
+                id, id_grupo, envio_gratis,
+                grupos (id, promo, colegios ( nombre, localidad, provincia, zona_sur ),
+                        padres_responsables (telefono, mail )),
+                cuotas ( id, numero, fecha_vencimiento, importe),
+                pagos ( monto, motivo, fecha ),
+                beneficios_pedido(id_beneficio),
+                productos_pedidos(valor_senia, cantidad)
+            `)
+            .eq('id', idPedido)
+            .single();
+
+        if (error) throw new Error(error.message);
+
+        const estadoSenia = calcularEstadoSenia(data.productos_pedidos, data.pagos);
+
+        const venta: DatosVentaNotisDto = {datosNotis:{id_pedido: idPedido, 
+            cuotas: data.cuotas.map(c => ({id:c.id,nro: c.numero! ,fechaVencimiento:c.fecha_vencimiento!.toString()})), 
+            banco:banco, localidad:data.grupos.colegios.localidad, provincia:data.grupos.colegios.provincia, envioGratis:data.envio_gratis!, 
+            zonaSur: data.grupos.colegios.zona_sur, beneficioBandera: data.beneficios_pedido.find(b => b.id_beneficio == 1) ? true: false },
+            idGrupo: data.grupos.id, telefono: data.grupos.padres_responsables.find(padre => padre.mail)!.telefono!, estadoSenia:estadoSenia,
+            nroUltimaCuota: (estadoSenia.total == data.cuotas[0].importe)? data.cuotas.length + 1 : data.cuotas.length};
+        
+            return venta;
     }
 }

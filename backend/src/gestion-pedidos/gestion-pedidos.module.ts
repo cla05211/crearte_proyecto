@@ -19,6 +19,7 @@ import { AuditoriasService } from 'src/auditorias/auditorias.service';
 import { OcrModule } from 'src/ocr/ocr.module';
 import { AgregadosGlobalesPedidoModule } from 'src/agregados-globales-pedido/agregados-globales-pedido.module';
 import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
+import { NotificacionesService } from 'src/notificaciones/notificaciones.service';
 
 @Module({
   imports: [SupabaseModule, PermisosModule, OcrModule, AgregadosGlobalesPedidoModule],
@@ -26,7 +27,7 @@ import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido
   providers: [GestionPedidosService, UsuariosService, ColegiosService,
             GruposService, PedidosService, ProductosPedidoService, PadreResponsableService,
             AlumnoResponsableService, PagosService, DocumentosService, PagosService, CuentaCorrienteService,
-            CuotasService, SupabaseService, AuditoriasService, BeneficiosPedidoService],
+            CuotasService, SupabaseService, AuditoriasService, BeneficiosPedidoService, NotificacionesService],
   exports:[GestionPedidosService]
 })
 export class GestionPedidosModule {}

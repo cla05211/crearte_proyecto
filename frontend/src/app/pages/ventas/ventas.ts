@@ -1102,7 +1102,7 @@ export class Ventas implements OnInit {
   }
 
   private crearColegio() {
-    return { nombre: '', localidad: '', provincia: '' };
+    return { nombre: '', localidad: '', provincia: '', zona_sur: false };
   }
 
   private crearGrupo() {

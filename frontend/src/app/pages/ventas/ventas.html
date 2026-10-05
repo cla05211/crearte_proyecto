@@ -215,9 +215,13 @@
               <label class="ds-field"
                 ><span class="ds-label">Nombre del colegio *</span
                 ><input class="ds-input" [(ngModel)]="colegio.nombre" /></label
-              ><label class="ds-field"
-                ><span class="ds-label">Localidad *</span
-                ><input class="ds-input" [(ngModel)]="colegio.localidad" /></label
+              ><div class="campo-con-check"
+                ><label class="ds-field"
+                  ><span class="ds-label">Localidad *</span
+                  ><input class="ds-input" [(ngModel)]="colegio.localidad" /></label
+                ><label class="check-field"
+                  ><input type="checkbox" [(ngModel)]="colegio.zona_sur" /> Zona Sur</label
+                ></div
               ><label class="ds-field"
                 ><span class="ds-label">Provincia *</span
                 ><app-buscador-select

@@ -44,7 +44,7 @@ export class GruposService
     {
         let query = this.sb.supabase
         .from("grupos")
-        .select(`id,nivel,created_at,colegios!inner (nombre, localidad, provincia),padres_responsables!inner (nombre, apellido, id_grupo, mail), pedidos!inner(nro_fabrica)`)
+        .select(`id,nivel,created_at,colegios!inner (nombre, localidad, provincia, zona_sur),padres_responsables!inner (nombre, apellido, id_grupo, mail), pedidos!inner(nro_fabrica)`)
         .not('padres_responsables.mail', 'is', null)
         .neq('padres_responsables.mail', '')
         .order('created_at', { ascending: false });
@@ -69,7 +69,7 @@ export class GruposService
         .map(grupo => 
             ({
                 idGrupo: grupo.id!,
-                colegio: {nombre:grupo.colegios.nombre, localidad: grupo.colegios.localidad, provincia: grupo.colegios.provincia},
+                colegio: {nombre:grupo.colegios.nombre, localidad: grupo.colegios.localidad, provincia: grupo.colegios.provincia, zona_sur: grupo.colegios.zona_sur},
                 nroFabrica:grupo.pedidos[0].nro_fabrica,
                 nivel: grupo.nivel!,
                 padreResponsableNombre:grupo.padres_responsables[0].nombre ?? '',
@@ -95,7 +95,7 @@ export class GruposService
     {
         const { data: grupo, error: errGrupo } = await this.sb.supabase
             .from("grupos")
-            .select(`*, colegios!inner (nombre, localidad, provincia)`)
+            .select(`*, colegios!inner (nombre, localidad, provincia, zona_sur)`)
             .eq('id', idGrupo)
             .single();
 
@@ -123,7 +123,7 @@ export class GruposService
             nivel: grupo.nivel,
             promo: grupo.promo,
             cantidad_egresados: grupo.cantidad_egresados,
-            colegio: {nombre: grupo.colegios.nombre, localidad: grupo.colegios.localidad, provincia: grupo.colegios.provincia}
+            colegio: {nombre: grupo.colegios.nombre, localidad: grupo.colegios.localidad, provincia: grupo.colegios.provincia, zona_sur: grupo.colegios.zona_sur}
             },
             padresResponsables,
             alumnosResponsables

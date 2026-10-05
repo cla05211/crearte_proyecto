@@ -4,4 +4,5 @@ export class ColegioSBDTO
     nombre!: string;
     localidad!: string;
     provincia!: string;
+    zona_sur!: boolean;
 }

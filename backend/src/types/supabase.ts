@@ -247,18 +247,21 @@ export type Database = {
           localidad: string
           nombre: string
           provincia: string
+          zona_sur: boolean
         }
         Insert: {
           id?: number
           localidad: string
           nombre: string
           provincia: string
+          zona_sur?: boolean
         }
         Update: {
           id?: number
           localidad?: string
           nombre?: string
           provincia?: string
+          zona_sur?: boolean
         }
         Relationships: []
       }
