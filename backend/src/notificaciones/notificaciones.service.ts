@@ -215,6 +215,69 @@ export class NotificacionesService
         }
     }
 
+    //Recordatorios programados (los dispara pg_cron)
+    async procesarRecordatoriosPendientes()
+    {
+        const hoy = this.fechaHoyArgentina();
+
+        const { data, error } = await this.sb.supabase
+            .from('notificaciones_whatsapp')
+            .select(`
+                id, plantilla,
+                cuotas ( numero, fecha_vencimiento, importe, monto_cubierto, estado ),
+                pedidos ( grupos ( padres_responsables ( telefono, mail ) ) )
+            `)
+            .eq('estado', 'pendiente')
+            .eq('plantilla', 'recordatorio_pago')
+            .lte('fecha_programada', hoy);
+
+        if (error) throw new InternalServerErrorException(error.message);
+
+        const resultado = { enviados: 0, cancelados: 0, fallidos: 0 };
+
+        for (const noti of data)
+        {
+            const cuota = noti.cuotas;
+
+            // Si la cuota ya está pagada
+            if (!cuota || cuota.estado === 'Pagado')
+            {
+                await this.actualizarEstadoNotificacion(noti.id, 'cancelado');
+                resultado.cancelados++;
+                continue;
+            }
+
+            try
+            {
+                const telefono = noti.pedidos.grupos.padres_responsables.find(padre => padre.mail)?.telefono;
+                if (!telefono) throw new Error(`Pedido sin teléfono de responsable (notificación ${noti.id})`);
+
+                await this.whatsapp.enviarPlantilla(telefono, noti.plantilla);
+                await this.actualizarEstadoNotificacion(noti.id, 'enviado');
+                resultado.enviados++;
+            }
+            catch (error)
+            {
+                await this.actualizarEstadoNotificacion(noti.id, 'error');
+                resultado.fallidos++;
+            }
+        }
+
+        return resultado;
+    }
+
+    private async actualizarEstadoNotificacion(id: number, estado: 'enviado' | 'error' | 'cancelado')
+    {
+        await this.sb.supabase.from('notificaciones_whatsapp')
+            .update({ estado })
+            .eq('id', id);
+    }
+
+    private fechaHoyArgentina(): string
+    {
+        return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+    }
+
     //datos
     private async obtenerDatosVenta(idPedido:number): Promise<DatosVentaNotisDto>
     {

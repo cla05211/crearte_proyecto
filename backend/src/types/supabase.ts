@@ -514,7 +514,7 @@ export type Database = {
           id_cuota?: number | null
           id_pedido: number
           plantilla: string
-          sector?: string
+          sector: string
         }
         Update: {
           estado?: string

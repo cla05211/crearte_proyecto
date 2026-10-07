@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ColegiosService } from 'src/colegios/colegios.service';
 import { CrearPedidoDTO } from './dto/crearPedido.dto';
 import { GruposService } from 'src/grupos/grupos.service';
@@ -34,6 +34,8 @@ import { NotificacionesService } from 'src/notificaciones/notificaciones.service
 @Injectable()
 export class GestionPedidosService
 {
+    private readonly logger = new Logger(GestionPedidosService.name);
+
     constructor(private colegios:ColegiosService, private grupos: GruposService,
         private pedidos:PedidosService, private productosPedido: ProductosPedidoService,
         private padres:PadreResponsableService, private alumnos:AlumnoResponsableService,
@@ -62,9 +64,10 @@ export class GestionPedidosService
 
         const resultado = data as unknown as { id_pedido: number; usuario: string };
 
-        this.notificacionesService.inicializarNotificaciones();
-        this.notificacionesService.enviarMensajesVenta();
-
+        // Sin await: la venta responde enseguida. El .catch es obligatorio: si las notificaciones
+        // fallan, el error queda en el log en vez de tirar abajo el backend (unhandled rejection).
+        this.notificacionesService.procesarNuevaVenta(resultado.id_pedido)
+            .catch(err => this.logger.error(`Notificaciones del pedido ${resultado.id_pedido}: ${err.message}`));
 
         return { id_pedido: resultado.id_pedido, usuario: resultado.usuario };
     }

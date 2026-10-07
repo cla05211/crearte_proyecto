@@ -44,9 +44,11 @@ export class WatsappService
         });
     }
 
+    const destino = this.normalizarTelefono(telefono);
+
     const body = {
         messaging_product: 'whatsapp',
-        to: this.normalizarTelefono(telefono),
+        to: destino,
         type: 'template',
         template: {
             name: plantilla,
@@ -68,7 +70,7 @@ export class WatsappService
 
         if (!respuesta.ok)
         {
-            this.logger.error(`Error enviando "${plantilla}" a ${telefono}: ${JSON.stringify(data.error)}`);
+            this.logger.error(`Error enviando "${plantilla}" a ${destino}: ${JSON.stringify(data.error)}`);
             throw new Error(data.error?.message ?? 'Error al enviar WhatsApp');
         }
 
@@ -81,6 +83,15 @@ export class WatsappService
         if (numero.startsWith('0')) numero = numero.slice(1);  
         if (!numero.startsWith('54')) numero = '54' + numero;
         if (!numero.startsWith('549')) numero = '549' + numero.slice(2);
+
+        // Solo para desarrollo: la lista de destinatarios del número de prueba de Meta
+        // no reconoce los celulares argentinos con el 9 (549...), pero sí sin él (54...).
+        // En producción esta variable NO va: el formato correcto es con 9.
+        if (this.config.get<string>('WHATSAPP_PRUEBA_SIN_9') === 'true')
+        {
+            numero = '54' + numero.slice(3);
+        }
+
         return numero;
     }
 }
