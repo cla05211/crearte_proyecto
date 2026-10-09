@@ -33,13 +33,12 @@ export class WatsappService
         });
     }
 
-    // Solo para plantillas con botón de URL dinámica (ej: .../crear-contrasena/{{1}})
     if (parametroBoton)
     {
         components.push({
             type: 'button',
             sub_type: 'url',
-            index: '0',   // primer botón de la plantilla
+            index: '0',   
             parameters: [{ type: 'text', text: parametroBoton }],
         });
     }

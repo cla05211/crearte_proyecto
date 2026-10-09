@@ -6,6 +6,7 @@ import { WatsappService } from 'src/watsapp/watsapp.service';
 import { ClientesAuthService } from 'src/clientes-auth/clientes-auth-service.service';
 import { DatosVentaNotisDto } from './dto/datosVenta.dto';
 import { calcularEstadoSenia } from 'src/pagos/estadoSeña.util';
+import { empty } from 'rxjs';
 
 @Injectable()
 export class NotificacionesService 
@@ -215,8 +216,46 @@ export class NotificacionesService
         }
     }
 
+    async modificarFechaProgramada(idPedido:number, plantilla:string):Promise<void>
+    {
+        const hoy = this.fechaHoyArgentina();
+
+        await this.sb.supabase.from('notificaciones_whatsapp')
+            .update({ fecha_programada: hoy })
+            .eq('id_pedido', idPedido)
+            .eq('plantilla', plantilla)
+            .eq('estado', 'pendiente')
+    }
+
+    //enviar mensajes sin fecha programada
+    async enviarMensajeContrato(idPedido: number):Promise<string>
+    {
+        let resultado = '';
+        const idNoti = await this.traerIdNotificacion(idPedido,'contrato')[0];
+        const telefono = await this.traerTelefono(idPedido);
+
+        try
+        {
+            resultado = await this.whatsapp.enviarPlantilla(telefono,'contrato');
+            await this.actualizarEstadoNotificacion(idNoti, 'enviado');
+        }
+        catch
+        {
+            await this.actualizarEstadoNotificacion(idNoti, 'error');
+        }
+
+        return resultado;
+    }
+
     //Recordatorios programados (los dispara pg_cron)
     async procesarRecordatoriosPendientes()
+    {
+        const pagos = await this.procesarRecordatoriosPagos();
+        const contrato = await this.procesarRecordatoriosContrato();
+        return { pagos, contrato };
+    }
+
+    async procesarRecordatoriosPagos()
     {
         const hoy = this.fechaHoyArgentina();
 
@@ -224,7 +263,7 @@ export class NotificacionesService
             .from('notificaciones_whatsapp')
             .select(`
                 id, plantilla,
-                cuotas ( numero, fecha_vencimiento, importe, monto_cubierto, estado ),
+                cuotas ( numero, estado ),
                 pedidos ( grupos ( padres_responsables ( telefono, mail ) ) )
             `)
             .eq('estado', 'pendiente')
@@ -240,7 +279,56 @@ export class NotificacionesService
             const cuota = noti.cuotas;
 
             // Si la cuota ya está pagada
-            if (!cuota || cuota.estado === 'Pagado')
+            if (!cuota || cuota.estado === 'Pagada')
+            {
+                await this.actualizarEstadoNotificacion(noti.id, 'cancelado');
+                resultado.cancelados++;
+                continue;
+            }
+
+            try
+            {
+                const telefono = noti.pedidos.grupos.padres_responsables.find(padre => padre.mail)?.telefono;
+                if (!telefono) throw new Error(`Pedido sin teléfono de responsable (notificación ${noti.id})`);
+
+                await this.whatsapp.enviarPlantilla(telefono, noti.plantilla);
+                await this.actualizarEstadoNotificacion(noti.id, 'enviado');
+                resultado.enviados++;
+            }
+            catch (error)
+            {
+                await this.actualizarEstadoNotificacion(noti.id, 'error');
+                resultado.fallidos++;
+            }
+        }
+
+        return resultado;
+    }
+
+    async procesarRecordatoriosContrato()
+    {
+        const hoy = this.fechaHoyArgentina();
+
+        const { data, error } = await this.sb.supabase
+            .from('notificaciones_whatsapp')
+            .select(`
+                id, plantilla,
+                pedidos ( fecha_aprobacion_boceto, fecha_aprobacion_talles,
+                    grupos ( padres_responsables ( telefono, mail ), contratos ( firmado ) ) )
+            `)
+            .eq('estado', 'pendiente')
+            .eq('plantilla', 'recordatorio_contrato')
+            .lte('fecha_programada', hoy);
+
+        if (error) throw new InternalServerErrorException(error.message);
+
+        const resultado = { enviados: 0, cancelados: 0, fallidos: 0 };
+
+        for (const noti of data)
+        {
+            const firmado = noti.pedidos.grupos.contratos.some(c => c.firmado);
+
+            if (firmado == true)
             {
                 await this.actualizarEstadoNotificacion(noti.id, 'cancelado');
                 resultado.cancelados++;
@@ -279,6 +367,37 @@ export class NotificacionesService
     }
 
     //datos
+
+    private async traerTelefono(idPedido:number):Promise<string>
+    {
+        const { data, error } = await this.sb.supabase
+            .from('pedidos')
+            .select(`grupos (padres_responsables (telefono, mail))`)
+            .eq('id', idPedido)
+            .single();
+
+        if (error) throw new Error(error.message);
+
+        const telefono = data.grupos.padres_responsables.find(padre => padre.mail)!.telefono!
+            
+        return telefono;
+    }
+
+    private async traerIdNotificacion(idPedido:number, plantilla:string):Promise<number[]>
+    {
+        const { data, error } = await this.sb.supabase
+            .from('notificaciones_whatsapp')
+            .select(`id`)
+            .eq('id', idPedido)
+            .eq('plantilla', plantilla);
+
+        if (error) throw new Error(error.message);
+
+        const ids= data.map(d => (d.id));
+
+        return ids;
+    }
+
     private async obtenerDatosVenta(idPedido:number): Promise<DatosVentaNotisDto>
     {
         //Por ahora hardcodeo banco

@@ -15,7 +15,7 @@
   <section class="ds-card cc-card">
     <header class="cc-card__header">
       <h2 class="ds-heading-3">Contrato</h2>
-      <button type="button" class="ds-button" [disabled]="descargando()" (click)="abrirFechaEntrega()">
+      <button type="button" class="ds-button" [disabled]="descargando()" (click)="descargarContrato()">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
         {{ descargando() ? 'Generando…' : 'Descargar contrato' }}
       </button>

@@ -96,7 +96,6 @@ export class TallesDisenio
     'Pide muestras físicas',
     'Enviada planilla',
     'Esperando confirmación',
-    'Confirmado',
   ];
 
   readonly totalColumnas = 10;
@@ -389,12 +388,6 @@ export class TallesDisenio
 
   cambiarEstadoTalles(pedido: ControlTallesDisenioDTO, nuevoEstado: string): void
   {
-    if (nuevoEstado === 'Confirmado')
-    {
-      this.edicionFechaTalles.set({ pedido, fecha: this.formatearFechaInput(this.fechaActual) });
-      return;
-    }
-
     this.guardarEstadoTalles(pedido, nuevoEstado);
   }
 

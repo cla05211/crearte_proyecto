@@ -73,6 +73,19 @@ export class PedidosService
         return data.id;
     }
 
+    async definirFechaEntrega(idPedido: number, fecha:string)
+    {
+        const { data, error } = await this.sb.supabase
+        .from("pedidos")
+        .update({ fecha_entrega_aproximada: fecha})
+        .eq("id", idPedido);
+
+        if (error)
+        {
+            throw new Error(error.message);
+        }
+    }
+
     async modificarDiseniadora(idDiseniadora:number, idPedido: number)
     {
         const { data, error } = await this.sb.supabase

@@ -23,7 +23,6 @@ export class DocumentosService
         return data.map(d => d.id);
     } 
     
-    // Devuelve el documento más reciente de ese tipo para el grupo, o null si no hay ninguno
     async obtenerDocumentoPorTipo(idGrupo: number, tipo: string)
     {
         const { data, error } = await this.sb.supabase

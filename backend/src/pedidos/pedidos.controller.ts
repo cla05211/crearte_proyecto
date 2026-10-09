@@ -48,6 +48,14 @@ export class PedidosController
         return await this.pedidosService.enviarPedidoFabrica(idPedido);
     }
 
+    @Patch('fecha-entrega/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_clientes_administrativo')
+    async modificarFechaEntregaAproximada(@Query('fecha') fecha: string, @Param('id', ParseIntPipe) idPedido: number)
+    {
+        await this.pedidosService.definirFechaEntrega(idPedido,fecha)
+    }
+
     @Patch('diseniadora')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_talles_disenio')

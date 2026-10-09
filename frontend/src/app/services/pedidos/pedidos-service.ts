@@ -62,4 +62,9 @@ export class PedidosService
   {
     return this.http.post<{ nroFabrica: number }>(`${environment.apiUrl}/pedidos/fabrica/${idPedido}`,null);
   }
+
+  definirFechaEntrega(idPedido: number, fecha: string)
+  {
+    return this.http.patch(`${environment.apiUrl}/pedidos/fecha-entrega/${idPedido}`, null, { params: { fecha } });
+  }
 }

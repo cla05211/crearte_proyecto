@@ -5,12 +5,8 @@ import { ClientesService } from 'src/clientes-service/clientes.service';
 import * as bcrypt from 'bcrypt';
 import { SupabaseService } from 'src/supabase/supabase.service';
 
-// Cuánto dura el link para crear la contraseña desde que se genera.
 const DIAS_VIGENCIA_TOKEN_ACTIVACION = 7;
 
-// Mismas reglas que el formulario de login de clientes: si se permitiera algo
-// distinto acá, el cliente podría crear una contraseña con la que después no
-// puede iniciar sesión.
 const LARGO_MINIMO_CONTRASENA = 8;
 const PATRON_CONTRASENA = /^[A-Za-z0-9Ññ]+$/;
 

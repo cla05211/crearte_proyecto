@@ -267,7 +267,6 @@ export type Database = {
       }
       contratos: {
         Row: {
-          documento: number | null
           fecha_firma: string | null
           fecha_generacion: string | null
           firmado: boolean | null
@@ -275,7 +274,6 @@ export type Database = {
           id: number
         }
         Insert: {
-          documento?: number | null
           fecha_firma?: string | null
           fecha_generacion?: string | null
           firmado?: boolean | null
@@ -283,7 +281,6 @@ export type Database = {
           id?: number
         }
         Update: {
-          documento?: number | null
           fecha_firma?: string | null
           fecha_generacion?: string | null
           firmado?: boolean | null
@@ -291,13 +288,6 @@ export type Database = {
           id?: number
         }
         Relationships: [
-          {
-            foreignKeyName: "contratos_documento_fkey"
-            columns: ["documento"]
-            isOneToOne: false
-            referencedRelation: "documentos"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "contratos_grupo_fkey"
             columns: ["grupo"]
@@ -650,6 +640,7 @@ export type Database = {
           estado_talles: string | null
           fecha_aprobacion_boceto: string | null
           fecha_aprobacion_talles: string | null
+          fecha_entrega_aproximada: string | null
           id: number
           id_disenadora: number | null
           id_grupo: number
@@ -670,6 +661,7 @@ export type Database = {
           estado_talles?: string | null
           fecha_aprobacion_boceto?: string | null
           fecha_aprobacion_talles?: string | null
+          fecha_entrega_aproximada?: string | null
           id?: number
           id_disenadora?: number | null
           id_grupo: number
@@ -690,6 +682,7 @@ export type Database = {
           estado_talles?: string | null
           fecha_aprobacion_boceto?: string | null
           fecha_aprobacion_talles?: string | null
+          fecha_entrega_aproximada?: string | null
           id?: number
           id_disenadora?: number | null
           id_grupo?: number
