@@ -231,7 +231,7 @@ export class NotificacionesService
     async enviarMensajeContrato(idPedido: number):Promise<string>
     {
         let resultado = '';
-        const idNoti = await this.traerIdNotificacion(idPedido,'contrato')[0];
+        const [idNoti] = await this.traerIdNotificacion(idPedido,'contrato');
         const telefono = await this.traerTelefono(idPedido);
 
         try
@@ -388,7 +388,7 @@ export class NotificacionesService
         const { data, error } = await this.sb.supabase
             .from('notificaciones_whatsapp')
             .select(`id`)
-            .eq('id', idPedido)
+            .eq('id_pedido', idPedido)
             .eq('plantilla', plantilla);
 
         if (error) throw new Error(error.message);

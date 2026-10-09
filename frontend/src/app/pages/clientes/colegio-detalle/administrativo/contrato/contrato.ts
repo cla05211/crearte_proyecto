@@ -14,6 +14,7 @@ import { grupoClienteDatosPageResponse } from '../../../../../services/grupos/dt
 import { CuotaResponseDTO } from '../../../../../services/cuotas/dto/CuotaResponseDTO';
 import { GenerarContratoDTO } from '../../../../../../interfaces/generarContrato.dto';
 import { PedidosService } from '../../../../../services/pedidos/pedidos-service';
+import { Notificaciones } from '../../../../../services/notificaciones/notificaciones';
 
 const MESES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -23,6 +24,22 @@ const MESES = [
 const ESTADO_APROBADO = 'Aprobado';
 const CANTIDAD_MAXIMA_COMPRADORES = 3;
 const CANTIDAD_ANIOS_DISPONIBLES = 4;
+
+// Las fechas 'YYYY-MM-DD' que vienen de la base se arman en hora local.
+// new Date('YYYY-MM-DD') las toma como UTC y en Argentina quedan un día antes
+// (un día 1 termina mostrándose en el mes anterior).
+function fechaLocal(fecha: string | Date): Date
+{
+  if (fecha instanceof Date) return fecha;
+
+  const [anio, mes, dia] = fecha.slice(0, 10).split('-').map(Number);
+  return new Date(anio, mes - 1, dia);
+}
+
+function formatearFecha(fecha: string | Date): string
+{
+  return fechaLocal(fecha).toLocaleDateString('es-AR');
+}
 
 interface FormularioFechaEntrega {
   mes: number | null;
@@ -44,6 +61,7 @@ export class Contrato implements OnInit
   private readonly cuotasService = inject(CuotasService);
   private readonly pagosService = inject(PagosService);
   private readonly notificaciones = inject(NotificationService);
+  private readonly notificacionesService = inject(Notificaciones);
   private readonly destroyRef = inject(DestroyRef);
 
   private idPedido = 0;
@@ -162,7 +180,7 @@ export class Contrato implements OnInit
       montoTotal: montoSenia + montoCuotas,
       cuotas: cuotas.map((cuota) => ({
         monto: cuota.importe,
-        vencimiento: new Date(cuota.fecha_vencimiento).toLocaleDateString('es-AR'),
+        vencimiento: formatearFecha(cuota.fecha_vencimiento),
       })),
       mesEntrega: entrega ? MESES[entrega.mes - 1] : '',
       anioEntrega: entrega ? String(entrega.anio) : '',
@@ -173,7 +191,7 @@ export class Contrato implements OnInit
   {
     const fechas = [pedido.fecha_aprobacion_boceto, pedido.fecha_aprobacion_talles]
       .filter((fecha): fecha is string => !!fecha)
-      .map((fecha) => new Date(fecha));
+      .map((fecha) => fechaLocal(fecha));
 
     const fechaMasReciente = fechas.length
       ? new Date(Math.max(...fechas.map((fecha) => fecha.getTime())))
@@ -239,29 +257,49 @@ export class Contrato implements OnInit
       return;
     }
 
+    // Primero se mueve la última cuota al mes de entrega, así el PDF ya sale con el vencimiento nuevo.
+    const vencimientoUltimaCuota = await this.actualizarVencimientoUltimaCuota(anio, mesNumero);
+    if (!vencimientoUltimaCuota) return;
+
+    const cuotas = dto.cuotas.map((cuota, indice) =>
+      indice === dto.cuotas.length - 1
+        ? { ...cuota, vencimiento: formatearFecha(vencimientoUltimaCuota) }
+        : cuota,
+    );
+
     const dtoConEntrega: GenerarContratoDTO = {
       ...dto,
+      cuotas,
       mesEntrega: MESES[mesNumero - 1],
       anioEntrega: String(anio),
     };
+
+    // Se actualizan los datos locales para que las próximas descargas no vuelvan a pedir la fecha.
+    this.datosContrato.set(dtoConEntrega);
+
+    try
+    {
+      await firstValueFrom(this.pedidosService.definirFechaEntrega(this.idPedido, vencimientoUltimaCuota));
+      this.fechaEntregaAproximada = vencimientoUltimaCuota;
+    }
+    catch
+    {
+      this.notificaciones.error({ title: 'Error', description: 'No se pudo guardar la fecha de entrega aproximada.' });
+    }
 
     const descargado = await this.generarYDescargarContrato(dtoConEntrega);
     if (!descargado) return;
 
     this.cerrarFechaEntrega();
 
-    const vencimientoUltimaCuota = await this.actualizarVencimientoUltimaCuota(anio, mesNumero);
-    if (!vencimientoUltimaCuota) return;
+    // Solo en la primera descarga (cuando el pedido todavía no tenía fecha de entrega).
     try
     {
-      await firstValueFrom(this.pedidosService.definirFechaEntrega(this.idPedido, vencimientoUltimaCuota));
-      this.fechaEntregaAproximada = vencimientoUltimaCuota;
-      this.datosContrato.set(dtoConEntrega);
-      this.not
+      await firstValueFrom(this.notificacionesService.enviarMensajeContrato(this.idPedido));
     }
     catch
     {
-      this.notificaciones.error({ title: 'Error', description: 'No se pudo guardar la fecha de entrega aproximada.' });
+      this.notificaciones.error({ title: 'Error', description: 'Se descargó el contrato, pero no se pudo enviar el mensaje de WhatsApp.' });
     }
   }
 
@@ -294,19 +332,29 @@ export class Contrato implements OnInit
   private async actualizarVencimientoUltimaCuota(anio: number, mes: number): Promise<string | null>
   {
     const ultimaCuota = this.ultimaCuota;
-    if (!ultimaCuota) return null;
+    if (!ultimaCuota)
+    {
+      this.notificaciones.error({ title: 'Error', description: 'El pedido no tiene cuotas para ajustar el vencimiento.' });
+      return null;
+    }
+
+    this.descargando.set(true);
 
     try
     {
-      const idCuota = await firstValueFrom(this.cuotasService.traerIdCuota(this.idPedido, ultimaCuota.numero));
-      const nuevoVencimiento = this.calcularNuevoVencimiento(new Date(ultimaCuota.fecha_vencimiento), anio, mes);
-      await firstValueFrom(this.cuotasService.modificarVencimientoCuota(idCuota, nuevoVencimiento));
+      const nuevoVencimiento = this.calcularNuevoVencimiento(fechaLocal(ultimaCuota.fecha_vencimiento), anio, mes);
+      await firstValueFrom(this.cuotasService.modificarVencimientoCuota(ultimaCuota.id, nuevoVencimiento));
+      this.ultimaCuota = { ...ultimaCuota, fecha_vencimiento: nuevoVencimiento as unknown as Date };
       return nuevoVencimiento;
     }
     catch
     {
       this.notificaciones.error({ title: 'Error', description: 'No se pudo actualizar el vencimiento de la última cuota.' });
       return null;
+    }
+    finally
+    {
+      this.descargando.set(false);
     }
   }
 

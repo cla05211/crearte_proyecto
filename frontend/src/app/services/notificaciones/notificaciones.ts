@@ -12,6 +12,6 @@ export class Notificaciones
 
     enviarMensajeContrato(idPedido:number): Observable<string>
     {
-        return this.http.get<string>(`${environment.apiUrl}/notificaciones/fecha-programada/${idPedido}`);
+        return this.http.post(`${environment.apiUrl}/notificaciones/contrato/${idPedido}`, null, { responseType: 'text' });
     }
 }
