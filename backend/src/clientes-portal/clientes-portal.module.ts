@@ -20,9 +20,10 @@ import { ProductosService } from 'src/productos/productos.service';
 import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
 import { PadreResponsableService } from 'src/padre-responsable/padre-responsable-service.service';
 import { ContratosModule } from 'src/contratos/contratos.module';
+import { ResumenTallesModule } from 'src/resumen-talles/resumen-talles.module';
 
 @Module({
-    imports:[SupabaseModule, OcrModule, ReportesModule, GestionPedidosModule, StorageModule, ContratosModule],
+    imports:[SupabaseModule, OcrModule, ReportesModule, GestionPedidosModule, StorageModule, ContratosModule, ResumenTallesModule],
     controllers: [ClientesPortalController],
     providers:[PrendasPedidoTallesService,PedidosService, PagosService, CuotasService, ProductosPedidoService, DocumentosService, SupabaseService, GruposService, ProductosService, BeneficiosPedidoService, PadreResponsableService]
 })

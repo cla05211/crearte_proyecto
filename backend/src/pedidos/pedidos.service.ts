@@ -73,6 +73,22 @@ export class PedidosService
         return data.id;
     }
 
+    async obtenerEstadoTalles(idPedido:number):Promise<string | null>
+    {
+        const {data,error} = await this.sb.supabase
+        .from('pedidos')
+        .select('estado_talles')
+        .eq('id',idPedido)
+        .single();
+
+        if (error) 
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        return data.estado_talles;
+    }
+
     async definirFechaEntrega(idPedido: number, fecha:string)
     {
         const { data, error } = await this.sb.supabase

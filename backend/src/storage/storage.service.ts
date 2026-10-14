@@ -101,4 +101,19 @@ export class StorageService {
 
         return data.some(archivo => archivo.name === nombre);
     }
+
+    // URL temporal para descargar un diseño; 'download' hace que el navegador lo baje con ese nombre
+    async crearUrlDescargaDiseno(ruta: string, nombreArchivo: string): Promise<string>
+    {
+        const { data, error } = await this.supabaseService.supabase.storage
+            .from(BUCKET_DISENIOS)
+            .createSignedUrl(ruta, 60, { download: nombreArchivo });
+
+        if (error)
+        {
+            throw new InternalServerErrorException(error.message);
+        }
+
+        return data.signedUrl;
+    }
 }

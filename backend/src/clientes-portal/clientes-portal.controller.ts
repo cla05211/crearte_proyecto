@@ -16,19 +16,14 @@ import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
 import { GruposService } from 'src/grupos/grupos.service';
 import { PrendaPedidoDTO } from 'src/prendas-pedido-talles/dto/PrendasPedido.dto';
 import { PrendasPedidoTallesService } from 'src/prendas-pedido-talles/prendas-pedido-talles.service';
-import { PdfService } from 'src/reportes/pdf/pdf.service';
-import { GenerarResumenTallesDTO } from 'src/reportes/pdf/dto/generarResumenTalles.dto';
-import { ProductoPrendasResumenDTO } from 'src/prendas-pedido-talles/dto/ResumenPrendasPedido.dto';
 import { ProductosService } from 'src/productos/productos.service';
 import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
 import { BeneficioPedidoDTO } from 'src/beneficios-pedido/dto/beneficioPedidoDTO';
 import { PadreResponsableService } from 'src/padre-responsable/padre-responsable-service.service';
 import { PadreResponsableResponseDTO } from 'src/padre-responsable/dto/padreResponsableResponse.dto';
 import { ContratosService } from 'src/contratos/contratos.service';
+import { ResumenTallesService } from 'src/resumen-talles/resumen-talles.service';
 
-
-const IDS_CAMPERA_BUZO = [63, 64, 71];
-const IDS_REMERA_CHOMBA = [65, 66];
 
 const TIPO_DOCUMENTO_FIRMA_TALLES = 'Firma Talles';
 const TIPO_DOCUMENTO_FIRMA_CONTRATO = 'Firma Contrato';
@@ -51,11 +46,11 @@ export class ClientesPortalController
         private sb: SupabaseService,
         private storageService: StorageService,
         private prendasService: PrendasPedidoTallesService,
-        private pdfService: PdfService,
         private productosService: ProductosService,
         private beneficiosPedidoService: BeneficiosPedidoService,
         private padresService: PadreResponsableService,
         private contratosService: ContratosService,
+        private resumenTallesService: ResumenTallesService,
     ) {}
 
     private async obtenerIdPedidoCliente(req: any): Promise<number>
@@ -231,103 +226,13 @@ export class ClientesPortalController
     @Get('resumen-talles')
     async obtenerResumenTalles(@Req() req, @Res() res: Response)
     {
-        const idGrupo = req.cliente.id_grupo;
-        const idPedido = await this.obtenerIdPedidoCliente(req);
-
-        const [datosGrupo, presupuesto, prendas] = await Promise.all([
-            this.gruposService.traerDatosGrupoClientePage(idGrupo),
-            this.gestionPedidosService.obtenerPresupuestoPedidosClientes(idGrupo),
-            this.prendasService.traerResumenPrendasPedido(idPedido),
-        ]);
-
-        const padreResponsable = datosGrupo.padresResponsables?.find(p => p.mail);
-        const nombreCompletoPadre = padreResponsable
-            ? `${padreResponsable.nombre ?? ''} ${padreResponsable.apellido ?? ''}`.trim() || null
-            : null;
-
-        const beneficios = [
-            ...presupuesto.beneficios.map(b => `${b.cantidad} ${b.beneficio}`),
-            ...presupuesto.agregadosGlobales.map(a => a.agregado).filter((a): a is string => !!a),
-        ];
-
-        // Resumen previo: el cliente puede estar todavía cargando talles, así que no se corta el PDF.
-        const prendasCobrables = this.prendasService.restarLiberadas(prendas, presupuesto.beneficios, false);
-        const { combos, sueltas } = this.construirCombosYSueltas(prendasCobrables);
-
-        // Si los talles ya se confirmaron, el PDF sale con la firma del cliente al final
-        const documentoFirma = await this.documentosService.obtenerDocumentoPorTipo(idGrupo, TIPO_DOCUMENTO_FIRMA_TALLES);
-        const firmaBase64 = documentoFirma?.archivo_url
-            ? (await this.storageService.descargarArchivo(documentoFirma.archivo_url)).toString('base64')
-            : null;
-
-        const dto: GenerarResumenTallesDTO = {
-            colegioNombre: datosGrupo.grupo.colegio?.nombre ?? '',
-            localidad: datosGrupo.grupo.colegio?.localidad ?? null,
-            provincia: datosGrupo.grupo.colegio?.provincia ?? null,
-            turno: datosGrupo.grupo.turno,
-            nivel: datosGrupo.grupo.nivel,
-            orientacion: datosGrupo.grupo.orientacion,
-            padreResponsable: nombreCompletoPadre,
-            combos,
-            sueltas,
-            prendas: prendas.map(p => ({ nombreProducto: p.nombreProducto, talles: p.talles, total: p.total })),
-            beneficios,
-            firmaBase64,
-            fechaFirma: documentoFirma?.created_at ?? null,
-        };
-
-        const buffer = await this.pdfService.generarResumenTalles(dto);
+        const { buffer, idPedido } = await this.resumenTallesService.generarPdf(req.cliente.id_grupo);
 
         res.set({
             'Content-Type': 'application/pdf',
             'Content-Disposition': `inline; filename="resumen-talles-${idPedido}.pdf"`,
         });
         res.send(buffer);
-    }
-
-    private construirCombosYSueltas(prendas: ProductoPrendasResumenDTO[])
-    {
-        const productoCamperaBuzo = prendas.find(p => IDS_CAMPERA_BUZO.includes(p.idProducto));
-        const productoRemeraChomba = prendas.find(p => IDS_REMERA_CHOMBA.includes(p.idProducto));
-        const otros = prendas.filter(p => p !== productoCamperaBuzo && p !== productoRemeraChomba);
-
-        const combos: { nombreCombo: string; cantidad: number; componentes: { nombre: string; cantidad: number }[] }[] = [];
-        const sueltas: { nombre: string; cantidad: number }[] = [];
-
-        if (productoCamperaBuzo && productoRemeraChomba)
-        {
-            const cantidadCombos = Math.min(productoCamperaBuzo.total, productoRemeraChomba.total);
-
-            if (cantidadCombos > 0)
-            {
-                combos.push({
-                    nombreCombo: `${productoCamperaBuzo.nombreProducto} + ${productoRemeraChomba.nombreProducto}`,
-                    cantidad: cantidadCombos,
-                    componentes: [
-                        { nombre: productoCamperaBuzo.nombreProducto, cantidad: 1 },
-                        { nombre: productoRemeraChomba.nombreProducto, cantidad: 1 },
-                    ],
-                });
-            }
-
-            const sobranteCamperaBuzo = productoCamperaBuzo.total - cantidadCombos;
-            const sobranteRemeraChomba = productoRemeraChomba.total - cantidadCombos;
-
-            if (sobranteCamperaBuzo > 0) { sueltas.push({ nombre: productoCamperaBuzo.nombreProducto, cantidad: sobranteCamperaBuzo }); }
-            if (sobranteRemeraChomba > 0) { sueltas.push({ nombre: productoRemeraChomba.nombreProducto, cantidad: sobranteRemeraChomba }); }
-        }
-        else
-        {
-            if (productoCamperaBuzo) { sueltas.push({ nombre: productoCamperaBuzo.nombreProducto, cantidad: productoCamperaBuzo.total }); }
-            if (productoRemeraChomba) { sueltas.push({ nombre: productoRemeraChomba.nombreProducto, cantidad: productoRemeraChomba.total }); }
-        }
-
-        for (const producto of otros)
-        {
-            sueltas.push({ nombre: producto.nombreProducto, cantidad: producto.total });
-        }
-
-        return { combos, sueltas };
     }
     
     @Post('pagos')

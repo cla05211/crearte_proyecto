@@ -1,6 +1,7 @@
 export class SubirDisenioDTO
 {
     idGrupo!: number;
-    tipo!: 'disenio_bandera' | 'disenio_prendas';
+    // 'Disenio Prendas', 'Disenio Bandera' o 'Disenio {nombre}' para los que suman los diseñadores
+    tipo!: string;
     ruta!: string;
 }

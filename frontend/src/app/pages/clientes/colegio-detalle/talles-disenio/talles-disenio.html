@@ -1,1 +1,126 @@
-<p>talles-disenio works!</p>
+@if (cargando()) {
+  <div class="loading-state" role="status" aria-live="polite">
+    <span class="loading-state__spinner" aria-hidden="true"></span>
+    <div>
+      <h2>Cargando diseños</h2>
+      <p>Estamos trayendo los archivos del colegio.</p>
+    </div>
+  </div>
+} @else {
+  <section class="ds-card td-card">
+    <header class="td-card__header">
+      <div>
+        <h2 class="ds-heading-3">Diseños</h2>
+        <p class="td-card__ayuda">Archivos PDF de hasta 50 MB.</p>
+      </div>
+    </header>
+
+    <ul class="td-lista">
+      @for (fila of filas(); track fila.tipo) {
+        <li class="td-fila" [class.td-fila--vacia]="!fila.documento">
+          <span class="td-fila__icono" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /></svg>
+          </span>
+
+          <div class="td-fila__info">
+            <span class="td-fila__nombre">{{ fila.etiqueta }}</span>
+
+            @if (subida()?.tipo === fila.tipo) {
+              <div class="td-progreso" role="progressbar" [attr.aria-valuenow]="subida()!.progreso" aria-valuemin="0" aria-valuemax="100">
+                <div class="td-progreso__barra" [style.width.%]="subida()!.progreso"></div>
+              </div>
+              <span class="td-fila__estado">
+                {{ subida()!.progreso < 100 ? 'Subiendo… ' + subida()!.progreso + '%' : 'Guardando…' }}
+              </span>
+            } @else if (fila.documento) {
+              <span class="ds-badge ds-badge--success">PDF cargado</span>
+            } @else {
+              <span class="td-fila__estado">Sin archivo</span>
+            }
+          </div>
+
+          <div class="td-fila__acciones">
+            <input #inputArchivo type="file" accept="application/pdf" hidden (change)="alElegirArchivo($event, fila)" />
+
+            @if (fila.documento) {
+              <button type="button" class="td-accion" [disabled]="subida() !== null"
+                      (click)="inputArchivo.click()" title="Cambiar archivo" [attr.aria-label]="'Cambiar archivo de ' + fila.etiqueta">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
+              </button>
+              <button type="button" class="td-accion" [disabled]="descargandoTipo() === fila.tipo"
+                      (click)="descargarDisenio(fila)" title="Descargar" [attr.aria-label]="'Descargar ' + fila.etiqueta">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+              </button>
+            } @else {
+              @if (fila.sinGuardar && subida()?.tipo !== fila.tipo) {
+                <button type="button" class="td-accion td-accion--sutil" (click)="quitarRanura(fila.tipo)"
+                        title="Quitar" [attr.aria-label]="'Quitar ' + fila.etiqueta">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+                </button>
+              }
+              <button type="button" class="td-accion td-accion--primaria" [disabled]="subida() !== null"
+                      (click)="inputArchivo.click()" title="Subir PDF" [attr.aria-label]="'Subir PDF de ' + fila.etiqueta">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+              </button>
+            }
+          </div>
+        </li>
+      }
+
+      @if (agregando()) {
+        <li class="td-fila td-fila--nueva">
+          <form class="td-nueva" (submit)="$event.preventDefault(); confirmarAgregar()">
+            <label class="td-nueva__campo">
+              <span class="td-nueva__prefijo">Diseño</span>
+              <input class="ds-input" type="text" placeholder="Ej: Pantalón" autofocus
+                     [value]="nombreNuevo()" (input)="alEscribirNombre($event)" [maxLength]="largoMaximoNombre" />
+            </label>
+            <div class="td-nueva__acciones">
+              <button type="button" class="ds-button ds-button--secondary ds-button--small" (click)="cancelarAgregar()">Cancelar</button>
+              <button type="submit" class="ds-button ds-button--small">Agregar</button>
+            </div>
+          </form>
+        </li>
+      }
+    </ul>
+
+    @if (!agregando()) {
+      <button type="button" class="td-agregar" (click)="abrirAgregar()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        Añadir diseño
+      </button>
+    }
+  </section>
+
+  <section class="ds-card td-card">
+    <header class="td-card__header">
+      <div>
+        <h2 class="ds-heading-3">Talles</h2>
+      </div>
+    </header>
+
+    <ul class="td-lista">
+      <li class="td-fila" [class.td-fila--vacia]="!tallesConfirmados()">
+        <span class="td-fila__icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 17h4" /></svg>
+        </span>
+        <div class="td-fila__info">
+          <span class="td-fila__nombre">Resumen de talles</span>
+          @if (tallesConfirmados()) {
+            <span class="td-fila__estado">{{ descargandoTalles() ? 'Generando…' : '' }}</span>
+          } @else {
+            <span class="ds-badge ds-badge--warning">Pendiente</span>
+          }
+        </div>
+        @if (tallesConfirmados()) {
+          <div class="td-fila__acciones">
+            <button type="button" class="td-accion" [disabled]="descargandoTalles()" (click)="descargarTalles()"
+                    title="Descargar" aria-label="Descargar resumen de talles">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+            </button>
+          </div>
+        }
+      </li>
+    </ul>
+  </section>
+}

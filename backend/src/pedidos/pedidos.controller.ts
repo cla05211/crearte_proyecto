@@ -40,6 +40,13 @@ export class PedidosController
         return await this.pedidosService.obtenerVendedora(id);
     }
 
+    @Get('talles/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    async obtenerEstadoTalles(@Param('id')id: number) :Promise<string | null>
+    {
+        return await this.pedidosService.obtenerEstadoTalles(id);
+    }
+
     @Get('id/:id')
     @UseGuards(AuthGuard,PermisosGuard)
     async obtenerPedidoGrupo(@Param('id')id: number) :Promise<number>

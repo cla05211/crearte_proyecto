@@ -72,4 +72,22 @@ export class DocumentosService
             throw new BadRequestException(error.message);
         }
     }
+
+    // Documentos de un grupo cuyo tipo empieza con un prefijo (ej. 'Disenio ' trae todos los diseños)
+    async obtenerDocumentosPorPrefijoTipo(idGrupo: number, prefijo: string)
+    {
+        const { data, error } = await this.sb.supabase
+            .from('documentos')
+            .select('id, tipo, archivo_url, created_at')
+            .eq('id_grupo', idGrupo)
+            .like('tipo', `${prefijo}%`)
+            .order('created_at', { ascending: true });
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        return data;
+    }
 }

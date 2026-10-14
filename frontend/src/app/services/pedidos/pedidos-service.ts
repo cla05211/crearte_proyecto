@@ -26,6 +26,11 @@ export class PedidosService
     return this.http.get<number>(`${environment.apiUrl}/pedidos/id/${idGrupo}`);    
   }
 
+  obtenerEstadoTalles(idPedido:number):Observable<string>
+  {
+    return this.http.get<string>(`${environment.apiUrl}/pedidos/talles/${idPedido}`);    
+  }
+
   determinarBandera(idPedido:number):Observable<boolean>
   {
     return this.http.get<boolean>(`${environment.apiUrl}/pedidos/bandera/${idPedido}`);    
