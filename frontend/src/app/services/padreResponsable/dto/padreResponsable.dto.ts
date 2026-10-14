@@ -6,4 +6,5 @@ export interface PadreResponsableDTO
     dni: string;
     telefono: string;
     mail: string;
+    firma?: number | null;
 }

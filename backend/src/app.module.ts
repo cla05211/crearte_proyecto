@@ -59,12 +59,14 @@ import { MuestrasFisicasController } from './muestras-fisicas/muestras-fisicas.c
 import { MuestrasFisicasModule } from './muestras-fisicas/muestras-fisicas.module';
 import { WatsappModule } from './watsapp/watsapp.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
+import { ContratosModule } from './contratos/contratos.module';
+import { DiseniosModule } from './disenios/disenios.module';
 
 
 @Module({
   imports: [ConfigModule.forRoot({
       isGlobal: true,
-    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, ClientesPortalModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule, MovimientosCajaModule, GruposModule, AgregadosGlobalesPedidoModule, ClientesAuthModule, PrendasPedidoTallesModule, BeneficiosPedidoModule, MuestrasFisicasModule, WatsappModule, NotificacionesModule],
+    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, ClientesPortalModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule, MovimientosCajaModule, GruposModule, AgregadosGlobalesPedidoModule, ClientesAuthModule, PrendasPedidoTallesModule, BeneficiosPedidoModule, MuestrasFisicasModule, WatsappModule, NotificacionesModule, ContratosModule, DiseniosModule],
   controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController, MovimientosCajaController, GruposController, MuestrasFisicasController],
   providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService,
      ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, 

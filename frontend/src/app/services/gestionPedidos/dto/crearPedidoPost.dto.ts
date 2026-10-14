@@ -4,7 +4,7 @@ import { CuotaInicioVentaDTO } from "./cuotaInicioVenta.dto";
 import { DocumentoDTO } from "./documento.dto";
 import { GrupoDTO } from "./grupo.dto";
 import { MovimientoDTO } from "./movimiento.dto";
-import { PadreResponsableDTO } from "./padreResponsable.dto";
+import { PadreResponsableDTO } from "../../padreResponsable/dto/padreResponsable.dto";
 import { PagoDTO } from "./pago.dto";
 import { PedidoDTO } from "../../pedidos/dto/pedido.dto";
 import { ProductoPedidoDTO } from "../../productosPedidos/dto/ProductoPedido.dto";

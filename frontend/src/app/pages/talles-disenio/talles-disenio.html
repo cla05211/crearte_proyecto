@@ -193,12 +193,19 @@
                       </td>
                       <td data-label="Prendas">{{ pedido.productos }}</td>
                       <td data-label="Estado Boceto">
-                        <select class="ds-select" [ngModel]="pedido.estadoBoceto" (ngModelChange)="modificarEstadoBoceto(pedido, $any($event))">
-                          <option [ngValue]="null" disabled>Sin definir</option>
-                          @for (estado of estadosDisenio; track estado) {
-                            <option [value]="estado">{{ estado }}</option>
-                          }
-                        </select>
+                        @if (pedido.fechaAprobacionBoceto) {
+                          <!-- Con el boceto aprobado el estado ya no se puede cambiar -->
+                          <select class="ds-select" disabled title="El boceto ya fue aprobado">
+                            <option selected>{{ pedido.estadoBoceto ?? 'Sin definir' }}</option>
+                          </select>
+                        } @else {
+                          <select class="ds-select" [ngModel]="pedido.estadoBoceto" (ngModelChange)="modificarEstadoBoceto(pedido, $any($event))">
+                            <option [ngValue]="null" disabled>Sin definir</option>
+                            @for (estado of estadosDisenio; track estado) {
+                              <option [value]="estado">{{ estado }}</option>
+                            }
+                          </select>
+                        }
                       </td>
                       <td data-label="Aprobación">
                         <span class="ds-badge" [class.ds-badge--success]="pedido.fechaAprobacionBoceto" [class.ds-badge--warning]="!pedido.fechaAprobacionBoceto">
@@ -209,12 +216,19 @@
                         <input class="ds-input" type="date" [ngModel]="formatearFechaInput(pedido.fechaAprobacionBoceto)" (ngModelChange)="modificarFechaAprobacion(pedido, $any($event))" />
                       </td>
                       <td data-label="Estado Talles">
-                        <select class="ds-select" [ngModel]="pedido.estadoTalles" (ngModelChange)="cambiarEstadoTalles(pedido, $any($event))">
-                          <option [ngValue]="null" disabled>Sin definir</option>
-                          @for (estado of estadosTalles; track estado) {
-                            <option [value]="estado">{{ estado }}</option>
-                          }
-                        </select>
+                        @if (pedido.fechaAprobacionTalles) {
+                          <!-- Con los talles aprobados el estado queda fijo en Confirmado -->
+                          <select class="ds-select" disabled title="Los talles ya fueron aprobados">
+                            <option selected>Confirmado</option>
+                          </select>
+                        } @else {
+                          <select class="ds-select" [ngModel]="pedido.estadoTalles" (ngModelChange)="cambiarEstadoTalles(pedido, $any($event))">
+                            <option [ngValue]="null" disabled>Sin definir</option>
+                            @for (estado of estadosTalles; track estado) {
+                              <option [value]="estado">{{ estado }}</option>
+                            }
+                          </select>
+                        }
                       </td>
                       <td data-label="Fecha Aprob. Talles">
                         {{ pedido.fechaAprobacionTalles ? (pedido.fechaAprobacionTalles | date: 'dd/MM/yyyy') : '—' }}

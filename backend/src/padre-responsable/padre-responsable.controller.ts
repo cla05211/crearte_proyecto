@@ -1,4 +1,4 @@
-import { Controller, Get, Injectable, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Injectable, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';

@@ -1,20 +1,4 @@
--- modificar_plan_pedido: las cuotas ya no se borran y recrean, se actualizan por número.
---
--- Antes: delete de todas las cuotas + insert de cero. Como notificaciones_whatsapp.id_cuota
--- tiene on delete cascade, eso borraba los recordatorio_pago (incluso los ya enviados),
--- y las cuotas nuevas quedaban sin recordatorio.
---
--- Ahora (el cálculo de importes/estados/fechas es el mismo, salvo el fix de la cuota Parcial):
---   * cuota con ese número ya existe  -> update (conserva su id y sus recordatorios)
---   * no existe (el plan creció)       -> insert
---   * sobra (el plan se achicó)        -> delete (el cascade borra su recordatorio)
--- Y al final se ajustan los recordatorio_pago del pedido:
---   1. la última cuota no lleva recordatorio -> si tiene uno pendiente, se cancela
---   2. cuotas no pagadas (menos la última) con recordatorio pendiente o cancelado
---      -> vuelve a 'pendiente' y se resincroniza la fecha (vencimiento - 7).
---      Cubre: la cuota volvió a tener deuda, o dejó de ser la última.
---      Los 'enviado' y 'error' no se tocan.
---   3. cuotas no pagadas (menos la última) sin recordatorio -> se crea.
+
 
 create or replace function public.modificar_plan_pedido(payload jsonb)
 returns jsonb

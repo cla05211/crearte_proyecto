@@ -38,6 +38,18 @@
         <dt>Total</dt>
         <dd>{{ dto.montoTotal | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</dd>
       </div>
+      @if (firmas(); as estadoFirmas) {
+        <div>
+          <dt>Firmas de los padres</dt>
+          <dd>
+            @if (estadoFirmas.total > 0 && estadoFirmas.firmadas === estadoFirmas.total) {
+              <span class="ds-badge ds-badge--success">Firmado</span>
+            } @else {
+              {{ estadoFirmas.firmadas }} de {{ estadoFirmas.total }}
+            }
+          </dd>
+        </div>
+      }
     </dl>
   </section>
 }

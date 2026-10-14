@@ -536,6 +536,7 @@ export type Database = {
         Row: {
           apellido: string | null
           dni: string | null
+          firma: number | null
           id: number
           id_grupo: number
           mail: string | null
@@ -545,6 +546,7 @@ export type Database = {
         Insert: {
           apellido?: string | null
           dni?: string | null
+          firma?: number | null
           id?: number
           id_grupo: number
           mail?: string | null
@@ -554,6 +556,7 @@ export type Database = {
         Update: {
           apellido?: string | null
           dni?: string | null
+          firma?: number | null
           id?: number
           id_grupo?: number
           mail?: string | null
@@ -561,6 +564,13 @@ export type Database = {
           telefono?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_firma"
+            columns: ["firma"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "padres_responsables_id_grupo_fkey"
             columns: ["id_grupo"]

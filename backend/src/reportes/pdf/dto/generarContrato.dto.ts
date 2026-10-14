@@ -1,6 +1,8 @@
 export class CompradorContratoDTO {
     nombre!: string;
     dni!: string;
+    // PNG en base64. Si viene, el bloque de firma sale con la imagen, el nombre y el DNI.
+    firma?: string | null;
 }
 
 export class ProductoContratoDTO {

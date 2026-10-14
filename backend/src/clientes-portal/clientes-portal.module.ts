@@ -18,11 +18,13 @@ import { PrendasPedidoTallesService } from 'src/prendas-pedido-talles/prendas-pe
 import { PdfService } from 'src/reportes/pdf/pdf.service';
 import { ProductosService } from 'src/productos/productos.service';
 import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
+import { PadreResponsableService } from 'src/padre-responsable/padre-responsable-service.service';
+import { ContratosModule } from 'src/contratos/contratos.module';
 
 @Module({
-    imports:[SupabaseModule, OcrModule, ReportesModule, GestionPedidosModule, StorageModule],
+    imports:[SupabaseModule, OcrModule, ReportesModule, GestionPedidosModule, StorageModule, ContratosModule],
     controllers: [ClientesPortalController],
-    providers:[PrendasPedidoTallesService,PedidosService, PagosService, CuotasService, ProductosPedidoService, DocumentosService, SupabaseService, GruposService, ProductosService, BeneficiosPedidoService]
+    providers:[PrendasPedidoTallesService,PedidosService, PagosService, CuotasService, ProductosPedidoService, DocumentosService, SupabaseService, GruposService, ProductosService, BeneficiosPedidoService, PadreResponsableService]
 })
 export class ClientesPortalModule {
 

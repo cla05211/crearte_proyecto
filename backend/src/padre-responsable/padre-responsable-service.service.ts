@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { PadreResponsableDTO } from './dto/padreResponsable.dto';
 import { BadRequestException } from '@nestjs/common';
+import { PadreResponsableResponseDTO } from './dto/padreResponsableResponse.dto';
 
 @Injectable()
 export class PadreResponsableService 
@@ -24,14 +25,14 @@ export class PadreResponsableService
         return mensaje;
     }
 
-    async traerPadreResponsables(id:number):Promise<PadreResponsableDTO>
+    async traerPadreResponsables(idGrupo:number):Promise<PadreResponsableDTO>
     {
         const { data, error } = await this.sb.supabase
             .from('padres_responsables')
             .select(`
                 *
             `)
-            .eq('id_grupo', id)
+            .eq('id_grupo', idGrupo)
             .neq('mail', '')
             .single();
 
@@ -41,5 +42,36 @@ export class PadreResponsableService
         }
 
         return data as PadreResponsableDTO;       
+    }
+
+    async traerPadresResponsables(idGrupo:number):Promise<PadreResponsableResponseDTO[]>
+    {
+        const { data, error } = await this.sb.supabase
+            .from('padres_responsables')
+            .select(`
+                *
+            `)
+            .eq('id_grupo', idGrupo)
+            .order('id', { ascending: true });
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }
+
+        return data as PadreResponsableResponseDTO[];       
+    }
+
+    async subirFirmaPadreResponsable(idPadre: number, idDocumento: number)
+    {
+        const {data, error} = await this.sb.supabase
+            .from('padres_responsables')
+            .update({ firma: idDocumento})
+            .eq('id', idPadre)
+
+        if (error) 
+        {
+            throw new InternalServerErrorException(error.message);
+        }
     }
 }

@@ -354,6 +354,9 @@ export class TallesDisenio
 
   modificarEstadoBoceto(pedido: ControlTallesDisenioDTO, nuevoEstado: string): void
   {
+    // Con el boceto aprobado el estado queda bloqueado
+    if (pedido.fechaAprobacionBoceto) return;
+
     this.pedidosService.modificarEstadoDisenio(nuevoEstado, pedido.id).subscribe({
       next: () => { this.actualizarPedidoLocal(pedido.id, { estadoBoceto: nuevoEstado }); },
       error: () => {
@@ -388,6 +391,9 @@ export class TallesDisenio
 
   cambiarEstadoTalles(pedido: ControlTallesDisenioDTO, nuevoEstado: string): void
   {
+    // Con los talles aprobados el estado queda fijo en Confirmado
+    if (pedido.fechaAprobacionTalles) return;
+
     this.guardarEstadoTalles(pedido, nuevoEstado);
   }
 

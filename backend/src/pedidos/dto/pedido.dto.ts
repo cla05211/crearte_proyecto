@@ -15,4 +15,5 @@ export class PedidoDTO
     estado_talles!: string | null;
     estado_boceto!: string | null;
     molderias!: string | null;
+    fecha_entrega_aproximada?: string | null;
 }

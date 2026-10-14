@@ -64,6 +64,7 @@ export class Contrato implements OnInit
   private readonly notificacionesService = inject(Notificaciones);
   private readonly destroyRef = inject(DestroyRef);
 
+  private idGrupo = 0;
   private idPedido = 0;
   private ultimaCuota: CuotaResponseDTO | null = null;
   // Fecha de entrega ya guardada en el pedido ('YYYY-MM-DD'). Si existe, no se vuelve a pedir.
@@ -73,6 +74,7 @@ export class Contrato implements OnInit
   readonly descargando = signal(false);
   readonly contratoDisponible = signal(false);
   readonly datosContrato = signal<GenerarContratoDTO | null>(null);
+  readonly firmas = signal<{ firmadas: number; total: number } | null>(null);
 
   readonly vistaFechaEntrega = signal(false);
   formularioFechaEntrega: FormularioFechaEntrega = { mes: null, anio: null };
@@ -91,6 +93,7 @@ export class Contrato implements OnInit
   private inicializar(): void
   {
     const idGrupo = Number(this.route.parent?.parent?.snapshot.paramMap.get('id'));
+    this.idGrupo = idGrupo;
 
     this.cargando.set(true);
 
@@ -113,6 +116,9 @@ export class Contrato implements OnInit
           }
 
           this.idPedido = presupuesto.pedido.id;
+
+          const firmantes = (datosGrupo.padresResponsables ?? []).slice(0, CANTIDAD_MAXIMA_COMPRADORES);
+          this.firmas.set({ firmadas: firmantes.filter((padre) => padre.firma != null).length, total: firmantes.length });
           this.fechaEntregaAproximada = presupuesto.pedido.fecha_entrega_aproximada ?? null;
 
           this.cuotasService.traerCuotasIdPedido(presupuesto.pedido.id)
@@ -274,9 +280,7 @@ export class Contrato implements OnInit
       anioEntrega: String(anio),
     };
 
-    // Se actualizan los datos locales para que las próximas descargas no vuelvan a pedir la fecha.
-    this.datosContrato.set(dtoConEntrega);
-
+    // El PDF lo arma el back desde la base, así que la fecha tiene que quedar guardada antes de descargarlo
     try
     {
       await firstValueFrom(this.pedidosService.definirFechaEntrega(this.idPedido, vencimientoUltimaCuota));
@@ -285,7 +289,11 @@ export class Contrato implements OnInit
     catch
     {
       this.notificaciones.error({ title: 'Error', description: 'No se pudo guardar la fecha de entrega aproximada.' });
+      return;
     }
+
+    // Se actualizan los datos locales para que las próximas descargas no vuelvan a pedir la fecha.
+    this.datosContrato.set(dtoConEntrega);
 
     const descargado = await this.generarYDescargarContrato(dtoConEntrega);
     if (!descargado) return;
@@ -309,7 +317,7 @@ export class Contrato implements OnInit
 
     try
     {
-      const blob = await firstValueFrom(this.pagosService.descargarContrato(dto));
+      const blob = await firstValueFrom(this.pagosService.descargarContrato(this.idGrupo));
       const url = window.URL.createObjectURL(blob);
       const enlace = document.createElement('a');
       enlace.href = url;

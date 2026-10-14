@@ -6,4 +6,5 @@ export class PadreResponsableDTO
     dni!: string | null;
     telefono!: string | null;
     mail!: string | null;
+    firma!: number|null;
 }

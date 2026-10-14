@@ -1,0 +1,78 @@
+<main class="colegio-page">
+  <div class="colegio-page__shape colegio-page__shape--left" aria-hidden="true"></div>
+  <div class="colegio-page__shape colegio-page__shape--right" aria-hidden="true"></div>
+
+  <section class="ds-container colegio-container">
+
+    <header class="colegio-header contrato-header">
+      <h1 class="ds-heading-1">Contrato</h1>
+      @if (!cargando() && disponible()) {
+        @if (todosFirmaron()) {
+          <span class="ds-badge ds-badge--success">Firmado</span>
+        } @else {
+          <span class="ds-badge ds-badge--warning">Pendiente de firma</span>
+        }
+      }
+    </header>
+
+    @if (cargando()) {
+      <div class="contrato__loading" role="status" aria-live="polite">
+        <span class="contrato__spinner" aria-hidden="true"></span>
+        Cargando contrato...
+      </div>
+    } @else if (!disponible()) {
+      <p class="ds-text-muted">El contrato todavía no está disponible.</p>
+    } @else {
+      <section class="contrato">
+
+        @if (urlContratoSegura()) {
+          <div class="contrato__visor" [class.contrato__visor--actualizando]="cargandoPdf()">
+            <iframe [src]="urlContratoSegura()" class="contrato__iframe" title="Contrato"></iframe>
+          </div>
+        } @else if (cargandoPdf()) {
+          <div class="contrato__loading" role="status" aria-live="polite">
+            <span class="contrato__spinner" aria-hidden="true"></span>
+            Generando contrato...
+          </div>
+        } @else {
+          <p class="ds-text-muted">No se pudo cargar el contrato. Recargá la página para intentarlo de nuevo.</p>
+        }
+
+        @if (!todosFirmaron()) {
+          <section class="ds-card contrato-firma">
+            <h2 class="ds-heading-3">Firma</h2>
+            <p class="ds-text-muted">Elegí tu nombre, revisá el contrato y firmá en el recuadro.</p>
+
+            <label class="ds-field">
+              <span class="ds-label">Padre/madre responsable</span>
+              <select class="ds-select" [ngModel]="idPadreSeleccionado()" (ngModelChange)="seleccionarPadre($event)" [disabled]="firmando()">
+                <option [ngValue]="null">Seleccioná tu nombre</option>
+                @for (padre of padres(); track padre.id) {
+                  <option [ngValue]="padre.id">{{ nombreCompleto(padre) }}{{ padre.firma != null ? ' (ya firmó)' : '' }}</option>
+                }
+              </select>
+            </label>
+
+            @if (padreSeleccionado(); as padre) {
+              @if (yaFirmoSeleccionado()) {
+                <span class="ds-alert ds-alert--success" role="status">{{ nombreCompleto(padre) }} ya firmó el contrato.</span>
+              } @else {
+                <app-firma [ancho]="480" [alto]="200" (trazo)="firmaFaltante.set(false)" />
+                @if (firmaFaltante()) {
+                  <span class="ds-alert ds-alert--danger" role="alert">Falta la firma para poder confirmar.</span>
+                }
+
+                <footer class="contrato-firma__acciones">
+                  <button type="button" class="ds-button ds-button--secondary" [disabled]="firmando()" (click)="firma()?.limpiar()">Borrar firma</button>
+                  <button type="button" class="ds-button ds-button--large" [disabled]="firmando()" (click)="firmarContrato()">
+                    {{ firmando() ? 'Firmando...' : 'Firmar contrato' }}
+                  </button>
+                </footer>
+              }
+            }
+          </section>
+        }
+      </section>
+    }
+  </section>
+</main>

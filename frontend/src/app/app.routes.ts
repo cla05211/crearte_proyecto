@@ -43,6 +43,9 @@ export const routes: Routes = [
           },
         ]
       },
+      {path: "contrato", loadComponent: () => import('./pages/pages-clientes/contrato/contrato')
+        .then((archivo) => archivo.Contrato), canActivate: [ClienteLogueadoGuard]
+      },
   ]
   },
 

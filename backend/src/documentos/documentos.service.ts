@@ -59,4 +59,17 @@ export class DocumentosService
 
         return data.archivo_url;
     }
+
+    async actualizarArchivoUrl(idDocumento: number, nuevaRuta: string)
+    {
+        const { error } = await this.sb.supabase
+            .from('documentos')
+            .update({ archivo_url: nuevaRuta })
+            .eq('id', idDocumento);
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+    }
 }

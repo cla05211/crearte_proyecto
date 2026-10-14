@@ -104,7 +104,8 @@ export class GruposService
         const { data: padresResponsables, error: errPadres } = await this.sb.supabase
             .from("padres_responsables")
             .select('*')
-            .eq('id_grupo', idGrupo);
+            .eq('id_grupo', idGrupo)
+            .order('id', { ascending: true });
 
         if (errPadres) throw new Error(errPadres.message);
 
@@ -147,5 +148,24 @@ export class GruposService
         }
 
         return secundaria;
+    }
+
+    // Marca el contrato del grupo como firmado (lo usa el recordatorio de contrato para cancelarse).
+    async marcarContratoFirmado(idGrupo: number, fechaFirma: string)
+    {
+        const { data: existente, error: errorBusqueda } = await this.sb.supabase
+            .from('contratos')
+            .select('id')
+            .eq('grupo', idGrupo)
+            .limit(1)
+            .maybeSingle();
+
+        if (errorBusqueda) throw new BadRequestException(errorBusqueda.message);
+
+        const { error } = existente
+            ? await this.sb.supabase.from('contratos').update({ firmado: true, fecha_firma: fechaFirma }).eq('id', existente.id)
+            : await this.sb.supabase.from('contratos').insert({ grupo: idGrupo, firmado: true, fecha_firma: fechaFirma });
+
+        if (error) throw new BadRequestException(error.message);
     }
 }

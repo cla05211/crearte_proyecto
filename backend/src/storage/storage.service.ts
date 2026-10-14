@@ -1,7 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { SubirArchivoStorage } from './dto/SubirArchivoStorage.dto';
 import { ArchivoSubidoDTO } from './dto/ArchivoSubidoDTO';
+import { randomUUID } from 'crypto';
+
+// Tiene que coincidir con el nombre del bucket creado en Supabase
+const BUCKET_DISENIOS = 'disenios';
 
 @Injectable()
 export class StorageService {
@@ -52,5 +56,49 @@ export class StorageService {
         }
 
         return data.signedUrl;
+    }
+
+    async crearUrlSubidaDiseno(idGrupo: number): Promise<{ ruta: string; signedUrl: string }>
+    {
+        const ruta = `${idGrupo}/${randomUUID()}.pdf`;
+
+        const { data, error } = await this.supabaseService.supabase.storage
+            .from(BUCKET_DISENIOS)
+            .createSignedUploadUrl(ruta);
+
+        if (error)
+        {
+            throw new InternalServerErrorException(error.message);
+        }
+
+        return { ruta, signedUrl: data.signedUrl };
+    }
+
+    async eliminarDiseno(ruta: string)
+    {
+        const { error } = await this.supabaseService.supabase.storage
+            .from(BUCKET_DISENIOS)
+            .remove([ruta]);
+
+        if (error)
+        {
+            console.error('No se pudo borrar el diseño anterior:', error.message);
+        }
+    }
+
+    async existeDiseno(ruta: string): Promise<boolean>
+    {
+        const [carpeta, nombre] = ruta.split('/');
+
+        const { data, error } = await this.supabaseService.supabase.storage
+            .from(BUCKET_DISENIOS)
+            .list(carpeta, { search: nombre });
+
+        if (error)
+        {
+            throw new InternalServerErrorException(error.message);
+        }
+
+        return data.some(archivo => archivo.name === nombre);
     }
 }

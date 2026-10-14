@@ -4,6 +4,7 @@ import { catchError, switchMap, filter, take, throwError, BehaviorSubject } from
 import { Router } from '@angular/router';
 import { AuthService } from '../app/services/Auth/auth-service';
 import { ClientesAuthService } from '../app/services/clientes-auth-service/clientes-auth-service';
+import { environment } from '../environments/environment.development';
 
 let refrescandoToken = false;
 
@@ -22,6 +23,10 @@ const esRutaCliente = (url: string): boolean =>
   url.includes('/clientes-auth') || url.includes('/clientes-portal') || url.includes('/pagos/ocr');
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
+    if (!req.url.startsWith(environment.apiUrl))
+    {
+      return next(req);
+    }
   const authService = inject(AuthService);
   const clientesAuthService = inject(ClientesAuthService);
   const router = inject(Router);

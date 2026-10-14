@@ -326,9 +326,21 @@ export class PdfService
                 ],
             });
 
+            // Las firmas de los compradores que ya firmaron se agregan como imágenes (firmaComprador0, 1, ...)
+            const imagenesFirmas: Record<string, string> = {};
+            const bloqueComprador = (indice: number) =>
+            {
+                const comprador = dto.compradores[indice];
+                if (!comprador?.firma) return bloqueFirma('Firma representante colegio');
+
+                const key = `firmaComprador${indice}`;
+                imagenesFirmas[key] = `data:image/png;base64,${comprador.firma}`;
+                return bloqueFirma('Firma representante colegio', comprador.nombre, comprador.dni, key);
+            };
+
             const filaFirmaPrincipal: Content = {
                 columns: [
-                    bloqueFirma('Firma representante colegio'),
+                    bloqueComprador(0),
                     bloqueFirma('Firma representante Crearte Buzos', 'Adrian Coassini', '18.380.631', 'firmaAdrian'),
                 ],
                 columnGap: 20,
@@ -336,11 +348,10 @@ export class PdfService
             };
 
             const filasFirmasExtra: Content[] = [];
-            const firmantesExtra = dto.compradores.slice(1);
-            for (let i = 0; i < firmantesExtra.length; i += 2)
+            for (let i = 1; i < dto.compradores.length; i += 2)
             {
-                const columnas = [bloqueFirma('Firma representante colegio')];
-                if (firmantesExtra[i + 1]) columnas.push(bloqueFirma('Firma representante colegio'));
+                const columnas = [bloqueComprador(i)];
+                if (dto.compradores[i + 1]) columnas.push(bloqueComprador(i + 1));
                 filasFirmasExtra.push({
                     columns: columnas,
                     columnGap: 20,
@@ -355,6 +366,7 @@ export class PdfService
                 images: {
                     logoCrearte: `data:image/png;base64,${this.logoBase64}`,
                     firmaAdrian: `data:image/png;base64,${this.firmaAdrianBase64}`,
+                    ...imagenesFirmas,
                 },
                 content: [
                     { image: 'logoCrearte', width: 160, alignment: 'center', margin: [0, 0, 0, 10] },

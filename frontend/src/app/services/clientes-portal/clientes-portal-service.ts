@@ -7,6 +7,7 @@ import { CuotaResponseDTO } from '../cuotas/dto/CuotaResponseDTO';
 import { presupuestoPedidoClientesPage } from '../gestionPedidos/dto/PresupuestoPedidoClientePage.dto';
 import { productosPedidoIdNombreDTO } from '../productosPedidos/dto/ProductoPedidoIdNombre.dto';
 import { PrendaPedidoDTO } from './dto/prenda.dto';
+import { PadreResponsableResponseDTO } from '../padreResponsable/dto/padreResponsableResponse.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -39,6 +40,11 @@ export class ClientesPortalService
   obtenerImporteTotal(): Observable<number>
   {
     return this.http.get<number>(`${this.base}/importe-total`);
+  }
+
+  obtenerPadresResponsables(): Observable<PadreResponsableResponseDTO[]>
+  {
+    return this.http.get<PadreResponsableResponseDTO[]>(`${this.base}/padres-responsables`);
   }
 
   obtenerSeniaTotal(): Observable<number | null>
@@ -98,5 +104,25 @@ export class ClientesPortalService
     formData.append('firma', firma, 'firma-talles.png');
 
     return this.http.post(`${this.base}/confirmar-talles`, formData);
+  }
+
+  obtenerContratoDisponible(): Observable<boolean>
+  {
+    return this.http.get<boolean>(`${this.base}/contrato-disponible`);
+  }
+
+  obtenerContrato(): Observable<Blob>
+  {
+    return this.http.get(`${this.base}/contrato`, { responseType: 'blob' });
+  }
+
+  // Sube la firma a storage (firmas-contrato), crea el documento "Firma Contrato" y lo asigna al padre, todo en el back
+  firmarContrato(idPadre: number, firma: Blob): Observable<{ todosFirmaron: boolean }>
+  {
+    const formData = new FormData();
+    formData.append('idPadre', String(idPadre));
+    formData.append('firma', firma, 'firma-contrato.png');
+
+    return this.http.post<{ todosFirmaron: boolean }>(`${this.base}/firmar-contrato`, formData);
   }
 }

@@ -10,7 +10,7 @@ import { GenerarExcelDTO } from '../../../interfaces/generarExcel.dto';
 import { GenerarReciboDTO } from '../../../interfaces/generarRecibo.dto';
 import { NotificationService } from '../../shared/notifications/notification.service';
 import { PadreResponsableService } from '../../services/padreResponsable/padre-responsable-service';
-import { PadreResponsableDTO } from '../../services/gestionPedidos/dto/padreResponsable.dto';
+import { PadreResponsableDTO } from '../../services/padreResponsable/dto/padreResponsable.dto';
 import { CuotasService } from '../../services/cuotas/cuotas-service';
 import { StorageService } from '../../services/storage/storage-service';
 import { DocumentosService } from '../../services/documentos/documentos-service';

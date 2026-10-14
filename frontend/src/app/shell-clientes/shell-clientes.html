@@ -44,6 +44,9 @@
       <a routerLink="/cuenta-corriente" routerLinkActive="activo" (click)="cerrarSidebar()">Cuenta corriente</a>
       <a routerLink="/presupuesto" routerLinkActive="activo" (click)="cerrarSidebar()">Presupuesto y Beneficios</a>
       <a routerLink="/talles" routerLinkActive="activo" (click)="cerrarSidebar()">Talles</a>
+      @if (contratoDisponible()) {
+        <a routerLink="/contrato" routerLinkActive="activo" (click)="cerrarSidebar()">Contrato</a>
+      }
     </nav>
   </aside>
 

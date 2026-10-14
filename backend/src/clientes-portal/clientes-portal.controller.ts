@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, ConflictException, ForbiddenException, Get, Param, ParseIntPipe, Post, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ConflictException, ForbiddenException, Get, Param, ParseIntPipe, Post, Req, Res, UploadedFile, UseGuards, UseInterceptors, Query } from '@nestjs/common';
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ClienteAuthGuard } from 'src/clientes-auth/guards/clientesAuthGuard';
@@ -22,12 +22,19 @@ import { ProductoPrendasResumenDTO } from 'src/prendas-pedido-talles/dto/Resumen
 import { ProductosService } from 'src/productos/productos.service';
 import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
 import { BeneficioPedidoDTO } from 'src/beneficios-pedido/dto/beneficioPedidoDTO';
+import { PadreResponsableService } from 'src/padre-responsable/padre-responsable-service.service';
+import { PadreResponsableResponseDTO } from 'src/padre-responsable/dto/padreResponsableResponse.dto';
+import { ContratosService } from 'src/contratos/contratos.service';
 
 
 const IDS_CAMPERA_BUZO = [63, 64, 71];
 const IDS_REMERA_CHOMBA = [65, 66];
 
 const TIPO_DOCUMENTO_FIRMA_TALLES = 'Firma Talles';
+const TIPO_DOCUMENTO_FIRMA_CONTRATO = 'Firma Contrato';
+
+// En el contrato firman como máximo los 3 primeros padres responsables (ordenados por id)
+const CANTIDAD_MAXIMA_FIRMANTES = 3;
 
 @Controller('clientes-portal')
 @UseGuards(ClienteAuthGuard)
@@ -46,7 +53,9 @@ export class ClientesPortalController
         private prendasService: PrendasPedidoTallesService,
         private pdfService: PdfService,
         private productosService: ProductosService,
-        private beneficiosPedidoService: BeneficiosPedidoService
+        private beneficiosPedidoService: BeneficiosPedidoService,
+        private padresService: PadreResponsableService,
+        private contratosService: ContratosService,
     ) {}
 
     private async obtenerIdPedidoCliente(req: any): Promise<number>
@@ -141,6 +150,83 @@ export class ClientesPortalController
         const idPedido = await this.obtenerIdPedidoCliente(req);
         return await this.pedidosService.determinartipoTalles(idPedido);
     }
+
+    @Get('padres-responsables')
+    async obtenerPadresResponsables(@Req() req): Promise<PadreResponsableResponseDTO[]>
+    {
+        return await this.padresService.traerPadresResponsables(req.cliente.id_grupo);
+    }
+
+    // El contrato se habilita para el cliente cuando el pedido ya tiene fecha de entrega aproximada
+    @Get('contrato-disponible')
+    async obtenerContratoDisponible(@Req() req): Promise<boolean>
+    {
+        const pedido = await this.pedidosService.obtenerPedidoGrupo(req.cliente.id_grupo);
+        return !!pedido.fecha_entrega_aproximada;
+    }
+
+    @Get('contrato')
+    async obtenerContrato(@Req() req, @Res() res: Response)
+    {
+        const idGrupo = req.cliente.id_grupo;
+        const buffer = await this.contratosService.generarPdfContrato(idGrupo);
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="contrato-${idGrupo}.pdf"`,
+        });
+        res.send(buffer);
+    }
+
+    @Post('firmar-contrato')
+    @UseInterceptors(FileInterceptor('firma'))
+    async firmarContrato(@Req() req, @UploadedFile() firma: ArchivoSubidoDTO, @Body('idPadre', ParseIntPipe) idPadre: number)
+    {
+        const idGrupo = req.cliente.id_grupo;
+        const pedido = await this.pedidosService.obtenerPedidoGrupo(idGrupo);
+
+        if (!pedido.fecha_entrega_aproximada)
+        {
+            throw new ConflictException('El contrato todavía no está disponible para firmar.');
+        }
+
+        if (!firma || firma.mimetype !== 'image/png')
+        {
+            throw new BadRequestException('Falta la firma o no es una imagen PNG.');
+        }
+
+        // Solo pueden firmar los padres responsables de este grupo que figuran en el contrato
+        const firmantes = (await this.padresService.traerPadresResponsables(idGrupo)).slice(0, CANTIDAD_MAXIMA_FIRMANTES);
+        const padre = firmantes.find(p => p.id === idPadre);
+
+        if (!padre)
+        {
+            throw new ForbiddenException('El padre responsable no pertenece a este contrato.');
+        }
+
+        if (padre.firma != null)
+        {
+            throw new ConflictException('Este padre responsable ya firmó el contrato.');
+        }
+
+        const rutaFirma = await this.storageService.guardarImagen(
+            { pedidoId: pedido.id.toString(), nombreArchivo: `firma-contrato-${pedido.id}-${idPadre}-${Date.now()}.png`, carpetaGuardado: 'firmas-contrato' },
+            firma,
+        );
+
+        const [idDocumento] = await this.documentosService.subirDocumento({ id_grupo: idGrupo, tipo: TIPO_DOCUMENTO_FIRMA_CONTRATO, archivo_url: rutaFirma });
+        await this.padresService.subirFirmaPadreResponsable(idPadre, idDocumento);
+
+        const todosFirmaron = firmantes.every(p => p.id === idPadre || p.firma != null);
+        if (todosFirmaron)
+        {
+            const fechaFirma = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+            await this.gruposService.marcarContratoFirmado(idGrupo, fechaFirma);
+        }
+
+        return { todosFirmaron };
+    }
+
 
     @Get('resumen-talles')
     async obtenerResumenTalles(@Req() req, @Res() res: Response)
