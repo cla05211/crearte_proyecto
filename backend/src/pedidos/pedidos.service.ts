@@ -200,4 +200,23 @@ export class PedidosService
 
         return data.talles!;
     }
+
+    async determinarBandera(idPedido:number):Promise<boolean>
+    {
+        const ID_BENEFICIO_BANDERA = 1;
+        const ID_AGREGADO_BANDERA = 53; 
+
+        const { data, error } = await this.sb.supabase
+            .from('pedidos')
+            .select(`beneficios_pedido(id_beneficio),agregados_globales_pedido(id_agregado)`)
+            .eq('id', idPedido)
+            .single();
+        
+        if (error) throw new Error(error.message);
+    
+        const bandera = data.beneficios_pedido.some(b => b.id_beneficio == ID_BENEFICIO_BANDERA) ||
+        data.agregados_globales_pedido.some(a => a.id_agregado == ID_AGREGADO_BANDERA);
+        
+        return bandera;
+    }
 }

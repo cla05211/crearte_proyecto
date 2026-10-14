@@ -7,11 +7,13 @@ import { ClientesAuthService } from 'src/clientes-auth/clientes-auth-service.ser
 import { DatosVentaNotisDto } from './dto/datosVenta.dto';
 import { calcularEstadoSenia } from 'src/pagos/estadoSeña.util';
 import { empty } from 'rxjs';
+import { GestionPedidosService } from 'src/gestion-pedidos/gestion-pedidos.service';
+import { PedidosService } from 'src/pedidos/pedidos.service';
 
 @Injectable()
 export class NotificacionesService 
 {
-    constructor(private sb: SupabaseService, private whatsapp: WatsappService, private clientesAuth: ClientesAuthService){}
+    constructor(private sb: SupabaseService, private whatsapp: WatsappService, private clientesAuth: ClientesAuthService, private pedidosService: PedidosService){}
 
     //general
     async procesarNuevaVenta(idPedido:number)
@@ -411,7 +413,6 @@ export class NotificacionesService
                         padres_responsables (telefono, mail )),
                 cuotas ( id, numero, fecha_vencimiento, importe),
                 pagos ( monto, motivo, fecha ),
-                beneficios_pedido(id_beneficio),
                 productos_pedidos(valor_senia, cantidad)
             `)
             .eq('id', idPedido)
@@ -424,7 +425,7 @@ export class NotificacionesService
         const venta: DatosVentaNotisDto = {datosNotis:{id_pedido: idPedido, 
             cuotas: data.cuotas.map(c => ({id:c.id,nro: c.numero! ,fechaVencimiento:c.fecha_vencimiento!.toString()})), 
             banco:banco, localidad:data.grupos.colegios.localidad, provincia:data.grupos.colegios.provincia, envioGratis:data.envio_gratis!, 
-            zonaSur: data.grupos.colegios.zona_sur, beneficioBandera: data.beneficios_pedido.find(b => b.id_beneficio == 1) ? true: false },
+            zonaSur: data.grupos.colegios.zona_sur, beneficioBandera: await this.pedidosService.determinarBandera(data.id)},
             idGrupo: data.grupos.id, telefono: data.grupos.padres_responsables.find(padre => padre.mail)!.telefono!, estadoSenia:estadoSenia,
             nroUltimaCuota: (estadoSenia.total == data.cuotas[0].importe)? data.cuotas.length + 1 : data.cuotas.length};
         

@@ -26,6 +26,11 @@ export class PedidosService
     return this.http.get<number>(`${environment.apiUrl}/pedidos/id/${idGrupo}`);    
   }
 
+  determinarBandera(idPedido:number):Observable<boolean>
+  {
+    return this.http.get<boolean>(`${environment.apiUrl}/pedidos/bandera/${idPedido}`);    
+  }
+
   modificarDiseniadora(idDiseniadora:number, idPedido:number): Observable<void>
   {
     return this.http.patch<void>(`${environment.apiUrl}/pedidos/diseniadora`, null, {params: {idDiseniadora, idPedido}});

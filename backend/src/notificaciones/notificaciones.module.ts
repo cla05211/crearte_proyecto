@@ -6,12 +6,13 @@ import { NotificacionesService } from './notificaciones.service';
 import { NotificacionesController } from './notificaciones.controller';
 import { UsuariosService } from 'src/usuarios/usuarios.service';
 import { PermisosService } from 'src/permisos/permisos.service';
+import { PedidosService } from 'src/pedidos/pedidos.service';
 
 @Module({
     // Se importan los módulos (que exportan sus services), no los services sueltos.
     imports: [SupabaseModule, WatsappModule, ClientesAuthModule],
     controllers: [NotificacionesController],
-    providers: [NotificacionesService, UsuariosService, PermisosService],
+    providers: [NotificacionesService, UsuariosService, PermisosService, PedidosService],
     exports: [NotificacionesService],
 })
 export class NotificacionesModule {}

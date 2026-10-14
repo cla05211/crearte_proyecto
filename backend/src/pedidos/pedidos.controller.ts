@@ -26,6 +26,13 @@ export class PedidosController
         return await this.pedidosService.obtenerPedidoGrupo(id);
     }
 
+    @Get('bandera/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    async determinarBandera(@Param('id')id: number) :Promise<boolean>
+    {
+        return await this.pedidosService.determinarBandera(id);
+    }
+
     @Get('vendedora/:id')
     @UseGuards(AuthGuard,PermisosGuard)
     async obtenerVendedora(@Param('id')id: number) :Promise<number | null>
