@@ -1,22 +1,30 @@
-import { PedidoDTO } from "../../pedidos/dto/pedido.dto";
+export class ContactoResponsableDTO
+{
+    id!: number;
+    nombre!: string | null;
+    apellido!: string | null;
+    telefono!: string | null;
+    principal!: boolean;
+}
 
 export class ControlTallesDisenioDTO
 {
     id!: number;
     nroCuotas!: number;
-    senia!:boolean;
-    seniaPaga!: boolean|null;
-    estadoPrimerCuota!: string|null;
-    promo!:number;
+    senia!: boolean;
+    seniaPaga!: boolean | null;
+    estadoPrimerCuota!: string | null;
+    promo!: number;
     nombreColegio!: string;
-    nrosContactoPadres!: string[] | null;
-    nrosContactoAlumnos!: string[] | null;
-    telefono_principal!: string | null;
-    productos!:string;
-    estadoBoceto!: string | null
-    estadoTalles!: string | null
-    fechaAprobacionBoceto!: Date|null;
-    fechaAprobacionTalles!: Date|null;    
+    idGrupo!: number;
+    nivel!: string | null;
+    alumnosResponsables!: ContactoResponsableDTO[];
+    padresResponsables!: ContactoResponsableDTO[];
+    productos!: string;
+    estadoBoceto!: string | null;
+    estadoTalles!: string | null;
+    fechaAprobacionBoceto!: Date | null;
+    fechaAprobacionTalles!: Date | null;
     fechaVenta!: Date;
-    diseniadora!: number|null;
+    diseniadora!: number | null;
 }

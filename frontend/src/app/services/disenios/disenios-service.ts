@@ -22,6 +22,13 @@ export class DiseniosService
             `${environment.apiUrl}/disenios/${idGrupo}/${idDocumento}/url-descarga`, { params: { nombre } });
     }
 
+    // URL firmada para descargar la imagen de la firma del cliente sobre un diseño
+    obtenerUrlDescargaFirma(idGrupo: number, idDocumento: number, nombre: string)
+    {
+        return this.http.get<{ url: string }>(
+            `${environment.apiUrl}/disenios/${idGrupo}/${idDocumento}/url-descarga-firma`, { params: { nombre } });
+    }
+
     // Mismo PDF de talles que ve el cliente en el portal, generado en el momento
     descargarResumenTalles(idGrupo: number)
     {

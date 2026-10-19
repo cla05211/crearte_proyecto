@@ -54,6 +54,7 @@
 
 .table-wrapper .ds-table { min-width: 30rem; }
 .table-wrapper .ds-table th { color: var(--color-primary-700); }
+.table-wrapper .ds-table tr.fila-principal td { background: var(--color-primary-100); font-weight: var(--font-weight-medium); }
 
 .loading-state,
 .empty-state {

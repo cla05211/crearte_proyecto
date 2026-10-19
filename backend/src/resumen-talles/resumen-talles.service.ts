@@ -39,7 +39,7 @@ export class ResumenTallesService
             this.prendasService.traerResumenPrendasPedido(idPedido),
         ]);
 
-        const padreResponsable = datosGrupo.padresResponsables?.find(p => p.mail);
+        const padreResponsable = datosGrupo.padresResponsables?.find(p => p.principal);
         const nombreCompletoPadre = padreResponsable
             ? `${padreResponsable.nombre ?? ''} ${padreResponsable.apellido ?? ''}`.trim() || null
             : null;

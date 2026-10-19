@@ -5,6 +5,6 @@ export class PadreResponsableDTO
     apellido!: string | null;
     dni!: string | null;
     telefono!: string | null;
-    mail!: string | null;
     firma!: number|null;
+    principal?:boolean;
 }

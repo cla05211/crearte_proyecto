@@ -222,13 +222,14 @@ export class GestionPedidosService
         .select(`*,
             productos_pedidos(valor_senia,valor_cuota,
                 productos(nombre)),
-            cuotas(id, estado),
-            grupos!inner(
+            cuotas(id, numero, estado),
+            grupos!inner(id,
                 created_at,
                 promo,
+                nivel,
                 colegios!inner(nombre),
-                padres_responsables(telefono),
-                alumnos_responsables(telefono))
+                padres_responsables(id, nombre, apellido, telefono, principal),
+                alumnos_responsables(id, nombre, apellido, telefono, principal))
                 ,pagos(monto, motivo)`)
         .eq("estado_general", "Venta realizada")
         .eq("pagos.motivo", "Seña")
@@ -251,17 +252,13 @@ export class GestionPedidosService
         const pedidos: ControlTallesDisenioDTO[] = data.map(pedido => ({
             id: pedido.id,
             nroCuotas: pedido.cuotas.length,
-            estadoPrimerCuota: pedido.cuotas[0].estado,
+            estadoPrimerCuota: pedido.cuotas.find(c => c.numero === 1)?.estado ?? null,
             senia: pedido.productos_pedidos[0].valor_senia != pedido.productos_pedidos[0].valor_cuota,
             seniaPaga:  pedido.pagos.reduce((total, pago) => total + pago.monto!, 0) >= pedido.productos_pedidos.reduce((total, producto) => total + producto.valor_senia, 0),
             promo: pedido.grupos.promo!,
             nombreColegio: pedido.grupos.colegios.nombre,
-            nrosContactoAlumnos: pedido.grupos.alumnos_responsables.length > 0
-                ? pedido.grupos.alumnos_responsables.map(alumno => alumno.telefono).filter((t): t is string => !!t)
-                : null,
-            nrosContactoPadres: pedido.grupos.padres_responsables.length > 0
-                ? pedido.grupos.padres_responsables.map(padre => padre.telefono).filter((t): t is string => !!t)
-                : null,
+            alumnosResponsables: pedido.grupos.alumnos_responsables,
+            padresResponsables: pedido.grupos.padres_responsables,
             productos: pedido.productos_pedidos.map(pp => pp.productos?.nombre).filter(Boolean).join(", "),
             estadoBoceto:pedido.estado_boceto,
             estadoTalles:pedido.estado_talles,
@@ -269,7 +266,8 @@ export class GestionPedidosService
             fechaAprobacionTalles: pedido.fecha_aprobacion_talles ? new Date(pedido.fecha_aprobacion_talles) : null,
             fechaVenta: new Date(pedido.grupos.created_at!),
             diseniadora: pedido.id_disenadora,
-            telefono_principal: pedido.telefono_principal
+            idGrupo:pedido.grupos.id,
+            nivel:pedido.grupos.nivel
         }));
 
         return pedidos;

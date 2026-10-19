@@ -44,9 +44,8 @@ export class GruposService
     {
         let query = this.sb.supabase
         .from("grupos")
-        .select(`id,nivel,created_at,colegios!inner (nombre, localidad, provincia, zona_sur),padres_responsables!inner (nombre, apellido, id_grupo, mail), pedidos!inner(nro_fabrica)`)
-        .not('padres_responsables.mail', 'is', null)
-        .neq('padres_responsables.mail', '')
+        .select(`id,nivel,created_at,colegios!inner (nombre, localidad, provincia, zona_sur),padres_responsables!inner (nombre, apellido, id_grupo, principal), pedidos!inner(nro_fabrica)`)
+        .eq('padres_responsables.principal', true)
         .order('created_at', { ascending: false });
 
         if(busqueda)

@@ -1,16 +1,15 @@
 export interface DisenioResponseDTO
 {
     id: number;
-    // 'Disenio Prendas', 'Disenio Bandera' o 'Disenio {nombre}'
     tipo: string;
     created_at: string | null;
+    // Si el cliente ya lo firmó (existe 'Firma ' + tipo en documentos). Firmado = no se puede reemplazar
+    firmado: boolean;
 }
 
 export interface DiseniosGrupoResponseDTO
 {
     disenios: DisenioResponseDTO[];
-    // Si el pedido lleva bandera (comprada o beneficio): define si se muestra "Diseño Bandera"
     tieneBandera: boolean;
-    // estado_talles === 'Confirmado': recién ahí se puede descargar el resumen
     tallesConfirmados: boolean;
 }

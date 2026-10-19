@@ -1,4 +1,4 @@
-import { Controller, Get, Injectable, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Injectable, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
@@ -16,5 +16,13 @@ export class PadreResponsableController
     {
         return await this.padreResponsableService.traerPadreResponsables(idPedido);
     }
+
+    @Patch(':id/:idNuevoPadrePrincipal')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_clientes_datos')
+    modificarPadrePrincipal(@Param("id", ParseIntPipe) idGrupo: number, @Param('idNuevoPadrePrincipal', ParseIntPipe) idNuevoPadrePrincipal:number):Promise<null>
+    {
+        return this.padreResponsableService.modificarPadrePrincipal(idNuevoPadrePrincipal,idGrupo);
+    }    
 
 }

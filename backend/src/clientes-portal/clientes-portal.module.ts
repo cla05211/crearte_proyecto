@@ -21,9 +21,10 @@ import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido
 import { PadreResponsableService } from 'src/padre-responsable/padre-responsable-service.service';
 import { ContratosModule } from 'src/contratos/contratos.module';
 import { ResumenTallesModule } from 'src/resumen-talles/resumen-talles.module';
+import { DiseniosModule } from 'src/disenios/disenios.module';
 
 @Module({
-    imports:[SupabaseModule, OcrModule, ReportesModule, GestionPedidosModule, StorageModule, ContratosModule, ResumenTallesModule],
+    imports:[SupabaseModule, OcrModule, ReportesModule, GestionPedidosModule, StorageModule, ContratosModule, ResumenTallesModule, DiseniosModule],
     controllers: [ClientesPortalController],
     providers:[PrendasPedidoTallesService,PedidosService, PagosService, CuotasService, ProductosPedidoService, DocumentosService, SupabaseService, GruposService, ProductosService, BeneficiosPedidoService, PadreResponsableService]
 })

@@ -23,6 +23,8 @@ import { PadreResponsableService } from 'src/padre-responsable/padre-responsable
 import { PadreResponsableResponseDTO } from 'src/padre-responsable/dto/padreResponsableResponse.dto';
 import { ContratosService } from 'src/contratos/contratos.service';
 import { ResumenTallesService } from 'src/resumen-talles/resumen-talles.service';
+import { DiseniosService } from 'src/disenios/disenios.service';
+import { DiseniosGrupoResponseDTO } from 'src/disenios/dto/DisenioResponseDTO';
 
 
 const TIPO_DOCUMENTO_FIRMA_TALLES = 'Firma Talles';
@@ -47,8 +49,8 @@ export class ClientesPortalController
         private storageService: StorageService,
         private prendasService: PrendasPedidoTallesService,
         private productosService: ProductosService,
-        private beneficiosPedidoService: BeneficiosPedidoService,
         private padresService: PadreResponsableService,
+        private diseniosService: DiseniosService,
         private contratosService: ContratosService,
         private resumenTallesService: ResumenTallesService,
     ) {}
@@ -152,7 +154,6 @@ export class ClientesPortalController
         return await this.padresService.traerPadresResponsables(req.cliente.id_grupo);
     }
 
-    // El contrato se habilita para el cliente cuando el pedido ya tiene fecha de entrega aproximada
     @Get('contrato-disponible')
     async obtenerContratoDisponible(@Req() req): Promise<boolean>
     {
@@ -171,6 +172,56 @@ export class ClientesPortalController
             'Content-Disposition': `inline; filename="contrato-${idGrupo}.pdf"`,
         });
         res.send(buffer);
+    }
+
+    //Diseño
+    
+    @Get('disenios')
+    async obtenerDisenios(@Req() req): Promise<DiseniosGrupoResponseDTO>
+    {
+        const idGrupo = req.cliente.id_grupo;
+
+        return await this.diseniosService.listar(idGrupo);
+    }
+
+    @Get('url-descarga-disenios/:id')
+    async obtenerUrlDescargaDisenio(@Req() req, @Param('id', ParseIntPipe) idDocumento: number, @Query('nombreArchivo') nombreArchivo: string): Promise<{ url: string }>
+    {
+        const idGrupo = req.cliente.id_grupo;
+
+        return await this.diseniosService.crearUrlDescarga(idGrupo, idDocumento, nombreArchivo || 'disenio');
+    }
+
+    // El cliente firma un diseño: la imagen llega como multipart en el campo 'firma' (PNG)
+    @Post('firmar-disenio/:id')
+    @UseInterceptors(FileInterceptor('firma'))
+    async firmarDisenio(@Req() req, @Param('id', ParseIntPipe) idDocumento: number, @UploadedFile() firma: ArchivoSubidoDTO): Promise<{ idDocumento: number }>
+    {
+        const idGrupo = req.cliente.id_grupo;
+
+        return await this.diseniosService.firmar(idGrupo, idDocumento, firma);
+    }
+
+
+    //Talles
+
+    @Get('resumen-talles')
+    async obtenerResumenTalles(@Req() req, @Res() res: Response)
+    {
+        const { buffer, idPedido } = await this.resumenTallesService.generarPdf(req.cliente.id_grupo);
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="resumen-talles-${idPedido}.pdf"`,
+        });
+        res.send(buffer);
+    }
+
+    @Get('talles-confirmados')
+    async obtenerTallesConfirmados(@Req() req): Promise<boolean>
+    {
+        const documentoFirma = await this.documentosService.obtenerDocumentoPorTipo(req.cliente.id_grupo, TIPO_DOCUMENTO_FIRMA_TALLES);
+        return !!documentoFirma;
     }
 
     @Post('firmar-contrato')
@@ -221,19 +272,6 @@ export class ClientesPortalController
 
         return { todosFirmaron };
     }
-
-
-    @Get('resumen-talles')
-    async obtenerResumenTalles(@Req() req, @Res() res: Response)
-    {
-        const { buffer, idPedido } = await this.resumenTallesService.generarPdf(req.cliente.id_grupo);
-
-        res.set({
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': `inline; filename="resumen-talles-${idPedido}.pdf"`,
-        });
-        res.send(buffer);
-    }
     
     @Post('pagos')
     @UseInterceptors(FileInterceptor('comprobante'))
@@ -272,13 +310,6 @@ export class ClientesPortalController
     {
         const idPedido = await this.obtenerIdPedidoCliente(req);
         return await this.prendasService.guardarPrendasPedido(idPedido, prendas);
-    }
-
-    @Get('talles-confirmados')
-    async obtenerTallesConfirmados(@Req() req): Promise<boolean>
-    {
-        const documentoFirma = await this.documentosService.obtenerDocumentoPorTipo(req.cliente.id_grupo, TIPO_DOCUMENTO_FIRMA_TALLES);
-        return !!documentoFirma;
     }
 
     @Post('confirmar-talles')

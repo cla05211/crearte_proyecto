@@ -1,11 +1,11 @@
 import { alumnoResponsableDTO } from "../../gestionPedidos/dto/alumnoResponsable.dto";
 import { GrupoDTO } from "../../gestionPedidos/dto/grupo.dto";
-import { PadreResponsableDTO } from "../../padreResponsable/dto/padreResponsable.dto";
+import { PadreResponsableResponseDTO } from "../../padreResponsable/dto/padreResponsableResponse.dto";
 import { GrupoConColegioDTO } from "./grupoColegio.dto";
 
 export class grupoClienteDatosPageResponse
 {
     grupo!: GrupoConColegioDTO;
-    padresResponsables!:PadreResponsableDTO[] | null;
+    padresResponsables!:PadreResponsableResponseDTO[] | null;
     alumnosResponsables!:alumnoResponsableDTO[] | null;
 }

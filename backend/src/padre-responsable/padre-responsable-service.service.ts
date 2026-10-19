@@ -33,7 +33,7 @@ export class PadreResponsableService
                 *
             `)
             .eq('id_grupo', idGrupo)
-            .neq('mail', '')
+            .eq('principal', true)
             .single();
 
         if (error) 
@@ -73,5 +73,48 @@ export class PadreResponsableService
         {
             throw new InternalServerErrorException(error.message);
         }
+    }
+
+    async modificarPadrePrincipal(idNuevoPadrePrincipal:number, idGrupo:number)
+    {
+        try 
+        {
+            await this.borrarPadrePrincipal(idGrupo);
+        } 
+        catch (error: unknown) 
+        {
+            if (error instanceof Error) 
+            {
+                throw new Error(error.message);
+            }
+
+            throw error;
+        }
+
+        const {data,error}= await this.sb.supabase
+            .from('padres_responsables')
+            .update({'principal': true})
+            .eq('id_grupo',idGrupo)
+            .eq('id',idNuevoPadrePrincipal)
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }   
+
+        return data;
+    }
+
+    private async borrarPadrePrincipal(idGrupo:number)
+    {
+        const {data,error}= await this.sb.supabase
+            .from('padres_responsables')
+            .update({'principal': false})
+            .eq('id_grupo',idGrupo)
+
+        if (error) 
+        {
+            throw new Error(error.message);
+        }   
     }
 }

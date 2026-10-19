@@ -46,6 +46,18 @@ export class DiseniosController
         return await this.diseniosService.crearUrlDescarga(idGrupo, idDocumento, nombre || 'disenio');
     }
 
+    @Get(':idGrupo/:idDocumento/url-descarga-firma')
+    @UseGuards(AuthGuard, PermisosGuard)
+    @RequierePermiso('ver_clientes_talles_disenio')
+    async crearUrlDescargaFirma(
+        @Param('idGrupo', ParseIntPipe) idGrupo: number,
+        @Param('idDocumento', ParseIntPipe) idDocumento: number,
+        @Query('nombre') nombre: string,
+    )
+    {
+        return await this.diseniosService.crearUrlDescargaFirma(idGrupo, idDocumento, nombre || 'firma');
+    }
+
     @Post('url-subida')
     @UseGuards(AuthGuard, PermisosGuard)
     @RequierePermiso('ver_clientes_talles_disenio')

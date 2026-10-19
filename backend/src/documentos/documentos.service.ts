@@ -73,7 +73,6 @@ export class DocumentosService
         }
     }
 
-    // Documentos de un grupo cuyo tipo empieza con un prefijo (ej. 'Disenio ' trae todos los diseños)
     async obtenerDocumentosPorPrefijoTipo(idGrupo: number, prefijo: string)
     {
         const { data, error } = await this.sb.supabase
@@ -90,4 +89,5 @@ export class DocumentosService
 
         return data;
     }
+    
 }

@@ -46,6 +46,7 @@ export class TallesDisenio implements OnInit
 
     readonly subida = signal<{ tipo: string; progreso: number } | null>(null);
     readonly descargandoTipo = signal<string | null>(null);
+    readonly descargandoFirmaTipo = signal<string | null>(null);
     readonly descargandoTalles = signal(false);
 
     readonly agregando = signal(false);
@@ -199,6 +200,31 @@ export class TallesDisenio implements OnInit
         finally
         {
             this.descargandoTipo.set(null);
+        }
+    }
+
+    async descargarFirma(fila: FilaDisenio): Promise<void>
+    {
+        if (!fila.documento?.firmado) return;
+
+        this.descargandoFirmaTipo.set(fila.tipo);
+
+        try
+        {
+            const { url } = await firstValueFrom(
+                this.diseniosService.obtenerUrlDescargaFirma(this.idGrupo, fila.documento.id, `Firma ${fila.etiqueta}`));
+
+            const enlace = document.createElement('a');
+            enlace.href = url;
+            enlace.click();
+        }
+        catch
+        {
+            this.notificaciones.error({ title: 'Error', description: 'No se pudo descargar la firma.' });
+        }
+        finally
+        {
+            this.descargandoFirmaTipo.set(null);
         }
     }
 

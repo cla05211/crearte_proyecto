@@ -8,6 +8,7 @@ import { presupuestoPedidoClientesPage } from '../gestionPedidos/dto/Presupuesto
 import { productosPedidoIdNombreDTO } from '../productosPedidos/dto/ProductoPedidoIdNombre.dto';
 import { PrendaPedidoDTO } from './dto/prenda.dto';
 import { PadreResponsableResponseDTO } from '../padreResponsable/dto/padreResponsableResponse.dto';
+import { DiseniosGrupoResponseDTO } from '../disenios/dto/DisenioResponseDTO';
 
 @Injectable({
   providedIn: 'root',
@@ -124,5 +125,27 @@ export class ClientesPortalService
     formData.append('firma', firma, 'firma-contrato.png');
 
     return this.http.post<{ todosFirmaron: boolean }>(`${this.base}/firmar-contrato`, formData);
+  }
+
+  // ── Diseños ──
+
+  obtenerDisenios(): Observable<DiseniosGrupoResponseDTO>
+  {
+    return this.http.get<DiseniosGrupoResponseDTO>(`${this.base}/disenios`);
+  }
+
+  // URL firmada de Supabase que ya descarga el PDF con ese nombre
+  obtenerUrlDescargaDisenio(idDocumento: number, nombreArchivo: string): Observable<{ url: string }>
+  {
+    return this.http.get<{ url: string }>(`${this.base}/url-descarga-disenios/${idDocumento}`, { params: { nombreArchivo } });
+  }
+
+  // Sube la firma (PNG) y registra 'Firma ' + tipo del diseño en documentos, todo en el back
+  firmarDisenio(idDocumento: number, firma: Blob): Observable<{ idDocumento: number }>
+  {
+    const formData = new FormData();
+    formData.append('firma', firma, 'firma-disenio.png');
+
+    return this.http.post<{ idDocumento: number }>(`${this.base}/firmar-disenio/${idDocumento}`, formData);
   }
 }

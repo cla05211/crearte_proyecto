@@ -1,0 +1,85 @@
+<main class="colegio-page">
+  <div class="colegio-page__shape colegio-page__shape--left" aria-hidden="true"></div>
+  <div class="colegio-page__shape colegio-page__shape--right" aria-hidden="true"></div>
+
+  <section class="ds-container colegio-container">
+
+    <header class="disenio-header">
+      <h1 class="ds-heading-1">Diseño</h1>
+      @if (!cargando() && disenios().length > 0) {
+        @if (todosFirmados()) {
+          <span class="ds-badge ds-badge--success">Todo firmado</span>
+        } @else {
+          <span class="ds-badge ds-badge--warning">Pendiente de firma</span>
+        }
+      }
+    </header>
+
+    @if (cargando()) {
+      <div class="disenio__loading" role="status" aria-live="polite">
+        <span class="disenio__spinner" aria-hidden="true"></span>
+        Cargando diseños...
+      </div>
+    } @else if (disenios().length === 0) {
+      <section class="ds-card disenio-vacio">
+        <h2 class="ds-heading-3">Todavía no hay diseños</h2>
+        <p class="ds-text-muted">Cuando el equipo de diseño suba los archivos, los vas a ver acá para revisarlos y firmarlos.</p>
+      </section>
+    } @else {
+      <p class="ds-text-muted disenio-intro">Descargá cada diseño, revisalo y firmalo para aprobarlo. Una vez firmado ya no se puede modificar.</p>
+
+      <ul class="disenio-lista">
+        @for (disenio of diseniosOrdenados(); track disenio.id) {
+          <li class="ds-card disenio-card" [class.disenio-card--abierta]="idFirmando() === disenio.id">
+            <div class="disenio-card__fila">
+              <span class="disenio-card__icono" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /></svg>
+              </span>
+
+              <div class="disenio-card__info">
+                <h2 class="disenio-card__nombre">{{ etiqueta(disenio) }}</h2>
+                @if (disenio.firmado) {
+                  <span class="ds-badge ds-badge--success">Firmado</span>
+                } @else {
+                  <span class="ds-badge ds-badge--warning">Pendiente de firma</span>
+                }
+              </div>
+
+              <button type="button" class="ds-button ds-button--secondary ds-button--small disenio-card__descargar"
+                      [disabled]="descargandoId() === disenio.id" (click)="descargar(disenio)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+                {{ descargandoId() === disenio.id ? 'Descargando…' : 'Descargar' }}
+              </button>
+            </div>
+
+            @if (!disenio.firmado) {
+              @if (idFirmando() === disenio.id) {
+                <section class="disenio-firma">
+                  <p class="ds-text-muted">Firmá en el recuadro para aprobar este diseño.</p>
+
+                  <app-firma [ancho]="480" [alto]="200" (trazo)="firmaFaltante.set(false)" />
+                  @if (firmaFaltante()) {
+                    <span class="ds-alert ds-alert--danger" role="alert">Falta la firma para poder confirmar.</span>
+                  }
+
+                  <footer class="disenio-firma__acciones">
+                    <button type="button" class="ds-button ds-button--ghost" [disabled]="enviandoFirma()" (click)="cancelarFirma()">Cancelar</button>
+                    <button type="button" class="ds-button ds-button--secondary" [disabled]="enviandoFirma()" (click)="firma()?.limpiar()">Borrar firma</button>
+                    <button type="button" class="ds-button" [disabled]="enviandoFirma()" (click)="firmar(disenio)">
+                      {{ enviandoFirma() ? 'Firmando...' : 'Firmar diseño' }}
+                    </button>
+                  </footer>
+                </section>
+              } @else {
+                <button type="button" class="disenio-card__firmar" [disabled]="enviandoFirma()" (click)="abrirFirma(disenio)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
+                  Firmar este diseño
+                </button>
+              }
+            }
+          </li>
+        }
+      </ul>
+    }
+  </section>
+</main>

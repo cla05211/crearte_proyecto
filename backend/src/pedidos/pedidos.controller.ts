@@ -93,21 +93,4 @@ export class PedidosController
     {
         await this.pedidosService.modificarEstadoDisenio(nuevoEstado,idPedido)
     }
-
-    @Patch('fecha-disenio')
-    @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('ver_talles_disenio')
-    async modificarFechaAprobacionDisenio(@Query('fecha') fecha: string, @Query('idPedido', ParseIntPipe) idPedido: number)
-    {
-        await this.pedidosService.modificarFechaAprobacionDisenio(fecha,idPedido)
-    }
-
-    @Patch('numero')
-    @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('ver_talles_disenio')
-    async modificarTelefonoPrincipal(@Query('nuevoNro') nuevoNro: string, @Query('idPedido', ParseIntPipe) idPedido: number)
-    {
-        await this.pedidosService.modificarTelefonoPrincipal(nuevoNro, idPedido)
-    }
-
 }

@@ -3,6 +3,7 @@ export class DisenioResponseDTO
     id!: number;
     tipo!: string;
     created_at!: string | null;
+    firmado!:boolean;
 }
 
 export class DiseniosGrupoResponseDTO

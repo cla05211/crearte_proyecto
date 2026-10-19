@@ -266,7 +266,7 @@ export class NotificacionesService
             .select(`
                 id, plantilla,
                 cuotas ( numero, estado ),
-                pedidos ( grupos ( padres_responsables ( telefono, mail ) ) )
+                pedidos ( grupos ( padres_responsables ( telefono, principal ) ) )
             `)
             .eq('estado', 'pendiente')
             .eq('plantilla', 'recordatorio_pago')
@@ -290,7 +290,7 @@ export class NotificacionesService
 
             try
             {
-                const telefono = noti.pedidos.grupos.padres_responsables.find(padre => padre.mail)?.telefono;
+                const telefono = noti.pedidos.grupos.padres_responsables.find(padre => padre.principal)?.telefono;
                 if (!telefono) throw new Error(`Pedido sin teléfono de responsable (notificación ${noti.id})`);
 
                 await this.whatsapp.enviarPlantilla(telefono, noti.plantilla);
@@ -316,7 +316,7 @@ export class NotificacionesService
             .select(`
                 id, plantilla,
                 pedidos ( fecha_aprobacion_boceto, fecha_aprobacion_talles,
-                    grupos ( padres_responsables ( telefono, mail ), contratos ( firmado ) ) )
+                    grupos ( padres_responsables ( telefono, principal ), contratos ( firmado ) ) )
             `)
             .eq('estado', 'pendiente')
             .eq('plantilla', 'recordatorio_contrato')
@@ -339,7 +339,7 @@ export class NotificacionesService
 
             try
             {
-                const telefono = noti.pedidos.grupos.padres_responsables.find(padre => padre.mail)?.telefono;
+                const telefono = noti.pedidos.grupos.padres_responsables.find(padre => padre.principal)?.telefono;
                 if (!telefono) throw new Error(`Pedido sin teléfono de responsable (notificación ${noti.id})`);
 
                 await this.whatsapp.enviarPlantilla(telefono, noti.plantilla);
@@ -374,13 +374,13 @@ export class NotificacionesService
     {
         const { data, error } = await this.sb.supabase
             .from('pedidos')
-            .select(`grupos (padres_responsables (telefono, mail))`)
+            .select(`grupos (padres_responsables (telefono, principal))`)
             .eq('id', idPedido)
             .single();
 
         if (error) throw new Error(error.message);
 
-        const telefono = data.grupos.padres_responsables.find(padre => padre.mail)!.telefono!
+        const telefono = data.grupos.padres_responsables.find(padre => padre.principal)!.telefono!
             
         return telefono;
     }
@@ -410,7 +410,7 @@ export class NotificacionesService
             .select(`
                 id, id_grupo, envio_gratis,
                 grupos (id, promo, colegios ( nombre, localidad, provincia, zona_sur ),
-                        padres_responsables (telefono, mail )),
+                        padres_responsables (telefono, principal )),
                 cuotas ( id, numero, fecha_vencimiento, importe),
                 pagos ( monto, motivo, fecha ),
                 productos_pedidos(valor_senia, cantidad)
@@ -426,7 +426,7 @@ export class NotificacionesService
             cuotas: data.cuotas.map(c => ({id:c.id,nro: c.numero! ,fechaVencimiento:c.fecha_vencimiento!.toString()})), 
             banco:banco, localidad:data.grupos.colegios.localidad, provincia:data.grupos.colegios.provincia, envioGratis:data.envio_gratis!, 
             zonaSur: data.grupos.colegios.zona_sur, beneficioBandera: await this.pedidosService.determinarBandera(data.id)},
-            idGrupo: data.grupos.id, telefono: data.grupos.padres_responsables.find(padre => padre.mail)!.telefono!, estadoSenia:estadoSenia,
+            idGrupo: data.grupos.id, telefono: data.grupos.padres_responsables.find(padre => padre.principal)!.telefono!, estadoSenia:estadoSenia,
             nroUltimaCuota: (estadoSenia.total == data.cuotas[0].importe)? data.cuotas.length + 1 : data.cuotas.length};
         
             return venta;

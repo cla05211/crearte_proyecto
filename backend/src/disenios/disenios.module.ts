@@ -13,5 +13,6 @@ import { DiseniosService } from './disenios.service';
     imports: [SupabaseModule, StorageModule, ResumenTallesModule, PedidosModule],
     controllers: [DiseniosController],
     providers: [DiseniosService, DocumentosService, UsuariosService, PermisosService],
+    exports:[DiseniosService]
 })
 export class DiseniosModule {}

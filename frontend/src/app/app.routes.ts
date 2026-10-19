@@ -28,6 +28,9 @@ export const routes: Routes = [
       {path: "presupuesto", loadComponent: () => import('./pages/pages-clientes/presupuesto/presupuesto')
         .then((archivo) => archivo.Presupuesto), canActivate: [ClienteLogueadoGuard]
       },
+      {path: "disenio", loadComponent: () => import('./pages/pages-clientes/disenio/disenio')
+        .then((archivo) => archivo.Disenio), canActivate: [ClienteLogueadoGuard]
+      },
       {path: "talles", loadComponent: () => import('./pages/pages-clientes/talles/talles')
         .then((archivo) => archivo.Talles), canActivate: [ClienteLogueadoGuard],
         children:

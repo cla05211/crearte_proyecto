@@ -296,7 +296,7 @@
               <h3>Padres responsables</h3>
               @for (padre of padresResponsables; track $index; let i = $index) {
                 <fieldset>
-                  <legend>Padre/madre responsable {{ i + 1 }}</legend>
+                  <legend>Padre/madre responsable {{ i + 1 }}@if (i === 0) { (contacto principal)}</legend>
                   <label class="ds-field"
                     ><span class="ds-label">Nombre *</span
                     ><input class="ds-input" [(ngModel)]="padre.nombre" /></label
@@ -310,12 +310,6 @@
                     ><span class="ds-label">DNI *</span
                     ><input class="ds-input" [(ngModel)]="padre.dni"
                   /></label>
-                  @if (i === 0) {
-                    <label class="ds-field"
-                      ><span class="ds-label">Mail *</span
-                      ><input class="ds-input" type="email" [(ngModel)]="padre.mail"
-                    /></label>
-                  }
                 </fieldset>
               }
             </div>

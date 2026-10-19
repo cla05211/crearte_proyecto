@@ -134,7 +134,7 @@ export class Ventas implements OnInit {
   colegio = this.crearColegio();
   grupo = this.crearGrupo();
   alumnosResponsables = [this.crearAlumno(), this.crearAlumno()];
-  padresResponsables = [this.crearPadre(true), this.crearPadre(false), this.crearPadre(false)];
+  padresResponsables = [this.crearPadre(), this.crearPadre(), this.crearPadre()];
   productoEnEdicion = this.crearProductoEnEdicion();
   beneficioEnEdicion = this.crearBeneficioEnEdicion();
   detallePedido = this.crearDetallePedido();
@@ -943,7 +943,7 @@ export class Ventas implements OnInit {
     const validadores: Record<number, () => boolean> = {
       1: () => Boolean(this.colegio.nombre && this.colegio.localidad && this.colegio.provincia && this.grupo.orientacion && this.grupo.turno && this.grupo.nivel && Number(this.grupo.cantidad_egresados) > 0),
       2: () =>this.grupo.nivel !== 'Secundaria' ||this.alumnosResponsables.every((alumno) =>Boolean(alumno.nombre && alumno.apellido && alumno.telefono)),
-      3: () => this.padresResponsables.every((padre, indice) => Boolean(padre.nombre && padre.apellido && padre.telefono && padre.dni && (indice || padre.mail))),
+      3: () => this.padresResponsables.every((padre) => Boolean(padre.nombre && padre.apellido && padre.telefono && padre.dni)),
       4: () => this.carrito().length > 0,
       5: () => Boolean(this.detallePedido.talles),
       6: () => {
@@ -1082,7 +1082,7 @@ export class Ventas implements OnInit {
     this.colegio = this.crearColegio();
     this.grupo = this.crearGrupo();
     this.alumnosResponsables = [this.crearAlumno(), this.crearAlumno()];
-    this.padresResponsables = [this.crearPadre(true), this.crearPadre(false), this.crearPadre(false)];
+    this.padresResponsables = [this.crearPadre(), this.crearPadre(), this.crearPadre()];
     this.productoEnEdicion = this.crearProductoEnEdicion();
     this.detallePedido = this.crearDetallePedido();
     this.pago = this.crearPago();
@@ -1113,8 +1113,8 @@ export class Ventas implements OnInit {
     return { nombre: '', apellido: '', telefono: '' };
   }
 
-  private crearPadre(incluyeMail: boolean) {
-    return { nombre: '', apellido: '', telefono: '', dni: '', mail: incluyeMail ? '' : '' };
+  private crearPadre() {
+    return { nombre: '', apellido: '', telefono: '', dni: '' };
   }
 
   private crearProductoEnEdicion() {

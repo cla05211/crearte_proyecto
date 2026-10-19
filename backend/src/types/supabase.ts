@@ -74,6 +74,7 @@ export type Database = {
           id: number
           id_grupo: number
           nombre: string | null
+          principal: boolean
           telefono: string | null
         }
         Insert: {
@@ -81,6 +82,7 @@ export type Database = {
           id?: number
           id_grupo: number
           nombre?: string | null
+          principal?: boolean
           telefono?: string | null
         }
         Update: {
@@ -88,6 +90,7 @@ export type Database = {
           id?: number
           id_grupo?: number
           nombre?: string | null
+          principal?: boolean
           telefono?: string | null
         }
         Relationships: [
@@ -541,6 +544,7 @@ export type Database = {
           id_grupo: number
           mail: string | null
           nombre: string | null
+          principal: boolean
           telefono: string | null
         }
         Insert: {
@@ -551,6 +555,7 @@ export type Database = {
           id_grupo: number
           mail?: string | null
           nombre?: string | null
+          principal?: boolean
           telefono?: string | null
         }
         Update: {
@@ -561,6 +566,7 @@ export type Database = {
           id_grupo?: number
           mail?: string | null
           nombre?: string | null
+          principal?: boolean
           telefono?: string | null
         }
         Relationships: [
@@ -660,7 +666,6 @@ export type Database = {
           observaciones: string | null
           porcentaje_descuento_hermanos: number | null
           talles: string | null
-          telefono_principal: string | null
         }
         Insert: {
           cantidad_hermanos?: number | null
@@ -681,7 +686,6 @@ export type Database = {
           observaciones?: string | null
           porcentaje_descuento_hermanos?: number | null
           talles?: string | null
-          telefono_principal?: string | null
         }
         Update: {
           cantidad_hermanos?: number | null
@@ -702,7 +706,6 @@ export type Database = {
           observaciones?: string | null
           porcentaje_descuento_hermanos?: number | null
           talles?: string | null
-          telefono_principal?: string | null
         }
         Relationships: [
           {

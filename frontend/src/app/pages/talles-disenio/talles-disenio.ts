@@ -4,11 +4,13 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { ControlTallesDisenioDTO } from '../../services/gestionPedidos/dto/ControlTallesDisenioDTO';
+import { ContactoResponsableDTO, ControlTallesDisenioDTO } from '../../services/gestionPedidos/dto/ControlTallesDisenioDTO';
 import { UsuarioResponseConNombreRol } from '../../services/usuarios/dto/usuarioResponseNombreRol';
 import { GestionPedidosService } from '../../services/gestionPedidos/gestion-pedidos-service';
 import { UsuarioService } from '../../services/usuarios/usuario-service';
 import { PedidosService } from '../../services/pedidos/pedidos-service';
+import { AlumnoResponsable } from '../../services/alumnoResponsable/alumno-responsable';
+import { PadreResponsableService } from '../../services/padreResponsable/padre-responsable-service';
 import { NotificationService } from '../../shared/notifications/notification.service';
 
 interface FilaPedido
@@ -52,6 +54,8 @@ export class TallesDisenio
 {
   private readonly gestionPedidosService = inject(GestionPedidosService);
   private readonly pedidosService = inject(PedidosService);
+  private readonly alumnoResponsableService = inject(AlumnoResponsable);
+  private readonly padreResponsableService = inject(PadreResponsableService);
   private readonly usuariosService = inject(UsuarioService);
   private readonly notificaciones = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
@@ -107,9 +111,9 @@ export class TallesDisenio
     'Info lista - Pendiente',
   ];
 
-  // Edición de teléfono
+  // Edición del contacto principal (alumnos en Secundaria, padres en el resto de niveles)
   readonly edicionTelefonoId = signal<number | null>(null);
-  telefonoEnEdicion = '';
+  responsablePrincipalEnEdicion: number | null = null;
 
   // Edición de fecha de confirmación de talles (cuando se elige "Confirmado")
   readonly edicionFechaTalles = signal<EdicionFechaTalles | null>(null);
@@ -234,12 +238,39 @@ export class TallesDisenio
     return false;
   }
 
+  esSecundaria(pedido: ControlTallesDisenioDTO): boolean
+  {
+    return pedido.nivel === 'Secundaria';
+  }
+
+  // Secundaria: alumno responsable principal. Resto de niveles: padre responsable principal.
+  // Si ninguno está marcado como principal se usa el primero cargado.
+  responsablesContacto(pedido: ControlTallesDisenioDTO): ContactoResponsableDTO[]
+  {
+    return (this.esSecundaria(pedido) ? pedido.alumnosResponsables : pedido.padresResponsables) ?? [];
+  }
+
+  contactoPrincipal(pedido: ControlTallesDisenioDTO): ContactoResponsableDTO | null
+  {
+    const responsables = this.responsablesContacto(pedido);
+    if (responsables.length === 0) return null;
+    return responsables.find((r) => r.principal) ?? responsables[0];
+  }
+
   telefonoContacto(pedido: ControlTallesDisenioDTO): string | null
   {
-    if (pedido.telefono_principal) return pedido.telefono_principal;
-    if (pedido.nrosContactoAlumnos && pedido.nrosContactoAlumnos.length > 0) return pedido.nrosContactoAlumnos[0];
-    if (pedido.nrosContactoPadres && pedido.nrosContactoPadres.length > 0) return pedido.nrosContactoPadres[0];
-    return null;
+    return this.contactoPrincipal(pedido)?.telefono ?? null;
+  }
+
+  nombreResponsable(responsable: ContactoResponsableDTO | null): string
+  {
+    if (!responsable) return '';
+    return [responsable.nombre, responsable.apellido].filter(Boolean).join(' ');
+  }
+
+  puedeEditarContacto(pedido: ControlTallesDisenioDTO): boolean
+  {
+    return this.responsablesContacto(pedido).length > 1;
   }
 
   nombreDiseñadora(idDiseñadora: number | null): string
@@ -248,15 +279,6 @@ export class TallesDisenio
     return this.diseniadoras()?.find((d) => d.id === idDiseñadora)?.nombre ?? '';
   }
 
-  formatearFechaInput(fecha: Date | null): string
-  {
-    if (!fecha) return '';
-    const d = new Date(fecha);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  }
 
   private agruparPorPlanCuotas(pedidos: ControlTallesDisenioDTO[], contadorFilas: { valor: number }): GrupoPlanCuotas[]
   {
@@ -322,28 +344,49 @@ export class TallesDisenio
   abrirEdicionTelefono(pedido: ControlTallesDisenioDTO): void
   {
     this.edicionTelefonoId.set(pedido.id);
-    this.telefonoEnEdicion = this.telefonoContacto(pedido) ?? '';
+    this.responsablePrincipalEnEdicion = this.contactoPrincipal(pedido)?.id ?? null;
   }
 
   cancelarEdicionTelefono(): void
   {
     this.edicionTelefonoId.set(null);
-    this.telefonoEnEdicion = '';
+    this.responsablePrincipalEnEdicion = null;
   }
 
   guardarTelefono(pedido: ControlTallesDisenioDTO): void
   {
-    const nuevoNro = this.telefonoEnEdicion.trim();
-    if (!nuevoNro) return;
+    const idNuevoPrincipal = this.responsablePrincipalEnEdicion;
+    if (idNuevoPrincipal === null) return;
 
-    this.pedidosService.modificarTelefonoPrincipal(nuevoNro, pedido.id).subscribe({
+    if (this.contactoPrincipal(pedido)?.id === idNuevoPrincipal)
+    {
+      this.cancelarEdicionTelefono();
+      return;
+    }
+
+    const secundaria = this.esSecundaria(pedido);
+    const campo = secundaria ? 'alumnosResponsables' : 'padresResponsables';
+    const peticion = secundaria
+      ? this.alumnoResponsableService.modificarAlumnoPrincipal(pedido.idGrupo, idNuevoPrincipal)
+      : this.padreResponsableService.modificarPadrePrincipal(pedido.idGrupo, idNuevoPrincipal);
+
+    peticion.subscribe({
       next: () => {
-        this.actualizarPedidoLocal(pedido.id, { telefono_principal: nuevoNro });
+        // Puede haber más de un pedido del mismo grupo en la tabla
+        this.pedidosTallesDisenio.update((lista) =>
+          lista
+            ? lista.map((p) =>
+                p.idGrupo === pedido.idGrupo
+                  ? { ...p, [campo]: p[campo].map((r) => ({ ...r, principal: r.id === idNuevoPrincipal })) }
+                  : p,
+              )
+            : lista,
+        );
         this.cancelarEdicionTelefono();
       },
       error: () => {
         this.notificaciones.error({
-          title: 'No se pudo actualizar el teléfono',
+          title: secundaria ? 'No se pudo actualizar el alumno principal' : 'No se pudo actualizar el adulto principal',
           description: 'Intentá nuevamente.',
         });
       },
@@ -362,25 +405,6 @@ export class TallesDisenio
       error: () => {
         this.notificaciones.error({
           title: 'No se pudo actualizar el estado de boceto',
-          description: 'Intentá nuevamente.',
-        });
-      },
-    });
-  }
-
-  //--- Fecha de aprobación del boceto ---
-
-  modificarFechaAprobacion(pedido: ControlTallesDisenioDTO, valor: string): void
-  {
-    if (!valor) return;
-
-    this.pedidosService.modificarFechaAprobacionDisenio(valor, pedido.id).subscribe({
-      next: () => {
-        this.actualizarPedidoLocal(pedido.id, { fechaAprobacionBoceto: new Date(`${valor}T00:00:00`) });
-      },
-      error: () => {
-        this.notificaciones.error({
-          title: 'No se pudo actualizar la fecha de aprobación',
           description: 'Intentá nuevamente.',
         });
       },

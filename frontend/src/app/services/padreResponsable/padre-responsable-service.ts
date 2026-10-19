@@ -16,4 +16,9 @@ export class PadreResponsableService
   {
     return this.http.get<PadreResponsableResponseDTO>((`${environment.apiUrl}/padre-responsable/${idGrupo}`));
   }
+
+  modificarPadrePrincipal(idGrupo:number, idNuevoPadrePrincipal:number):Observable<PadreResponsableResponseDTO>
+  {
+    return this.http.patch<PadreResponsableResponseDTO>(`${environment.apiUrl}/padre-responsable/${idGrupo}/${idNuevoPadrePrincipal}`,null);
+  }
 }

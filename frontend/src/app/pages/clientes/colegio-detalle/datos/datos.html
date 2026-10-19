@@ -56,7 +56,7 @@
     <section class="ds-card datos-card">
       <h2 class="ds-heading-3 datos-card__title">Adultos responsables</h2>
       <div class="datos-card__body">
-        @if (!datosColegio()!.padresResponsables || datosColegio()!.padresResponsables!.length === 0) {
+        @if (padresResponsables().length === 0) {
           <p class="ds-text-muted">No hay adultos responsables cargados.</p>
         } @else {
           <div class="table-wrapper">
@@ -67,17 +67,30 @@
                   <th scope="col">Apellido</th>
                   <th scope="col">DNI</th>
                   <th scope="col">Teléfono</th>
-                  <th scope="col">Mail</th>
+                  <th scope="col">Contacto principal</th>
                 </tr>
               </thead>
               <tbody>
-                @for (padre of datosColegio()!.padresResponsables; track $index) {
-                  <tr>
+                @for (padre of padresResponsables(); track padre.id) {
+                  <tr [class.fila-principal]="padre.principal">
                     <td data-label="Nombre">{{ padre.nombre }}</td>
                     <td data-label="Apellido">{{ padre.apellido }}</td>
                     <td data-label="DNI">{{ padre.dni }}</td>
                     <td data-label="Teléfono">{{ padre.telefono }}</td>
-                    <td data-label="Mail">{{ padre.mail || '—' }}</td>
+                    <td data-label="Contacto principal">
+                      @if (padre.principal) {
+                        <span class="ds-badge ds-badge--success">Principal</span>
+                      } @else {
+                        <button
+                          class="ds-button ds-button--ghost ds-button--small"
+                          type="button"
+                          [disabled]="guardandoPadrePrincipalId() !== null"
+                          (click)="marcarPadrePrincipal(padre)"
+                        >
+                          {{ guardandoPadrePrincipalId() === padre.id ? 'Guardando…' : 'Marcar como principal' }}
+                        </button>
+                      }
+                    </td>
                   </tr>
                 }
               </tbody>
@@ -87,11 +100,11 @@
       </div>
     </section>
 
-    @if (datosColegio()!.grupo.nivel === 'Secundaria') {
+    @if (datosColegio()!.grupo.nivel === 'Secundaria' || alumnosResponsables().length > 0) {
       <section class="ds-card datos-card">
         <h2 class="ds-heading-3 datos-card__title">Alumnos responsables</h2>
         <div class="datos-card__body">
-          @if (!datosColegio()!.alumnosResponsables || datosColegio()!.alumnosResponsables!.length === 0) {
+          @if (alumnosResponsables().length === 0) {
             <p class="ds-text-muted">No hay alumnos responsables cargados.</p>
           } @else {
             <div class="table-wrapper">
@@ -101,14 +114,29 @@
                     <th scope="col">Nombre</th>
                     <th scope="col">Apellido</th>
                     <th scope="col">Teléfono</th>
+                    <th scope="col">Contacto principal</th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (alumno of datosColegio()!.alumnosResponsables; track $index) {
-                    <tr>
+                  @for (alumno of alumnosResponsables(); track alumno.id) {
+                    <tr [class.fila-principal]="alumno.principal">
                       <td data-label="Nombre">{{ alumno.nombre }}</td>
                       <td data-label="Apellido">{{ alumno.apellido }}</td>
-                      <td data-label="Teléfono">{{ alumno.telefono }}</td>
+                      <td data-label="Teléfono">{{ alumno.telefono || '—' }}</td>
+                      <td data-label="Contacto principal">
+                        @if (alumno.principal) {
+                          <span class="ds-badge ds-badge--success">Principal</span>
+                        } @else {
+                          <button
+                            class="ds-button ds-button--ghost ds-button--small"
+                            type="button"
+                            [disabled]="guardandoPrincipalId() !== null"
+                            (click)="marcarAlumnoPrincipal(alumno)"
+                          >
+                            {{ guardandoPrincipalId() === alumno.id ? 'Guardando…' : 'Marcar como principal' }}
+                          </button>
+                        }
+                      </td>
                     </tr>
                   }
                 </tbody>

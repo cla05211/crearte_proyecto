@@ -1,3 +1,12 @@
+export class ContactoResponsableDTO
+{
+    id!: number;
+    nombre!: string | null;
+    apellido!: string | null;
+    telefono!: string | null;
+    principal!: boolean;
+}
+
 export class ControlTallesDisenioDTO
 {
     id!: number;
@@ -7,9 +16,10 @@ export class ControlTallesDisenioDTO
     senia!:boolean;
     promo!:number;
     nombreColegio!: string;
-    nrosContactoPadres!: string[] | null;
-    nrosContactoAlumnos!: string[] | null;
-    telefono_principal!: string | null;
+    idGrupo!: number;
+    nivel!: string | null;
+    alumnosResponsables!: ContactoResponsableDTO[];
+    padresResponsables!: ContactoResponsableDTO[];
     productos!:string;
     estadoBoceto!: string | null
     estadoTalles!: string | null

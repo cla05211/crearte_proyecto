@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { StorageService } from 'src/storage/storage.service';
 import { DocumentosService } from 'src/documentos/documentos.service';
 import { ResumenTallesService } from 'src/resumen-talles/resumen-talles.service';
@@ -6,14 +6,15 @@ import { PedidosService } from 'src/pedidos/pedidos.service';
 import { SubirDisenioDTO } from './dto/SubirDisenioDTO';
 import { ReemplazarDisenioDTO } from './dto/ReemplazarDisenioDTO';
 import { DisenioResponseDTO, DiseniosGrupoResponseDTO } from './dto/DisenioResponseDTO';
+import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
 
-// Todos los diseños se guardan en documentos con tipo 'Disenio ...'
 export const PREFIJO_TIPO_DISENIO = 'Disenio ';
+const PREFIJO_TIPO_FIRMA = 'Firma ';
+// La firma de este diseño es la que aprueba el boceto del pedido
+const TIPO_DISENIO_PRENDAS = 'Disenio Prendas';
 const LARGO_MAXIMO_NOMBRE = 60;
 const ESTADO_TALLES_CONFIRMADO = 'Confirmado';
 
-// Diseños de cada grupo (prendas, bandera, extras): coordina el archivo en Storage
-// con su fila en documentos, igual que ContratosService con las firmas.
 @Injectable()
 export class DiseniosService
 {
@@ -24,19 +25,25 @@ export class DiseniosService
         private pedidosService: PedidosService,
     ) {}
 
-    // Diseños guardados del grupo + si el pedido lleva bandera (para mostrar o no "Diseño Bandera")
-    // + si los talles ya están confirmados (si no, el resumen se muestra como pendiente)
     async listar(idGrupo: number): Promise<DiseniosGrupoResponseDTO>
     {
         const idPedido = await this.pedidosService.obtenerIdPedidoGrupo(idGrupo);
 
-        const [documentos, tieneBandera, estadoTalles] = await Promise.all([
+        const [documentos, firmas, tieneBandera, estadoTalles] = await Promise.all([
             this.documentosService.obtenerDocumentosPorPrefijoTipo(idGrupo, PREFIJO_TIPO_DISENIO),
+            this.documentosService.obtenerDocumentosPorPrefijoTipo(idGrupo, PREFIJO_TIPO_FIRMA + PREFIJO_TIPO_DISENIO),
             this.pedidosService.determinarBandera(idPedido),
             this.pedidosService.obtenerEstadoTalles(idPedido),
         ]);
 
-        const disenios: DisenioResponseDTO[] = documentos.map(d => ({ id: d.id, tipo: d.tipo!, created_at: d.created_at }));
+        const tiposFirmados = new Set(firmas.map(f => f.tipo));
+
+        const disenios: DisenioResponseDTO[] = documentos.map(d => ({
+            id: d.id,
+            tipo: d.tipo!,
+            created_at: d.created_at,
+            firmado: tiposFirmados.has(PREFIJO_TIPO_FIRMA + d.tipo),
+        }));
 
         return { disenios, tieneBandera, tallesConfirmados: estadoTalles === ESTADO_TALLES_CONFIRMADO };
     }
@@ -46,7 +53,6 @@ export class DiseniosService
         return await this.storageService.crearUrlSubidaDiseno(idGrupo);
     }
 
-    // El front ya subió el PDF directo a Storage: verificamos que esté y lo registramos en documentos.
     async confirmar(dto: SubirDisenioDTO)
     {
         const tipo = this.validarTipo(dto.tipo);
@@ -66,16 +72,19 @@ export class DiseniosService
         return { idDocumento };
     }
 
-    // Reemplaza el archivo de un diseño existente. El orden importa:
-    // primero se apunta la fila al archivo nuevo y recién después se borra el viejo.
     async reemplazar(dto: ReemplazarDisenioDTO)
     {
         await this.validarArchivoSubido(dto.ruta, dto.idGrupo);
 
-        const rutaAnterior = await this.obtenerRutaDelGrupo(dto.idGrupo, dto.idDocumento);
+        const disenio = await this.obtenerDisenioDelGrupo(dto.idGrupo, dto.idDocumento);
+
+        if (await this.documentosService.obtenerDocumentoPorTipo(dto.idGrupo, PREFIJO_TIPO_FIRMA + disenio.tipo))
+        {
+            throw new ConflictException('El diseño ya fue firmado por el cliente y no se puede reemplazar.');
+        }
 
         await this.documentosService.actualizarArchivoUrl(dto.idDocumento, dto.ruta);
-        await this.storageService.eliminarDiseno(rutaAnterior);
+        await this.storageService.eliminarDiseno(disenio.archivo_url!);
 
         return { idDocumento: dto.idDocumento };
     }
@@ -88,11 +97,26 @@ export class DiseniosService
         return { url: await this.storageService.crearUrlDescargaDiseno(ruta, nombre) };
     }
 
+    // URL para descargar la imagen de la firma del cliente sobre un diseño ('Firma ' + tipo)
+    async crearUrlDescargaFirma(idGrupo: number, idDocumento: number, nombreArchivo: string)
+    {
+        const disenio = await this.obtenerDisenioDelGrupo(idGrupo, idDocumento);
+        const firma = await this.documentosService.obtenerDocumentoPorTipo(idGrupo, PREFIJO_TIPO_FIRMA + disenio.tipo);
+
+        if (!firma?.archivo_url)
+        {
+            throw new NotFoundException('Este diseño todavía no fue firmado.');
+        }
+
+        const nombre = `${this.nombreArchivoSeguro(nombreArchivo)}.png`;
+
+        return { url: await this.storageService.obtenerUrlArchivo(firma.archivo_url, nombre) };
+    }
+
     async generarResumenTalles(idGrupo: number)
     {
         const idPedido = await this.pedidosService.obtenerIdPedidoGrupo(idGrupo);
 
-        // El botón no se muestra si están pendientes, pero se corta acá también por si llaman al endpoint directo
         if (await this.pedidosService.obtenerEstadoTalles(idPedido) !== ESTADO_TALLES_CONFIRMADO)
         {
             throw new ConflictException('Los talles todavía no fueron confirmados por el cliente.');
@@ -101,22 +125,19 @@ export class DiseniosService
         return await this.resumenTallesService.generarPdf(idGrupo);
     }
 
-    // Supabase no codifica bien los caracteres especiales en el nombre de descarga
-    // ('Diseño' llegaba como 'Dise%C3%B1o'), así que se pasa a ASCII: 'Diseño Prendas' -> 'Diseno Prendas'
     private nombreArchivoSeguro(nombre: string): string
     {
         const limpio = nombre
             .replace(/\.pdf$/i, '')
             .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')   // saca tildes y la virgulilla de la ñ
-            .replace(/[^a-zA-Z0-9 _-]/g, '')     // saca cualquier otro caracter raro
+            .replace(/[\u0300-\u036f]/g, '')   
+            .replace(/[^a-zA-Z0-9 _-]/g, '')     
             .replace(/\s+/g, ' ')
             .trim();
 
         return limpio || 'disenio';
     }
 
-    // Normaliza el tipo ('Disenio ' + nombre) y corta los inválidos
     private validarTipo(tipo: string): string
     {
         const limpio = (tipo ?? '').trim().replace(/\s+/g, ' ');
@@ -135,7 +156,6 @@ export class DiseniosService
         return limpio;
     }
 
-    // Trae la ruta del documento y confirma que pertenece al grupo (todas las rutas empiezan con 'idGrupo/')
     private async obtenerRutaDelGrupo(idGrupo: number, idDocumento: number): Promise<string>
     {
         const ruta = await this.documentosService.obtenerArchivoUrl(idDocumento);
@@ -160,4 +180,63 @@ export class DiseniosService
             throw new BadRequestException('El archivo no se encuentra en Storage.');
         }
     }
+
+    private async obtenerDisenioDelGrupo(idGrupo: number, idDocumento: number)
+    {
+        const disenios = await this.documentosService.obtenerDocumentosPorPrefijoTipo(idGrupo, PREFIJO_TIPO_DISENIO);
+        const disenio = disenios.find(d => d.id === idDocumento);
+
+        if (!disenio)
+        {
+            throw new ForbiddenException('El diseño no pertenece a este grupo.');
+        }
+
+        return disenio;
+    }
+
+    async firmar(idGrupo: number, idDocumento: number, firma: ArchivoSubidoDTO)
+    {
+        if (!firma || firma.mimetype !== 'image/png')
+        {
+            throw new BadRequestException('Falta la firma o no es una imagen PNG.');
+        }
+
+        const disenio = await this.obtenerDisenioDelGrupo(idGrupo, idDocumento);
+        const tipoFirma = PREFIJO_TIPO_FIRMA + disenio.tipo;
+
+        if (await this.documentosService.obtenerDocumentoPorTipo(idGrupo, tipoFirma))
+        {
+            throw new ConflictException('Este diseño ya fue firmado.');
+        }
+
+        const pedido = await this.pedidosService.obtenerPedidoGrupo(idGrupo);
+        const idPedido = pedido.id;
+
+        const rutaFirma = await this.storageService.guardarImagen(
+            {
+                pedidoId: idPedido.toString(),
+                nombreArchivo: `firma-disenio-${idPedido}-${idDocumento}-${Date.now()}.png`,
+                carpetaGuardado: 'firmas-disenio',
+            },
+            firma,
+        );
+
+        const [idFirma] = await this.documentosService.subirDocumento({
+            id_grupo: idGrupo,
+            tipo: tipoFirma,
+            archivo_url: rutaFirma,
+        });
+
+        // Firmar el diseño de prendas aprueba el boceto con la fecha de hoy (igual que talles al confirmarse).
+        // Si ya tenía fecha no se toca: una vez puesta queda fija.
+        if (disenio.tipo === TIPO_DISENIO_PRENDAS && !pedido.fecha_aprobacion_boceto)
+        {
+            const fechaFirma = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+            await this.pedidosService.modificarFechaAprobacionDisenio(fechaFirma, idPedido);
+        }
+
+        return { idDocumento: idFirma };
+    }
+
+
 }

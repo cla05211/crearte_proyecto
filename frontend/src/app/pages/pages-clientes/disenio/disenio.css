@@ -1,0 +1,178 @@
+:host {
+  display: block;
+  min-height: 100%;
+}
+
+/* ── Fondo de página (mismo que contrato) ── */
+.colegio-page {
+  background: var(--color-primary-100);
+  min-height: 100%;
+  overflow: hidden;
+  padding: clamp(2rem, 5vw, 4.5rem) var(--space-6);
+  position: relative;
+}
+
+.colegio-page__shape {
+  border: 1px solid rgba(105, 4, 70, 0.12);
+  border-radius: 45% 55% 58% 42%;
+  pointer-events: none;
+  position: absolute;
+}
+
+.colegio-page__shape--left { height: 18rem; left: -11rem; top: 4.5rem; transform: rotate(-20deg); width: 18rem; }
+.colegio-page__shape--right { bottom: -9rem; height: 20rem; right: -11rem; transform: rotate(28deg); width: 20rem; }
+
+.colegio-container { position: relative; z-index: 1; }
+
+.disenio-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.disenio-intro { margin: 0 0 var(--space-6); }
+
+/* ── Carga / vacío ── */
+.disenio__loading {
+  align-items: center;
+  color: var(--color-text-muted);
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+  padding: var(--space-12) 0;
+}
+
+.disenio__spinner {
+  animation: disenio-spin 0.8s linear infinite;
+  border: 3px solid var(--color-primary-200);
+  border-radius: 50%;
+  border-top-color: var(--color-primary-700);
+  display: inline-block;
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+@keyframes disenio-spin { to { transform: rotate(360deg); } }
+
+.disenio-vacio {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-8);
+  text-align: center;
+}
+
+.disenio-vacio h2 { margin: 0; }
+
+/* ── Lista de diseños ── */
+.disenio-lista {
+  display: grid;
+  gap: var(--space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.disenio-card {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  transition: box-shadow var(--transition-fast, 150ms);
+}
+
+.disenio-card--abierta { box-shadow: var(--shadow-md); }
+
+.disenio-card__fila {
+  align-items: center;
+  display: flex;
+  gap: var(--space-4);
+}
+
+.disenio-card__icono {
+  align-items: center;
+  background: var(--color-primary-100);
+  border-radius: var(--radius-md);
+  color: var(--color-primary-700);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 2.75rem;
+  justify-content: center;
+  width: 2.75rem;
+}
+
+.disenio-card__info {
+  align-items: flex-start;
+  display: grid;
+  flex: 1 1 auto;
+  gap: var(--space-1);
+  justify-items: start;
+  min-width: 0;
+}
+
+.disenio-card__nombre {
+  color: var(--color-text-strong);
+  font-size: var(--font-size-lg, 1.125rem);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.disenio-card__descargar { flex: 0 0 auto; }
+
+/* Botón "Firmar este diseño": ocupa todo el ancho debajo de la fila */
+.disenio-card__firmar {
+  align-items: center;
+  background: transparent;
+  border: 1px dashed var(--color-primary-300);
+  border-radius: var(--radius-md);
+  color: var(--color-primary-700);
+  cursor: pointer;
+  display: flex;
+  font-weight: var(--font-weight-bold);
+  gap: var(--space-2);
+  justify-content: center;
+  min-height: 3rem;
+  width: 100%;
+}
+
+.disenio-card__firmar:hover:not(:disabled) { background: var(--color-primary-100); }
+.disenio-card__firmar:disabled { cursor: not-allowed; opacity: 0.5; }
+
+/* ── Recuadro de firma ── */
+.disenio-firma {
+  border-top: 1px solid var(--color-border);
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+}
+
+.disenio-firma p { margin: 0; }
+
+.disenio-firma__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+svg {
+  fill: none;
+  height: 1.25rem;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  width: 1.25rem;
+}
+
+@media (max-width: 680px) {
+  .colegio-page { padding: var(--space-8) var(--space-4); }
+}
+
+@media (max-width: 520px) {
+  .disenio-card__fila { flex-wrap: wrap; }
+  .disenio-card__info { flex-basis: calc(100% - 4rem); }
+  .disenio-card__descargar { width: 100%; }
+  .disenio-firma__acciones .ds-button { flex: 1 1 auto; }
+}

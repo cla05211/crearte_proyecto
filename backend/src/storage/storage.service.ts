@@ -44,11 +44,12 @@ export class StorageService {
         return Buffer.from(await data.arrayBuffer());
     }
 
-    async obtenerUrlArchivo(ruta: string): Promise<string> 
+    // Si se pasa nombreDescarga, el navegador baja el archivo con ese nombre en vez de abrirlo
+    async obtenerUrlArchivo(ruta: string, nombreDescarga?: string): Promise<string> 
     {
         const { data, error } = await this.supabaseService.supabase.storage
         .from('imagenes')
-        .createSignedUrl(ruta, 3600);
+        .createSignedUrl(ruta, 3600, nombreDescarga ? { download: nombreDescarga } : undefined);
 
         if (error) 
         {
@@ -102,7 +103,6 @@ export class StorageService {
         return data.some(archivo => archivo.name === nombre);
     }
 
-    // URL temporal para descargar un diseño; 'download' hace que el navegador lo baje con ese nombre
     async crearUrlDescargaDiseno(ruta: string, nombreArchivo: string): Promise<string>
     {
         const { data, error } = await this.supabaseService.supabase.storage
