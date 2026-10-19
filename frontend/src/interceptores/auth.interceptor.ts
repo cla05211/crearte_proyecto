@@ -19,8 +19,13 @@ const tokenRefrescado$ = new BehaviorSubject<string | null>(null);
 // cliente), así que no tiene sentido mandarle un token de staff que el
 // cliente ni tiene. Si en algún momento se le agrega auth a ese endpoint,
 // tiene que poder validar sesión de cliente.
+//
+// /clientes-auth/grupos/... es la excepción: son endpoints de STAFF (ej. generar
+// el link de activación desde Clientes → Datos), así que llevan token de staff.
+const esRutaStaffEnClientesAuth = (url: string): boolean => url.includes('/clientes-auth/grupos/');
+
 const esRutaCliente = (url: string): boolean =>
-  url.includes('/clientes-auth') || url.includes('/clientes-portal') || url.includes('/pagos/ocr');
+  (url.includes('/clientes-auth') && !esRutaStaffEnClientesAuth(url)) || url.includes('/clientes-portal') || url.includes('/pagos/ocr');
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
     if (!req.url.startsWith(environment.apiUrl))
@@ -49,7 +54,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
       // Login de cliente: un 401 acá es credenciales mal escritas, no una
       // sesión vencida. Que el componente de login lo maneje como siempre.
-      if (req.url.includes('/clientes-auth'))
+      if (esCliente && req.url.includes('/clientes-auth'))
       {
         return throwError(() => error);
       }

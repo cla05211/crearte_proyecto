@@ -54,6 +54,43 @@
     </section>
 
     <section class="ds-card datos-card">
+      <h2 class="ds-heading-3 datos-card__title">Acceso a la plataforma</h2>
+      <div class="datos-card__body">
+        @if (!datosColegio()!.usuario) {
+          <p class="ds-text-muted">Este grupo no tiene usuario en la plataforma de clientes.</p>
+        } @else {
+          <div class="acceso">
+            <div class="acceso__fila">
+              <span class="acceso__etiqueta">Usuario</span>
+              <span class="acceso__valor">{{ datosColegio()!.usuario }}</span>
+              <button class="ds-button ds-button--ghost ds-button--small" type="button" (click)="copiar(datosColegio()!.usuario!, 'Usuario')">
+                Copiar
+              </button>
+            </div>
+
+            <div class="acceso__link">
+              <button class="ds-button ds-button--small" type="button" [disabled]="generandoLink()" (click)="generarLinkContrasena()">
+                {{ generandoLink() ? 'Generando…' : (linkActivacion() ? 'Generar otro link' : 'Generar link para crear contraseña') }}
+              </button>
+
+              @if (linkActivacion(); as link) {
+                <div class="acceso__fila">
+                  <input class="ds-input acceso__input" type="text" readonly [value]="link.link" aria-label="Link para crear contraseña" (focus)="$any($event.target).select()" />
+                  <button class="ds-button ds-button--ghost ds-button--small" type="button" (click)="copiar(link.link, 'Link')">
+                    Copiar link
+                  </button>
+                </div>
+                <p class="acceso__ayuda">Vence el {{ link.expira | date: 'dd/MM/yyyy HH:mm' }}. Generar un link nuevo anula el anterior.</p>
+              }
+
+              <p class="acceso__ayuda">Con el link el cliente elige una contraseña nueva. La actual sigue funcionando hasta que la cambie.</p>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="ds-card datos-card">
       <h2 class="ds-heading-3 datos-card__title">Adultos responsables</h2>
       <div class="datos-card__body">
         @if (padresResponsables().length === 0) {

@@ -31,10 +31,14 @@ export class NotificacionesService
 
         const envios: { plantilla: string; enviar: () => Promise<string> }[] = [
         { plantilla: 'mensaje_inicial_cuotas',          enviar: () => this.enviarMensajeInicialAdmin(ventaDatos) },
-        { plantilla: 'mensaje_inicial_datos_bancarios', enviar: () => this.enviarMensajeInicialBancoAdmin(ventaDatos) },
-        { plantilla: 'disenio_contacto_inicial',        enviar: () => this.enviarMensajesInicialesDisenio(ventaDatos.telefono) },
+        { plantilla: 'disenio_contacto_inicial',        enviar: () => this.enviarMensajesInicialesDisenio(ventaDatos.telefonoDisenio) },
         { plantilla: 'talles_inicial_plataforma',       enviar: () => this.enviarMensajesInicialesTalles(ventaDatos.telefono, ventaDatos.idGrupo) },];
         
+        if (ventaDatos.datosNotis.banco != "Efectivo")
+        {
+            envios.push({ plantilla: 'mensaje_inicial_datos_bancarios', enviar: () => this.enviarMensajeInicialBancoAdmin(ventaDatos) });
+        }
+
         for (const envio of envios)
         {
             try
@@ -77,7 +81,7 @@ export class NotificacionesService
 
     private async enviarMensajeInicialBancoAdmin(datos: DatosVentaNotisDto):Promise<string>
     {
-        return await this.whatsapp.enviarPlantilla(datos.telefono,"mensaje_inicial_datos_bancarios",this.traerDatosBanco(datos.datosNotis.banco));
+        return await this.whatsapp.enviarPlantilla(datos.telefono,"mensaje_inicial_datos_bancarios",this.traerDatosBanco(datos.datosNotis.banco as "COMAFI" | "Santander"));
     }
 
     private async enviarMensajesInicialesDisenio(telefono:string):Promise<string>
@@ -100,11 +104,11 @@ export class NotificacionesService
     }
 
     //bancos
-    private traerDatosBanco(banco:"Comafi"|"Santander"):string[]
+    private traerDatosBanco(banco:"COMAFI"|"Santander"):string[]
     {
         let datos: string[] = []
 
-        if (banco == "Comafi")
+        if (banco == "COMAFI")
         {
             datos.push("COMAFI","Cuenta Corriente en pesos","1600-03479/4","2990160716000347940008","FRESA.ANGULO.INCA","Centro Logístico Sur SRL.");
         }
@@ -143,7 +147,10 @@ export class NotificacionesService
         let notificaciones: NotificacionesDTO[] = [];
 
         notificaciones.push({id_pedido: dto.id_pedido, plantilla: "mensaje_inicial_cuotas", estado: "pendiente", sector:"Administración"})
-        notificaciones.push({id_pedido: dto.id_pedido, plantilla: "mensaje_inicial_datos_bancarios", estado: "pendiente", sector:"Administración"})
+        if (dto.banco != "Efectivo")
+        {
+            notificaciones.push({id_pedido: dto.id_pedido, plantilla: "mensaje_inicial_datos_bancarios", estado: "pendiente", sector:"Administración"})
+        }
         notificaciones.push({id_pedido: dto.id_pedido, plantilla: "contrato", estado: "pendiente", sector:"Administración"})
         notificaciones.push({id_pedido: dto.id_pedido, plantilla: "recordatorio_contrato", estado: "pendiente", sector:"Administración"})
 
@@ -402,17 +409,15 @@ export class NotificacionesService
 
     private async obtenerDatosVenta(idPedido:number): Promise<DatosVentaNotisDto>
     {
-        //Por ahora hardcodeo banco
-        const banco = "Santander";
-
         const { data, error } = await this.sb.supabase
             .from('pedidos')
             .select(`
                 id, id_grupo, envio_gratis,
-                grupos (id, promo, colegios ( nombre, localidad, provincia, zona_sur ),
-                        padres_responsables (telefono, principal )),
+                grupos (id, promo, nivel, colegios ( nombre, localidad, provincia, zona_sur ),
+                        padres_responsables (telefono, principal ),
+                        alumnos_responsables (telefono, principal )),
                 cuotas ( id, numero, fecha_vencimiento, importe),
-                pagos ( monto, motivo, fecha ),
+                pagos ( monto, motivo, fecha, banco ),
                 productos_pedidos(valor_senia, cantidad)
             `)
             .eq('id', idPedido)
@@ -422,13 +427,18 @@ export class NotificacionesService
 
         const estadoSenia = calcularEstadoSenia(data.productos_pedidos, data.pagos);
 
+        const telefonoPadre = data.grupos.padres_responsables.find(padre => padre.principal)!.telefono!;
+        // Los mensajes de diseño en Secundaria van al alumno principal (si no hay, al padre principal)
+        const telefonoAlumno = data.grupos.alumnos_responsables.find(alumno => alumno.principal)?.telefono;
+        const telefonoDisenio = data.grupos.nivel === 'Secundaria' && telefonoAlumno ? telefonoAlumno : telefonoPadre;
+
         const venta: DatosVentaNotisDto = {datosNotis:{id_pedido: idPedido, 
             cuotas: data.cuotas.map(c => ({id:c.id,nro: c.numero! ,fechaVencimiento:c.fecha_vencimiento!.toString()})), 
-            banco:banco, localidad:data.grupos.colegios.localidad, provincia:data.grupos.colegios.provincia, envioGratis:data.envio_gratis!, 
+            banco:((data.pagos.find((p)=> p.motivo == "Seña")?.banco ?? "Efectivo") as "COMAFI" | "Santander" | "Efectivo"), localidad:data.grupos.colegios.localidad, provincia:data.grupos.colegios.provincia, envioGratis:data.envio_gratis!, 
             zonaSur: data.grupos.colegios.zona_sur, beneficioBandera: await this.pedidosService.determinarBandera(data.id)},
-            idGrupo: data.grupos.id, telefono: data.grupos.padres_responsables.find(padre => padre.principal)!.telefono!, estadoSenia:estadoSenia,
+            idGrupo: data.grupos.id, telefono: telefonoPadre, telefonoDisenio: telefonoDisenio, estadoSenia:estadoSenia,
             nroUltimaCuota: (estadoSenia.total == data.cuotas[0].importe)? data.cuotas.length + 1 : data.cuotas.length};
         
-            return venta;
+        return venta;
     }
 }

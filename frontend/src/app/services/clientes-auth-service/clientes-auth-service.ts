@@ -40,6 +40,13 @@ export class ClientesAuthService
     return this.http.get<{ usuario: string }>(`${environment.apiUrl}/clientes-auth/activacion/${token}`);
   }
 
+  // STAFF: genera un link nuevo para que el cliente cree su contraseña (anula el link anterior).
+  generarLinkActivacion(idGrupo: number)
+  {
+    return this.http.post<{ usuario: string; link: string; expira: string }>(
+      `${environment.apiUrl}/clientes-auth/grupos/${idGrupo}/link-activacion`, null);
+  }
+
   crearContrasena(token: string, contraseña: string)
   {
     return this.http.post<{ usuario: string }>(`${environment.apiUrl}/clientes-auth/crear-contrasena`, {

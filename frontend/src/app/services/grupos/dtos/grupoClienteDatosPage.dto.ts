@@ -8,4 +8,5 @@ export class grupoClienteDatosPageResponse
     grupo!: GrupoConColegioDTO;
     padresResponsables!:PadreResponsableResponseDTO[] | null;
     alumnosResponsables!:alumnoResponsableDTO[] | null;
+    usuario!: string | null;
 }

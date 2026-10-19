@@ -91,3 +91,53 @@
 @media (max-width: 440px) {
   .loading-state { align-items: center; flex-direction: column; text-align: center; }
 }
+
+/* Acceso a la plataforma */
+.acceso {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.acceso__fila {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.acceso__etiqueta {
+  color: var(--color-primary-600);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.acceso__valor {
+  color: var(--color-text-strong);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  word-break: break-all;
+}
+
+.acceso__link {
+  align-items: flex-start;
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+
+.acceso__link .acceso__fila {
+  width: 100%;
+}
+
+.acceso__input {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.acceso__ayuda {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}

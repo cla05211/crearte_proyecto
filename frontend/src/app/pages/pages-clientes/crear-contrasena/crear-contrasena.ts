@@ -3,7 +3,7 @@ import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, Validatio
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faEyeSlash, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import { ClientesAuthService } from '../../../services/clientes-auth-service/clientes-auth-service';
 import { NotificationService } from '../../../shared/notifications/notification.service';
 
@@ -28,6 +28,7 @@ export class CrearContrasena implements OnInit
 {
     faEye = faEye;
     faEyeSlash = faEyeSlash;
+    faTriangleExclamation = faTriangleExclamation;
 
     auth = inject(ClientesAuthService);
     route = inject(ActivatedRoute);

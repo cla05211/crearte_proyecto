@@ -115,6 +115,15 @@ export class GruposService
 
         if (errAlumnos) throw new Error(errAlumnos.message);
 
+        // Usuario del portal de clientes (la contraseña no se devuelve nunca)
+        const { data: cliente, error: errCliente } = await this.sb.supabase
+            .from("clientes")
+            .select('usuario')
+            .eq('id_grupo', idGrupo)
+            .maybeSingle();
+
+        if (errCliente) throw new Error(errCliente.message);
+
         return {
             grupo: {
             id_colegio: grupo.id_colegio,
@@ -126,7 +135,8 @@ export class GruposService
             colegio: {nombre: grupo.colegios.nombre, localidad: grupo.colegios.localidad, provincia: grupo.colegios.provincia, zona_sur: grupo.colegios.zona_sur}
             },
             padresResponsables,
-            alumnosResponsables
+            alumnosResponsables,
+            usuario: cliente?.usuario.trim() ?? null
         };
 
     }

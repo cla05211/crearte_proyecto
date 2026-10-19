@@ -2,7 +2,7 @@ export class inicializarNotificacionesDTO
 {
     id_pedido!: number;
     cuotas!: {id:number, fechaVencimiento: string, nro:number}[];
-    banco!: "Comafi" | "Santander";
+    banco!: "COMAFI" | "Santander" | "Efectivo";
     localidad!: string;
     provincia!:string;
     envioGratis!: boolean;

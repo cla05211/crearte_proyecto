@@ -27,7 +27,15 @@
           <div class="form-heading">
             <span class="eyebrow">Acceso de clientes</span>
             <h1 id="crear-contrasena-title">Creá tu contraseña</h1>
-            <p>Tu usuario es <strong class="usuario">{{ usuario() }}</strong>. Elegí una contraseña para ingresar a la plataforma.</p>
+          </div>
+
+          <div class="aviso-anotar" role="note">
+            <fa-icon class="aviso-anotar__icono" [icon]="faTriangleExclamation" aria-hidden="true"></fa-icon>
+            <div class="aviso-anotar__texto">
+              <strong class="aviso-anotar__titulo">¡Anotá tu usuario y tu contraseña!</strong>
+              <p>Guardalos en un lugar seguro: los vas a necesitar cada vez que ingreses a la plataforma.</p>
+              <p class="aviso-anotar__usuario">Usuario: <span>{{ usuario() }}</span></p>
+            </div>
           </div>
 
           <form [formGroup]="formulario" class="login-form" (ngSubmit)="crearContrasena()">
