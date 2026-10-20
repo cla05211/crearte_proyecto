@@ -13,6 +13,8 @@ const TIPO_BANDERA = 'Disenio Bandera';
 const TIPOS_FIJOS = [TIPO_PRENDAS, TIPO_BANDERA];
 
 const TAMANIO_MAXIMO_MB = 50;
+const TAMANIO_MAXIMO_FIRMADO_MB = 10;
+const FORMATOS_FIRMADO = ['image/jpeg', 'image/png'];
 const LARGO_MAXIMO_NOMBRE = 60;
 
 interface FilaDisenio
@@ -46,7 +48,8 @@ export class TallesDisenio implements OnInit
 
     readonly subida = signal<{ tipo: string; progreso: number } | null>(null);
     readonly descargandoTipo = signal<string | null>(null);
-    readonly descargandoFirmaTipo = signal<string | null>(null);
+    readonly subiendoFirmadoTipo = signal<string | null>(null);
+    readonly descargandoFirmadoTipo = signal<string | null>(null);
     readonly descargandoTalles = signal(false);
 
     readonly agregando = signal(false);
@@ -203,16 +206,62 @@ export class TallesDisenio implements OnInit
         }
     }
 
-    async descargarFirma(fila: FilaDisenio): Promise<void>
+    // ── Firmado (JPG que el cliente devuelve firmado por WhatsApp) ──
+
+    async alElegirFirmado(evento: Event, fila: FilaDisenio): Promise<void>
+    {
+        const input = evento.target as HTMLInputElement;
+        const archivo = input.files?.[0];
+
+        input.value = '';
+
+        if (!archivo || !fila.documento) return;
+
+        if (!FORMATOS_FIRMADO.includes(archivo.type))
+        {
+            this.notificaciones.error({ title: 'Formato inválido', description: 'El firmado tiene que ser una imagen JPG.' });
+            return;
+        }
+
+        if (archivo.size > TAMANIO_MAXIMO_FIRMADO_MB * 1024 * 1024)
+        {
+            this.notificaciones.error({ title: 'Archivo muy pesado', description: `La imagen no puede superar los ${TAMANIO_MAXIMO_FIRMADO_MB} MB.` });
+            return;
+        }
+
+        const reemplaza = fila.documento.firmado;
+        this.subiendoFirmadoTipo.set(fila.tipo);
+
+        try
+        {
+            await firstValueFrom(this.diseniosService.subirFirmado(this.idGrupo, fila.documento.id, archivo));
+
+            this.notificaciones.success({
+                title: reemplaza ? 'Firmado actualizado' : 'Firmado subido',
+                description: `Se guardó el firmado de "${fila.etiqueta}".`,
+            });
+            this.cargarDisenios();
+        }
+        catch (err: any)
+        {
+            this.notificaciones.error({ title: 'Error', description: err?.error?.message ?? 'No se pudo subir el firmado.' });
+        }
+        finally
+        {
+            this.subiendoFirmadoTipo.set(null);
+        }
+    }
+
+    async descargarFirmado(fila: FilaDisenio): Promise<void>
     {
         if (!fila.documento?.firmado) return;
 
-        this.descargandoFirmaTipo.set(fila.tipo);
+        this.descargandoFirmadoTipo.set(fila.tipo);
 
         try
         {
             const { url } = await firstValueFrom(
-                this.diseniosService.obtenerUrlDescargaFirma(this.idGrupo, fila.documento.id, `Firma ${fila.etiqueta}`));
+                this.diseniosService.obtenerUrlDescargaFirmado(this.idGrupo, fila.documento.id, `${fila.etiqueta} firmado`));
 
             const enlace = document.createElement('a');
             enlace.href = url;
@@ -220,11 +269,11 @@ export class TallesDisenio implements OnInit
         }
         catch
         {
-            this.notificaciones.error({ title: 'Error', description: 'No se pudo descargar la firma.' });
+            this.notificaciones.error({ title: 'Error', description: 'No se pudo descargar el firmado.' });
         }
         finally
         {
-            this.descargandoFirmaTipo.set(null);
+            this.descargandoFirmadoTipo.set(null);
         }
     }
 

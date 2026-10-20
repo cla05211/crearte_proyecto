@@ -10,6 +10,7 @@ import { ModificarPlanPedidoDTO } from './dto/modficaciones/ModificarPlanPedido'
 import { presupuestoPedidoClientesPage } from './dto/PresupuestoPedidoClientePage.dto';
 import { PedidoDTOResponse } from '../pedidos/dto/pedidoResponse.dto';
 import { ControlTallesDisenioDTO } from './dto/ControlTallesDisenioDTO';
+import { ControlProduccionDTO } from './dto/ControlProduccionDTO';
 
 @Injectable({
   providedIn: 'root',
@@ -76,4 +77,10 @@ export class GestionPedidosService
 
     return this.http.get<ControlTallesDisenioDTO[]>(`${environment.apiUrl}/gestion-pedidos/control-talles-disenio`, {params});
   }
+
+  obtenerDatosPedidosConobtenerDatosControlProducciontrolTallesDisenio(mesEntrega: number, anioEntrega: number, enviadosFabrica: boolean):Observable<ControlProduccionDTO[]>
+  {
+    return this.http.get<ControlProduccionDTO[]>(`${environment.apiUrl}/gestion-pedidos/control-produccion`, {params:{mesEntrega,anioEntrega,enviadosFabrica}});
+  }
+
 }

@@ -1,9 +1,7 @@
-import { Component, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ClientesPortalService } from '../../../services/clientes-portal/clientes-portal-service';
 import { NotificationService } from '../../../shared/notifications/notification.service';
-import { ConfirmationService } from '../../../services/confirmation/confirmation.service';
-import { FirmaComponent } from '../../../firma/firma';
 import { DisenioResponseDTO } from '../../../services/disenios/dto/DisenioResponseDTO';
 
 // Así se guardan en documentos.tipo; en pantalla se muestran como "Diseño ..."
@@ -13,7 +11,7 @@ const ORDEN_FIJOS = ['Disenio Prendas', 'Disenio Bandera'];
 
 @Component({
   selector: 'app-disenio',
-  imports: [FirmaComponent],
+  imports: [],
   templateUrl: './disenio.html',
   styleUrl: './disenio.css',
 })
@@ -21,19 +19,12 @@ export class Disenio implements OnInit
 {
     private readonly clientesPortalService = inject(ClientesPortalService);
     private readonly notificaciones = inject(NotificationService);
-    private readonly confirmationService = inject(ConfirmationService);
-
-    // Solo hay un recuadro de firma abierto a la vez, así que alcanza con un viewChild
-    protected readonly firma = viewChild(FirmaComponent);
 
     readonly cargando = signal(true);
     readonly disenios = signal<DisenioResponseDTO[]>([]);
 
-    // Diseño que tiene abierto el recuadro de firma (null = ninguno)
-    readonly idFirmando = signal<number | null>(null);
-    readonly firmaFaltante = signal(false);
-    readonly enviandoFirma = signal(false);
     readonly descargandoId = signal<number | null>(null);
+    readonly descargandoFirmadoId = signal<number | null>(null);
 
     readonly diseniosOrdenados = computed(() =>
         [...this.disenios()].sort((a, b) => this.posicion(a.tipo) - this.posicion(b.tipo)));
@@ -72,7 +63,7 @@ export class Disenio implements OnInit
         return indice === -1 ? ORDEN_FIJOS.length : indice;
     }
 
-    // ── Descarga ──────────────────────────────────────────────────────────
+    // ── Descargas ─────────────────────────────────────────────────────────
 
     async descargar(disenio: DisenioResponseDTO): Promise<void>
     {
@@ -83,10 +74,7 @@ export class Disenio implements OnInit
             const { url } = await firstValueFrom(
                 this.clientesPortalService.obtenerUrlDescargaDisenio(disenio.id, this.etiqueta(disenio)));
 
-            // La URL firmada ya viene con "descargar como", así que alcanza con abrirla
-            const enlace = document.createElement('a');
-            enlace.href = url;
-            enlace.click();
+            this.abrirDescarga(url);
         }
         catch
         {
@@ -98,58 +86,35 @@ export class Disenio implements OnInit
         }
     }
 
-    // ── Firma ─────────────────────────────────────────────────────────────
-
-    abrirFirma(disenio: DisenioResponseDTO): void
+    // Boceto firmado (JPG) que subió el equipo una vez recibida la firma
+    async descargarFirmado(disenio: DisenioResponseDTO): Promise<void>
     {
-        this.firmaFaltante.set(false);
-        this.idFirmando.set(disenio.id);
-    }
+        if (!disenio.firmado) return;
 
-    cancelarFirma(): void
-    {
-        this.idFirmando.set(null);
-        this.firmaFaltante.set(false);
-    }
-
-    async firmar(disenio: DisenioResponseDTO): Promise<void>
-    {
-        if (this.enviandoFirma()) return;
-
-        const imagenFirma = await this.firma()?.obtenerImagen();
-        if (!imagenFirma)
-        {
-            this.firmaFaltante.set(true);
-            this.notificaciones.error({ title: 'Falta la firma', description: 'Firmá en el recuadro antes de confirmar.' });
-            return;
-        }
-
-        const confirmado = await this.confirmationService.confirm({
-            title: 'Firmar diseño',
-            description: `Vas a aprobar y firmar "${this.etiqueta(disenio)}". Una vez firmado no se puede modificar. ¿Querés continuar?`,
-        });
-        if (!confirmado) return;
-
-        this.enviandoFirma.set(true);
+        this.descargandoFirmadoId.set(disenio.id);
 
         try
         {
-            await firstValueFrom(this.clientesPortalService.firmarDisenio(disenio.id, imagenFirma));
+            const { url } = await firstValueFrom(
+                this.clientesPortalService.obtenerUrlDescargaFirmado(disenio.id, `${this.etiqueta(disenio)} firmado`));
 
-            this.notificaciones.success({ title: 'Diseño firmado', description: `Se registró la firma de "${this.etiqueta(disenio)}".` });
-            this.idFirmando.set(null);
-            await this.cargarDisenios();
+            this.abrirDescarga(url);
         }
-        catch (err: any)
+        catch
         {
-            this.notificaciones.error({
-                title: 'No se pudo firmar',
-                description: err?.error?.message ?? 'Intentá de nuevo en unos minutos.',
-            });
+            this.notificaciones.error({ title: 'Error', description: 'No se pudo descargar el diseño firmado.' });
         }
         finally
         {
-            this.enviandoFirma.set(false);
+            this.descargandoFirmadoId.set(null);
         }
+    }
+
+    // La URL firmada ya viene con "descargar como", así que alcanza con abrirla
+    private abrirDescarga(url: string): void
+    {
+        const enlace = document.createElement('a');
+        enlace.href = url;
+        enlace.click();
     }
 }

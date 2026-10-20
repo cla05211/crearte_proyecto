@@ -140,12 +140,9 @@ export class ClientesPortalService
     return this.http.get<{ url: string }>(`${this.base}/url-descarga-disenios/${idDocumento}`, { params: { nombreArchivo } });
   }
 
-  // Sube la firma (PNG) y registra 'Firma ' + tipo del diseño en documentos, todo en el back
-  firmarDisenio(idDocumento: number, firma: Blob): Observable<{ idDocumento: number }>
+  // URL firmada del boceto firmado (JPG) que subió el empleado
+  obtenerUrlDescargaFirmado(idDocumento: number, nombreArchivo: string): Observable<{ url: string }>
   {
-    const formData = new FormData();
-    formData.append('firma', firma, 'firma-disenio.png');
-
-    return this.http.post<{ idDocumento: number }>(`${this.base}/firmar-disenio/${idDocumento}`, formData);
+    return this.http.get<{ url: string }>(`${this.base}/url-descarga-firmado/${idDocumento}`, { params: { nombreArchivo } });
   }
 }

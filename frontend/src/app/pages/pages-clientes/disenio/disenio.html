@@ -10,7 +10,7 @@
         @if (todosFirmados()) {
           <span class="ds-badge ds-badge--success">Todo firmado</span>
         } @else {
-          <span class="ds-badge ds-badge--warning">Pendiente de firma</span>
+          <span class="ds-badge ds-badge--warning">Firma pendiente</span>
         }
       }
     </header>
@@ -23,14 +23,14 @@
     } @else if (disenios().length === 0) {
       <section class="ds-card disenio-vacio">
         <h2 class="ds-heading-3">Todavía no hay diseños</h2>
-        <p class="ds-text-muted">Cuando el equipo de diseño suba los archivos, los vas a ver acá para revisarlos y firmarlos.</p>
+        <p class="ds-text-muted">Cuando el equipo de diseño suba los archivos, los vas a ver acá para descargarlos y revisarlos.</p>
       </section>
     } @else {
-      <p class="ds-text-muted disenio-intro">Descargá cada diseño, revisalo y firmalo para aprobarlo. Una vez firmado ya no se puede modificar.</p>
+      <p class="ds-text-muted disenio-intro">Descargá cada diseño para revisarlo. Cuando recibamos la firma, vas a poder descargar acá la versión firmada.</p>
 
       <ul class="disenio-lista">
         @for (disenio of diseniosOrdenados(); track disenio.id) {
-          <li class="ds-card disenio-card" [class.disenio-card--abierta]="idFirmando() === disenio.id">
+          <li class="ds-card disenio-card">
             <div class="disenio-card__fila">
               <span class="disenio-card__icono" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /></svg>
@@ -41,42 +41,27 @@
                 @if (disenio.firmado) {
                   <span class="ds-badge ds-badge--success">Firmado</span>
                 } @else {
-                  <span class="ds-badge ds-badge--warning">Pendiente de firma</span>
+                  <span class="ds-badge ds-badge--warning">Firma pendiente</span>
                 }
               </div>
 
-              <button type="button" class="ds-button ds-button--secondary ds-button--small disenio-card__descargar"
-                      [disabled]="descargandoId() === disenio.id" (click)="descargar(disenio)">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
-                {{ descargandoId() === disenio.id ? 'Descargando…' : 'Descargar' }}
-              </button>
-            </div>
-
-            @if (!disenio.firmado) {
-              @if (idFirmando() === disenio.id) {
-                <section class="disenio-firma">
-                  <p class="ds-text-muted">Firmá en el recuadro para aprobar este diseño.</p>
-
-                  <app-firma [ancho]="480" [alto]="200" (trazo)="firmaFaltante.set(false)" />
-                  @if (firmaFaltante()) {
-                    <span class="ds-alert ds-alert--danger" role="alert">Falta la firma para poder confirmar.</span>
-                  }
-
-                  <footer class="disenio-firma__acciones">
-                    <button type="button" class="ds-button ds-button--ghost" [disabled]="enviandoFirma()" (click)="cancelarFirma()">Cancelar</button>
-                    <button type="button" class="ds-button ds-button--secondary" [disabled]="enviandoFirma()" (click)="firma()?.limpiar()">Borrar firma</button>
-                    <button type="button" class="ds-button" [disabled]="enviandoFirma()" (click)="firmar(disenio)">
-                      {{ enviandoFirma() ? 'Firmando...' : 'Firmar diseño' }}
-                    </button>
-                  </footer>
-                </section>
-              } @else {
-                <button type="button" class="disenio-card__firmar" [disabled]="enviandoFirma()" (click)="abrirFirma(disenio)">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
-                  Firmar este diseño
+              <div class="disenio-card__acciones">
+                <button type="button" class="ds-button ds-button--secondary ds-button--small"
+                        [disabled]="descargandoId() === disenio.id" (click)="descargar(disenio)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+                  {{ descargandoId() === disenio.id ? 'Descargando…' : 'Boceto' }}
                 </button>
-              }
-            }
+
+                <!-- El firmado aparece recién cuando el equipo lo sube -->
+                @if (disenio.firmado) {
+                  <button type="button" class="ds-button ds-button--small"
+                          [disabled]="descargandoFirmadoId() === disenio.id" (click)="descargarFirmado(disenio)">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+                    {{ descargandoFirmadoId() === disenio.id ? 'Descargando…' : 'Firmado' }}
+                  </button>
+                }
+              </div>
+            </div>
           </li>
         }
       </ul>

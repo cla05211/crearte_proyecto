@@ -22,11 +22,21 @@ export class DiseniosService
             `${environment.apiUrl}/disenios/${idGrupo}/${idDocumento}/url-descarga`, { params: { nombre } });
     }
 
-    // URL firmada para descargar la imagen de la firma del cliente sobre un diseño
-    obtenerUrlDescargaFirma(idGrupo: number, idDocumento: number, nombre: string)
+    // URL firmada para descargar el boceto firmado (JPG) de un diseño
+    obtenerUrlDescargaFirmado(idGrupo: number, idDocumento: number, nombre: string)
     {
         return this.http.get<{ url: string }>(
-            `${environment.apiUrl}/disenios/${idGrupo}/${idDocumento}/url-descarga-firma`, { params: { nombre } });
+            `${environment.apiUrl}/disenios/${idGrupo}/${idDocumento}/url-descarga-firmado`, { params: { nombre } });
+    }
+
+    // Sube el boceto firmado que el cliente mandó por WhatsApp; si ya había uno, lo reemplaza
+    subirFirmado(idGrupo: number, idDocumento: number, archivo: File)
+    {
+        const formData = new FormData();
+        formData.append('archivo', archivo, archivo.name);
+
+        return this.http.post<{ idDocumento: number }>(
+            `${environment.apiUrl}/disenios/${idGrupo}/${idDocumento}/firmado`, formData);
     }
 
     // Mismo PDF de talles que ve el cliente en el portal, generado en el momento

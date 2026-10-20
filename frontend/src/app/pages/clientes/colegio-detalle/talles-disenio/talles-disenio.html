@@ -11,7 +11,7 @@
     <header class="td-card__header">
       <div>
         <h2 class="ds-heading-3">Diseños</h2>
-        <p class="td-card__ayuda">Archivos PDF de hasta 50 MB.</p>
+        <p class="td-card__ayuda">Bocetos en PDF de hasta 50 MB. Firmados en JPG de hasta 10 MB.</p>
       </div>
     </header>
 
@@ -32,8 +32,6 @@
               <span class="td-fila__estado">
                 {{ subida()!.progreso < 100 ? 'Subiendo… ' + subida()!.progreso + '%' : 'Guardando…' }}
               </span>
-            } @else if (fila.documento?.firmado) {
-              <span class="ds-badge ds-badge--success">Firmado por el cliente</span>
             } @else if (fila.documento) {
               <span class="ds-badge">PDF cargado</span>
             } @else {
@@ -45,7 +43,7 @@
             <input #inputArchivo type="file" accept="application/pdf" hidden (change)="alElegirArchivo($event, fila)" />
 
             @if (fila.documento) {
-              <!-- Una vez firmado por el cliente el diseño queda cerrado: no se puede reemplazar -->
+              <!-- Con el firmado cargado el boceto queda cerrado: no se puede reemplazar -->
               @if (!fila.documento.firmado) {
               <button type="button" class="td-accion" [disabled]="subida() !== null"
                       (click)="inputArchivo.click()" title="Cambiar archivo" [attr.aria-label]="'Cambiar archivo de ' + fila.etiqueta">
@@ -56,12 +54,6 @@
                       (click)="descargarDisenio(fila)" title="Descargar" [attr.aria-label]="'Descargar ' + fila.etiqueta">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
               </button>
-              @if (fila.documento.firmado) {
-                <button type="button" class="td-accion" [disabled]="descargandoFirmaTipo() === fila.tipo"
-                        (click)="descargarFirma(fila)" title="Descargar firma del cliente" [attr.aria-label]="'Descargar firma de ' + fila.etiqueta">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17c3 0 4-6 6-6s1 5 3 5 3-3 4-3 2 2 5 2" /><path d="M3 21h18" /></svg>
-                </button>
-              }
             } @else {
               @if (fila.sinGuardar && subida()?.tipo !== fila.tipo) {
                 <button type="button" class="td-accion td-accion--sutil" (click)="quitarRanura(fila.tipo)"
@@ -73,6 +65,45 @@
                       (click)="inputArchivo.click()" title="Subir PDF" [attr.aria-label]="'Subir PDF de ' + fila.etiqueta">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
               </button>
+            }
+          </div>
+
+          <!-- Columna Firmado: JPG que el cliente devuelve firmado por WhatsApp -->
+          <div class="td-firmado">
+            <span class="td-firmado__titulo">Firmado</span>
+
+            @if (!fila.documento) {
+              <span class="td-fila__estado">Primero subí el PDF</span>
+            } @else {
+              <input #inputFirmado type="file" accept="image/jpeg,image/png" hidden (change)="alElegirFirmado($event, fila)" />
+
+              <div class="td-firmado__contenido">
+                @if (subiendoFirmadoTipo() === fila.tipo) {
+                  <span class="td-fila__estado">Subiendo…</span>
+                } @else if (fila.documento.firmado) {
+                  <span class="ds-badge ds-badge--success">Cargado</span>
+                } @else {
+                  <span class="ds-badge ds-badge--warning">Pendiente</span>
+                }
+
+                <div class="td-fila__acciones">
+                  @if (fila.documento.firmado) {
+                    <button type="button" class="td-accion" [disabled]="subiendoFirmadoTipo() !== null"
+                            (click)="inputFirmado.click()" title="Cambiar firmado" [attr.aria-label]="'Cambiar firmado de ' + fila.etiqueta">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
+                    </button>
+                    <button type="button" class="td-accion" [disabled]="descargandoFirmadoTipo() === fila.tipo"
+                            (click)="descargarFirmado(fila)" title="Descargar firmado" [attr.aria-label]="'Descargar firmado de ' + fila.etiqueta">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+                    </button>
+                  } @else {
+                    <button type="button" class="td-accion td-accion--primaria" [disabled]="subiendoFirmadoTipo() !== null"
+                            (click)="inputFirmado.click()" title="Subir firmado (JPG)" [attr.aria-label]="'Subir firmado de ' + fila.etiqueta">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                    </button>
+                  }
+                </div>
+              </div>
             }
           </div>
         </li>
