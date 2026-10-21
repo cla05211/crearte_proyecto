@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { ConfirmationService } from '../confirmation/confirmation.service';
 import { UsuarioResponse } from './dto/usuarioResponse';
 import { RegistroDto } from '../Auth/dto/registro.interface';

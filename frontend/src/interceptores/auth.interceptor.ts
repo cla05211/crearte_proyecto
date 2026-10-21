@@ -4,7 +4,7 @@ import { catchError, switchMap, filter, take, throwError, BehaviorSubject } from
 import { Router } from '@angular/router';
 import { AuthService } from '../app/services/Auth/auth-service';
 import { ClientesAuthService } from '../app/services/clientes-auth-service/clientes-auth-service';
-import { environment } from '../environments/environment.development';
+import { environment } from '../environments/environment';
 
 let refrescandoToken = false;
 

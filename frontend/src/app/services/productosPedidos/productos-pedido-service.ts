@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { EliminarProductoPedidoDTO } from './dto/EliminarProductoPedido.dto';
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { ModificarDescripcionProductoPedido } from './dto/ModificarDescripcionProductoPedido.dto copy';
 import { ModificarCantidadProductoPedido } from './dto/ModificarCantidadProductoPedido.dto';
 import { ProductoPedidoDTO } from './dto/ProductoPedido.dto';

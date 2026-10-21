@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.crearte.com'
+  apiUrl: 'https://crearte-backend.onrender.com'
 };

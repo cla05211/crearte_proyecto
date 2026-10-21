@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { PadreResponsableDTO } from './dto/padreResponsable.dto';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { PadreResponsableResponseDTO } from './dto/padreResponsableResponse.dto';
 
 @Injectable({

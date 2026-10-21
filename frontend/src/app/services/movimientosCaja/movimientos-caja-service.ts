@@ -1,4 +1,4 @@
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { inject, Injectable } from '@angular/core';
 import { MovimientoCajaResponseDTO } from './dto/movimientoCajaResponse.dto';
 import { HttpClient } from '@angular/common/http';

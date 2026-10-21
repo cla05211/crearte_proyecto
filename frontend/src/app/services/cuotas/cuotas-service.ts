@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { CuotaResponseDTO } from './dto/CuotaResponseDTO';
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { ModificarImporteCuotasDTO } from './dto/ModificarImporteCuotasDTO';
 import { Observable } from 'rxjs';
 import { CrearCuotasDTO } from './dto/crearCuotas.dto';

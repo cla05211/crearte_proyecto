@@ -1,4 +1,4 @@
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { Injectable, inject } from '@angular/core';
 import { grupoClientePageResponseDTO } from './dtos/grupoClientePage.dto copy';
 import { Observable } from 'rxjs';

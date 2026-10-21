@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { ProductoConPrecioResponseDTO } from './dto/ProductoConPrecioResponse';
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
 import { AgregadoDBDTO } from './dto/agregadoDB.dto';
 import { ProductoPostDTO } from './dto/productoPOST.dto';
