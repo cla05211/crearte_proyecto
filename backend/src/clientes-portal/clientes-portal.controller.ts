@@ -192,14 +192,13 @@ export class ClientesPortalController
         return await this.diseniosService.crearUrlDescarga(idGrupo, idDocumento, nombreArchivo || 'disenio');
     }
 
-    // El cliente firma un diseño: la imagen llega como multipart en el campo 'firma' (PNG)
-    @Post('firmar-disenio/:id')
-    @UseInterceptors(FileInterceptor('firma'))
-    async firmarDisenio(@Req() req, @Param('id', ParseIntPipe) idDocumento: number, @UploadedFile() firma: ArchivoSubidoDTO): Promise<{ idDocumento: number }>
+    // Boceto firmado que subió el empleado (disponible una vez cargado)
+    @Get('url-descarga-firmado/:id')
+    async obtenerUrlDescargaFirmado(@Req() req, @Param('id', ParseIntPipe) idDocumento: number, @Query('nombreArchivo') nombreArchivo: string): Promise<{ url: string }>
     {
         const idGrupo = req.cliente.id_grupo;
 
-        return await this.diseniosService.firmar(idGrupo, idDocumento, firma);
+        return await this.diseniosService.crearUrlDescargaFirmado(idGrupo, idDocumento, nombreArchivo || 'firmado');
     }
 
 

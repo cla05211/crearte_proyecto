@@ -1,13 +1,18 @@
-export class ControlProduccionDTO
+// 'No lleva' = el pedido no incluye esa categoría de prenda
+export type EstadoPrenda = 'Ok' | 'Pendiente' | 'No lleva';
+
+export interface ControlProduccionDTO
 {
-    fechaEntrega!: null | string;
-    nroFabrica!: null | number;
-    colegio!: string;
-    localidad!: string;
-    provincia!:string;
-    camperas_buzos! :boolean;
-    chombas_remeras! :boolean;
-    bandera! :boolean;
-    pantalon! :boolean;
-    estado_pedido!: string;
+    idPedido: number;
+    fechaEntrega: null | string;
+    nroFabrica: null | number;
+    colegio: string;
+    localidad: string;
+    provincia: string;
+    camperas_buzos: EstadoPrenda;
+    chombas_remeras: EstadoPrenda;
+    bandera: EstadoPrenda;
+    pantalon: EstadoPrenda;
+    estado_pedido: string;
+    contratoFirmado: boolean;
 }

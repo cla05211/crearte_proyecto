@@ -1,4 +1,4 @@
-import { Controller, Post, UseGuards, Body, Get, Patch, Query, ParseIntPipe, Param } from '@nestjs/common';
+import { BadRequestException, Controller, Post, UseGuards, Body, Get, Patch, Query, ParseIntPipe, Param, ParseBoolPipe } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
@@ -51,6 +51,32 @@ export class GestionPedidosController
         return await this.gestionService.obtenerDatosPedidosControlTallesDisenio(mes,promo,busqueda);
     }
 
+    @Get ('control-produccion')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_control_produccion')
+    async obtenerDatosControlProduccion(@Query('mesEntrega', ParseIntPipe) mesEntrega: number, @Query('anioEntrega', ParseIntPipe) anioEntrega: number, @Query('enviadosFabrica', ParseBoolPipe) enviadosFabrica: boolean)
+    {
+        return await this.gestionService.obtenerDatosProduccion(mesEntrega,anioEntrega,enviadosFabrica);
+    }
+    
+
+    // Botón "Enviar a fábrica" de control de fábrica
+    @Post('enviar-fabrica/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_control_produccion')
+    async enviarPedidoFabrica(@Param('id', ParseIntPipe) idPedido: number, @Body() dto: { mesEntrega: number; anioEntrega: number })
+    {
+        const mes = Number(dto?.mesEntrega);
+        const anio = Number(dto?.anioEntrega);
+
+        if (!Number.isInteger(mes) || mes < 1 || mes > 12 || !Number.isInteger(anio) || anio < 2000)
+        {
+            throw new BadRequestException('Mes o año de entrega inválido.');
+        }
+
+        return await this.gestionService.enviarPedidoFabrica(idPedido, mes, anio);
+    }
+
     @Patch('modificar-pedidos')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('modificar_pedidos')
@@ -58,4 +84,6 @@ export class GestionPedidosController
     {
         return await this.gestionService.modificarPlanPedido(dto);
     }
+
+
 }

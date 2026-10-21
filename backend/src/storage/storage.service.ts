@@ -59,6 +59,18 @@ export class StorageService {
         return data.signedUrl;
     }
 
+    async eliminarImagen(ruta: string)
+    {
+        const { error } = await this.supabaseService.supabase.storage
+            .from('imagenes')
+            .remove([ruta]);
+
+        if (error)
+        {
+            console.error('No se pudo borrar la imagen anterior:', error.message);
+        }
+    }
+
     async crearUrlSubidaDiseno(idGrupo: number): Promise<{ ruta: string; signedUrl: string }>
     {
         const ruta = `${idGrupo}/${randomUUID()}.pdf`;

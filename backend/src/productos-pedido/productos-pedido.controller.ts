@@ -1,4 +1,4 @@
-import { Body, Post, Controller, Delete, Param, ParseIntPipe, Patch, UseGuards, Get } from '@nestjs/common';
+import { Body, Post, Controller, Delete, Param, ParseIntPipe, Patch, UseGuards, Get, Query } from '@nestjs/common';
 import { ProductosPedidoService } from './productos-pedido-service.service';
 import { EliminarProductoPedidoDTO } from './dto/EliminarProductoPedido.dto';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -21,7 +21,7 @@ export class ProductosPedidoController
         return await this.productosPedidosService.traerSeniaTotal(idPedido);
     }
 
-    @Post()
+@Post()
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('crear_pedido')
     async crearProductosPedido(@Body() dto: ProductoPedidoDTO[])

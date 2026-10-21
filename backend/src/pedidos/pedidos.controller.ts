@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
-import { PedidosService } from './pedidos.service';
+import { CATEGORIAS_PRENDA, ESTADOS_PRENDA, PedidosService } from './pedidos.service';
+import type { CategoriaPrenda, EstadoPrendaGuardado } from './pedidos.service';
 import { PedidoDTOResponse } from './dto/pedidoResponse.dto';
 
 
@@ -54,12 +55,18 @@ export class PedidosController
         return await this.pedidosService.obtenerIdPedidoGrupo(id);
     }
 
-    @Post('fabrica/:id')
+    // Control de fábrica: marca una categoría de prendas (camperas_buzos, chombas_remeras, pantalon, bandera) como Ok o Pendiente
+    @Patch('estado-prenda/:id')
     @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('ver_talles_disenio')
-    async enviarPedidoFabrica(@Param('id', ParseIntPipe) idPedido: number)
+    @RequierePermiso('ver_control_produccion')
+    async modificarEstadoPrenda(@Param('id', ParseIntPipe) idPedido: number, @Query('prenda') prenda: CategoriaPrenda, @Query('nuevoEstado') nuevoEstado: EstadoPrendaGuardado)
     {
-        return await this.pedidosService.enviarPedidoFabrica(idPedido);
+        if (!CATEGORIAS_PRENDA.includes(prenda) || !ESTADOS_PRENDA.includes(nuevoEstado))
+        {
+            throw new BadRequestException('Prenda o estado inválido.');
+        }
+
+        await this.pedidosService.modificarEstadoPrenda(idPedido, prenda, nuevoEstado);
     }
 
     @Patch('fecha-entrega/:id')
@@ -86,6 +93,14 @@ export class PedidosController
         await this.pedidosService.modificarEstadoTalles(nuevoEstado,idPedido, fechaConfirmacion)
     }
 
+    @Patch('estado-general')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_control_produccion')
+    async modificarEstadoGeneral(@Query('nuevoEstado') nuevoEstado: string, @Query('idPedido', ParseIntPipe) idPedido: number)
+    {
+        await this.pedidosService.modificarEstadoGeneralPedido(idPedido,nuevoEstado)
+    }
+    
     @Patch('estado-disenio')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_talles_disenio')

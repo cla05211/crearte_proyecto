@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
@@ -6,6 +7,9 @@ import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
 import { DiseniosService } from './disenios.service';
 import { SubirDisenioDTO } from './dto/SubirDisenioDTO';
 import { ReemplazarDisenioDTO } from './dto/ReemplazarDisenioDTO';
+import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
+
+const TAMANIO_MAXIMO_FIRMADO = 10 * 1024 * 1024;
 
 @Controller('disenios')
 export class DiseniosController
@@ -46,16 +50,30 @@ export class DiseniosController
         return await this.diseniosService.crearUrlDescarga(idGrupo, idDocumento, nombre || 'disenio');
     }
 
-    @Get(':idGrupo/:idDocumento/url-descarga-firma')
+    @Get(':idGrupo/:idDocumento/url-descarga-firmado')
     @UseGuards(AuthGuard, PermisosGuard)
     @RequierePermiso('ver_clientes_talles_disenio')
-    async crearUrlDescargaFirma(
+    async crearUrlDescargaFirmado(
         @Param('idGrupo', ParseIntPipe) idGrupo: number,
         @Param('idDocumento', ParseIntPipe) idDocumento: number,
         @Query('nombre') nombre: string,
     )
     {
-        return await this.diseniosService.crearUrlDescargaFirma(idGrupo, idDocumento, nombre || 'firma');
+        return await this.diseniosService.crearUrlDescargaFirmado(idGrupo, idDocumento, nombre || 'firmado');
+    }
+
+    // Boceto firmado (JPG) que el cliente devolvió por WhatsApp: llega como multipart en el campo 'archivo'
+    @Post(':idGrupo/:idDocumento/firmado')
+    @UseGuards(AuthGuard, PermisosGuard)
+    @RequierePermiso('ver_clientes_talles_disenio')
+    @UseInterceptors(FileInterceptor('archivo', { limits: { fileSize: TAMANIO_MAXIMO_FIRMADO } }))
+    async subirFirmado(
+        @Param('idGrupo', ParseIntPipe) idGrupo: number,
+        @Param('idDocumento', ParseIntPipe) idDocumento: number,
+        @UploadedFile() archivo: ArchivoSubidoDTO,
+    )
+    {
+        return await this.diseniosService.subirFirmado(idGrupo, idDocumento, archivo);
     }
 
     @Post('url-subida')

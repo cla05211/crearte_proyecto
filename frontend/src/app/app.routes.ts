@@ -102,6 +102,12 @@ export const routes: Routes = [
         data: { permiso: 'ver_talles_disenio' },
       },
       {
+        path: "control-fabrica",
+        loadComponent: () => import('./pages/control-fabrica/control-fabrica').then((archivo) => archivo.ControlFabrica),
+        canActivate: [PermisosGuard],
+        data: { permiso: 'ver_control_produccion' },
+      },
+      {
         path: "muestras-fisicas",
         loadComponent: () => import('./pages/muestras-fisicas/muestras-fisicas').then((archivo) => archivo.MuestrasFisicas),
         canActivate: [PermisosGuard],

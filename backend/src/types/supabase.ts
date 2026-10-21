@@ -651,8 +651,12 @@ export type Database = {
           cantidad_hermanos: number | null
           colores: string | null
           envio_gratis: boolean | null
+          estado_bandera: string
           estado_boceto: string | null
+          estado_camperas_buzos: string
+          estado_chombas_remeras: string
           estado_general: string | null
+          estado_pantalon: string
           estado_talles: string | null
           fecha_aprobacion_boceto: string | null
           fecha_aprobacion_talles: string | null
@@ -671,8 +675,12 @@ export type Database = {
           cantidad_hermanos?: number | null
           colores?: string | null
           envio_gratis?: boolean | null
+          estado_bandera?: string
           estado_boceto?: string | null
+          estado_camperas_buzos?: string
+          estado_chombas_remeras?: string
           estado_general?: string | null
+          estado_pantalon?: string
           estado_talles?: string | null
           fecha_aprobacion_boceto?: string | null
           fecha_aprobacion_talles?: string | null
@@ -691,8 +699,12 @@ export type Database = {
           cantidad_hermanos?: number | null
           colores?: string | null
           envio_gratis?: boolean | null
+          estado_bandera?: string
           estado_boceto?: string | null
+          estado_camperas_buzos?: string
+          estado_chombas_remeras?: string
           estado_general?: string | null
+          estado_pantalon?: string
           estado_talles?: string | null
           fecha_aprobacion_boceto?: string | null
           fecha_aprobacion_talles?: string | null
@@ -1071,7 +1083,7 @@ export type Database = {
       crear_pedido_completo: { Args: { payload: Json }; Returns: Json }
       eliminar_pago_completo: { Args: { p_id_pago: number }; Returns: number }
       enviar_pedido_a_fabrica: {
-        Args: { p_id_pedido: number }
+        Args: { p_anio: number; p_id_pedido: number; p_mes: number }
         Returns: number
       }
       modificar_beneficios_pedido: {

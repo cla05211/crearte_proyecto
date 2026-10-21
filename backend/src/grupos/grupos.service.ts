@@ -44,7 +44,7 @@ export class GruposService
     {
         let query = this.sb.supabase
         .from("grupos")
-        .select(`id,nivel,created_at,colegios!inner (nombre, localidad, provincia, zona_sur),padres_responsables!inner (nombre, apellido, id_grupo, principal), pedidos!inner(nro_fabrica)`)
+        .select(`id,nivel,created_at,colegios!inner (nombre, localidad, provincia, zona_sur),padres_responsables!inner (nombre, apellido, id_grupo, principal), pedidos!inner(nro_fabrica, estado_general)`)
         .eq('padres_responsables.principal', true)
         .order('created_at', { ascending: false });
 
@@ -52,9 +52,10 @@ export class GruposService
         {
             query = query.ilike('colegios.nombre', `%${busqueda}%`);
         }
+        // Fábrica solo ve los pedidos que administración ya envió a producción
         if(esFabrica)
         {
-            query = query.not('pedidos.nro_fabrica', 'is', null);
+            query = query.eq('pedidos.estado_general', 'En producción');
         }
 
         const { data, error } = await query.range(rangoDesde, rangoHasta);

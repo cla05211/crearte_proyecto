@@ -1,0 +1,234 @@
+<main class="fabrica-page">
+  <section class="ds-container fabrica-container">
+    <header class="fabrica-header">
+      <div>
+        <span class="ds-eyebrow">Producción</span>
+        <h1 class="ds-heading-1">Control de fábrica</h1>
+      </div>
+
+      <!-- Mes y año de la fecha de entrega: solo aplica a los pedidos ya enviados -->
+      @if (pestania() === 'enviados') {
+        <div class="filtros-bar">
+          <label class="ds-field">
+            <span class="ds-label">Mes de entrega</span>
+            <select class="ds-select" [ngModel]="mesSeleccionado()" (ngModelChange)="cambiarMes($event)">
+              @for (mes of meses; track mes.valor) {
+                <option [ngValue]="mes.valor">{{ mes.nombre }}</option>
+              }
+            </select>
+          </label>
+          <label class="ds-field">
+            <span class="ds-label">Año</span>
+            <select class="ds-select" [ngModel]="anioSeleccionado()" (ngModelChange)="cambiarAnio($event)">
+              @for (anio of aniosFiltro; track anio) {
+                <option [ngValue]="anio">{{ anio }}</option>
+              }
+            </select>
+          </label>
+        </div>
+      }
+    </header>
+
+    <nav class="fabrica-tabs" aria-label="Pedidos">
+      <button type="button" [class.is-active]="pestania() === 'pendientes'" [attr.aria-pressed]="pestania() === 'pendientes'"
+              (click)="cambiarPestania('pendientes')">
+        Listos para enviar
+      </button>
+      <button type="button" [class.is-active]="pestania() === 'enviados'" [attr.aria-pressed]="pestania() === 'enviados'"
+              (click)="cambiarPestania('enviados')">
+        Enviados a fábrica
+      </button>
+    </nav>
+
+    @if (cargando() && !pedidos()) {
+      <div class="loading-state" role="status" aria-live="polite">
+        <span class="loading-state__spinner" aria-hidden="true"></span>
+        <div>
+          <h2>Cargando pedidos</h2>
+          <p>Estamos preparando la información de producción.</p>
+        </div>
+      </div>
+    } @else {
+      <div class="kpis-grid" [class.kpis-grid--enviados]="pestania() === 'enviados'">
+        <div class="ds-card kpi-card">
+          <span class="ds-label">Total colegios</span>
+          <strong class="kpi-valor">{{ totalColegios() }}</strong>
+        </div>
+        @if (pestania() === 'enviados') {
+          <div class="ds-card kpi-card">
+            <span class="ds-label">Entregados</span>
+            <strong class="kpi-valor">{{ cantidadEntregados() }}</strong>
+          </div>
+          <div class="ds-card kpi-card">
+            <span class="ds-label">Listo para entregar - Completo</span>
+            <strong class="kpi-valor">{{ cantidadListos() }}</strong>
+          </div>
+        }
+      </div>
+
+      @if (!pedidos()?.length) {
+      <div class="empty-state">
+        <div class="empty-state__illustration" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        @if (pestania() === 'pendientes') {
+          <h2>No hay pedidos listos para enviar.</h2>
+          <p>Acá aparecen los colegios con el boceto aprobado y los talles confirmados.</p>
+        } @else {
+          <h2>No hay pedidos enviados.</h2>
+          <p>No hay pedidos con entrega en el mes y año seleccionados.</p>
+        }
+      </div>
+    } @else {
+      <div class="ds-table-wrapper fabrica-table-wrapper" [class.is-actualizando]="cargando()">
+        <table class="ds-table fabrica-table" [class.fabrica-table--enviados]="pestania() === 'enviados'">
+          <thead>
+            <tr>
+              @if (pestania() === 'enviados') {
+                <th>Fecha entrega</th>
+              }
+              <th class="col-colegio">Colegio</th>
+              @if (pestania() === 'enviados') {
+                <th>Nro pedido</th>
+              }
+              @for (columna of columnasPrendas; track columna.categoria) {
+                <th>{{ columna.titulo }}</th>
+              }
+              <th>{{ pestania() === 'enviados' ? 'Estado del pedido' : 'Fábrica' }}</th>
+              @if (pestania() === 'enviados') {
+                <th>Contrato</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (pedido of pedidos(); track pedido.idPedido; let par = $even) {
+              <tr [class.fila-par]="par">
+                @if (pestania() === 'enviados') {
+                  <td data-label="Fecha entrega" class="celda-centro">{{ formatearFecha(pedido.fechaEntrega) }}</td>
+                }
+
+                <td data-label="Colegio" class="col-colegio">
+                  <span class="colegio-nombre">{{ pedido.colegio }}</span>
+                  <span class="colegio-ubicacion">{{ pedido.localidad }}, {{ pedido.provincia }}</span>
+                </td>
+
+                @if (pestania() === 'enviados') {
+                  <td data-label="Nro pedido" class="celda-centro nro-pedido">{{ pedido.nroFabrica ?? '—' }}</td>
+                }
+
+                @for (columna of columnasPrendas; track columna.categoria) {
+                  <td [attr.data-label]="columna.titulo" class="celda-centro">
+                    @let estado = estadoPrenda(pedido, columna.categoria);
+                    @if (estado === 'No lleva') {
+                      <span class="no-lleva">No lleva</span>
+                    } @else if (pestania() === 'enviados') {
+                      <select class="ds-select estado-select"
+                              [class.estado-select--ok]="estado === 'Ok'"
+                              [disabled]="guardando() === pedido.idPedido + '-' + columna.categoria"
+                              [ngModel]="estado"
+                              (ngModelChange)="cambiarEstadoPrenda(pedido, columna.categoria, $event)"
+                              [attr.aria-label]="columna.titulo + ' de ' + pedido.colegio">
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Ok">Ok</option>
+                      </select>
+                    } @else {
+                      <span class="ds-badge ds-badge--warning">Pendiente</span>
+                    }
+                  </td>
+                }
+
+                @if (pestania() === 'enviados') {
+                  <td data-label="Estado del pedido" class="celda-centro">
+                    @let estadoPedidoActual = estadoPedido(pedido);
+                    @if (estadoPedidoActual === estadoListoEntregar) {
+                      <!-- Solo cuando está completo se puede pasar a Entregado -->
+                      <select #selectEstado class="ds-select estado-select estado-select--ok"
+                              [disabled]="guardando() === pedido.idPedido + '-estado'"
+                              (change)="marcarEntregado(pedido, selectEstado.value, selectEstado)"
+                              [attr.aria-label]="'Estado del pedido de ' + pedido.colegio">
+                        <option [value]="estadoListoEntregar" selected>{{ estadoListoEntregar }}</option>
+                        <option [value]="estadoEntregado">{{ estadoEntregado }}</option>
+                      </select>
+                    } @else if (estadoPedidoActual === estadoEntregado) {
+                      <span class="ds-badge ds-badge--success">{{ estadoEntregado }}</span>
+                    } @else {
+                      <span class="ds-badge ds-badge--warning">{{ estadoPedidoActual }}</span>
+                    }
+                  </td>
+                } @else {
+                  <td data-label="Fábrica" class="celda-centro">
+                    <button type="button" class="ds-button ds-button--small" (click)="abrirEnvio(pedido)">
+                      Enviar a fábrica
+                    </button>
+                  </td>
+                }
+
+                @if (pestania() === 'enviados') {
+                  <td data-label="Contrato" class="celda-centro">
+                    @if (pedido.contratoFirmado) {
+                      <span class="contrato-icono contrato-icono--firmado" title="Contrato firmado" aria-label="Contrato firmado">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                      </span>
+                    } @else {
+                      <span class="contrato-icono contrato-icono--pendiente" title="Contrato sin firmar" aria-label="Contrato sin firmar">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>
+                      </span>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+    }
+  </section>
+
+  @if (envio(); as envioActual) {
+    <div class="modal-backdrop" role="presentation">
+      <section class="fabrica-modal" role="dialog" aria-modal="true" aria-labelledby="envio-fabrica-title">
+        <header class="fabrica-modal__header">
+          <div>
+            <span class="ds-eyebrow">{{ envioActual.pedido.colegio }}</span>
+            <h2 id="envio-fabrica-title" class="ds-heading-2">Enviar a fábrica</h2>
+          </div>
+          <button class="close-button" type="button" [disabled]="enviando()" (click)="cerrarEnvio()" aria-label="Cerrar">×</button>
+        </header>
+
+        <div class="fabrica-modal__content">
+          <p class="ds-text-muted">Elegí la fecha de entrega aproximada. Con esa fecha se genera el contrato del cliente y se ajusta el vencimiento de la última cuota.</p>
+
+          <div class="fecha-entrega-campos">
+            <label class="ds-field">
+              <span class="ds-label">Mes</span>
+              <select class="ds-select" [ngModel]="envioActual.mes" (ngModelChange)="actualizarEnvio({ mes: $event })">
+                <option [ngValue]="null">Seleccioná un mes</option>
+                @for (mes of meses; track mes.valor) {
+                  <option [ngValue]="mes.valor">{{ mes.nombre }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="ds-field">
+              <span class="ds-label">Año</span>
+              <select class="ds-select" [ngModel]="envioActual.anio" (ngModelChange)="actualizarEnvio({ anio: $event })">
+                <option [ngValue]="null">Seleccioná un año</option>
+                @for (anio of aniosEntrega; track anio) {
+                  <option [ngValue]="anio">{{ anio }}</option>
+                }
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <footer class="fabrica-modal__actions">
+          <button type="button" class="ds-button ds-button--secondary" [disabled]="enviando()" (click)="cerrarEnvio()">Cancelar</button>
+          <button type="button" class="ds-button" [disabled]="enviando() || !envioActual.mes || !envioActual.anio" (click)="confirmarEnvio()">
+            {{ enviando() ? 'Enviando…' : 'Enviar a fábrica' }}
+          </button>
+        </footer>
+      </section>
+    </div>
+  }
+</main>

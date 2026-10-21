@@ -78,9 +78,16 @@ export class GestionPedidosService
     return this.http.get<ControlTallesDisenioDTO[]>(`${environment.apiUrl}/gestion-pedidos/control-talles-disenio`, {params});
   }
 
-  obtenerDatosPedidosConobtenerDatosControlProducciontrolTallesDisenio(mesEntrega: number, anioEntrega: number, enviadosFabrica: boolean):Observable<ControlProduccionDTO[]>
+  obtenerDatosControlProduccion(mesEntrega: number, anioEntrega: number, enviadosFabrica: boolean):Observable<ControlProduccionDTO[]>
   {
     return this.http.get<ControlProduccionDTO[]>(`${environment.apiUrl}/gestion-pedidos/control-produccion`, {params:{mesEntrega,anioEntrega,enviadosFabrica}});
+  }
+
+  // Asigna nro de fábrica, fecha de entrega (y última cuota) y pasa el pedido a "En producción"
+  enviarPedidoFabrica(idPedido: number, mesEntrega: number, anioEntrega: number):Observable<{ nroFabrica: number; whatsappEnviado: boolean }>
+  {
+    return this.http.post<{ nroFabrica: number; whatsappEnviado: boolean }>(
+      `${environment.apiUrl}/gestion-pedidos/enviar-fabrica/${idPedido}`, { mesEntrega, anioEntrega });
   }
 
 }

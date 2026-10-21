@@ -13,7 +13,7 @@ import { Observable } from 'rxjs';
 export class ProductosPedidoService 
 {
   http = inject(HttpClient);  
-
+  
   crearProductosPedido(dto: ProductoPedidoDTO[])
   {
     return this.http.post((`${environment.apiUrl}/productos-pedido`), dto);
@@ -29,7 +29,7 @@ export class ProductosPedidoService
     return this.http.patch((`${environment.apiUrl}/productos-pedido/descripcion`), dto);
   }
 
-  modficarCantidadProductoPedido(dto: ModificarCantidadProductoPedido)
+modficarCantidadProductoPedido(dto: ModificarCantidadProductoPedido)
   {
     return this.http.patch((`${environment.apiUrl}/productos-pedido/cantidad`), dto);
   }

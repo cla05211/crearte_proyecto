@@ -30,12 +30,19 @@ import { ControlTallesDisenioDTO } from './dto/ControlTallesDisenioDTO';
 import { BeneficioPedidoDTO } from 'src/beneficios-pedido/dto/beneficioPedidoDTO';
 import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
 import { NotificacionesService } from 'src/notificaciones/notificaciones.service';
+import { ControlProduccionDTO, EstadoPrenda } from './dto/ControlProduccionDTO';
+
+const CAMPERAS_BUZOS = [63,64,67,68,69,70,71];
+const CHOMBAS_REMERAS = [65,66,67,68,69,70];
+const PANTALONES = [72];
+
+type ProductoPedidoNombre = { productos: { id: number } };
 
 @Injectable()
 export class GestionPedidosService
 {
     private readonly logger = new Logger(GestionPedidosService.name);
-
+    
     constructor(private colegios:ColegiosService, private grupos: GruposService,
         private pedidos:PedidosService, private productosPedido: ProductosPedidoService,
         private padres:PadreResponsableService, private alumnos:AlumnoResponsableService,
@@ -96,7 +103,6 @@ export class GestionPedidosService
             agregados_globales_pedido(*, agregados(agregado, precio, individual)),
             cuotas(id)
         `)
-        .eq("estado_general", "Venta realizada") 
         .order("id", { ascending: false });
 
         if(busqueda)
@@ -231,7 +237,6 @@ export class GestionPedidosService
                 padres_responsables(id, nombre, apellido, telefono, principal),
                 alumnos_responsables(id, nombre, apellido, telefono, principal))
                 ,pagos(monto, motivo)`)
-        .eq("estado_general", "Venta realizada")
         .eq("pagos.motivo", "Seña")
         .gte("grupos.created_at", primerDiaMes.toISOString())
         .lt("grupos.created_at", primerDiaMesSiguiente.toISOString())
@@ -271,5 +276,105 @@ export class GestionPedidosService
         }));
 
         return pedidos;
+    }
+
+    async obtenerDatosProduccion(mesEntrega:number, añoEntrega: number, enviadosFabrica: boolean):Promise<ControlProduccionDTO[]>
+    {
+        // Strings 'YYYY-MM-DD': un Date se mandaría como "Thu Oct 01 2026 ..." y Postgres no lo entiende
+        const mes = String(mesEntrega).padStart(2, '0');
+        const desde = `${añoEntrega}-${mes}-01`;
+        const hasta = mesEntrega === 12
+            ? `${añoEntrega + 1}-01-01`
+            : `${añoEntrega}-${String(mesEntrega + 1).padStart(2, '0')}-01`;
+
+        let query = this.sb.supabase
+        .from("pedidos")
+        .select(`id,fecha_entrega_aproximada,nro_fabrica,estado_general,
+            estado_camperas_buzos,estado_chombas_remeras,estado_pantalon,estado_bandera,
+            beneficios_pedido(id_beneficio),agregados_globales_pedido(id_agregado),
+            productos_pedidos(productos(id)),
+            grupos!inner(
+                contratos(firmado),
+                colegios!inner(nombre, localidad, provincia))`)
+        .order("id", { ascending: false });
+
+        if(enviadosFabrica)
+        {
+            query = query.in("estado_general", ["En producción","Listo para entregar","Entregado"]);
+            query = query.gte("fecha_entrega_aproximada", desde);
+            query = query.lt("fecha_entrega_aproximada", hasta);
+        }
+        else
+        {
+            query = query.eq("estado_general","Listo para enviar a producción");
+        }
+
+        const { data, error } = await query;
+
+        if (error)
+        {
+            throw new Error(error.message);
+        }
+
+
+        const pedidos: ControlProduccionDTO[] = 
+            data.map((pedido) => ({
+                idPedido:pedido.id,
+                fechaEntrega: pedido.fecha_entrega_aproximada,
+                nroFabrica: pedido.nro_fabrica,
+                colegio: pedido.grupos.colegios.nombre,
+                localidad: pedido.grupos.colegios.localidad,
+                provincia: pedido.grupos.colegios.provincia,
+                camperas_buzos: this.estadoPrenda(this.determinarPedidoIncluyePrenda(pedido.productos_pedidos, CAMPERAS_BUZOS), pedido.estado_camperas_buzos),
+                chombas_remeras: this.estadoPrenda(this.determinarPedidoIncluyePrenda(pedido.productos_pedidos, CHOMBAS_REMERAS), pedido.estado_chombas_remeras),
+                bandera: this.estadoPrenda(this.pedidos.tieneBandera(pedido.beneficios_pedido,pedido.agregados_globales_pedido), pedido.estado_bandera),
+                pantalon: this.estadoPrenda(this.determinarPedidoIncluyePrenda(pedido.productos_pedidos, PANTALONES), pedido.estado_pantalon),
+                estado_pedido: pedido.estado_general!,
+                // La fila de contratos se crea/actualiza cuando firman todos los padres (marcarContratoFirmado)
+                contratoFirmado: pedido.grupos.contratos.some(c => c.firmado === true),
+                }));
+
+        return pedidos;
+    }
+
+    private determinarPedidoIncluyePrenda(productosPedidos: ProductoPedidoNombre[], ids: number[]): boolean
+    {
+        return productosPedidos.some(p => ids.includes(p.productos.id));
+    }
+
+    private estadoPrenda(incluye: boolean, estadoGuardado: string): EstadoPrenda
+    {
+        if (!incluye) return 'No lleva';
+        return estadoGuardado === 'Ok' ? 'Ok' : 'Pendiente';
+    }
+
+    // Asigna nro de fábrica, fecha de entrega y vencimiento de la última cuota en una sola transacción (RPC),
+    // y después avisa por WhatsApp que el contrato está disponible.
+    async enviarPedidoFabrica(idPedido: number, mesEntrega: number, anioEntrega: number): Promise<{ nroFabrica: number; whatsappEnviado: boolean }>
+    {
+        const { data, error } = await this.sb.supabase.rpc('enviar_pedido_a_fabrica', {
+            p_id_pedido: idPedido,
+            p_mes: mesEntrega,
+            p_anio: anioEntrega,
+        });
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        // Si falla el WhatsApp el pedido ya quedó enviado; solo se informa (la notificación queda en 'error')
+        let whatsappEnviado = true;
+        try
+        {
+            await this.notificacionesService.enviarMensajeContrato(idPedido);
+        }
+        catch (e)
+        {
+            whatsappEnviado = false;
+            Logger.error(`No se pudo enviar el WhatsApp de contrato del pedido ${idPedido}`, e);
+        }
+
+        return { nroFabrica: data, whatsappEnviado };
     }
 }

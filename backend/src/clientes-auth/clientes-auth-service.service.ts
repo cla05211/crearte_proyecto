@@ -32,7 +32,6 @@ export class ClientesAuthService
             throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Credenciales inválidas.' });
         }
 
-        // El cliente existe pero todavía no entró al link para crear su contraseña.
         if (cliente && !cliente.contrasena_hash)
         {
             throw new UnauthorizedException({ code: 'CUENTA_NO_ACTIVADA', message: 'La cuenta todavía no fue activada.' });

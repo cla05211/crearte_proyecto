@@ -4,6 +4,21 @@ import { PedidoDTO } from './dto/pedido.dto';
 import { BadRequestException } from '@nestjs/common';
 import { PedidoDTOResponse } from './dto/pedidoResponse.dto';
 
+export type CategoriaPrenda = 'camperas_buzos' | 'chombas_remeras' | 'pantalon' | 'bandera';
+export type EstadoPrendaGuardado = 'Pendiente' | 'Ok';
+
+export const CATEGORIAS_PRENDA: CategoriaPrenda[] = ['camperas_buzos', 'chombas_remeras', 'pantalon', 'bandera'];
+export const ESTADOS_PRENDA: EstadoPrendaGuardado[] = ['Pendiente', 'Ok'];
+
+const COLUMNA_ESTADO_PRENDA = {
+    camperas_buzos: 'estado_camperas_buzos',
+    chombas_remeras: 'estado_chombas_remeras',
+    pantalon: 'estado_pantalon',
+    bandera: 'estado_bandera',
+} as const;
+
+type ColumnaEstadoPrenda = (typeof COLUMNA_ESTADO_PRENDA)[CategoriaPrenda];
+
 @Injectable()
 export class PedidosService 
 {
@@ -172,20 +187,32 @@ export class PedidosService
         }
     }
 
-    async enviarPedidoFabrica(idPedido: number)
+    async modificarEstadoGeneralPedido(idPedido:number, nuevoEstado:string)
     {
-        const { data, error } = await this.sb.supabase.rpc(
-        'enviar_pedido_a_fabrica',
+        const { data, error } = await this.sb.supabase
+        .from("pedidos")
+        .update({ estado_general: nuevoEstado})
+        .eq("id", idPedido);
+
+        if (error)
         {
-            p_id_pedido: idPedido,
+            throw new Error(error.message);
         }
-        );
+    }
+
+    // Estado de producción de una categoría de prendas del pedido (control de fábrica)
+    async modificarEstadoPrenda(idPedido: number, prenda: CategoriaPrenda, nuevoEstado: EstadoPrendaGuardado)
+    {
+        const { error } = await this.sb.supabase
+        .from("pedidos")
+        // La clave calculada se tipa como string; el cast la acota a las 4 columnas de estado
+        .update({ [COLUMNA_ESTADO_PRENDA[prenda]]: nuevoEstado } as Partial<Record<ColumnaEstadoPrenda, EstadoPrendaGuardado>>)
+        .eq("id", idPedido);
 
         if (error)
         {
             throw new BadRequestException(error.message);
         }
-        return data;
     }
 
     async determinartipoTalles(idPedido: number): Promise<string>
@@ -221,5 +248,14 @@ export class PedidosService
         data.agregados_globales_pedido.some(a => a.id_agregado == ID_AGREGADO_BANDERA);
         
         return bandera;
+    }
+
+    //La diferencia de esta con determinar es que determinas le mandas el pedido y consulta database. Esta le mandas ya con los datos
+    tieneBandera(beneficios: { id_beneficio: number }[], agregados: { id_agregado: number|null }[]): boolean
+    {
+        const ID_BENEFICIO_BANDERA = 1;
+        const ID_AGREGADO_BANDERA = 53;
+
+        return beneficios.some(b => b.id_beneficio == ID_BENEFICIO_BANDERA) || agregados.some(a => a.id_agregado == ID_AGREGADO_BANDERA);
     }
 }

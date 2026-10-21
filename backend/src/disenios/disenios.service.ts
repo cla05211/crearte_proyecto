@@ -9,9 +9,12 @@ import { DisenioResponseDTO, DiseniosGrupoResponseDTO } from './dto/DisenioRespo
 import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
 
 export const PREFIJO_TIPO_DISENIO = 'Disenio ';
+// El boceto firmado (JPG que el cliente devuelve por WhatsApp) se guarda en documentos como 'Firma ' + tipo del diseño
 const PREFIJO_TIPO_FIRMA = 'Firma ';
-// La firma de este diseño es la que aprueba el boceto del pedido
+// Subir el firmado de este diseño es lo que aprueba el boceto del pedido
 const TIPO_DISENIO_PRENDAS = 'Disenio Prendas';
+const FORMATOS_FIRMADO: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png' };
+const CARPETA_FIRMADOS = 'firmas-disenio';
 const LARGO_MAXIMO_NOMBRE = 60;
 const ESTADO_TALLES_CONFIRMADO = 'Confirmado';
 
@@ -80,7 +83,7 @@ export class DiseniosService
 
         if (await this.documentosService.obtenerDocumentoPorTipo(dto.idGrupo, PREFIJO_TIPO_FIRMA + disenio.tipo))
         {
-            throw new ConflictException('El diseño ya fue firmado por el cliente y no se puede reemplazar.');
+            throw new ConflictException('El diseño ya tiene el firmado cargado y no se puede reemplazar.');
         }
 
         await this.documentosService.actualizarArchivoUrl(dto.idDocumento, dto.ruta);
@@ -97,20 +100,22 @@ export class DiseniosService
         return { url: await this.storageService.crearUrlDescargaDiseno(ruta, nombre) };
     }
 
-    // URL para descargar la imagen de la firma del cliente sobre un diseño ('Firma ' + tipo)
-    async crearUrlDescargaFirma(idGrupo: number, idDocumento: number, nombreArchivo: string)
+    // URL para descargar el boceto firmado de un diseño ('Firma ' + tipo)
+    async crearUrlDescargaFirmado(idGrupo: number, idDocumento: number, nombreArchivo: string)
     {
         const disenio = await this.obtenerDisenioDelGrupo(idGrupo, idDocumento);
-        const firma = await this.documentosService.obtenerDocumentoPorTipo(idGrupo, PREFIJO_TIPO_FIRMA + disenio.tipo);
+        const firmado = await this.documentosService.obtenerDocumentoPorTipo(idGrupo, PREFIJO_TIPO_FIRMA + disenio.tipo);
 
-        if (!firma?.archivo_url)
+        if (!firmado?.archivo_url)
         {
-            throw new NotFoundException('Este diseño todavía no fue firmado.');
+            throw new NotFoundException('Este diseño todavía no tiene el firmado cargado.');
         }
 
-        const nombre = `${this.nombreArchivoSeguro(nombreArchivo)}.png`;
+        // La extensión sale del archivo guardado (los firmados viejos son PNG, los nuevos JPG)
+        const extension = firmado.archivo_url.split('.').pop() || 'jpg';
+        const nombre = `${this.nombreArchivoSeguro(nombreArchivo)}.${extension}`;
 
-        return { url: await this.storageService.obtenerUrlArchivo(firma.archivo_url, nombre) };
+        return { url: await this.storageService.obtenerUrlArchivo(firmado.archivo_url, nombre) };
     }
 
     async generarResumenTalles(idGrupo: number)
@@ -194,49 +199,58 @@ export class DiseniosService
         return disenio;
     }
 
-    async firmar(idGrupo: number, idDocumento: number, firma: ArchivoSubidoDTO)
+    // El empleado sube el boceto firmado (JPG) que el cliente mandó por WhatsApp.
+    // Si ya había uno, se reemplaza (por si se subió el archivo equivocado).
+    async subirFirmado(idGrupo: number, idDocumento: number, archivo: ArchivoSubidoDTO)
     {
-        if (!firma || firma.mimetype !== 'image/png')
+        const extension = archivo ? FORMATOS_FIRMADO[archivo.mimetype] : undefined;
+
+        if (!extension)
         {
-            throw new BadRequestException('Falta la firma o no es una imagen PNG.');
+            throw new BadRequestException('Falta el archivo o no es una imagen JPG.');
         }
 
         const disenio = await this.obtenerDisenioDelGrupo(idGrupo, idDocumento);
-        const tipoFirma = PREFIJO_TIPO_FIRMA + disenio.tipo;
-
-        if (await this.documentosService.obtenerDocumentoPorTipo(idGrupo, tipoFirma))
-        {
-            throw new ConflictException('Este diseño ya fue firmado.');
-        }
+        const tipoFirmado = PREFIJO_TIPO_FIRMA + disenio.tipo;
 
         const pedido = await this.pedidosService.obtenerPedidoGrupo(idGrupo);
         const idPedido = pedido.id;
 
-        const rutaFirma = await this.storageService.guardarImagen(
+        const rutaFirmado = await this.storageService.guardarImagen(
             {
                 pedidoId: idPedido.toString(),
-                nombreArchivo: `firma-disenio-${idPedido}-${idDocumento}-${Date.now()}.png`,
-                carpetaGuardado: 'firmas-disenio',
+                nombreArchivo: `firmado-${idPedido}-${idDocumento}-${Date.now()}.${extension}`,
+                carpetaGuardado: CARPETA_FIRMADOS,
             },
-            firma,
+            archivo,
         );
 
-        const [idFirma] = await this.documentosService.subirDocumento({
-            id_grupo: idGrupo,
-            tipo: tipoFirma,
-            archivo_url: rutaFirma,
-        });
+        const existente = await this.documentosService.obtenerDocumentoPorTipo(idGrupo, tipoFirmado);
+        let idFirmado: number;
 
-        // Firmar el diseño de prendas aprueba el boceto con la fecha de hoy (igual que talles al confirmarse).
+        if (existente)
+        {
+            await this.documentosService.actualizarArchivoUrl(existente.id, rutaFirmado);
+            if (existente.archivo_url) await this.storageService.eliminarImagen(existente.archivo_url);
+            idFirmado = existente.id;
+        }
+        else
+        {
+            [idFirmado] = await this.documentosService.subirDocumento({
+                id_grupo: idGrupo,
+                tipo: tipoFirmado,
+                archivo_url: rutaFirmado,
+            });
+        }
+
+        // El firmado del diseño de prendas aprueba el boceto con la fecha de hoy (igual que talles al confirmarse).
         // Si ya tenía fecha no se toca: una vez puesta queda fija.
         if (disenio.tipo === TIPO_DISENIO_PRENDAS && !pedido.fecha_aprobacion_boceto)
         {
-            const fechaFirma = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
-            await this.pedidosService.modificarFechaAprobacionDisenio(fechaFirma, idPedido);
+            const fechaHoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+            await this.pedidosService.modificarFechaAprobacionDisenio(fechaHoy, idPedido);
         }
 
-        return { idDocumento: idFirma };
+        return { idDocumento: idFirmado };
     }
-
-
 }

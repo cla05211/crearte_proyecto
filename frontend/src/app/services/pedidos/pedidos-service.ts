@@ -4,6 +4,8 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { PedidoDTOResponse } from './dto/pedidoResponse.dto';
 
+export type CategoriaPrenda = 'camperas_buzos' | 'chombas_remeras' | 'pantalon' | 'bandera';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -58,9 +60,15 @@ export class PedidosService
     return this.http.patch<void>(`${environment.apiUrl}/pedidos/estado-disenio`, null, {params: {nuevoEstado, idPedido}});
   }
 
-  enviarPedidoFabrica(idPedido:number):Observable<{ nroFabrica: number }>
+  modificarEstadoGeneral(nuevoEstado:string, idPedido: number): Observable<void>
   {
-    return this.http.post<{ nroFabrica: number }>(`${environment.apiUrl}/pedidos/fabrica/${idPedido}`,null);
+    return this.http.patch<void>(`${environment.apiUrl}/pedidos/estado-general`, null, {params: {nuevoEstado, idPedido}});
+  }
+
+  // Control de fábrica: marca una categoría de prendas como Ok o Pendiente
+  modificarEstadoPrenda(idPedido: number, prenda: CategoriaPrenda, nuevoEstado: 'Ok' | 'Pendiente'): Observable<void>
+  {
+    return this.http.patch<void>(`${environment.apiUrl}/pedidos/estado-prenda/${idPedido}`, null, { params: { prenda, nuevoEstado } });
   }
 
   definirFechaEntrega(idPedido: number, fecha: string)

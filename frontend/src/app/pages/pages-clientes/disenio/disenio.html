@@ -46,11 +46,7 @@
               </div>
 
               <div class="disenio-card__acciones">
-                <button type="button" class="ds-button ds-button--secondary ds-button--small"
-                        [disabled]="descargandoId() === disenio.id" (click)="descargar(disenio)">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
-                  {{ descargandoId() === disenio.id ? 'Descargando…' : 'Boceto' }}
-                </button>
+
 
                 <!-- El firmado aparece recién cuando el equipo lo sube -->
                 @if (disenio.firmado) {
