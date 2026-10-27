@@ -73,6 +73,19 @@ export class DocumentosService
         }
     }
 
+    async eliminarDocumento(idDocumento: number)
+    {
+        const { error } = await this.sb.supabase
+            .from('documentos')
+            .delete()
+            .eq('id', idDocumento);
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+    }
+
     async obtenerDocumentosPorPrefijoTipo(idGrupo: number, prefijo: string)
     {
         const { data, error } = await this.sb.supabase

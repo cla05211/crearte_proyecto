@@ -1,10 +1,11 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
 import { ProductosService } from './productos.service';
 import { ProductoPostDTO } from './dto/ProductoPOST.dto';
 import { AgregadoPostDTO } from './dto/AgregadoPost.dto';
+import { ModificarProductoPreciosDTO } from './dto/ModificarProductoPrecios.dto';
 
 @Controller('productos')
 export class ProductosController 
@@ -62,5 +63,13 @@ export class ProductosController
     {
         return await this.productosService.obtenerCuotasDisponibles();
     }  
+
+    @Patch('/precios')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_pagina_productos')
+    async modificarPreciosProducto(@Query('idProducto', ParseIntPipe) idProducto: number, @Body() dto: ModificarProductoPreciosDTO)
+    {
+        return await this.modificarPreciosProducto(idProducto,dto)
+    }
 }
 

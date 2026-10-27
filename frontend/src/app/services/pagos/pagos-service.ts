@@ -1,4 +1,5 @@
 import { HttpClient } from '@angular/common/http';
+import { ResumenPagosBanco } from './dto/resumenPagosBanco.dto';
 import { inject, Injectable } from '@angular/core';
 import { PagoResponseDTO } from './dto/pagoResponse.dto';
 import { environment } from '../../../environments/environment';
@@ -23,9 +24,15 @@ export class PagosService
     return this.http.get<PagoResponseDTO[]>((`${environment.apiUrl}/pagos/${idPedido}`));
   }
 
-  traerPagosBanco(banco: string, rangoDesde: number, rangoHasta:number): Observable<PagoBancoResponse[]>
+  // filtros: búsqueda y filtros por columna, solo los que tienen valor
+  traerPagosBanco(banco: string, rangoDesde: number, rangoHasta:number, filtros: Record<string, string> = {}): Observable<PagoBancoResponse[]>
   {
-    return this.http.get<PagoBancoResponse[]>((`${environment.apiUrl}/pagos/bancos/${banco}`), {params:{rangoDesde, rangoHasta}});
+    return this.http.get<PagoBancoResponse[]>((`${environment.apiUrl}/pagos/bancos/${banco}`), {params:{rangoDesde, rangoHasta, ...filtros}});
+  }
+
+  traerResumenPagosBanco(banco: string, filtros: Record<string, string> = {}): Observable<ResumenPagosBanco>
+  {
+    return this.http.get<ResumenPagosBanco>(`${environment.apiUrl}/pagos/bancos/${banco}/resumen`, {params: filtros});
   }
 
   comprobarDatosComprobante(formData: FormData): Observable<PagoComprobanteDatosDTO>

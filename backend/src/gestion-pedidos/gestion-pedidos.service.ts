@@ -35,6 +35,9 @@ import { ControlProduccionDTO, EstadoPrenda } from './dto/ControlProduccionDTO';
 const CAMPERAS_BUZOS = [63,64,67,68,69,70,71];
 const CHOMBAS_REMERAS = [65,66,67,68,69,70];
 const PANTALONES = [72];
+const ESTADO_TALLES_CONFIRMADO = 'Confirmado';
+const ESTADO_TALLES_CARGANDO = 'Cargando';
+const ESTADO_TALLES_NO_ACCEDIO = 'No accedió';
 
 type ProductoPedidoNombre = { productos: { id: number } };
 
@@ -96,7 +99,7 @@ export class GestionPedidosService
             *,
             beneficios_pedido(id_beneficio, cantidad, beneficios(beneficio, id_producto)),
             grupos!inner(
-                *,
+                *,padres_responsables(nombre,apellido,principal),
                 colegios(*)
             ),
             productos_pedidos(*),
@@ -135,9 +138,12 @@ export class GestionPedidosService
                 individual: a.agregados?.individual,
             })),
             nroCuotas: pedido.cuotas.length,
+            padresResponsables: pedido.grupos.padres_responsables.filter(p => p.principal === true)
+                .map(p => ({nombre:p.nombre!, apellido:p.apellido!})),
             beneficios: pedido.beneficios_pedido.map((b): BeneficioPedidoDTO => ({id_beneficio: b.id_beneficio,cantidad: b.cantidad,
                 beneficio: b.beneficios?.beneficio ?? '',
                 id_producto: b.beneficios?.id_producto ?? null,})),
+            fechaVenta: pedido.grupos.created_at!
         }));
 
         return pedidosVentas;
@@ -236,7 +242,8 @@ export class GestionPedidosService
                 colegios!inner(nombre),
                 padres_responsables(id, nombre, apellido, telefono, principal),
                 alumnos_responsables(id, nombre, apellido, telefono, principal))
-                ,pagos(monto, motivo)`)
+                ,pagos(monto, motivo),
+            prendas_pedido(count)`)
         .eq("pagos.motivo", "Seña")
         .gte("grupos.created_at", primerDiaMes.toISOString())
         .lt("grupos.created_at", primerDiaMesSiguiente.toISOString())
@@ -247,7 +254,7 @@ export class GestionPedidosService
             query = query.or(`nombre.ilike.%${busqueda}%`, { referencedTable: "grupos.colegios" });
         }
 
-        const { data, error } = await query;
+        const [{ data, error }, planTieneSenia] = await Promise.all([query, this.obtenerPlanesConSenia()]);
 
         if (error)
         {
@@ -258,7 +265,9 @@ export class GestionPedidosService
             id: pedido.id,
             nroCuotas: pedido.cuotas.length,
             estadoPrimerCuota: pedido.cuotas.find(c => c.numero === 1)?.estado ?? null,
-            senia: pedido.productos_pedidos[0].valor_senia != pedido.productos_pedidos[0].valor_cuota,
+            // Si el plan ya no está en el catálogo se compara el primer producto (como antes)
+            senia: planTieneSenia.get(pedido.cuotas.length)
+                ?? pedido.productos_pedidos[0]?.valor_senia != pedido.productos_pedidos[0]?.valor_cuota,
             seniaPaga:  pedido.pagos.reduce((total, pago) => total + pago.monto!, 0) >= pedido.productos_pedidos.reduce((total, producto) => total + producto.valor_senia, 0),
             promo: pedido.grupos.promo!,
             nombreColegio: pedido.grupos.colegios.nombre,
@@ -266,7 +275,7 @@ export class GestionPedidosService
             padresResponsables: pedido.grupos.padres_responsables,
             productos: pedido.productos_pedidos.map(pp => pp.productos?.nombre).filter(Boolean).join(", "),
             estadoBoceto:pedido.estado_boceto,
-            estadoTalles:pedido.estado_talles,
+            estadoTalles: this.calcularEstadoTalles(pedido.estado_talles, pedido.prendas_pedido[0]?.count ?? 0),
             fechaAprobacionBoceto: pedido.fecha_aprobacion_boceto ? new Date(pedido.fecha_aprobacion_boceto) : null,
             fechaAprobacionTalles: pedido.fecha_aprobacion_talles ? new Date(pedido.fecha_aprobacion_talles) : null,
             fechaVenta: new Date(pedido.grupos.created_at!),
@@ -276,6 +285,37 @@ export class GestionPedidosService
         }));
 
         return pedidos;
+    }
+
+    // Que un plan tenga seña o sea de cuotas iguales depende solo de la cantidad de cuotas (igual para todos
+    // los productos y cantidades). Se saca del catálogo y no del pedido, porque en el pedido la cuota incluye
+    // los agregados individuales y un plan de cuotas iguales quedaría con seña != cuota. Mismo criterio que Ventas.
+    private async obtenerPlanesConSenia(): Promise<Map<number, boolean>>
+    {
+        const { data, error } = await this.sb.supabase
+        .from("precios_productos")
+        .select("cuotas, valor_senia, valor_cuota");
+
+        if (error)
+        {
+            throw new Error(error.message);
+        }
+
+        const planes = new Map<number, boolean>();
+        for (const precio of data)
+        {
+            const conSenia = Number(precio.valor_senia) !== Number(precio.valor_cuota);
+            planes.set(precio.cuotas, (planes.get(precio.cuotas) ?? false) || conSenia);
+        }
+        return planes;
+    }
+
+    // Estado de talles que ve Diseño: "Confirmado" lo pone el portal al firmar la planilla;
+    // antes de eso depende de si el colegio ya guardó alguna prenda en la plataforma.
+    private calcularEstadoTalles(estadoGuardado: string | null, cantidadPrendas: number): string
+    {
+        if (estadoGuardado === ESTADO_TALLES_CONFIRMADO) return ESTADO_TALLES_CONFIRMADO;
+        return cantidadPrendas > 0 ? ESTADO_TALLES_CARGANDO : ESTADO_TALLES_NO_ACCEDIO;
     }
 
     async obtenerDatosProduccion(mesEntrega:number, añoEntrega: number, enviadosFabrica: boolean):Promise<ControlProduccionDTO[]>
@@ -349,7 +389,7 @@ export class GestionPedidosService
     }
 
     // Asigna nro de fábrica, fecha de entrega y vencimiento de la última cuota en una sola transacción (RPC),
-    // y después avisa por WhatsApp que el contrato está disponible.
+    // y después avisa por wpp que el contrato esta disponible.
     async enviarPedidoFabrica(idPedido: number, mesEntrega: number, anioEntrega: number): Promise<{ nroFabrica: number; whatsappEnviado: boolean }>
     {
         const { data, error } = await this.sb.supabase.rpc('enviar_pedido_a_fabrica', {
@@ -363,7 +403,7 @@ export class GestionPedidosService
             throw new BadRequestException(error.message);
         }
 
-        // Si falla el WhatsApp el pedido ya quedó enviado; solo se informa (la notificación queda en 'error')
+        // Si falla el WhatsApp el pedido ya quedo enviado; solo se informa (la notificacion queda en 'error')
         let whatsappEnviado = true;
         try
         {

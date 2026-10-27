@@ -1,6 +1,7 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
@@ -18,7 +19,7 @@ interface PaginaClientes
 
 @Component({
   selector: 'app-clientes',
-  imports: [FormsModule],
+  imports: [FormsModule, DatePipe],
   templateUrl: './clientes.html',
   styleUrl: './clientes.css',
 })
@@ -44,11 +45,30 @@ export class Clientes implements OnInit
   readonly busqueda = signal('');
   readonly busquedaInput = signal('');
 
+  // Período por fecha de venta. null = "Todos". Por defecto, el mes y año actuales.
+  private readonly hoy = new Date();
+  readonly mesSeleccionado = signal<number | null>(this.hoy.getMonth() + 1);
+  readonly anioSeleccionado = signal<number | null>(this.hoy.getFullYear());
+  readonly anios = Array.from({ length: 5 }, (_, i) => this.hoy.getFullYear() - 3 + i);
+  readonly meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    .map((nombre, i) => ({ valor: i + 1, nombre }));
+
+  // Contador "Colegios" (mismos filtros que el listado)
+  readonly cantidadColegios = signal<number | null>(null);
+  private readonly conteoSolicitado$ = new Subject<void>();
+
   ngOnInit(): void
   {
     this.determinarRol();
+    // Fábrica ve los pedidos en producción, que en general se vendieron meses antes: arranca sin filtro de fecha
+    if (this.rolUsuario === 5)
+    {
+      this.mesSeleccionado.set(null);
+      this.anioSeleccionado.set(null);
+    }
     this.inicializarPipelineClientes();
     this.inicializarBusquedaConDebounce();
+    this.inicializarConteo();
     this.cargarGruposClientes();
   }
 
@@ -68,7 +88,7 @@ export class Clientes implements OnInit
           const hasta = desde + this.TAMANIO_PAGINA - 1;
           const busqueda = this.busqueda().trim() || undefined;
 
-          return this.gruposClientesSerivce.obtenerGruposClientes(desde, hasta, busqueda).pipe(
+          return this.gruposClientesSerivce.obtenerGruposClientes(desde, hasta, busqueda, this.mesSeleccionado(), this.anioSeleccionado()).pipe(
             map((clientes) => ({ pagina, clientes })),
             catchError(() => {
               this.cargando.set(false);
@@ -115,6 +135,34 @@ export class Clientes implements OnInit
   cargarGruposClientes(): void
   {
     this.solicitudPagina$.next(0);
+    this.conteoSolicitado$.next();
+  }
+
+  private inicializarConteo(): void
+  {
+    this.conteoSolicitado$
+      .pipe(
+        switchMap(() =>
+          this.gruposClientesSerivce
+            .contarGruposClientes(this.busqueda().trim() || undefined, this.mesSeleccionado(), this.anioSeleccionado())
+            .pipe(catchError(() => of(null))),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((cantidad) => this.cantidadColegios.set(cantidad));
+  }
+
+  // '' en el select = "Todos"
+  cambiarMes(valor: string): void
+  {
+    this.mesSeleccionado.set(valor === '' ? null : Number(valor));
+    this.cargarGruposClientes();
+  }
+
+  cambiarAnio(valor: string): void
+  {
+    this.anioSeleccionado.set(valor === '' ? null : Number(valor));
+    this.cargarGruposClientes();
   }
 
   paginaAnterior(): void

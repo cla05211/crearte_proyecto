@@ -236,6 +236,18 @@ svg {
   background: var(--color-primary-100);
 }
 
+.td-agregar:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ── Extras ── */
+.td-eliminar-si {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--color-surface);
+}
+
 .td-fila--nueva {
   border-color: var(--color-primary-300);
 }

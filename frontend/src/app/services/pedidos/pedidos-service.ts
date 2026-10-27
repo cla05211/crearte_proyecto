@@ -43,18 +43,6 @@ export class PedidosService
     return this.http.patch<void>(`${environment.apiUrl}/pedidos/diseniadora`, null, {params: {idDiseniadora, idPedido}});
   }
 
-  modificarEstadoTalles(nuevoEstado:string, idPedido: number, fechaConfirmacion?:string): Observable<void>
-  {
-    let params: any = {nuevoEstado, idPedido};
-
-    if (fechaConfirmacion !== undefined)
-    {
-      params.fechaConfirmacion = fechaConfirmacion;
-    }
-
-    return this.http.patch<void>(`${environment.apiUrl}/pedidos/estado-talles`, null, {params});
-  }
-
   modificarEstadoDisenio(nuevoEstado:string, idPedido: number): Observable<void>
   {
     return this.http.patch<void>(`${environment.apiUrl}/pedidos/estado-disenio`, null, {params: {nuevoEstado, idPedido}});

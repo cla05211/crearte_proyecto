@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { ProductoConPrecioResponseDTO} from './dto/ProductoConPrecioResponse.dto';
 import { AgregadoDBDTO } from './dto/Agregado.dto';
@@ -7,6 +7,7 @@ import { AgregadoPostDTO } from './dto/AgregadoPost.dto';
 import { InternalServerErrorException } from '@nestjs/common';
 import { PreciosBeneficiosResponseDTO } from './dto/PreciosBeneficiosResponse.dto';
 import { ProductoPreciosDTO } from './dto/ProductoPrecios.dto';
+import { ModificarProductoPreciosDTO } from './dto/ModificarProductoPrecios.dto';
 
 @Injectable()
 export class ProductosService 
@@ -202,4 +203,34 @@ export class ProductosService
 
         return cuotasDisponibles
     }
+
+
+    //PRecios productos
+    async modificarPreciosProducto(idProducto:number, preciosDto:ModificarProductoPreciosDTO[]):Promise<number>
+    {
+        const { data, error } = await this.sb.supabase
+            .rpc('modificar_precios_producto', {
+                p_id_producto: idProducto,
+                p_precios: JSON.parse(JSON.stringify(preciosDto))
+            });
+
+        if (error) 
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        return data as number;
+    }
+
+    //Planes de cuotas
+    async activarDesactivarPlan()
+    {
+        
+    }
+
+    async agregarPlan()
+    {
+
+    }
+
 }

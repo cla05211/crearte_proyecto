@@ -35,6 +35,7 @@
 }
 
 .banks-container {
+  max-width: min(100%, 110rem);
   position: relative;
   z-index: 1;
 }
@@ -60,14 +61,23 @@
 
 .banks-header p { margin: var(--space-3) 0 0; }
 
+.banks-header__counts {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: flex-end;
+}
+
 .banks-header__count {
   align-items: center;
   color: var(--color-primary-700);
+  text-align: center;
   display: flex;
   flex-direction: column;
-  font-size: var(--font-size-xs);
+  font-size: 0.62rem;
   font-weight: var(--font-weight-bold);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   line-height: 1.2;
   text-transform: uppercase;
 }
@@ -78,13 +88,21 @@
   border-radius: var(--radius-full);
   color: var(--color-surface);
   display: flex;
-  font-size: var(--font-size-xl);
-  height: 3.2rem;
+  font-size: var(--font-size-md, 1rem);
+  height: 2.4rem;
   justify-content: center;
   letter-spacing: 0;
-  margin-bottom: var(--space-2);
-  width: 3.2rem;
+  margin-bottom: var(--space-1);
+  min-width: 2.4rem;
+  padding: 0 var(--space-2);
 }
+
+.banks-header__count--pendientes { color: var(--color-warning); }
+.banks-header__count--pendientes .banks-header__count-number { background: var(--color-warning); }
+.banks-header__count--aprobados { color: var(--color-success); }
+.banks-header__count--aprobados .banks-header__count-number { background: var(--color-success); }
+.banks-header__count--rechazados { color: var(--color-danger); }
+.banks-header__count--rechazados .banks-header__count-number { background: var(--color-danger); }
 
 .banks-toolbar {
   align-items: center;
@@ -173,7 +191,7 @@
 
 .banks-table {
   border-collapse: collapse;
-  min-width: 60rem;
+  min-width: 0;
   width: 100%;
 }
 
@@ -189,10 +207,11 @@
 .banks-table th,
 .banks-table td {
   border-bottom: 1px solid var(--color-border);
-  padding: 1.05rem var(--space-5);
+  padding: 1.05rem var(--space-4);
   text-align: left;
   white-space: nowrap;
 }
+.banks-table td[data-label='Colegio'] { white-space: normal; min-width: 11rem; }
 
 .banks-table th {
   background: #fbf7f9;
@@ -342,7 +361,8 @@
   width: 1.1rem;
 }
 
-.reject-button:hover { background: #fbeaf0; border-color: #efc2d2; color: var(--color-danger); }
+.reject-button:not(.is-active) { border-color: #b9dcc8; color: var(--color-success); }
+.reject-button:not(.is-active):hover { background: #e2f3ea; border-color: var(--color-success); color: var(--color-success); }
 .reject-button.is-active { background: var(--color-danger); border-color: var(--color-danger); color: var(--color-surface); }
 .download-button:hover { background: var(--color-primary-100); border-color: var(--color-primary-300); color: var(--color-primary-700); }
 .reject-button:active,
@@ -403,16 +423,106 @@
 @media (max-width: 680px) {
   .banks-page { padding: var(--space-8) var(--space-4); }
   .banks-header { align-items: flex-start; margin-bottom: var(--space-6); }
+  .banks-header { flex-direction: column; }
+  .banks-header__counts { justify-content: flex-start; }
   .banks-header__count { margin-top: var(--space-1); }
+  .banks-table { min-width: 60rem; }
   .banks-table th,
   .banks-table td { padding: var(--space-4); }
+  .banks-toolbar__acciones { justify-content: stretch; }
+  .banks-search { flex: 1 1 100%; width: auto; }
   .banks-toolbar { align-items: stretch; flex-direction: column; }
   .selection-toolbar { justify-content: space-between; }
 }
 
 @media (max-width: 440px) {
   .banks-header p { font-size: var(--font-size-sm); }
-  .banks-header__count-number { height: 2.75rem; width: 2.75rem; }
-  .banks-header__count { font-size: 0.63rem; }
+  .banks-header__count-number { height: 2.2rem; min-width: 2.2rem; }
+  .banks-header__count { font-size: 0.58rem; }
   .loading-state { align-items: center; flex-direction: column; text-align: center; }
 }
+
+/* Búsqueda y acciones a la derecha, a la misma altura que las pestañas de banco */
+.banks-toolbar__acciones {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+.banks-search { width: 18rem; }
+
+/* Filtros por columna (estilo hoja de cálculo) */
+.th-filtro {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-2);
+}
+.filter-button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm, 6px);
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  display: inline-flex;
+  height: 1.6rem;
+  justify-content: center;
+  padding: 0;
+  width: 1.6rem;
+}
+.filter-button svg {
+  fill: none;
+  height: 0.95rem;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  width: 0.95rem;
+}
+.filter-button:hover { background: var(--color-primary-100); color: var(--color-primary-700); }
+.filter-button:focus-visible { box-shadow: var(--focus-ring); outline: 0; }
+.filter-button.is-active { background: var(--color-primary-700); color: var(--color-surface); }
+.filter-button.is-active svg { fill: currentColor; }
+
+.filter-backdrop {
+  inset: 0;
+  position: fixed;
+  z-index: 20;
+}
+.filter-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  position: fixed;
+  width: 17rem;
+  z-index: 21;
+}
+.filter-panel__title {
+  color: var(--color-primary-600);
+  font-size: 0.7rem;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.filter-panel__actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+.filter-option {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+}
+.filter-option:hover { background: var(--color-surface-muted); }
+.filter-option.is-selected { background: var(--color-primary-100); border-color: var(--color-primary-300); color: var(--color-primary-700); font-weight: var(--font-weight-bold); }

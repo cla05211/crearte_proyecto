@@ -21,4 +21,6 @@ export class PedidoResponseVentas
     agregadosGlobalesDTO!: AgregadoGlobalPedidoResponseDTO[];
     nroCuotas!: number;
     beneficios!: BeneficioPedidoDTO[];
+    padresResponsables!: {nombre:string, apellido: string}[];
+    fechaVenta!: string;
 }

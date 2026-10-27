@@ -152,6 +152,7 @@
           <input
             class="file-input-hidden"
             type="file"
+            accept="image/*,application/pdf"
             #archivoComprobanteInput
             (change)="seleccionarArchivoComprobante($event)" />
           @if (comprobantePago().archivo; as archivo) {
@@ -259,8 +260,9 @@
         }
 
         <label class="ds-field">
-          <span class="ds-label">Fecha *</span>
+          <span class="ds-label">Fecha del pago *</span>
           <input class="ds-input" type="date" [(ngModel)]="formularioPago.fecha" />
+          <span class="ds-field__error">Ingresá la fecha en que hiciste el pago (la que figura en el comprobante), no la fecha de hoy.</span>
         </label>
       </div>
 

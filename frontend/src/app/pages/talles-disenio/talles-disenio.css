@@ -304,58 +304,6 @@
   min-width: 0;
 }
 
-.modal-backdrop {
-  align-items: flex-start;
-  background: rgba(45, 17, 35, 0.5);
-  display: flex;
-  inset: 0;
-  justify-content: center;
-  overflow-y: auto;
-  padding: var(--space-6);
-  position: fixed;
-  z-index: 10;
-}
-.sale-modal {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  margin: auto;
-  max-width: 58rem;
-  padding: var(--space-6);
-  width: 100%;
-}
-.fecha-talles-modal {
-  max-width: 26rem;
-}
-.sale-modal__header {
-  align-items: flex-start;
-  border-bottom: 1px solid var(--color-border);
-  display: flex;
-  gap: var(--space-4);
-  justify-content: space-between;
-  padding-bottom: var(--space-4);
-}
-.close-button {
-  background: transparent;
-  border: 0;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: 2rem;
-  line-height: 1;
-}
-.wizard-content {
-  padding-top: var(--space-4);
-}
-.wizard-actions {
-  align-items: center;
-  border-top: 1px solid var(--color-border);
-  display: flex;
-  gap: var(--space-4);
-  justify-content: space-between;
-  margin-top: var(--space-6);
-  padding-top: var(--space-4);
-}
-
 @media (max-width: 700px) {
   .talles-disenio-page {
     padding: var(--space-6) 0;
@@ -364,12 +312,25 @@
     align-items: flex-start;
     flex-direction: column;
   }
-  .modal-backdrop {
-    padding: 0;
-  }
-  .sale-modal {
-    border-radius: 0;
-    min-height: 100vh;
-    padding: var(--space-4);
-  }
 }
+
+/* Colores de estado (boceto y talles) */
+.estado-badge {
+  border-radius: 999px;
+  display: inline-block;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  padding: 0.2rem 0.65rem;
+  white-space: nowrap;
+}
+.estado-select.estado--verde,
+.estado-select.estado--amarillo,
+.estado-select.estado--azul,
+.estado-select.estado--rojo {
+  font-weight: var(--font-weight-bold);
+}
+.estado--verde { background-color: #e2f3ea; border-color: #b9dcc8; color: var(--color-success); }
+.estado--amarillo { background-color: #fff0d9; border-color: #f2d3a2; color: var(--color-warning); }
+.estado--azul { background-color: #e3eef8; border-color: #bcd3e8; color: var(--color-info); }
+.estado--rojo { background-color: #fbe2eb; border-color: #efc2d2; color: var(--color-danger); }
+.estado-select:disabled { opacity: 0.85; }

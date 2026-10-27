@@ -12,10 +12,21 @@ export class GruposController
     @Get('clientes-page')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_clientes')
-    async obtenerGruposClientes(@Req() req: any,@Query('rangoDesde', ParseIntPipe) rangoDesde: number, @Query('rangoHasta', ParseIntPipe) rangoHasta: number,   @Query('busqueda') busqueda?: string)
+    async obtenerGruposClientes(@Req() req: any,@Query('rangoDesde', ParseIntPipe) rangoDesde: number, @Query('rangoHasta', ParseIntPipe) rangoHasta: number,   @Query('busqueda') busqueda?: string,
+        @Query('mes', new ParseIntPipe({ optional: true })) mes?: number, @Query('anio', new ParseIntPipe({ optional: true })) anio?: number)
     {
         const esFabrica = req.usuario.rol === 5;
-        return await this.grupos.traerGruposClientePage(rangoDesde, rangoHasta, esFabrica, busqueda);
+        return await this.grupos.traerGruposClientePage(rangoDesde, rangoHasta, esFabrica, busqueda, mes, anio);
+    }
+
+    @Get('clientes-page/cantidad')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_clientes')
+    async contarGruposClientes(@Req() req: any, @Query('busqueda') busqueda?: string,
+        @Query('mes', new ParseIntPipe({ optional: true })) mes?: number, @Query('anio', new ParseIntPipe({ optional: true })) anio?: number)
+    {
+        const esFabrica = req.usuario.rol === 5;
+        return await this.grupos.contarGruposClientePage(esFabrica, busqueda, mes, anio);
     }
 
     @Get('egresados/:id')

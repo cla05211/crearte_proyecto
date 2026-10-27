@@ -1,6 +1,6 @@
 import { Component, computed, DestroyRef, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin, Observable, of, Subject } from 'rxjs';
@@ -68,7 +68,7 @@ interface ComprobanteVerificado {
 
 @Component({
   selector: 'app-ventas',
-  imports: [FormsModule, CurrencyPipe, BuscadorSelect],
+  imports: [FormsModule, CurrencyPipe, DatePipe, BuscadorSelect],
   templateUrl: './ventas.html',
   styleUrl: './ventas.css',
 })
@@ -355,23 +355,9 @@ export class Ventas implements OnInit {
     return venta.productosPedidoDTO.length + venta.agregadosGlobalesDTO.length;
   }
 
-  totalSeniaVenta(venta: PedidoResponseVentas): number {
-    return venta.productosPedidoDTO.reduce(
-      (total, producto) => total + producto.valor_senia * producto.cantidad,
-      0,
-    );
-  }
-
-  totalCuotaVenta(venta: PedidoResponseVentas): number {
-    const productos = venta.productosPedidoDTO.reduce(
-      (total, producto) => total + producto.valor_cuota * producto.cantidad,
-      0,
-    );
-    const agregadosGlobales = venta.agregadosGlobalesDTO.reduce(
-      (total, agregado) => total + agregado.precio,
-      0,
-    );
-    return productos + agregadosGlobales;
+  nombrePadrePrincipal(venta: PedidoResponseVentas): string {
+    const padre = venta.padresResponsables?.[0];
+    return padre ? `${padre.nombre} ${padre.apellido}`.trim() : '—';
   }
 
   idProducto(producto: ProductoConPrecioResponseDTO): number {
@@ -390,28 +376,32 @@ export class Ventas implements OnInit {
     this.calcularProducto();
   }
 
-  etiquetaPlanCuotas(cuotas: number, idProducto: number, cantidad: number): string 
+  // Que un plan tenga seña o sea de cuotas iguales depende solo de la cantidad de cuotas:
+  // es igual para todos los productos y cantidades. Se arma un mapa cuotas -> tiene seña
+  // con todo el catálogo, así la etiqueta no depende del producto elegido ni de los agregados
+  // (que se suman a la cuota y harían que seña != cuota en un plan de cuotas iguales).
+  readonly planTieneSenia = computed(() => {
+    const mapa = new Map<number, boolean>();
+    for (const precio of this.productosDisponibles()) {
+      const cuotas = Number(precio.cuotas);
+      const conSenia = Number(precio.valor_senia) !== Number(precio.valor_cuota);
+      mapa.set(cuotas, (mapa.get(cuotas) ?? false) || conSenia);
+    }
+    return mapa;
+  });
+
+  // Sin seña la primera cuota se guarda como seña: se muestran cuotas + 1 iguales.
+  etiquetaPlanCuotas(cuotas: number): string
   {
-    const precio = this.productosDisponibles().find(
-      (item) =>
-        item.id_producto === idProducto &&
-        Number(item.cuotas) === Number(cuotas) &&
-        cantidad >= item.cantidad_desde &&
-        cantidad <= item.cantidad_hasta,
-    );
-    if (!precio) return `${cuotas} cuotas`;
-
-    const senia = Number(precio.valor_senia);
-    const valorCuota = Number(precio.valor_cuota);
-
-    if (senia === valorCuota) return `${cuotas + 1} cuotas iguales`;
-    return `${cuotas} cuotas + Seña`;
+    const nroCuotas = Number(cuotas);
+    const conSenia = this.planTieneSenia().get(nroCuotas);
+    if (conSenia === undefined) return `${nroCuotas} cuotas`;
+    return conSenia ? `${nroCuotas} cuotas + Seña` : `${nroCuotas + 1} cuotas iguales`;
   }
 
   etiquetaCuotasProducto(producto: ProductoCarrito): string
   {
-    if (producto.valorSenia === producto.valorCuota) return `${producto.cuotas + 1} cuotas iguales`;
-    return `${producto.cuotas} cuotas + Seña`;
+    return this.etiquetaPlanCuotas(producto.cuotas);
   }
 
   calcularProducto(): void {
@@ -665,7 +655,9 @@ export class Ventas implements OnInit {
           comprobantes.map((c, i) => (i === indice ? { ...c, datos, verificando: false, error: '' } : c)),
         );
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
+        // Si no se detectó una cuenta de la empresa se avisa con un mensaje propio, pero se permite la carga manual
+        const cuentaInvalida = err.error?.codigo === 'CUENTA_DESTINO_INVALIDA';
         this.comprobantesSenia.update((comprobantes) =>
           comprobantes.map((c, i) =>
             i === indice
@@ -673,7 +665,9 @@ export class Ventas implements OnInit {
                   ...c,
                   datos: null,
                   verificando: false,
-                  error: 'No se pudieron extraer los datos del comprobante. Verificá el archivo e intentá nuevamente, o ingresá los datos manualmente.',
+                  error: cuentaInvalida
+                    ? 'No pudimos confirmar que sea una transferencia a una cuenta de Crearte. Revisá que el destino sea Centro Logístico Sur SRL o Coassini Adrián Alejandro: si lo es, ingresá los datos manualmente; si no, quitalo y subí el comprobante correcto.'
+                    : 'No se pudieron extraer los datos del comprobante. Verificá el archivo e intentá nuevamente, o ingresá los datos manualmente.',
                   requiereIngresoManual: true,
                 }
               : c,

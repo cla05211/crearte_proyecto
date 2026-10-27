@@ -2,6 +2,7 @@ export interface PagoBancoResponse
 {
     id: number;
     fecha: Date;
+    fecha_recepcion: string;
     nro_transferencia: string;
     entidad_pago: string;
     banco: string;

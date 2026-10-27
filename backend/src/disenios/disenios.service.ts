@@ -94,6 +94,9 @@ export class DiseniosService
 
     async crearUrlDescarga(idGrupo: number, idDocumento: number, nombreArchivo: string)
     {
+        // Solo diseños del grupo: este endpoint también lo usa el portal de clientes,
+        // que no tiene que poder descargar otros documentos (ej: los Extra internos)
+        await this.obtenerDisenioDelGrupo(idGrupo, idDocumento);
         const ruta = await this.obtenerRutaDelGrupo(idGrupo, idDocumento);
         const nombre = `${this.nombreArchivoSeguro(nombreArchivo)}.pdf`;
 

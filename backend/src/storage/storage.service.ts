@@ -6,6 +6,8 @@ import { randomUUID } from 'crypto';
 
 // Tiene que coincidir con el nombre del bucket creado en Supabase
 const BUCKET_DISENIOS = 'disenios';
+// Archivos internos de Talles y diseño (capturas / PDFs de resguardo). Bucket privado.
+const BUCKET_EXTRAS = 'extras';
 
 @Injectable()
 export class StorageService {
@@ -127,5 +129,63 @@ export class StorageService {
         }
 
         return data.signedUrl;
+    }
+
+    //--- Extras ---
+
+    async crearUrlSubidaExtra(ruta: string): Promise<string>
+    {
+        const { data, error } = await this.supabaseService.supabase.storage
+            .from(BUCKET_EXTRAS)
+            .createSignedUploadUrl(ruta);
+
+        if (error)
+        {
+            throw new InternalServerErrorException(error.message);
+        }
+
+        return data.signedUrl;
+    }
+
+    async existeExtra(ruta: string): Promise<boolean>
+    {
+        const [carpeta, nombre] = ruta.split('/');
+
+        const { data, error } = await this.supabaseService.supabase.storage
+            .from(BUCKET_EXTRAS)
+            .list(carpeta, { search: nombre });
+
+        if (error)
+        {
+            throw new InternalServerErrorException(error.message);
+        }
+
+        return data.some(archivo => archivo.name === nombre);
+    }
+
+    async crearUrlDescargaExtra(ruta: string, nombreArchivo: string): Promise<string>
+    {
+        const { data, error } = await this.supabaseService.supabase.storage
+            .from(BUCKET_EXTRAS)
+            .createSignedUrl(ruta, 60, { download: nombreArchivo });
+
+        if (error)
+        {
+            throw new InternalServerErrorException(error.message);
+        }
+
+        return data.signedUrl;
+    }
+
+    async eliminarExtra(ruta: string)
+    {
+        const { error } = await this.supabaseService.supabase.storage
+            .from(BUCKET_EXTRAS)
+            .remove([ruta]);
+
+        if (error)
+        {
+            console.error('No se pudo borrar el extra:', error.message);
+        }
     }
 }

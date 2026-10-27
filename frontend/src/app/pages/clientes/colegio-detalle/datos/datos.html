@@ -49,6 +49,10 @@
             <dt>Cantidad de egresados</dt>
             <dd>{{ datosColegio()!.grupo.cantidad_egresados }}</dd>
           </div>
+          <div class="datos-grid__item">
+            <dt>Fecha de venta</dt>
+            <dd>{{ datosColegio()!.fechaVenta ? (datosColegio()!.fechaVenta | date: 'dd/MM/yyyy') : '—' }}</dd>
+          </div>
         </dl>
       </div>
     </section>

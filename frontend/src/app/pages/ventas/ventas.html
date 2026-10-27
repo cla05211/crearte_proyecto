@@ -49,20 +49,24 @@
           <table class="ds-table sales-table">
             <thead>
               <tr>
+                <th>Fecha</th>
                 <th>Colegio</th>
                 <th>Nivel</th>
+                <th>Orientación</th>
                 <th>Ubicación</th>
+                <th>Responsable</th>
                 <th>Pedido</th>
                 <th>Beneficio</th>
                 <th>Plan de pago</th>
-                <th>Seña total</th>
-                <th>Cuota total</th>
               </tr>
             </thead>
             <tbody>
               @for (venta of datosPromoActual().ventas; track venta.pedidoDTO.id_grupo; let indice = $index)
               {
                     <tr>
+                      <td data-label="Fecha">
+                        {{ venta.fechaVenta | date: 'd/MM' }}
+                      </td>
                       <td data-label="Colegio">
                         <button
                           class="table-link"
@@ -74,16 +78,21 @@
                         @if (estaVentaExpandida(venta.pedidoDTO.id_grupo)) 
                         {
                           <div class="table-details">
-                            Orientación: {{ venta.grupoDTO.orientacion }}<br />Turno:
-                            {{ venta.grupoDTO.turno }}
+                            Turno: {{ venta.grupoDTO.turno }}
                           </div>
                         }
                       </td>
                       <td data-label="Nivel">
                         <span class="ds-badge">{{ venta.grupoDTO.nivel }}</span>
                       </td>
+                      <td data-label="Orientación">
+                        {{ venta.grupoDTO.orientacion || '—' }}
+                      </td>
                       <td data-label="Ubicación">
                         {{ venta.colegioDTO.localidad }}, {{ venta.colegioDTO.provincia }}
+                      </td>
+                      <td data-label="Padre principal">
+                        {{ nombrePadrePrincipal(venta) }}
                       </td>
                       <td data-label="Pedido">
                         <div class="cell-inline">
@@ -127,7 +136,7 @@
                       </td>
                       <td data-label="Plan de pago">
                         <div class="cell-inline">
-                          <span>{{ venta.nroCuotas }} cuotas</span>
+                          <span>{{ etiquetaPlanCuotas(venta.nroCuotas) }}</span>
                           <button
                             type="button"
                             class="icon-edit"
@@ -140,12 +149,6 @@
                             </svg>
                           </button>
                         </div>
-                      </td>
-                      <td data-label="Seña total">
-                        {{ totalSeniaVenta(venta) | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}
-                      </td>
-                      <td data-label="Cuota total">
-                        {{ totalCuotaVenta(venta) | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}
                       </td>
                     </tr>
                   }
@@ -345,7 +348,7 @@
                     (change)="calcularProducto()">
                     @for (cuotas of cuotasDisponibles(); track cuotas) {
                       <option [ngValue]="cuotas">
-                        {{ etiquetaPlanCuotas(cuotas, productoEnEdicion.idProducto, productoEnEdicion.cantidad) }}
+                        {{ etiquetaPlanCuotas(cuotas) }}
                       </option>
                     }
                   </select></label>
@@ -602,7 +605,7 @@
           }
           @if (paso() === 6) {
             <div class="payment-step">
-              <h3>Seña y primera cuota</h3>
+              <h3>Comprobante de Pago</h3>
 
               <label class="check-field"
                 ><input type="checkbox" [(ngModel)]="pago.pagadaEfectivo" /> Pago parcial o
@@ -617,6 +620,7 @@
                   class="file-input-hidden"
                   type="file"
                   multiple
+                  accept="image/*,application/pdf"
                   #archivoSeniaInput
                   (change)="seleccionarArchivosSenia($event)" />
                 <button
@@ -934,7 +938,7 @@
             >
               @for (cuotas of cuotasDisponibles(); track cuotas) {
                 <option [value]="cuotas">
-                  {{ etiquetaPlanCuotas(cuotas, productoEnEdicionPlan.idProducto, productoEnEdicionPlan.cantidad) }}
+                  {{ etiquetaPlanCuotas(cuotas) }}
                 </option>
               }
             </select>

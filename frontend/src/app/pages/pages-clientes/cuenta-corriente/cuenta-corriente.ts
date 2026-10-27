@@ -239,12 +239,16 @@ export class CuentaCorriente implements OnInit
         next: (datos) => {
           this.comprobantePago.update((c) => ({ ...c, datos, verificando: false, error: '' }));
         },
-        error: () => {
+        error: (err) => {
+          // Si no se detectó una cuenta de la empresa se avisa con un mensaje propio, pero se permite la carga manual
+          const cuentaInvalida = err?.error?.codigo === 'CUENTA_DESTINO_INVALIDA';
           this.comprobantePago.update((c) => ({
             ...c,
             datos: null,
             verificando: false,
-            error: 'No se pudieron extraer los datos del comprobante. Verificá el archivo e intentá nuevamente, o ingresá los datos manualmente.',
+            error: cuentaInvalida
+              ? 'No pudimos confirmar que sea una transferencia a una cuenta de Crearte. Revisá que el destino sea Centro Logístico Sur SRL o Coassini Adrián Alejandro: si lo es, ingresá los datos manualmente; si no, quitalo y subí el comprobante correcto.'
+              : 'No se pudieron extraer los datos del comprobante. Verificá el archivo e intentá nuevamente, o ingresá los datos manualmente.',
             requiereIngresoManual: true,
           }));
         },

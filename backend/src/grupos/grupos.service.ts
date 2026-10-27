@@ -40,25 +40,13 @@ export class GruposService
         return data.id;
     }
 
-    async traerGruposClientePage(rangoDesde: number, rangoHasta:number, esFabrica:boolean, busqueda?:string):Promise<grupoClientePageResponseDTO[]>
+    async traerGruposClientePage(rangoDesde: number, rangoHasta:number, esFabrica:boolean, busqueda?:string, mes?: number, anio?: number):Promise<grupoClientePageResponseDTO[]>
     {
-        let query = this.sb.supabase
-        .from("grupos")
-        .select(`id,nivel,created_at,colegios!inner (nombre, localidad, provincia, zona_sur),padres_responsables!inner (nombre, apellido, id_grupo, principal), pedidos!inner(nro_fabrica, estado_general)`)
-        .eq('padres_responsables.principal', true)
-        .order('created_at', { ascending: false });
+        const query = this.consultaGruposClientes(false, esFabrica, busqueda, mes, anio);
 
-        if(busqueda)
-        {
-            query = query.ilike('colegios.nombre', `%${busqueda}%`);
-        }
-        // Fábrica solo ve los pedidos que administración ya envió a producción
-        if(esFabrica)
-        {
-            query = query.eq('pedidos.estado_general', 'En producción');
-        }
-
-        const { data, error } = await query.range(rangoDesde, rangoHasta);
+        const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .range(rangoDesde, rangoHasta);
 
         if (error) 
         {
@@ -73,9 +61,67 @@ export class GruposService
                 nroFabrica:grupo.pedidos[0].nro_fabrica,
                 nivel: grupo.nivel!,
                 padreResponsableNombre:grupo.padres_responsables[0].nombre ?? '',
-                padreResponsableApellido:grupo.padres_responsables[0].apellido ?? ''
+                padreResponsableApellido:grupo.padres_responsables[0].apellido ?? '',
+                contacto:grupo.padres_responsables.filter(p=> p.principal == true)[0].telefono!,
+                orientacion: grupo.orientacion!,
+                turno: grupo.turno!,
+                fechaVenta: grupo.created_at!
             }))
         return gruposClientes;
+    }
+
+    // Contador "Colegios" de la página Clientes: mismos filtros que el listado
+    async contarGruposClientePage(esFabrica:boolean, busqueda?:string, mes?: number, anio?: number): Promise<number>
+    {
+        const { count, error } = await this.consultaGruposClientes(true, esFabrica, busqueda, mes, anio);
+
+        if (error)
+        {
+            throw new Error(error.message);
+        }
+
+        return count ?? 0;
+    }
+
+    // Listado de Clientes. Período por fecha de venta (created_at del grupo) en hora de Argentina:
+    // con año y mes, ese mes; solo año, el año entero; sin año, sin filtro de fecha.
+    private consultaGruposClientes(soloContar: boolean, esFabrica: boolean, busqueda?: string, mes?: number, anio?: number)
+    {
+        let query = this.sb.supabase
+        .from("grupos")
+        .select(
+            `id,nivel,orientacion,turno,created_at,colegios!inner (nombre, localidad, provincia, zona_sur),padres_responsables!inner (nombre, apellido, telefono, principal), pedidos!inner(nro_fabrica, estado_general)`,
+            soloContar ? { count: 'exact', head: true } : undefined,
+        )
+        .eq('padres_responsables.principal', true)
+        .not('padres_responsables.nombre', 'is', null)
+        .not('padres_responsables.apellido', 'is', null);
+
+        if(busqueda)
+        {
+            query = query.ilike('colegios.nombre', `%${busqueda}%`);
+        }
+
+        if(esFabrica)
+        {
+            query = query.eq('pedidos.estado_general', 'En producción');
+        }
+
+        if (anio)
+        {
+            const desde = mes ? this.inicioMesArgentina(anio, mes) : this.inicioMesArgentina(anio, 1);
+            const hasta = mes
+                ? (mes === 12 ? this.inicioMesArgentina(anio + 1, 1) : this.inicioMesArgentina(anio, mes + 1))
+                : this.inicioMesArgentina(anio + 1, 1);
+            query = query.gte('created_at', desde).lt('created_at', hasta);
+        }
+
+        return query;
+    }
+
+    private inicioMesArgentina(anio: number, mes: number): string
+    {
+        return `${anio}-${String(mes).padStart(2, '0')}-01T00:00:00-03:00`;
     }
 
     async traerCantidadEgresados(idGrupo: number)
@@ -137,7 +183,8 @@ export class GruposService
             },
             padresResponsables,
             alumnosResponsables,
-            usuario: cliente?.usuario.trim() ?? null
+            usuario: cliente?.usuario.trim() ?? null,
+            fechaVenta: grupo.created_at!
         };
 
     }

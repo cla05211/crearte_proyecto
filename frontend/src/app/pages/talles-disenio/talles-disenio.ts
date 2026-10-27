@@ -38,12 +38,6 @@ interface ResumenPlanCuotas
   subidosProduccion: number;
 }
 
-interface EdicionFechaTalles
-{
-  pedido: ControlTallesDisenioDTO;
-  fecha: string;
-}
-
 @Component({
   selector: 'app-talles-disenio',
   imports: [FormsModule, DatePipe],
@@ -66,6 +60,16 @@ export class TallesDisenio
   readonly resumenExpandido = signal(true);
   readonly promosColapsadas = signal<Set<number>>(new Set());
   readonly planesColapsados = signal<Set<string>>(new Set());
+
+  // Filtro "Diseñado por": null = todas, 0 = sin asignar, >0 = id de la diseñadora
+  readonly filtroDiseniadora = signal<number | null>(null);
+
+  readonly pedidosFiltrados = computed(() => {
+    const pedidos = this.pedidosTallesDisenio() ?? [];
+    const filtro = this.filtroDiseniadora();
+    if (filtro === null) return pedidos;
+    return pedidos.filter((p) => (p.diseniadora ?? 0) === filtro);
+  });
 
   private readonly busquedaCambiada$ = new Subject<string>();
   readonly busqueda = signal('');
@@ -94,13 +98,16 @@ export class TallesDisenio
     { value: 12, nombre: 'Diciembre' },
   ];
 
-  readonly estadosTalles = [
-    'Pendiente de acceso',
-    'Cargando en la plataforma',
-    'Pide muestras físicas',
-    'Enviada planilla',
-    'Esperando confirmación',
-  ];
+  // Clase de color de cada estado (boceto y talles)
+  private readonly coloresEstado: Record<string, string> = {
+    'Diseñado': 'estado--verde',
+    'En proceso': 'estado--amarillo',
+    'Info lista - Pendiente': 'estado--azul',
+    'Esperando información': 'estado--rojo',
+    'Confirmado': 'estado--verde',
+    'Cargando': 'estado--amarillo',
+    'No accedió': 'estado--rojo',
+  };
 
   readonly totalColumnas = 10;
 
@@ -115,26 +122,24 @@ export class TallesDisenio
   readonly edicionTelefonoId = signal<number | null>(null);
   responsablePrincipalEnEdicion: number | null = null;
 
-  // Edición de fecha de confirmación de talles (cuando se elige "Confirmado")
-  readonly edicionFechaTalles = signal<EdicionFechaTalles | null>(null);
 
-  readonly totalCargados = computed(() => (this.pedidosTallesDisenio() ?? []).length);
+  readonly totalCargados = computed(() => this.pedidosFiltrados().length);
 
   readonly disenosAprobados = computed(() =>
-    (this.pedidosTallesDisenio() ?? []).filter((p) => p.fechaAprobacionBoceto !== null).length,
+    this.pedidosFiltrados().filter((p) => p.fechaAprobacionBoceto !== null).length,
   );
 
   readonly planillasTallesConfirmadas = computed(() =>
-    (this.pedidosTallesDisenio() ?? []).filter((p) => p.estadoTalles === 'Confirmado').length,
+    this.pedidosFiltrados().filter((p) => p.estadoTalles === 'Confirmado').length,
   );
 
   readonly enviadosProduccion = computed(() =>
-    (this.pedidosTallesDisenio() ?? []).filter((p) => this.enviadoAProduccion(p)).length,
+    this.pedidosFiltrados().filter((p) => this.enviadoAProduccion(p)).length,
   );
 
   readonly resumenPlanesCuotas = computed<ResumenPlanCuotas[]>(() => {
-    const pedidos = this.pedidosTallesDisenio() ?? [];
-    const etiquetas = [...new Set(pedidos.map((p) => this.etiquetaCuotas(p)))];
+    const pedidos = this.pedidosFiltrados();
+    const etiquetas = this.etiquetasOrdenadas(pedidos);
 
     return etiquetas.map((etiqueta) => {
       const delPlan = pedidos.filter((p) => this.etiquetaCuotas(p) === etiqueta);
@@ -147,7 +152,7 @@ export class TallesDisenio
   });
 
   readonly gruposPorPromo = computed<GrupoPromo[]>(() => {
-    const pedidos = this.pedidosTallesDisenio() ?? [];
+    const pedidos = this.pedidosFiltrados();
     const promos = [...new Set(pedidos.map((p) => p.promo))].sort((a, b) => a - b);
     const contadorFilas = { valor: 0 };
 
@@ -225,6 +230,30 @@ export class TallesDisenio
     return pedido.senia ? `${pedido.nroCuotas} Cuotas + Seña` : `${pedido.nroCuotas + 1} Cuotas iguales`;
   }
 
+  // Prioridad de producción: primero los planes con menos pagos en total.
+  // A igual cantidad de pagos, "cuotas iguales" va antes que "seña + cuotas".
+  private ordenPlan(pedido: ControlTallesDisenioDTO): number
+  {
+    return (pedido.nroCuotas + 1) * 2 + (pedido.senia ? 1 : 0);
+  }
+
+  private etiquetasOrdenadas(pedidos: ControlTallesDisenioDTO[]): string[]
+  {
+    const ordenPorEtiqueta = new Map<string, number>();
+    for (const p of pedidos) ordenPorEtiqueta.set(this.etiquetaCuotas(p), this.ordenPlan(p));
+    return [...ordenPorEtiqueta.entries()].sort((a, b) => a[1] - b[1]).map(([etiqueta]) => etiqueta);
+  }
+
+  claseEstado(estado: string | null): string
+  {
+    return estado ? (this.coloresEstado[estado] ?? '') : '';
+  }
+
+  cambiarFiltroDiseniadora(valor: string): void
+  {
+    this.filtroDiseniadora.set(valor === '' ? null : Number(valor));
+  }
+
   enviadoAProduccion(pedido: ControlTallesDisenioDTO): boolean
   {
     return pedido.estadoTalles === 'Confirmado' && pedido.fechaAprobacionBoceto !== null && !this.pendientePago(pedido);
@@ -282,7 +311,7 @@ export class TallesDisenio
 
   private agruparPorPlanCuotas(pedidos: ControlTallesDisenioDTO[], contadorFilas: { valor: number }): GrupoPlanCuotas[]
   {
-    const etiquetas = [...new Set(pedidos.map((p) => this.etiquetaCuotas(p)))];
+    const etiquetas = this.etiquetasOrdenadas(pedidos);
     return etiquetas.map((etiqueta) => ({
       etiqueta,
       filas: pedidos
@@ -405,52 +434,6 @@ export class TallesDisenio
       error: () => {
         this.notificaciones.error({
           title: 'No se pudo actualizar el estado de boceto',
-          description: 'Intentá nuevamente.',
-        });
-      },
-    });
-  }
-
-  //--- Estado talles ---
-
-  cambiarEstadoTalles(pedido: ControlTallesDisenioDTO, nuevoEstado: string): void
-  {
-    // Con los talles aprobados el estado queda fijo en Confirmado
-    if (pedido.fechaAprobacionTalles) return;
-
-    this.guardarEstadoTalles(pedido, nuevoEstado);
-  }
-
-  actualizarFechaEdicionTalles(fecha: string): void
-  {
-    this.edicionFechaTalles.update((actual) => (actual ? { ...actual, fecha } : actual));
-  }
-
-  confirmarFechaTalles(): void
-  {
-    const edicion = this.edicionFechaTalles();
-    if (!edicion || !edicion.fecha) return;
-
-    this.guardarEstadoTalles(edicion.pedido, 'Confirmado', edicion.fecha);
-    this.edicionFechaTalles.set(null);
-  }
-
-  cancelarFechaTalles(): void
-  {
-    this.edicionFechaTalles.set(null);
-  }
-
-  private guardarEstadoTalles(pedido: ControlTallesDisenioDTO, nuevoEstado: string, fechaConfirmacion?: string): void
-  {
-    this.pedidosService.modificarEstadoTalles(nuevoEstado, pedido.id, fechaConfirmacion).subscribe({
-      next: () => {
-        const cambios: Partial<ControlTallesDisenioDTO> = { estadoTalles: nuevoEstado };
-        if (fechaConfirmacion) cambios.fechaAprobacionTalles = new Date(`${fechaConfirmacion}T00:00:00`);
-        this.actualizarPedidoLocal(pedido.id, cambios);
-      },
-      error: () => {
-        this.notificaciones.error({
-          title: 'No se pudo actualizar el estado de talles',
           description: 'Intentá nuevamente.',
         });
       },

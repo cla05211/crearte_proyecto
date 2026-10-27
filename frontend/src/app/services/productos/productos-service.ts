@@ -8,6 +8,7 @@ import { ProductoPostDTO } from './dto/productoPOST.dto';
 import { AgregadoPOSTDTO } from './dto/agregadoPOST.dto';
 import { PreciosBeneficiosResponseDTO } from './dto/PreciosBeneficiosResponse.dto';
 import { ProductoPreciosDTO } from './dto/ProductoPrecios.dto';
+import { ModificarProductoPreciosDTO } from './dto/ModificarProductoPrecios.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -71,5 +72,10 @@ export class ProductosService
     obtenerCuotasDisponibles(): Observable<number[]>
     {
         return this.http.get<number[]>(`${environment.apiUrl}/productos/cuotas-disponibles`);
+    }
+
+    modificarPreciosProducto(idProducto:number, dto:ModificarProductoPreciosDTO): Observable<number>
+    {
+        return this.http.patch<number>(`${environment.apiUrl}/productos/precios`,dto,{params:{idProducto}});
     }
 }

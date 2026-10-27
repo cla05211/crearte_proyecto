@@ -2,6 +2,7 @@ export class PagoBancoResponse
 {
     id!: number;
     fecha!: string | null;
+    fecha_recepcion!: string;
     nro_transferencia!: string | null;
     entidad_pago!: string | null;
     banco!: string | null;

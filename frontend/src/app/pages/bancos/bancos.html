@@ -18,9 +18,23 @@
         </p>
       </div>
 
-      <div class="banks-header__count" aria-label="Cantidad de pagos">
-        <span class="banks-header__count-number">{{ pagosVisibles().length }}</span>
-        <span>pagos</span>
+      <div class="banks-header__counts" aria-label="Resumen de pagos de {{ bancoSeleccionado() }}">
+        <div class="banks-header__count banks-header__count--rechazados">
+          <span class="banks-header__count-number">{{ resumen()?.rechazados ?? '–' }}</span>
+          <span>Rechazados<br />por banco</span>
+        </div>
+        <div class="banks-header__count banks-header__count--aprobados">
+          <span class="banks-header__count-number">{{ resumen()?.aprobados ?? '–' }}</span>
+          <span>Aprobados</span>
+        </div>
+        <div class="banks-header__count banks-header__count--pendientes">
+          <span class="banks-header__count-number">{{ resumen()?.pendientesEnvio ?? '–' }}</span>
+          <span>Pendientes<br />enviar a banco</span>
+        </div>
+        <div class="banks-header__count">
+          <span class="banks-header__count-number">{{ resumen()?.total ?? '–' }}</span>
+          <span>Pagos<br />totales</span>
+        </div>
       </div>
     </header>
 
@@ -44,32 +58,48 @@
         </button>
       </nav>
 
-      @if (!modoSeleccion()) {
-        <button
-          type="button"
-          class="ds-button"
-          [disabled]="pagosVisibles().length === 0"
-          (click)="iniciarSeleccionExcel()"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
-          Generar excel
-        </button>
-      } @else {
-        <div class="selection-toolbar">
-          <span class="selection-toolbar__count">{{ seleccionados().size }} seleccionado{{ seleccionados().size === 1 ? '' : 's' }}</span>
-          <button type="button" class="ds-button ds-button--secondary" [disabled]="generandoExcel()" (click)="cancelarSeleccionExcel()">
-            Cancelar
+      <div class="banks-toolbar__acciones">
+        @if (hayFiltrosActivos()) {
+          <button type="button" class="ds-button ds-button--secondary" (click)="limpiarTodosLosFiltros()">
+            Limpiar filtros
           </button>
+        }
+        <input
+          class="ds-input banks-search"
+          type="search"
+          placeholder="Buscar colegio o monto…"
+          aria-label="Buscar por colegio o monto"
+          [ngModel]="busquedaInput()"
+          (ngModelChange)="actualizarBusqueda($any($event))"
+        />
+
+        @if (!modoSeleccion()) {
           <button
             type="button"
             class="ds-button"
-            [disabled]="seleccionados().size === 0 || generandoExcel()"
-            (click)="confirmarGenerarExcel()"
+            [disabled]="pagosVisibles().length === 0"
+            (click)="iniciarSeleccionExcel()"
           >
-            {{ generandoExcel() ? 'Generando…' : 'Confirmar y generar excel' }}
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+            Generar excel
           </button>
-        </div>
-      }
+        } @else {
+          <div class="selection-toolbar">
+            <span class="selection-toolbar__count">{{ seleccionados().size }} seleccionado{{ seleccionados().size === 1 ? '' : 's' }}</span>
+            <button type="button" class="ds-button ds-button--secondary" [disabled]="generandoExcel()" (click)="cancelarSeleccionExcel()">
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="ds-button"
+              [disabled]="seleccionados().size === 0 || generandoExcel()"
+              (click)="confirmarGenerarExcel()"
+            >
+              {{ generandoExcel() ? 'Generando…' : 'Confirmar y generar excel' }}
+            </button>
+          </div>
+        }
+      </div>
     </div>
 
     <section class="banks-card" aria-label="Listado de pagos">
@@ -86,8 +116,14 @@
           <div class="empty-state__illustration" aria-hidden="true">
             <span></span><span></span><span></span>
           </div>
-          <h2>No hay pagos para {{ bancoSeleccionado() }}.</h2>
-          <p>Cuando ingrese un pago para este banco, lo vas a ver acá.</p>
+          @if (hayFiltrosActivos()) {
+            <h2>No hay pagos que coincidan.</h2>
+            <p>Probá con otra búsqueda o cambiá los filtros.</p>
+            <button type="button" class="ds-button ds-button--secondary ds-button--small" (click)="limpiarTodosLosFiltros()">Limpiar filtros</button>
+          } @else {
+            <h2>No hay pagos para {{ bancoSeleccionado() }}.</h2>
+            <p>Cuando ingrese un pago para este banco, lo vas a ver acá.</p>
+          }
         </div>
       } @else {
         <div class="table-wrapper">
@@ -107,13 +143,89 @@
                     />
                   </th>
                 }
-                <th scope="col">Fecha</th>
+                <th scope="col">
+                  <span class="th-filtro">
+                    Fecha de recepción
+                    <button
+                      type="button"
+                      class="filter-button"
+                      [class.is-active]="filtroActivo('recepcion')"
+                      [attr.aria-label]="'Filtrar por fecha de recepción'"
+                      [attr.aria-expanded]="filtroAbierto()?.columna === 'recepcion'"
+                      title="Filtrar"
+                      (click)="abrirFiltro('recepcion', $event)"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8.5V19l-4 2v-7.5Z" /></svg>
+                    </button>
+                  </span>
+                </th>
+                <th scope="col">
+                  <span class="th-filtro">
+                    Fecha de pago
+                    <button
+                      type="button"
+                      class="filter-button"
+                      [class.is-active]="filtroActivo('pago')"
+                      [attr.aria-label]="'Filtrar por fecha de pago'"
+                      [attr.aria-expanded]="filtroAbierto()?.columna === 'pago'"
+                      title="Filtrar"
+                      (click)="abrirFiltro('pago', $event)"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8.5V19l-4 2v-7.5Z" /></svg>
+                    </button>
+                  </span>
+                </th>
                 <th scope="col">Nro de Comprobante</th>
                 <th scope="col">Entidad de Pago</th>
-                <th scope="col">Monto</th>
+                <th scope="col">
+                  <span class="th-filtro">
+                    Monto
+                    <button
+                      type="button"
+                      class="filter-button"
+                      [class.is-active]="filtroActivo('monto')"
+                      aria-label="Filtrar por monto"
+                      [attr.aria-expanded]="filtroAbierto()?.columna === 'monto'"
+                      title="Filtrar"
+                      (click)="abrirFiltro('monto', $event)"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8.5V19l-4 2v-7.5Z" /></svg>
+                    </button>
+                  </span>
+                </th>
                 <th scope="col">Colegio</th>
-                <th scope="col" class="banks-table__center-heading">Enviado al banco</th>
-                <th scope="col" class="banks-table__center-heading">Aprobado</th>
+                <th scope="col" class="banks-table__center-heading">
+                  <span class="th-filtro">
+                    Enviado al banco
+                    <button
+                      type="button"
+                      class="filter-button"
+                      [class.is-active]="filtroActivo('enviado')"
+                      [attr.aria-label]="'Filtrar por enviado al banco'"
+                      [attr.aria-expanded]="filtroAbierto()?.columna === 'enviado'"
+                      title="Filtrar"
+                      (click)="abrirFiltro('enviado', $event)"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8.5V19l-4 2v-7.5Z" /></svg>
+                    </button>
+                  </span>
+                </th>
+                <th scope="col" class="banks-table__center-heading">
+                  <span class="th-filtro">
+                    Estado
+                    <button
+                      type="button"
+                      class="filter-button"
+                      [class.is-active]="filtroActivo('aprobado')"
+                      [attr.aria-label]="'Filtrar por aprobado'"
+                      [attr.aria-expanded]="filtroAbierto()?.columna === 'aprobado'"
+                      title="Filtrar"
+                      (click)="abrirFiltro('aprobado', $event)"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8.5V19l-4 2v-7.5Z" /></svg>
+                    </button>
+                  </span>
+                </th>
                 <th scope="col" class="banks-table__actions-heading">Comprobante</th>
               </tr>
             </thead>
@@ -126,7 +238,7 @@
                     (click)="fila.grupo === 'Anterior' && toggleAnteriores()"
                   >
                     <td
-                      [attr.colspan]="modoSeleccion() ? 9 : 8"
+                      [attr.colspan]="modoSeleccion() ? 10 : 9"
                       class="banks-table__group-heading"
                       [attr.role]="fila.grupo === 'Anterior' ? 'button' : null"
                       [attr.tabindex]="fila.grupo === 'Anterior' ? 0 : null"
@@ -143,7 +255,7 @@
                     </td>
                   </tr>
                 }
-                @if (fila.grupo === 'Esta semana' || mostrarAnteriores()) {
+                @if (fila.grupo === 'Esta semana' || mostrarAnteriores() || hayFiltrosActivos()) {
                 <tr [class.is-rechazado]="!fila.pago.aprobado">
                   @if (modoSeleccion()) {
                     <td class="banks-table__select-cell">
@@ -155,7 +267,8 @@
                       />
                     </td>
                   }
-                  <td data-label="Fecha">{{ fila.pago.fecha | date: 'dd/MM/yyyy' }}</td>
+                  <td data-label="Fecha de recepción">{{ fila.pago.fecha_recepcion | date: 'dd/MM/yyyy' }}</td>
+                  <td data-label="Fecha de pago">{{ fila.pago.fecha | date: 'dd/MM/yyyy' }}</td>
                   <td data-label="Nro de Comprobante">{{ fila.pago.nro_transferencia }}</td>
                   <td data-label="Entidad de Pago">{{ fila.pago.entidad_pago }}</td>
                   <td data-label="Monto">{{ fila.pago.monto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
@@ -182,7 +295,11 @@
                       [attr.aria-label]="(fila.pago.aprobado ? 'Rechazar' : 'Restaurar') + ' el pago ' + fila.pago.nro_transferencia"
                       [title]="fila.pago.aprobado ? 'Rechazar pago' : 'Pago rechazado, tocar para restaurar'"
                     >
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+                      @if (fila.pago.aprobado) {
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                      } @else {
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+                      }
                     </button>
                   </td>
                   <td data-label="Comprobante" class="banks-table__actions-cell">
@@ -231,4 +348,51 @@
       }
     </section>
   </section>
+
+  @if (filtroAbierto(); as filtro) {
+    <div class="filter-backdrop" (click)="cerrarFiltro()" aria-hidden="true"></div>
+    <div class="filter-panel" role="dialog" aria-label="Filtro de columna" [style.top.px]="filtro.top" [style.left.px]="filtro.left">
+      @switch (filtro.columna) {
+        @case ('recepcion') {
+          <span class="filter-panel__title">Fecha de recepción</span>
+          <label class="ds-field"><span class="ds-label">Desde</span>
+            <input class="ds-input" type="date" [(ngModel)]="borradorFiltros.recepcionDesde" [max]="borradorFiltros.recepcionHasta" /></label>
+          <label class="ds-field"><span class="ds-label">Hasta</span>
+            <input class="ds-input" type="date" [(ngModel)]="borradorFiltros.recepcionHasta" [min]="borradorFiltros.recepcionDesde" /></label>
+        }
+        @case ('pago') {
+          <span class="filter-panel__title">Fecha de pago</span>
+          <label class="ds-field"><span class="ds-label">Desde</span>
+            <input class="ds-input" type="date" [(ngModel)]="borradorFiltros.pagoDesde" [max]="borradorFiltros.pagoHasta" /></label>
+          <label class="ds-field"><span class="ds-label">Hasta</span>
+            <input class="ds-input" type="date" [(ngModel)]="borradorFiltros.pagoHasta" [min]="borradorFiltros.pagoDesde" /></label>
+        }
+        @case ('monto') {
+          <span class="filter-panel__title">Monto</span>
+          <label class="ds-field"><span class="ds-label">Desde</span>
+            <input class="ds-input" type="number" min="0" placeholder="$" [(ngModel)]="borradorFiltros.montoDesde" /></label>
+          <label class="ds-field"><span class="ds-label">Hasta</span>
+            <input class="ds-input" type="number" min="0" placeholder="$" [(ngModel)]="borradorFiltros.montoHasta" /></label>
+        }
+        @case ('aprobado') {
+          <span class="filter-panel__title">Aprobado</span>
+          @for (opcion of [{ valor: '', texto: 'Todos' }, { valor: 'true', texto: 'Aprobados' }, { valor: 'false', texto: 'Rechazados' }]; track opcion.valor) {
+            <button type="button" class="filter-option" [class.is-selected]="filtros().aprobado === opcion.valor" (click)="elegirOpcionFiltro('aprobado', $any(opcion.valor))">{{ opcion.texto }}</button>
+          }
+        }
+        @case ('enviado') {
+          <span class="filter-panel__title">Enviado al banco</span>
+          @for (opcion of [{ valor: '', texto: 'Todos' }, { valor: 'true', texto: 'Enviados' }, { valor: 'false', texto: 'No enviados' }]; track opcion.valor) {
+            <button type="button" class="filter-option" [class.is-selected]="filtros().enviado === opcion.valor" (click)="elegirOpcionFiltro('enviado', $any(opcion.valor))">{{ opcion.texto }}</button>
+          }
+        }
+      }
+      @if (filtro.columna === 'recepcion' || filtro.columna === 'pago' || filtro.columna === 'monto') {
+        <div class="filter-panel__actions">
+          <button type="button" class="ds-button ds-button--secondary ds-button--small" (click)="limpiarFiltro(filtro.columna)">Limpiar</button>
+          <button type="button" class="ds-button ds-button--small" (click)="aplicarFiltro()">Aplicar</button>
+        </div>
+      }
+    </div>
+  }
 </main>

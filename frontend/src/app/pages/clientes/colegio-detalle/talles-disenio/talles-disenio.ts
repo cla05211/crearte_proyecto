@@ -6,6 +6,8 @@ import { filter, firstValueFrom, switchMap, tap } from 'rxjs';
 import { DiseniosService } from '../../../../services/disenios/disenios-service';
 import { DisenioResponseDTO } from '../../../../services/disenios/dto/DisenioResponseDTO';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
+import { ExtraDTO, ExtrasService } from '../../../../services/extras/extras-service';
+import { DatePipe } from '@angular/common';
 
 const PREFIJO_TIPO = 'Disenio ';
 const TIPO_PRENDAS = 'Disenio Prendas';
@@ -17,6 +19,10 @@ const TAMANIO_MAXIMO_FIRMADO_MB = 10;
 const FORMATOS_FIRMADO = ['image/jpeg', 'image/png'];
 const LARGO_MAXIMO_NOMBRE = 60;
 
+// Extras: archivos internos (capturas / PDFs de resguardo) que el cliente no ve
+const FORMATOS_EXTRA = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+const TAMANIO_MAXIMO_EXTRA_MB = 20;
+
 interface FilaDisenio
 {
     tipo: string;
@@ -27,13 +33,14 @@ interface FilaDisenio
 
 @Component({
   selector: 'app-talles-disenio',
-  imports: [],
+  imports: [DatePipe],
   templateUrl: './talles-disenio.html',
   styleUrl: './talles-disenio.css',
 })
 export class TallesDisenio implements OnInit
 {
     private readonly diseniosService = inject(DiseniosService);
+    private readonly extrasService = inject(ExtrasService);
     private readonly notificaciones = inject(NotificationService);
     private readonly route = inject(ActivatedRoute);
     private readonly destroyRef = inject(DestroyRef);
@@ -56,6 +63,13 @@ export class TallesDisenio implements OnInit
     readonly nombreNuevo = signal('');
 
     readonly largoMaximoNombre = LARGO_MAXIMO_NOMBRE;
+
+    readonly extras = signal<ExtraDTO[]>([]);
+    readonly subidaExtra = signal<{ nombre: string; progreso: number; pendientes: number } | null>(null);
+    readonly descargandoExtraId = signal<number | null>(null);
+    readonly confirmandoEliminarExtraId = signal<number | null>(null);
+    readonly eliminandoExtraId = signal<number | null>(null);
+    readonly tamanioMaximoExtraMb = TAMANIO_MAXIMO_EXTRA_MB;
 
     readonly filas = computed<FilaDisenio[]>(() =>
     {
@@ -81,6 +95,7 @@ export class TallesDisenio implements OnInit
     ngOnInit(): void
     {
         this.cargarDisenios();
+        this.cargarExtras();
     }
 
     private cargarDisenios(): void
@@ -343,5 +358,132 @@ export class TallesDisenio implements OnInit
     quitarRanura(tipo: string): void
     {
         this.ranurasNuevas.update(ranuras => ranuras.filter(t => t !== tipo));
+    }
+
+    //--- Extras ---
+
+    private cargarExtras(): void
+    {
+        this.extrasService.listar(this.idGrupo)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (extras) => this.extras.set(extras),
+                error: () => this.notificaciones.error({ title: 'Error', description: 'No se pudieron obtener los extras.' }),
+            });
+    }
+
+    async alElegirExtras(evento: Event): Promise<void>
+    {
+        const input = evento.target as HTMLInputElement;
+        const archivos = Array.from(input.files ?? []);
+        input.value = '';
+
+        const validos = archivos.filter(archivo => {
+            if (!FORMATOS_EXTRA.includes(archivo.type))
+            {
+                this.notificaciones.error({ title: 'Formato inválido', description: `"${archivo.name}" no es una imagen (JPG, PNG, WEBP) ni un PDF.` });
+                return false;
+            }
+            if (archivo.size > TAMANIO_MAXIMO_EXTRA_MB * 1024 * 1024)
+            {
+                this.notificaciones.error({ title: 'Archivo muy pesado', description: `"${archivo.name}" supera los ${TAMANIO_MAXIMO_EXTRA_MB} MB.` });
+                return false;
+            }
+            return true;
+        });
+
+        // De a uno, para mostrar el progreso de cada archivo
+        let subidos = 0;
+        for (const [indice, archivo] of validos.entries())
+        {
+            this.subidaExtra.set({ nombre: archivo.name, progreso: 0, pendientes: validos.length - indice - 1 });
+            try
+            {
+                await this.subirExtra(archivo);
+                subidos++;
+            }
+            catch (err: any)
+            {
+                this.notificaciones.error({ title: 'Error', description: err?.error?.message ?? `No se pudo subir "${archivo.name}".` });
+            }
+        }
+        this.subidaExtra.set(null);
+
+        if (subidos > 0)
+        {
+            this.notificaciones.success({ title: 'Extras guardados', description: subidos === 1 ? 'Se guardó el archivo.' : `Se guardaron ${subidos} archivos.` });
+            this.cargarExtras();
+        }
+    }
+
+    // 1. URL firmada de Nest  2. PUT directo a Supabase con progreso  3. Alta en documentos (tipo Extra)
+    private async subirExtra(archivo: File): Promise<void>
+    {
+        const { ruta, signedUrl } = await firstValueFrom(this.extrasService.pedirUrlSubida(this.idGrupo, archivo));
+
+        await firstValueFrom(
+            this.extrasService.subirArchivoAUrlFirmada(signedUrl, archivo).pipe(
+                tap(evento => {
+                    if (evento.type === HttpEventType.UploadProgress && evento.total)
+                    {
+                        this.subidaExtra.update(actual => actual ? { ...actual, progreso: Math.round(100 * evento.loaded / evento.total!) } : actual);
+                    }
+                }),
+                filter(evento => evento.type === HttpEventType.Response),
+            ),
+        );
+
+        await firstValueFrom(this.extrasService.confirmar(this.idGrupo, ruta));
+    }
+
+    async descargarExtra(extra: ExtraDTO): Promise<void>
+    {
+        this.descargandoExtraId.set(extra.id);
+        try
+        {
+            const { url } = await firstValueFrom(this.extrasService.obtenerUrlDescarga(this.idGrupo, extra.id));
+            const enlace = document.createElement('a');
+            enlace.href = url;
+            enlace.click();
+        }
+        catch
+        {
+            this.notificaciones.error({ title: 'Error', description: 'No se pudo descargar el archivo.' });
+        }
+        finally
+        {
+            this.descargandoExtraId.set(null);
+        }
+    }
+
+    // Eliminar pide confirmación en la misma fila (son archivos de resguardo)
+    pedirEliminarExtra(extra: ExtraDTO): void
+    {
+        this.confirmandoEliminarExtraId.set(extra.id);
+    }
+
+    cancelarEliminarExtra(): void
+    {
+        this.confirmandoEliminarExtraId.set(null);
+    }
+
+    async eliminarExtra(extra: ExtraDTO): Promise<void>
+    {
+        this.eliminandoExtraId.set(extra.id);
+        try
+        {
+            await firstValueFrom(this.extrasService.eliminar(this.idGrupo, extra.id));
+            this.extras.update(lista => lista.filter(e => e.id !== extra.id));
+            this.notificaciones.success({ title: 'Extra eliminado', description: `Se eliminó "${extra.nombre}".` });
+        }
+        catch
+        {
+            this.notificaciones.error({ title: 'Error', description: 'No se pudo eliminar el archivo.' });
+        }
+        finally
+        {
+            this.eliminandoExtraId.set(null);
+            this.confirmandoEliminarExtraId.set(null);
+        }
     }
 }

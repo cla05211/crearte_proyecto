@@ -1,9 +1,12 @@
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CurrencyPipe, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { firstValueFrom, forkJoin, of, Subject } from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { catchError, debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 import { PagoBancoResponse } from '../../services/pagos/dto/pagoBancoResponse.dto';
+import { FiltrosPagosBanco } from '../../services/pagos/dto/filtrosPagosBanco.dto';
+import { ResumenPagosBanco } from '../../services/pagos/dto/resumenPagosBanco.dto';
 import { PagosService } from '../../services/pagos/pagos-service';
 import { ModificarPago } from '../../services/pagos/dto/modificarBanco.dto';
 import { GenerarExcelDTO } from '../../../interfaces/generarExcel.dto';
@@ -17,6 +20,25 @@ import { DocumentosService } from '../../services/documentos/documentos-service'
 
 type Banco = 'COMAFI' | 'Santander';
 
+type ColumnaFiltro = 'recepcion' | 'pago' | 'monto' | 'aprobado' | 'enviado';
+
+interface FiltroAbierto {
+  columna: ColumnaFiltro;
+  top: number;
+  left: number;
+}
+
+const FILTROS_VACIOS: FiltrosPagosBanco = {
+  recepcionDesde: '',
+  recepcionHasta: '',
+  pagoDesde: '',
+  pagoHasta: '',
+  montoDesde: '',
+  montoHasta: '',
+  aprobado: '',
+  enviado: '',
+};
+
 interface PaginaPagos {
   pagos: PagoBancoResponse[];
   pagina: number;
@@ -25,9 +47,15 @@ interface PaginaPagos {
 
 @Component({
   selector: 'app-bancos',
-  imports: [CurrencyPipe, DatePipe],
+  imports: [CurrencyPipe, DatePipe, FormsModule],
   templateUrl: './bancos.html',
   styleUrl: './bancos.css',
+  host: {
+    // El panel de filtro se posiciona fijo bajo el encabezado: si la página se mueve, se cierra
+    '(window:scroll)': 'cerrarFiltro()',
+    '(window:resize)': 'cerrarFiltro()',
+    '(document:keydown.escape)': 'cerrarFiltro()',
+  },
 })
 export class Bancos implements OnInit
 {
@@ -55,6 +83,23 @@ export class Bancos implements OnInit
 
   mostrarAnteriores = signal(false);
 
+  // Contadores del encabezado: banco seleccionado, con la búsqueda y los filtros aplicados
+  resumen = signal<ResumenPagosBanco | null>(null);
+  private readonly resumenSolicitado$ = new Subject<void>();
+
+  // --- Búsqueda y filtros por columna (se aplican en el backend, sobre todas las páginas) ---
+  private readonly busquedaCambiada$ = new Subject<string>();
+  busquedaInput = signal('');
+  busqueda = signal('');
+  filtros = signal<FiltrosPagosBanco>({ ...FILTROS_VACIOS });
+  filtroAbierto = signal<FiltroAbierto | null>(null);
+  // Copia que se edita en el panel abierto; se guarda en "filtros" al aplicar
+  borradorFiltros: FiltrosPagosBanco = { ...FILTROS_VACIOS };
+
+  hayFiltrosActivos = computed(() =>
+    this.busqueda() !== '' || Object.values(this.filtros()).some((valor) => valor !== ''),
+  );
+
   totalMes = signal<number | null>(null);
   cargandoTotalMes = signal(false);
 
@@ -76,7 +121,8 @@ export class Bancos implements OnInit
     let grupoPrevio: string | null = null;
 
     return this.pagosVisibles().map(pago => {
-      const fecha = new Date(pago.fecha);
+      // Se agrupa por fecha de recepción, que es el orden de la tabla
+      const fecha = new Date(pago.fecha_recepcion);
       const grupo = fecha >= lunesActual && fecha <= domingoActual ? 'Esta semana' : 'Anterior';
       const mostrarEncabezado = grupo !== grupoPrevio;
       grupoPrevio = grupo;
@@ -91,10 +137,13 @@ export class Bancos implements OnInit
 
   ngOnInit(): void
   {
+    this.inicializarBusquedaConDebounce();
+    this.inicializarResumen();
     this.inicializarPipelineBanco('COMAFI');
     this.inicializarPipelineBanco('Santander');
     this.solicitarPagina('COMAFI', 0);
     this.solicitarPagina('Santander', 0);
+    this.cargarResumen();
     this.cargarTotalMes();
   }
 
@@ -127,7 +176,7 @@ export class Bancos implements OnInit
           const desde = pagina * this.TAMANIO_PAGINA;
           const hasta = desde + this.TAMANIO_PAGINA - 1;
 
-          return this.pagosService.traerPagosBanco(banco, desde, hasta).pipe(
+          return this.pagosService.traerPagosBanco(banco, desde, hasta, this.parametrosFiltros()).pipe(
             map((pagos) => ({ pagina, pagos })),
             catchError(() => {
               this.cargandoPorBanco.update((actual) => ({ ...actual, [banco]: false }));
@@ -154,6 +203,146 @@ export class Bancos implements OnInit
         });
         this.cargandoPorBanco.update((actual) => ({ ...actual, [banco]: false }));
       });
+  }
+
+  //--- Contadores ---
+
+  private inicializarResumen(): void
+  {
+    this.resumenSolicitado$
+      .pipe(
+        // switchMap: si cambian los filtros o el banco a mitad de camino, vale la última respuesta
+        switchMap(() =>
+          this.pagosService.traerResumenPagosBanco(this.bancoSeleccionado(), this.parametrosFiltros()).pipe(
+            catchError(() => of(null)),
+          ),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((resumen) => this.resumen.set(resumen));
+  }
+
+  private cargarResumen(): void
+  {
+    this.resumenSolicitado$.next();
+  }
+
+  //--- Búsqueda y filtros ---
+
+  private inicializarBusquedaConDebounce(): void
+  {
+    this.busquedaCambiada$
+      .pipe(debounceTime(400), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe((valor) => {
+        this.busqueda.set(valor.trim());
+        this.recargarConFiltros();
+      });
+  }
+
+  actualizarBusqueda(valor: string): void
+  {
+    this.busquedaInput.set(valor);
+    this.busquedaCambiada$.next(valor);
+  }
+
+  private parametrosFiltros(): Record<string, string>
+  {
+    const parametros: Record<string, string> = {};
+    if (this.busqueda()) parametros['busqueda'] = this.busqueda();
+    for (const [clave, valor] of Object.entries(this.filtros()))
+    {
+      // String(): el input de monto devuelve número
+      if (valor !== '' && valor !== null && valor !== undefined) parametros[clave] = String(valor);
+    }
+    return parametros;
+  }
+
+  filtroActivo(columna: ColumnaFiltro): boolean
+  {
+    const f = this.filtros();
+    switch (columna)
+    {
+      case 'recepcion': return !!(f.recepcionDesde || f.recepcionHasta);
+      case 'pago': return !!(f.pagoDesde || f.pagoHasta);
+      case 'monto': return this.tieneValor(f.montoDesde) || this.tieneValor(f.montoHasta);
+      case 'aprobado': return f.aprobado !== '';
+      case 'enviado': return f.enviado !== '';
+    }
+  }
+
+  private tieneValor(valor: unknown): boolean
+  {
+    return valor !== '' && valor !== null && valor !== undefined;
+  }
+
+  abrirFiltro(columna: ColumnaFiltro, event: MouseEvent): void
+  {
+    event.stopPropagation();
+    if (this.filtroAbierto()?.columna === columna)
+    {
+      this.cerrarFiltro();
+      return;
+    }
+    const boton = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const anchoPanel = 272;
+    this.borradorFiltros = { ...this.filtros() };
+    this.filtroAbierto.set({
+      columna,
+      top: boton.bottom + 6,
+      left: Math.max(8, Math.min(boton.left, window.innerWidth - anchoPanel - 8)),
+    });
+  }
+
+  cerrarFiltro(): void
+  {
+    if (this.filtroAbierto()) this.filtroAbierto.set(null);
+  }
+
+  aplicarFiltro(): void
+  {
+    this.filtros.set({ ...this.borradorFiltros });
+    this.cerrarFiltro();
+    this.recargarConFiltros();
+  }
+
+  // Para Aprobado / Enviado: se aplica apenas se elige la opción
+  elegirOpcionFiltro(columna: 'aprobado' | 'enviado', valor: '' | 'true' | 'false'): void
+  {
+    this.borradorFiltros = { ...this.borradorFiltros, [columna]: valor };
+    this.aplicarFiltro();
+  }
+
+  limpiarFiltro(columna: ColumnaFiltro): void
+  {
+    const limpios: Record<ColumnaFiltro, Partial<FiltrosPagosBanco>> = {
+      recepcion: { recepcionDesde: '', recepcionHasta: '' },
+      pago: { pagoDesde: '', pagoHasta: '' },
+      monto: { montoDesde: '', montoHasta: '' },
+      aprobado: { aprobado: '' },
+      enviado: { enviado: '' },
+    };
+    this.filtros.update((actual) => ({ ...actual, ...limpios[columna] }));
+    this.cerrarFiltro();
+    this.recargarConFiltros();
+  }
+
+  limpiarTodosLosFiltros(): void
+  {
+    this.filtros.set({ ...FILTROS_VACIOS });
+    this.busquedaInput.set('');
+    this.busqueda.set('');
+    this.busquedaCambiada$.next('');
+    this.cerrarFiltro();
+    this.recargarConFiltros();
+  }
+
+  private recargarConFiltros(): void
+  {
+    // Lo seleccionado para el excel puede no estar en el nuevo listado
+    this.seleccionados.set(new Set());
+    this.solicitarPagina('COMAFI', 0);
+    this.solicitarPagina('Santander', 0);
+    this.cargarResumen();
   }
 
   private solicitarPagina(banco: Banco, pagina: number): void
@@ -187,6 +376,8 @@ export class Bancos implements OnInit
     if (this.bancoSeleccionado() === banco) return;
     this.bancoSeleccionado.set(banco);
     this.cancelarSeleccionExcel();
+    this.resumen.set(null);
+    this.cargarResumen();
   }
 
   iniciarSeleccionExcel(): void
@@ -255,12 +446,14 @@ export class Bancos implements OnInit
           { header: 'Nro de Comprobante', key: 'nroComprobante' },
           { header: 'Entidad de Pago', key: 'entidadPago' },
           { header: 'Colegio', key: 'colegio' },
+          { header: 'Monto', key: 'monto', formato: 'moneda' },
         ],
         filas: pagosSeleccionados.map(pago => ({
           fecha: this.formatearFecha(pago.fecha),
           nroComprobante: pago.nro_transferencia,
           entidadPago: pago.entidad_pago,
           colegio: pago.nombre_colegio,
+          monto: Number(pago.monto) || 0,
         })),
       };
 
@@ -268,6 +461,7 @@ export class Bancos implements OnInit
         next: (blob) => {
           this.descargarArchivo(blob, `${dto.nombreHoja}.xlsx`);
           this.marcarComoEnviados(idsSeleccionados);
+          this.cargarResumen();
           this.notificaciones.success({ title: 'Excel generado', description: 'El excel se generó y descargó correctamente.' });
           this.cancelarSeleccionExcel();
           this.generandoExcel.set(false);
@@ -287,6 +481,7 @@ export class Bancos implements OnInit
     .subscribe({
       next: () => {
         this.actualizarPagoLocal(pago.id, { enviado_banco: nuevoValor });
+        this.cargarResumen();
       },
       error: () => {
         this.notificaciones.error({ title: 'Error', description: 'No se pudo actualizar el estado de envío al banco.' });
@@ -302,6 +497,7 @@ export class Bancos implements OnInit
     .subscribe({
       next: () => {
         this.actualizarPagoLocal(pago.id, { aprobado: nuevoValor });
+        this.cargarResumen();
       },
       error: () => {
         this.notificaciones.error({ title: 'Error', description: 'No se pudo actualizar la aprobación del pago.' });

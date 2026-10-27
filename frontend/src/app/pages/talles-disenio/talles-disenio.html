@@ -17,6 +17,16 @@
           />
         </label>
         <label class="ds-field">
+          <span class="ds-label">Diseñado por</span>
+          <select class="ds-select" [ngModel]="filtroDiseniadora() ?? ''" (ngModelChange)="cambiarFiltroDiseniadora($any($event))">
+            <option value="">Todas</option>
+            <option [value]="0">Sin asignar</option>
+            @for (d of diseniadoras(); track d.id) {
+              <option [value]="d.id">{{ d.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label class="ds-field">
           <span class="ds-label">Mes</span>
           <select class="ds-select" [ngModel]="mesSeleccionado()" (ngModelChange)="cambiarMes($any($event))">
             @for (mes of meses; track mes.value) {
@@ -109,7 +119,7 @@
             <span></span><span></span><span></span>
           </div>
           <h2>No hay pedidos cargados.</h2>
-          <p>No se encontraron ventas para el mes y año seleccionados.</p>
+          <p>{{ filtroDiseniadora() === null ? 'No se encontraron ventas para el mes y año seleccionados.' : 'No hay colegios asignados a esta diseñadora en el mes y año seleccionados.' }}</p>
         </div>
       } @else {
         <div class="ds-table-wrapper pedidos-table-wrapper">
@@ -119,12 +129,12 @@
               <col style="width: 9%" />
               <col style="width: 13%" />
               <col style="width: 11%" />
+              <col style="width: 9%" />
               <col style="width: 8%" />
               <col style="width: 9%" />
-              <col style="width: 11%" />
-              <col style="width: 7%" />
-              <col style="width: 10%" />
               <col style="width: 9%" />
+              <col style="width: 9%" />
+              <col style="width: 10%" />
             </colgroup>
             <thead>
               <tr>
@@ -132,12 +142,12 @@
                 <th>Contacto</th>
                 <th>Prendas</th>
                 <th>Estado Boceto</th>
+                <th>Diseñado por</th>
                 <th>Aprobación</th>
                 <th>Fecha Aprob. Boceto</th>
                 <th>Estado Talles</th>
                 <th>Fecha Aprob. Talles</th>
                 <th>Enviado a producción</th>
-                <th>Diseñado por</th>
               </tr>
             </thead>
             <tbody>
@@ -201,17 +211,25 @@
                       <td data-label="Estado Boceto">
                         @if (pedido.fechaAprobacionBoceto) {
                           <!-- Con el boceto aprobado el estado ya no se puede cambiar -->
-                          <select class="ds-select" disabled title="El boceto ya fue aprobado">
+                          <select class="ds-select estado-select" [class]="claseEstado(pedido.estadoBoceto)" disabled title="El boceto ya fue aprobado">
                             <option selected>{{ pedido.estadoBoceto ?? 'Sin definir' }}</option>
                           </select>
                         } @else {
-                          <select class="ds-select" [ngModel]="pedido.estadoBoceto" (ngModelChange)="modificarEstadoBoceto(pedido, $any($event))">
+                          <select class="ds-select estado-select" [class]="claseEstado(pedido.estadoBoceto)" [ngModel]="pedido.estadoBoceto" (ngModelChange)="modificarEstadoBoceto(pedido, $any($event))">
                             <option [ngValue]="null" disabled>Sin definir</option>
                             @for (estado of estadosDisenio; track estado) {
                               <option [value]="estado">{{ estado }}</option>
                             }
                           </select>
                         }
+                      </td>
+                      <td data-label="Diseñado por">
+                        <select class="ds-select" [ngModel]="pedido.diseniadora ?? 0" (ngModelChange)="cambiarDiseniadora(pedido, $any($event))">
+                          <option [ngValue]="0">Sin asignar</option>
+                          @for (d of diseniadoras(); track d.id) {
+                            <option [ngValue]="d.id">{{ d.nombre }}</option>
+                          }
+                        </select>
                       </td>
                       <td data-label="Aprobación">
                         <span class="ds-badge" [class.ds-badge--success]="pedido.fechaAprobacionBoceto" [class.ds-badge--warning]="!pedido.fechaAprobacionBoceto">
@@ -223,19 +241,8 @@
                         {{ pedido.fechaAprobacionBoceto ? (pedido.fechaAprobacionBoceto | date: 'dd/MM/yyyy') : '—' }}
                       </td>
                       <td data-label="Estado Talles">
-                        @if (pedido.fechaAprobacionTalles) {
-                          <!-- Con los talles aprobados el estado queda fijo en Confirmado -->
-                          <select class="ds-select" disabled title="Los talles ya fueron aprobados">
-                            <option selected>Confirmado</option>
-                          </select>
-                        } @else {
-                          <select class="ds-select" [ngModel]="pedido.estadoTalles" (ngModelChange)="cambiarEstadoTalles(pedido, $any($event))">
-                            <option [ngValue]="null" disabled>Sin definir</option>
-                            @for (estado of estadosTalles; track estado) {
-                              <option [value]="estado">{{ estado }}</option>
-                            }
-                          </select>
-                        }
+                        <!-- Se calcula solo: No accedió (sin prendas) · Cargando (con prendas, sin firmar) · Confirmado (planilla firmada) -->
+                        <span class="estado-badge" [class]="claseEstado(pedido.estadoTalles)">{{ pedido.estadoTalles ?? '—' }}</span>
                       </td>
                       <td data-label="Fecha Aprob. Talles">
                         {{ pedido.fechaAprobacionTalles ? (pedido.fechaAprobacionTalles | date: 'dd/MM/yyyy') : '—' }}
@@ -250,14 +257,6 @@
                           {{ enviadoAProduccion(pedido) ? 'Sí' : (pendientePago(pedido) ? 'Pendiente de pago' : 'No') }}
                         </span>
                       </td>
-                      <td data-label="Diseñado por">
-                        <select class="ds-select" [ngModel]="pedido.diseniadora ?? 0" (ngModelChange)="cambiarDiseniadora(pedido, $any($event))">
-                          <option [ngValue]="0">Sin asignar</option>
-                          @for (d of diseniadoras(); track d.id) {
-                            <option [ngValue]="d.id">{{ d.nombre }}</option>
-                          }
-                        </select>
-                      </td>
                         </tr>
                       }
                     }
@@ -271,27 +270,4 @@
     }
   </section>
 
-  @if (edicionFechaTalles(); as edicion) {
-    <div class="modal-backdrop" role="presentation">
-      <section class="sale-modal fecha-talles-modal" role="dialog" aria-modal="true" aria-labelledby="fecha-talles-title">
-        <header class="sale-modal__header">
-          <div>
-            <span class="ds-eyebrow">{{ edicion.pedido.nombreColegio }}</span>
-            <h2 id="fecha-talles-title" class="ds-heading-2">Confirmar fecha de talles</h2>
-          </div>
-          <button class="close-button" type="button" (click)="cancelarFechaTalles()" aria-label="Cerrar">×</button>
-        </header>
-        <div class="wizard-content fecha-talles-content">
-          <label class="ds-field">
-            <span class="ds-label">Fecha de confirmación</span>
-            <input class="ds-input" type="date" [ngModel]="edicion.fecha" (ngModelChange)="actualizarFechaEdicionTalles($any($event))" />
-          </label>
-        </div>
-        <footer class="wizard-actions">
-          <button type="button" class="ds-button ds-button--secondary" (click)="cancelarFechaTalles()">Cancelar</button>
-          <button type="button" class="ds-button" [disabled]="!edicion.fecha" (click)="confirmarFechaTalles()">Confirmar</button>
-        </footer>
-      </section>
-    </div>
-  }
 </main>

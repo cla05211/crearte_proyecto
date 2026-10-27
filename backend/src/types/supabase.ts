@@ -101,6 +101,13 @@ export type Database = {
             referencedRelation: "grupos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "alumnos_responsables_id_grupo_fkey"
+            columns: ["id_grupo"]
+            isOneToOne: false
+            referencedRelation: "pagos_banco"
+            referencedColumns: ["id_grupo"]
+          },
         ]
       }
       auditoria: {
@@ -242,6 +249,13 @@ export type Database = {
             referencedRelation: "grupos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "clientes_id_grupo_fkey"
+            columns: ["id_grupo"]
+            isOneToOne: true
+            referencedRelation: "pagos_banco"
+            referencedColumns: ["id_grupo"]
+          },
         ]
       }
       colegios: {
@@ -297,6 +311,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "grupos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_grupo_fkey"
+            columns: ["grupo"]
+            isOneToOne: false
+            referencedRelation: "pagos_banco"
+            referencedColumns: ["id_grupo"]
           },
         ]
       }
@@ -370,6 +391,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "grupos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_grupo_fkey"
+            columns: ["id_grupo"]
+            isOneToOne: false
+            referencedRelation: "pagos_banco"
+            referencedColumns: ["id_grupo"]
           },
         ]
       }
@@ -584,12 +612,20 @@ export type Database = {
             referencedRelation: "grupos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "padres_responsables_id_grupo_fkey"
+            columns: ["id_grupo"]
+            isOneToOne: false
+            referencedRelation: "pagos_banco"
+            referencedColumns: ["id_grupo"]
+          },
         ]
       }
       pagos: {
         Row: {
           aprobado: boolean | null
           banco: string | null
+          created_at: string
           detalle_cuotas: Json | null
           entidad_pago: string | null
           enviado_banco: boolean | null
@@ -604,6 +640,7 @@ export type Database = {
         Insert: {
           aprobado?: boolean | null
           banco?: string | null
+          created_at?: string
           detalle_cuotas?: Json | null
           entidad_pago?: string | null
           enviado_banco?: boolean | null
@@ -618,6 +655,7 @@ export type Database = {
         Update: {
           aprobado?: boolean | null
           banco?: string | null
+          created_at?: string
           detalle_cuotas?: Json | null
           entidad_pago?: string | null
           enviado_banco?: boolean | null
@@ -726,6 +764,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "grupos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_grupo_fkey"
+            columns: ["id_grupo"]
+            isOneToOne: false
+            referencedRelation: "pagos_banco"
+            referencedColumns: ["id_grupo"]
           },
           {
             foreignKeyName: "pedidos_id_vendedora_fkey"
@@ -1063,6 +1108,46 @@ export type Database = {
       }
     }
     Views: {
+      pagos_banco: {
+        Row: {
+          aprobado: boolean | null
+          banco: string | null
+          created_at: string | null
+          entidad_pago: string | null
+          enviado_banco: boolean | null
+          estado_general: string | null
+          fecha: string | null
+          id: number | null
+          id_documento: number | null
+          id_grupo: number | null
+          id_pedido: number | null
+          ids_pagos: number[] | null
+          localidad: string | null
+          monto: number | null
+          motivo: string | null
+          nivel: string | null
+          nombre_colegio: string | null
+          nro_transferencia: string | null
+          orientacion: string | null
+          turno: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagos_id_documento_fkey"
+            columns: ["id_documento"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagos_pedido_fkey"
+            columns: ["id_pedido"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vista_caja: {
         Row: {
           categoria: string | null
@@ -1091,6 +1176,10 @@ export type Database = {
         Returns: undefined
       }
       modificar_plan_pedido: { Args: { payload: Json }; Returns: Json }
+      modificar_precios_producto: {
+        Args: { p_id_producto: number; p_precios: Json }
+        Returns: number
+      }
       registrar_pago_completo: { Args: { p_pago: Json }; Returns: number }
     }
     Enums: {

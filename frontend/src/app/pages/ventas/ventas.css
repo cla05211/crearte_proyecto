@@ -5,6 +5,7 @@
 .ventas-container {
   display: grid;
   gap: var(--space-8);
+  max-width: min(100%, 110rem);
 }
 .ventas-header,
 .promo-section__heading,
@@ -172,18 +173,29 @@
   gap: var(--space-2);
 }
 .sales-table {
-  min-width: 68rem;
+  min-width: 0;
 }
 .sales-table th,
 .sales-table td {
+  padding-inline: var(--space-3);
+  text-align: center;
   white-space: nowrap;
 }
-.sales-table td[data-label='Colegio'] {
+.sales-table .cell-inline {
+  justify-content: center;
+}
+.sales-table td[data-label='Colegio'],
+.sales-table td[data-label='Ubicación'],
+.sales-table td[data-label='Padre principal'],
+.sales-table td[data-label='Beneficio'] {
   white-space: normal;
 }
-.sales-table th:nth-child(4),
-.sales-table td:nth-child(4) {
-  min-width: 10rem;
+.sales-table td[data-label='Colegio'] {
+  min-width: 12rem;
+}
+.sales-table td[data-label='Ubicación'],
+.sales-table td[data-label='Padre principal'] {
+  min-width: 9rem;
 }
 .modal-backdrop {
   align-items: flex-start;

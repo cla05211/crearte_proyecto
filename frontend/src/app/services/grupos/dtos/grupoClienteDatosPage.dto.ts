@@ -9,4 +9,5 @@ export class grupoClienteDatosPageResponse
     padresResponsables!:PadreResponsableResponseDTO[] | null;
     alumnosResponsables!:alumnoResponsableDTO[] | null;
     usuario!: string | null;
+    fechaVenta!: string;
 }

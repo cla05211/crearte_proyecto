@@ -7,6 +7,7 @@ import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { OcrService } from '../ocr/ocr.service';
 import { ModificarPago } from './dto/modificarBanco.dto';
+import { FiltrosPagosBancoDTO } from './dto/filtrosPagosBanco.dto';
 import { GenerarExcelDTO } from 'src/reportes/excel/dto/generarExcel.dto';
 import { ExcelService } from 'src/reportes/excel/excel.service';
 import { GenerarReciboDTO } from 'src/reportes/pdf/dto/generarRecibo.dto';
@@ -45,12 +46,20 @@ export class PagosController
     }
 
 
+    @Get('bancos/:banco/resumen')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_bancos')
+    async obtenerResumenPagosBancos(@Param ('banco') banco:string, @Query() filtros: FiltrosPagosBancoDTO)
+    {
+        return await this.pagosService.traerResumenPagosBanco(banco, filtros);
+    }
+
     @Get('bancos/:banco')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_bancos')
-    async obtenerPagosBancos(@Param ('banco') banco:string, @Query('rangoDesde', ParseIntPipe) rangoDesde: number,@Query('rangoHasta', ParseIntPipe) rangoHasta: number)
+    async obtenerPagosBancos(@Param ('banco') banco:string, @Query('rangoDesde', ParseIntPipe) rangoDesde: number,@Query('rangoHasta', ParseIntPipe) rangoHasta: number, @Query() filtros: FiltrosPagosBancoDTO)
     {
-        return await this.pagosService.traerPagosBanco(banco, rangoDesde, rangoHasta);
+        return await this.pagosService.traerPagosBanco(banco, rangoDesde, rangoHasta, filtros);
     }
     
     @Get ('documento/:id')
