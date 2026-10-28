@@ -5,6 +5,7 @@ import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
 import { GestionPedidosService } from './gestion-pedidos.service';
 import { CrearPedidoDTO } from './dto/crearPedido.dto';
 import { ModificarPlanPedidoDTO } from './dto/ModificarPlanPedido';
+import { ESTADOS_BOCETO_BANDERA, ModificarBanderaDTO } from './dto/ControlBanderasDTO';
 
 @Controller('gestion-pedidos')
 export class GestionPedidosController 
@@ -58,7 +59,14 @@ export class GestionPedidosController
     {
         return await this.gestionService.obtenerDatosProduccion(mesEntrega,anioEntrega,enviadosFabrica);
     }
-    
+
+    @Get ('control-banderas')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_banderas')
+    async obtenerPedidosControlBanderas(@Query('anio', ParseIntPipe) anio: number, @Query('mes', ParseIntPipe) mes: number)
+    {
+        return await this.gestionService.obtenerPedidosControlBandera(mes, anio);
+    }
 
     // Botón "Enviar a fábrica" de control de fábrica
     @Post('enviar-fabrica/:id')
@@ -75,6 +83,29 @@ export class GestionPedidosController
         }
 
         return await this.gestionService.enviarPedidoFabrica(idPedido, mes, anio);
+    }
+
+    @Patch('banderas/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_banderas')
+    async modificarBandera(@Param('id', ParseIntPipe) idBandera: number, @Body() dto: ModificarBanderaDTO)
+    {
+        if (dto.estadoBoceto !== undefined && !ESTADOS_BOCETO_BANDERA.includes(dto.estadoBoceto))
+        {
+            throw new BadRequestException('Estado de boceto inválido.');
+        }
+
+        if (dto.idDiseniadora !== undefined && dto.idDiseniadora !== null && !Number.isInteger(dto.idDiseniadora))
+        {
+            throw new BadRequestException('Diseñadora inválida.');
+        }
+
+        if (dto.motivoPerdidaBeneficio !== undefined && dto.motivoPerdidaBeneficio !== null && typeof dto.motivoPerdidaBeneficio !== 'string')
+        {
+            throw new BadRequestException('Motivo inválido.');
+        }
+
+        await this.gestionService.modificarBandera(idBandera, dto);
     }
 
     @Patch('modificar-pedidos')

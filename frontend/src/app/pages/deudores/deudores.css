@@ -1,0 +1,169 @@
+.deudores-page {
+  min-height: 100vh;
+  padding: var(--space-10) 0;
+}
+.deudores-container {
+  display: grid;
+  gap: var(--space-6);
+  max-width: min(100%, 100rem);
+}
+.deudores-header {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+
+/* Carteles de totales (mismo estilo que Muestras físicas) */
+.kpis-grid {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(3, minmax(11rem, 13rem));
+}
+.kpi-card {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+}
+.kpi-card .ds-label {
+  font-size: 0.78rem;
+}
+.kpi-valor {
+  color: var(--color-primary-700);
+  font-size: var(--font-size-lg);
+}
+.kpi-valor--alerta {
+  color: var(--color-danger);
+}
+
+/* Tabla */
+.deudores-table-wrapper {
+  overflow-x: auto;
+}
+.deudores-table {
+  min-width: 64rem;
+  table-layout: fixed;
+}
+.deudores-table th,
+.deudores-table td {
+  border-right: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  overflow: hidden;
+  padding: var(--space-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deudores-table th:last-child,
+.deudores-table td:last-child {
+  border-right: 0;
+}
+.deudores-table thead th {
+  font-size: var(--font-size-xs);
+  letter-spacing: 0;
+  line-height: 1.25;
+  overflow: visible;
+  position: sticky;
+  text-align: center;
+  top: 0;
+  white-space: normal;
+  word-break: break-word;
+  z-index: 1;
+}
+.deudores-table td {
+  text-align: center;
+}
+.deudores-table td[data-label='Monto adeudado'] {
+  font-weight: var(--font-weight-semibold);
+}
+.deudores-table td[data-label='Colegio'] {
+  white-space: normal;
+}
+
+/* Filas con más de una cuota adeudada */
+.deudores-table tbody tr.fila-alerta {
+  background-color: #fbe2eb;
+  box-shadow: inset 3px 0 0 var(--color-danger);
+}
+.deudores-table tbody tr.fila-alerta td[data-label='Días de atraso'],
+.deudores-table tbody tr.fila-alerta td[data-label='Monto adeudado'] {
+  color: var(--color-danger);
+}
+
+/* Nombre del colegio: abre la ficha del cliente */
+.link-colegio {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-primary-700);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  padding: 0;
+  text-align: center;
+}
+.link-colegio:hover {
+  text-decoration: underline;
+}
+.link-colegio:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: 0;
+}
+
+/* Estados de carga y vacío (mismo estilo que Muestras físicas) */
+.loading-state,
+.empty-state {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 23rem;
+  padding: var(--space-10);
+  text-align: center;
+}
+
+.loading-state { flex-direction: row; gap: var(--space-4); text-align: left; }
+.loading-state h2,
+.empty-state h2 { color: var(--color-text-strong); font-size: var(--font-size-xl); margin: 0; }
+.loading-state p,
+.empty-state p { color: var(--color-text-muted); font-size: var(--font-size-sm); margin: var(--space-2) 0 0; }
+
+.loading-state__spinner {
+  animation: spin 750ms linear infinite;
+  border: 3px solid var(--color-primary-200);
+  border-radius: 50%;
+  border-top-color: var(--color-primary-700);
+  flex: 0 0 auto;
+  height: 2.25rem;
+  width: 2.25rem;
+}
+
+.empty-state__illustration {
+  align-items: end;
+  background: var(--color-primary-100);
+  border-radius: 48% 52% 44% 56%;
+  display: flex;
+  gap: 0.35rem;
+  height: 5.5rem;
+  justify-content: center;
+  margin-bottom: var(--space-5);
+  padding-bottom: 1.3rem;
+  transform: rotate(-4deg);
+  width: 6.5rem;
+}
+
+.empty-state__illustration span { background: var(--color-primary-600); border-radius: var(--radius-full) var(--radius-full) 0 0; display: block; width: 0.7rem; }
+.empty-state__illustration span:nth-child(1) { height: 1.35rem; }
+.empty-state__illustration span:nth-child(2) { background: var(--color-primary-700); height: 2.45rem; }
+.empty-state__illustration span:nth-child(3) { height: 1.8rem; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 700px) {
+  .deudores-page {
+    padding: var(--space-6) 0;
+  }
+  .kpis-grid {
+    grid-template-columns: 1fr;
+  }
+}

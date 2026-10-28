@@ -151,6 +151,51 @@ export type Database = {
           },
         ]
       }
+      banderas_pedido: {
+        Row: {
+          created_at: string
+          estado_boceto: string
+          id: number
+          id_disenadora: number | null
+          id_pedido: number
+          motivo_perdida_beneficio: string | null
+          origen: string
+        }
+        Insert: {
+          created_at?: string
+          estado_boceto?: string
+          id?: never
+          id_disenadora?: number | null
+          id_pedido: number
+          motivo_perdida_beneficio?: string | null
+          origen: string
+        }
+        Update: {
+          created_at?: string
+          estado_boceto?: string
+          id?: never
+          id_disenadora?: number | null
+          id_pedido?: number
+          motivo_perdida_beneficio?: string | null
+          origen?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banderas_pedido_id_disenadora_fkey"
+            columns: ["id_disenadora"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banderas_pedido_id_pedido_fkey"
+            columns: ["id_pedido"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       beneficios: {
         Row: {
           beneficio: string | null
@@ -1170,6 +1215,10 @@ export type Database = {
       enviar_pedido_a_fabrica: {
         Args: { p_anio: number; p_id_pedido: number; p_mes: number }
         Returns: number
+      }
+      generar_banderas_pedido: {
+        Args: { p_id_pedido: number }
+        Returns: undefined
       }
       modificar_beneficios_pedido: {
         Args: { p_beneficios: Json; p_id_pedido: number }

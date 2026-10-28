@@ -69,8 +69,14 @@
       @if (tienePermiso('ver_tabla_muestras_fisicas')) {
         <a routerLink="/muestras-fisicas" routerLinkActive="activo" (click)="cerrarSidebar()">Muestras físicas</a>
       }
+      @if (tienePermiso('ver_banderas')) {
+        <a routerLink="/banderas" routerLinkActive="activo" (click)="cerrarSidebar()">Banderas</a>
+      }
       @if (tienePermiso('ver_control_produccion')) {
         <a routerLink="/control-fabrica" routerLinkActive="activo" (click)="cerrarSidebar()">Control Producción</a>
+      }
+      @if (tienePermiso('ver_deudores')) {
+        <a routerLink="/deudores" routerLinkActive="activo" (click)="cerrarSidebar()">Deudores</a>
       }
     </nav>
   </aside>

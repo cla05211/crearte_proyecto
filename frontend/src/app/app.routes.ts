@@ -114,6 +114,18 @@ export const routes: Routes = [
         data: { permiso: 'ver_tabla_muestras_fisicas' },
       },
       {
+        path: "banderas",
+        loadComponent: () => import('./pages/banderas/banderas').then((archivo) => archivo.Banderas),
+        canActivate: [PermisosGuard],
+        data: { permiso: 'ver_banderas' },
+      },
+      {
+        path: "deudores",
+        loadComponent: () => import('./pages/deudores/deudores').then((archivo) => archivo.Deudores),
+        canActivate: [PermisosGuard],
+        data: { permiso: 'ver_deudores' },
+      },
+      {
         path: "clientes/:id",
         loadComponent: () => import('./pages/clientes/colegio-detalle/colegio-detalle').then((archivo) => archivo.ColegioDetalle),
         canActivate: [PermisosGuard],

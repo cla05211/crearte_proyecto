@@ -18,6 +18,14 @@ export class GruposController
         const esFabrica = req.usuario.rol === 5;
         return await this.grupos.traerGruposClientePage(rangoDesde, rangoHasta, esFabrica, busqueda, mes, anio);
     }
+    
+    @Get('deudores')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_deudores')
+    async obtenerGruposDeudores()
+    {
+        return await this.grupos.traerGruposDeudores();
+    }
 
     @Get('clientes-page/cantidad')
     @UseGuards(AuthGuard,PermisosGuard)

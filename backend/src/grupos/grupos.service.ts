@@ -6,6 +6,7 @@ import { ConflictException } from '@nestjs/common';
 import { grupoClientePageResponseDTO } from './dto/grupoClientePage.dto copy';
 import { grupoDatosClienteResponse } from './dto/grupoClienteDatosPage.dto';
 import { AuthService } from 'src/auth/auth.service';
+import { colegioDeudorDTO } from './dto/colegioDeudor.dto';
 
 @Injectable()
 export class GruposService 
@@ -224,5 +225,56 @@ export class GruposService
             : await this.sb.supabase.from('contratos').insert({ grupo: idGrupo, firmado: true, fecha_firma: fechaFirma });
 
         if (error) throw new BadRequestException(error.message);
+    }
+
+    //Deudores
+    async traerGruposDeudores(): Promise<colegioDeudorDTO[]>
+    {
+        const fechaHoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+
+        const { data, error } = await this.sb.supabase
+        .from("grupos")
+        .select(`id, colegios(nombre),
+            pedidos!inner(nro_fabrica,cuotas!inner(importe,monto_cubierto,fecha_vencimiento,estado)),
+            padres_responsables(nombre,apellido,telefono,principal)`)
+        .neq('pedidos.cuotas.estado', 'Pagada')
+        .lt('pedidos.cuotas.fecha_vencimiento', fechaHoy);
+
+        if (error) 
+        {
+            throw new BadRequestException(error.message);
+        }
+   
+
+        const colegiosDeudores: colegioDeudorDTO[] = data.map(g => 
+            ({
+                idGrupo: g.id,
+                nroFabrica:g.pedidos[0].nro_fabrica,
+                colegio: g.colegios.nombre,
+                nroCuotasAdeudadas: g.pedidos[0].cuotas.length,
+                montoAdeudado: (g.pedidos[0].cuotas.reduce((acumulador, cuota) => acumulador + (cuota.importe ?? 0),0)) - (g.pedidos[0].cuotas.reduce((acumulador, cuota) => acumulador + (cuota.monto_cubierto ?? 0),0)),
+                padreResponsable: `${g.padres_responsables.filter(p=> p.principal == true)[0].nombre!} ${g.padres_responsables.filter(p=> p.principal == true)[0].apellido!}`,
+                contacto: g.padres_responsables.filter(p=> p.principal == true)[0].telefono!,
+                diasAtraso: this.calcularDiasAtraso(fechaHoy, g.pedidos[0].cuotas)
+            }))
+        
+        return colegiosDeudores
+    }
+
+    private calcularDiasAtraso(fechaHoy:string, cuotas:{estado:string|null,fecha_vencimiento:string|null}[])
+    {
+        const primeraCuotaVencida = cuotas
+        .filter(cuota => cuota.estado !== 'Pagada')
+        .sort((a, b) => a.fecha_vencimiento!.localeCompare(b.fecha_vencimiento!))[0];
+
+        const diasAtraso = primeraCuotaVencida
+            ? Math.floor(
+                (new Date(fechaHoy + 'T00:00:00Z').getTime() -
+                new Date(primeraCuotaVencida.fecha_vencimiento + 'T00:00:00Z').getTime())
+                / (1000 * 60 * 60 * 24)
+            )
+            : 0;
+        
+        return diasAtraso;
     }
 }

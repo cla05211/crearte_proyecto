@@ -1,0 +1,290 @@
+<main class="banderas-page">
+  <section class="ds-container banderas-container">
+    <header class="banderas-header">
+      <div>
+        <span class="ds-eyebrow">Producción</span>
+        <h1 class="ds-heading-1">Banderas</h1>
+      </div>
+      <div class="filtros-bar">
+        <label class="ds-field">
+          <span class="ds-label">Diseñada por</span>
+          <select class="ds-select" [ngModel]="filtroDiseniadora() ?? ''" (ngModelChange)="cambiarFiltroDiseniadora($any($event))">
+            <option value="">Todas</option>
+            <option [value]="0">Sin asignar</option>
+            @for (d of diseniadoras(); track d.id) {
+              <option [value]="d.id">{{ d.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label class="ds-field">
+          <span class="ds-label">Mes</span>
+          <select class="ds-select" [ngModel]="mesSeleccionado()" (ngModelChange)="cambiarMes($any($event))">
+            @for (mes of meses; track mes.value) {
+              <option [value]="mes.value">{{ mes.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label class="ds-field">
+          <span class="ds-label">Año</span>
+          <select class="ds-select" [ngModel]="anioSeleccionado()" (ngModelChange)="cambiarAnio($any($event))">
+            @for (anio of anios; track anio) {
+              <option [value]="anio">{{ anio }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </header>
+
+    @if (cargando()) {
+      <div class="loading-state" role="status" aria-live="polite">
+        <span class="loading-state__spinner" aria-hidden="true"></span>
+        <div>
+          <h2>Cargando banderas</h2>
+          <p>Estamos preparando la información de las banderas.</p>
+        </div>
+      </div>
+    } @else {
+      <div class="kpis-grid">
+        <div class="ds-card kpi-card">
+          <span class="ds-label">Total banderas</span>
+          <strong class="kpi-valor">{{ totalBanderas() }}</strong>
+        </div>
+        <div class="ds-card kpi-card">
+          <span class="ds-label">Enviadas a producción</span>
+          <strong class="kpi-valor">{{ enviadasProduccion() }}</strong>
+        </div>
+        <div class="ds-card kpi-card">
+          <span class="ds-label">Beneficio perdido</span>
+          <strong class="kpi-valor">{{ beneficioPerdido() }}</strong>
+        </div>
+        <div class="ds-card kpi-card">
+          <span class="ds-label">Pendientes de diseñar</span>
+          <strong class="kpi-valor">{{ pendientesDisenar() }}</strong>
+        </div>
+      </div>
+
+      <nav class="pestanias" aria-label="Seleccionar tabla">
+        <button
+          type="button"
+          [class.is-active]="pestania() === 'activas'"
+          [attr.aria-pressed]="pestania() === 'activas'"
+          (click)="pestania.set('activas')"
+        >
+          Con beneficio
+          <span class="pestanias__cantidad">{{ totalBanderas() - beneficioPerdido() }}</span>
+        </button>
+        <button
+          type="button"
+          [class.is-active]="pestania() === 'perdidas'"
+          [attr.aria-pressed]="pestania() === 'perdidas'"
+          (click)="pestania.set('perdidas')"
+        >
+          Beneficio perdido
+          <span class="pestanias__cantidad">{{ beneficioPerdido() }}</span>
+        </button>
+      </nav>
+
+      @if (pestania() === 'activas') {
+        @if (!gruposActivos().length) {
+          <div class="empty-state">
+            <div class="empty-state__illustration" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+            <h2>No hay banderas.</h2>
+            <p>{{ mensajeVacio('activas') }}</p>
+          </div>
+        } @else {
+          <div class="ds-table-wrapper banderas-table-wrapper">
+            <table class="ds-table banderas-table">
+              <colgroup>
+                <col style="width: 20%" />
+                <col style="width: 13%" />
+                <col style="width: 17%" />
+                <col style="width: 11%" />
+                <col style="width: 11%" />
+                <col style="width: 17%" />
+                <col style="width: 11%" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Colegio</th>
+                  <th>Contacto</th>
+                  <th>Estado boceto</th>
+                  <th>Enviada a producción</th>
+                  <th>Fecha</th>
+                  <th>Diseñada por</th>
+                  <th>Perdió beneficio</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (grupo of gruposActivos(); track grupo.pedido.idPedido) {
+                  <ng-container *ngTemplateOutlet="filasGrupo; context: { $implicit: grupo, perdidas: false }" />
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      } @else {
+        @if (!gruposPerdidos().length) {
+          <div class="empty-state">
+            <div class="empty-state__illustration" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+            <h2>No hay banderas con beneficio perdido.</h2>
+            <p>{{ mensajeVacio('perdidas') }}</p>
+          </div>
+        } @else {
+          <div class="ds-table-wrapper banderas-table-wrapper">
+            <table class="ds-table banderas-table banderas-table--perdidas">
+              <colgroup>
+                <col style="width: 16%" />
+                <col style="width: 11%" />
+                <col style="width: 14%" />
+                <col style="width: 9%" />
+                <col style="width: 9%" />
+                <col style="width: 14%" />
+                <col style="width: 9%" />
+                <col style="width: 18%" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Colegio</th>
+                  <th>Contacto</th>
+                  <th>Estado boceto</th>
+                  <th>Enviada a producción</th>
+                  <th>Fecha</th>
+                  <th>Diseñada por</th>
+                  <th>Perdió beneficio</th>
+                  <th>Motivo pérdida beneficio</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (grupo of gruposPerdidos(); track grupo.pedido.idPedido) {
+                  <ng-container *ngTemplateOutlet="filasGrupo; context: { $implicit: grupo, perdidas: true }" />
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    }
+  </section>
+
+  <!-- Filas de un colegio: las celdas del pedido ocupan el alto de todas sus banderas -->
+  <ng-template #filasGrupo let-grupo let-perdidas="perdidas">
+    @for (bandera of grupo.banderas; track bandera.id; let primera = $first) {
+      <tr [class.fila-par]="grupo.par" [class.grupo-inicio]="primera">
+        @if (primera) {
+          <td data-label="Colegio" class="celda-grupo" [attr.rowspan]="grupo.banderas.length">
+            <span class="colegio-nombre">{{ grupo.pedido.colegio }}</span>
+            @if (grupo.banderas.length > 1) {
+              <span class="colegio-cantidad">{{ grupo.banderas.length }} banderas</span>
+            }
+          </td>
+          <td data-label="Contacto" class="celda-grupo" [attr.rowspan]="grupo.banderas.length">
+            {{ grupo.pedido.contacto || 'Sin datos' }}
+          </td>
+        }
+        <td data-label="Estado boceto">
+          <select
+            class="ds-select estado-select"
+            [class]="claseEstado(bandera.estadoBoceto)"
+            [ngModel]="bandera.estadoBoceto"
+            (ngModelChange)="modificarEstadoBoceto(bandera, $any($event))"
+          >
+            @for (estado of estadosBoceto; track estado) {
+              <option [value]="estado">{{ estado }}</option>
+            }
+          </select>
+        </td>
+        @if (primera) {
+          <td data-label="Enviada a producción" class="celda-grupo celda-centro" [attr.rowspan]="grupo.banderas.length">
+            @if (grupo.pedido.enviadaProduccion) {
+              <span class="marca marca--si" title="Enviada a producción">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+              </span>
+            } @else {
+              <span class="marca marca--no" title="No enviada a producción">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </span>
+            }
+          </td>
+          <td data-label="Fecha" class="celda-grupo celda-centro" [attr.rowspan]="grupo.banderas.length">
+            {{ grupo.pedido.fechaEntrega ? (grupo.pedido.fechaEntrega | date: 'dd/MM/yyyy') : '—' }}
+          </td>
+        }
+        <td data-label="Diseñada por">
+          <select class="ds-select" [ngModel]="bandera.idDisenadora ?? 0" (ngModelChange)="cambiarDiseniadora(bandera, $event)">
+            <option [ngValue]="0">Sin asignar</option>
+            @for (d of diseniadoras(); track d.id) {
+              <option [ngValue]="d.id">{{ d.nombre }}</option>
+            }
+          </select>
+        </td>
+        <td data-label="Perdió beneficio" class="celda-centro">
+          @if (perdidas) {
+            <button type="button" class="marca marca--no marca--boton" title="Ver o restaurar el beneficio" (click)="abrirPerdida(grupo.pedido, bandera)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+          } @else if (bandera.origen === 'Comprada') {
+            <!-- Las compradas no tienen beneficio que perder -->
+            <span class="sin-beneficio" title="Bandera comprada, no tiene beneficio">Comprada</span>
+          } @else {
+            <button type="button" class="marca marca--vacia marca--boton" title="Marcar beneficio perdido" (click)="abrirPerdida(grupo.pedido, bandera)">
+              <span class="sr-only">Marcar beneficio perdido</span>
+            </button>
+          }
+        </td>
+        @if (perdidas) {
+          <td data-label="Motivo pérdida beneficio" class="celda-motivo" [title]="bandera.motivoPerdidaBeneficio">
+            {{ bandera.motivoPerdidaBeneficio }}
+          </td>
+        }
+      </tr>
+    }
+  </ng-template>
+
+  @if (edicionPerdida(); as edicion) {
+    <div class="modal-backdrop" role="presentation">
+      <section class="banderas-modal" role="dialog" aria-modal="true" aria-labelledby="perdida-title">
+        <header class="banderas-modal__header">
+          <div>
+            <span class="ds-eyebrow">{{ edicion.pedido.colegio }}</span>
+            <h2 id="perdida-title" class="ds-heading-2">Beneficio perdido</h2>
+          </div>
+          <button class="close-button" type="button" [disabled]="guardandoPerdida()" (click)="cerrarPerdida()" aria-label="Cerrar">×</button>
+        </header>
+
+        <div class="banderas-modal__content">
+          <p class="ds-text-muted">
+            @if (perdioBeneficio(edicion.bandera)) {
+              Esta bandera perdió el beneficio. Podés corregir el motivo o restaurar el beneficio para que vuelva a la tabla principal.
+            } @else {
+              Indicá por qué se pierde el beneficio. La bandera va a pasar a la tabla de beneficio perdido.
+            }
+          </p>
+          <label class="ds-field">
+            <span class="ds-label">Motivo</span>
+            <textarea
+              class="ds-textarea"
+              rows="3"
+              [ngModel]="edicion.motivo"
+              (ngModelChange)="actualizarMotivo($event)"
+            ></textarea>
+          </label>
+        </div>
+
+        <footer class="banderas-modal__actions">
+          @if (perdioBeneficio(edicion.bandera)) {
+            <button type="button" class="ds-button ds-button--secondary" [disabled]="guardandoPerdida()" (click)="restaurarBeneficio()">Restaurar beneficio</button>
+          } @else {
+            <button type="button" class="ds-button ds-button--secondary" [disabled]="guardandoPerdida()" (click)="cerrarPerdida()">Cancelar</button>
+          }
+          <button type="button" class="ds-button" [disabled]="guardandoPerdida() || !edicion.motivo.trim()" (click)="confirmarPerdida()">
+            {{ guardandoPerdida() ? 'Guardando…' : 'Guardar' }}
+          </button>
+        </footer>
+      </section>
+    </div>
+  }
+</main>

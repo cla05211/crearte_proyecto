@@ -1,0 +1,94 @@
+<main class="deudores-page">
+  <section class="ds-container deudores-container">
+    <header class="deudores-header">
+      <div>
+        <span class="ds-eyebrow">Administración</span>
+        <h1 class="ds-heading-1">Colegios deudores</h1>
+      </div>
+    </header>
+
+    @if (cargando() && !deudores()) {
+      <div class="loading-state" role="status" aria-live="polite">
+        <span class="loading-state__spinner" aria-hidden="true"></span>
+        <div>
+          <h2>Cargando deudores</h2>
+          <p>Estamos revisando las cuotas vencidas de cada colegio.</p>
+        </div>
+      </div>
+    } @else {
+      <div class="kpis-grid">
+        <div class="ds-card kpi-card">
+          <span class="ds-label">Colegios con deuda</span>
+          <strong class="kpi-valor">{{ totalDeudores() }}</strong>
+        </div>
+        <div class="ds-card kpi-card">
+          <span class="ds-label">Total adeudado</span>
+          <strong class="kpi-valor">{{ totalAdeudado() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+        </div>
+        <div class="ds-card kpi-card">
+          <span class="ds-label">Con más de una cuota</span>
+          <strong class="kpi-valor kpi-valor--alerta">{{ conVariasCuotas() }}</strong>
+        </div>
+      </div>
+
+      @if (!deudoresOrdenados().length) {
+        <div class="empty-state">
+          <div class="empty-state__illustration" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <h2>No hay colegios con deuda.</h2>
+          <p>Todas las cuotas vencidas están pagas.</p>
+        </div>
+      } @else {
+        <div class="ds-table-wrapper deudores-table-wrapper">
+          <table class="ds-table deudores-table">
+            <colgroup>
+              <col style="width: 9%" />
+              <col style="width: 22%" />
+              <col style="width: 13%" />
+              <col style="width: 10%" />
+              <col style="width: 11%" />
+              <col style="width: 20%" />
+              <col style="width: 15%" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Nro pedido</th>
+                <th>Colegio</th>
+                <th>Monto adeudado</th>
+                <th>Días de atraso</th>
+                <th>Cuotas adeudadas</th>
+                <th>Padre responsable</th>
+                <th>Contacto</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (deudor of deudoresOrdenados(); track deudor.idGrupo) {
+                @let variasCuotas = deudor.nroCuotasAdeudadas > 1;
+                <tr [class.fila-alerta]="variasCuotas">
+                  <td data-label="Nro pedido">{{ deudor.nroFabrica ?? '-' }}</td>
+                  <td data-label="Colegio">
+                    <button type="button" class="link-colegio" (click)="abrirFicha(deudor.idGrupo)" [title]="'Abrir ficha de ' + deudor.colegio">
+                      {{ deudor.colegio }}
+                    </button>
+                  </td>
+                  <td data-label="Monto adeudado">{{ deudor.montoAdeudado | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Días de atraso">{{ deudor.diasAtraso }} {{ deudor.diasAtraso === 1 ? 'día' : 'días' }}</td>
+                  <td data-label="Cuotas adeudadas">
+                    @if (variasCuotas) {
+                      <span class="ds-badge ds-badge--danger">{{ deudor.nroCuotasAdeudadas }} cuotas</span>
+                    } @else {
+                      1 cuota
+                    }
+                  </td>
+                  <td data-label="Padre responsable">{{ deudor.padreResponsable || '-' }}</td>
+                  <td data-label="Contacto">{{ deudor.contacto || '-' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  </section>
+</main>

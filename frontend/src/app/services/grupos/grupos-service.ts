@@ -4,6 +4,7 @@ import { grupoClientePageResponseDTO } from './dtos/grupoClientePage.dto copy';
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { grupoClienteDatosPageResponse } from './dtos/grupoClienteDatosPage.dto';
+import { colegioDeudorDTO } from './dtos/colegioDeudor.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -41,6 +42,11 @@ export class GruposService
     obtenerCantidadEgresados(idGrupo: number): Observable<number>
     {
       return this.http.get<number>(`${environment.apiUrl}/grupos/egresados/${idGrupo}`);
+    }
+
+    obtenerGruposDeudores(): Observable<colegioDeudorDTO[]>
+    {
+      return this.http.get<colegioDeudorDTO[]>(`${environment.apiUrl}/grupos/deudores`);
     }
 }
  

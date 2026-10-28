@@ -11,6 +11,7 @@ import { presupuestoPedidoClientesPage } from './dto/PresupuestoPedidoClientePag
 import { PedidoDTOResponse } from '../pedidos/dto/pedidoResponse.dto';
 import { ControlTallesDisenioDTO } from './dto/ControlTallesDisenioDTO';
 import { ControlProduccionDTO } from './dto/ControlProduccionDTO';
+import { ControlBanderasDTO, ModificarBanderaDTO } from './dto/ControlBanderasDTO';
 
 @Injectable({
   providedIn: 'root',
@@ -88,6 +89,17 @@ export class GestionPedidosService
   {
     return this.http.post<{ nroFabrica: number; whatsappEnviado: boolean }>(
       `${environment.apiUrl}/gestion-pedidos/enviar-fabrica/${idPedido}`, { mesEntrega, anioEntrega });
+  }
+
+  obtenerPedidosControlBandera(mes: number, anio: number):Observable<ControlBanderasDTO[]>
+  {
+    return this.http.get<ControlBanderasDTO[]>(`${environment.apiUrl}/gestion-pedidos/control-banderas`, {params:{mes,anio}});
+  }
+
+  // Solo se actualizan los campos que vienen en el dto
+  modificarBandera(idBandera: number, dto: ModificarBanderaDTO)
+  {
+    return this.http.patch(`${environment.apiUrl}/gestion-pedidos/banderas/${idBandera}`, dto);
   }
 
 }

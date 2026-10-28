@@ -31,12 +31,16 @@ import { BeneficioPedidoDTO } from 'src/beneficios-pedido/dto/beneficioPedidoDTO
 import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
 import { NotificacionesService } from 'src/notificaciones/notificaciones.service';
 import { ControlProduccionDTO, EstadoPrenda } from './dto/ControlProduccionDTO';
+import { ControlBanderasDTO, EstadoBocetoBandera, ModificarBanderaDTO, OrigenBandera } from './dto/ControlBanderasDTO';
 
 const CAMPERAS_BUZOS = [63,64,67,68,69,70,71];
 const CHOMBAS_REMERAS = [65,66,67,68,69,70];
 const PANTALONES = [72];
 const ESTADO_TALLES_CONFIRMADO = 'Confirmado';
 const ESTADO_TALLES_CARGANDO = 'Cargando';
+const ESTADO_LISTO_PARA_PRODUCCION = 'Listo para enviar a producción';
+// Pedidos que aparecen en la planilla de banderas: con cruz si todavía no se mandaron a producción, con tic después
+const ESTADOS_PEDIDO_BANDERAS = [ESTADO_LISTO_PARA_PRODUCCION, 'En producción', 'Listo para entregar', 'Entregado'];
 const ESTADO_TALLES_NO_ACCEDIO = 'No accedió';
 
 type ProductoPedidoNombre = { productos: { id: number } };
@@ -416,5 +420,92 @@ export class GestionPedidosService
         }
 
         return { nroFabrica: data, whatsappEnviado };
+    }
+
+    async obtenerPedidosControlBandera(mes: number, anio:number):Promise<ControlBanderasDTO[]>
+    {
+        // Strings 'YYYY-MM-DD' (igual que en obtenerDatosProduccion): toISOString pasa a UTC y corre la fecha
+        const mesTexto = String(mes).padStart(2, '0');
+        const desde = `${anio}-${mesTexto}-01`;
+        const hasta = mes === 12
+            ? `${anio + 1}-01-01`
+            : `${anio}-${String(mes + 1).padStart(2, '0')}-01`;
+
+        const {data,error} = await this.sb.supabase
+        .from("pedidos")
+        .select(`id,estado_general,fecha_entrega_aproximada,
+            banderas_pedido!inner(id, estado_boceto, motivo_perdida_beneficio, origen, id_disenadora,
+                usuarios(nombre)),
+            grupos!inner(nivel, colegios!inner(nombre),
+                padres_responsables(telefono, principal),
+                alumnos_responsables(telefono, principal))`)
+        .in("estado_general", ESTADOS_PEDIDO_BANDERAS)
+        .gte("fecha_entrega_aproximada", desde)
+        .lt("fecha_entrega_aproximada", hasta)
+        .order("fecha_entrega_aproximada", { ascending: true })
+        .order("id", { ascending: true })
+        .order("id", { ascending: true, referencedTable: "banderas_pedido" });
+
+        if (error)
+        {
+            throw new Error(error.message);
+        }
+
+        const banderas: ControlBanderasDTO[] = data.map(pedido => {
+            // Secundaria: alumno responsable principal. Resto de niveles: padre responsable principal
+            const responsables = pedido.grupos.nivel == "Secundaria"
+                ? pedido.grupos.alumnos_responsables
+                : pedido.grupos.padres_responsables;
+
+            return {
+                idPedido: pedido.id,
+                colegio: pedido.grupos.colegios.nombre,
+                fechaEntrega: pedido.fecha_entrega_aproximada!,
+                contacto: responsables.find(r => r.principal)?.telefono ?? null,
+                banderas: pedido.banderas_pedido.map(b => ({
+                    id: b.id,
+                    origen: b.origen as OrigenBandera,
+                    idDisenadora: b.id_disenadora,
+                    disenadora: b.usuarios?.nombre ?? null,
+                    motivoPerdidaBeneficio: b.motivo_perdida_beneficio,
+                    estadoBoceto: b.estado_boceto as EstadoBocetoBandera,
+                })),
+                enviadaProduccion: pedido.estado_general !== ESTADO_LISTO_PARA_PRODUCCION,
+            };
+        });
+
+        return banderas;
+    }
+
+    async modificarBandera(idBandera: number, dto: ModificarBanderaDTO)
+    {
+        const cambios: { estado_boceto?: string; id_disenadora?: number | null; motivo_perdida_beneficio?: string | null } = {};
+
+        if (dto.estadoBoceto !== undefined) cambios.estado_boceto = dto.estadoBoceto;
+        if (dto.idDiseniadora !== undefined) cambios.id_disenadora = dto.idDiseniadora;
+        // String vacío = ya no pierde el beneficio
+        if (dto.motivoPerdidaBeneficio !== undefined) cambios.motivo_perdida_beneficio = dto.motivoPerdidaBeneficio?.trim() || null;
+
+        if (Object.keys(cambios).length === 0)
+        {
+            throw new BadRequestException('No hay cambios para guardar.');
+        }
+
+        const { data, error } = await this.sb.supabase
+        .from("banderas_pedido")
+        .update(cambios)
+        .eq("id", idBandera)
+        .select("id");
+
+        // El check de la tabla rechaza motivo de pérdida en banderas compradas
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        if (data.length === 0)
+        {
+            throw new BadRequestException('La bandera no existe.');
+        }
     }
 }
