@@ -201,8 +201,13 @@
   cursor: pointer;
   padding: 0;
 }
-.marca--boton.marca--no {
+.marca--boton.marca--no,
+.marca--boton.marca--si {
   border: 0;
+}
+.marca--boton.marca--si:hover,
+.marca--boton.marca--si:focus-visible {
+  border-color: var(--color-success);
 }
 .marca--boton:hover,
 .marca--boton:focus-visible {

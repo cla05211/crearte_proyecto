@@ -11,4 +11,5 @@ export class DiseniosGrupoResponseDTO
     disenios!: DisenioResponseDTO[];
     tieneBandera!: boolean;
     tallesConfirmados!: boolean;
+    edicionTallesHabilitada!: boolean;
 }

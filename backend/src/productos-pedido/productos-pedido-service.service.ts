@@ -8,6 +8,7 @@ import { ModificarCantidadProductoPedido } from './dto/ModificarCantidadProducto
 import { ProductoPedidoResponseDTO } from './dto/ProductoPedidoResponse.dto copy';
 import { ProductoPedidoResponseConNombreOriginalDTO } from './dto/ProductoPedidoResponse.dto';
 import { productosPedidoIdNombreDTO } from './dto/productosPedidoPortalClienteDTO';
+import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
 import { table } from 'console';
 
 @Injectable()
@@ -128,24 +129,23 @@ export class ProductosPedidoService
 
     async traerSeniaTotal(idPedido: number): Promise<number|null>
     {
-        let senia: number|null = null;
-
         const {data,error} = await this.sb.supabase
-        .from('productos_pedidos')
-        .select('valor_senia, cantidad')
-        .eq('id_pedido',idPedido);
+        .from('pedidos')
+        .select('senia_total, productos_pedidos(valor_senia, cantidad)')
+        .eq('id',idPedido)
+        .single();
 
         if (error)
         {
             throw new BadRequestException(error.message);
         }
 
-        if(data.length > 0)
+        if (data.senia_total === null && data.productos_pedidos.length === 0)
         {
-            senia = data.reduce((suma, producto) => suma + producto.valor_senia * producto.cantidad,0);
+            return null;
         }
 
-        return senia;  
+        return calcularSeniaTotal(data.senia_total, data.productos_pedidos);
     }
 
     async traerProductosPedidosComponentes(idPedido: number): Promise<productosPedidoIdNombreDTO[]>

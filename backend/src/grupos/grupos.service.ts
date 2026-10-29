@@ -8,6 +8,8 @@ import { grupoDatosClienteResponse } from './dto/grupoClienteDatosPage.dto';
 import { AuthService } from 'src/auth/auth.service';
 import { colegioDeudorDTO } from './dto/colegioDeudor.dto';
 
+import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
+
 @Injectable()
 export class GruposService 
 {
@@ -230,35 +232,102 @@ export class GruposService
     //Deudores
     async traerGruposDeudores(): Promise<colegioDeudorDTO[]>
     {
-        const fechaHoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+        const fechaHoy = this.fechaArgentina(new Date());
 
+        // cuotasVencidas: solo las vencidas sin pagar. cuotas: todas, para saber de cuántas cuotas es el plan.
+        // Sin !inner en las cuotas: un grupo que solo debe la seña (todavía sin cuotas vencidas) también tiene que venir.
         const { data, error } = await this.sb.supabase
         .from("grupos")
-        .select(`id, colegios(nombre),
-            pedidos!inner(nro_fabrica,cuotas!inner(importe,monto_cubierto,fecha_vencimiento,estado)),
+        .select(`id, created_at, colegios(nombre),
+            pedidos!inner(nro_fabrica, senia_total,
+                cuotas(id),
+                cuotasVencidas:cuotas(importe,monto_cubierto,fecha_vencimiento,estado),
+                productos_pedidos(valor_senia,cantidad),
+                pagos(monto,motivo)),
             padres_responsables(nombre,apellido,telefono,principal)`)
-        .neq('pedidos.cuotas.estado', 'Pagada')
-        .lt('pedidos.cuotas.fecha_vencimiento', fechaHoy);
+        .neq('pedidos.cuotasVencidas.estado', 'Pagada')
+        .lt('pedidos.cuotasVencidas.fecha_vencimiento', fechaHoy)
+        .eq('pedidos.pagos.motivo', 'Seña');
 
         if (error) 
         {
             throw new BadRequestException(error.message);
         }
-   
 
-        const colegiosDeudores: colegioDeudorDTO[] = data.map(g => 
-            ({
+        const planesConSenia = await this.obtenerPlanesConSenia();
+        const colegiosDeudores: colegioDeudorDTO[] = [];
+
+        for (const g of data)
+        {
+            const pedido = g.pedidos[0];
+            const cuotasVencidas = pedido.cuotasVencidas;
+
+            // Si el plan es de cuotas iguales, la "seña" es en realidad la primera cuota y lo que falte cuenta como deuda.
+            // Si es una seña real (seña != cuota), no se toma como deuda.
+            const seniaEsPrimeraCuota = !(planesConSenia.get(pedido.cuotas.length) ?? true);
+            const deudaSenia = seniaEsPrimeraCuota ? this.calcularDeudaSenia(pedido.productos_pedidos, pedido.pagos, pedido.senia_total) : 0;
+
+            if (cuotasVencidas.length === 0 && deudaSenia === 0)
+            {
+                continue;
+            }
+
+            const deudaCuotas = (cuotasVencidas.reduce((acumulador, cuota) => acumulador + (cuota.importe ?? 0),0)) - (cuotasVencidas.reduce((acumulador, cuota) => acumulador + (cuota.monto_cubierto ?? 0),0));
+
+            // La seña se paga el día de la venta (cuando se crea el grupo), así que si se debe es lo más atrasado
+            const diasAtraso = deudaSenia > 0 && g.created_at
+                ? this.diasEntre(this.fechaArgentina(new Date(g.created_at + 'Z')), fechaHoy)
+                : this.calcularDiasAtraso(fechaHoy, cuotasVencidas);
+
+            colegiosDeudores.push({
                 idGrupo: g.id,
-                nroFabrica:g.pedidos[0].nro_fabrica,
+                nroFabrica: pedido.nro_fabrica,
                 colegio: g.colegios.nombre,
-                nroCuotasAdeudadas: g.pedidos[0].cuotas.length,
-                montoAdeudado: (g.pedidos[0].cuotas.reduce((acumulador, cuota) => acumulador + (cuota.importe ?? 0),0)) - (g.pedidos[0].cuotas.reduce((acumulador, cuota) => acumulador + (cuota.monto_cubierto ?? 0),0)),
+                nroCuotasAdeudadas: cuotasVencidas.length + (deudaSenia > 0 ? 1 : 0),
+                montoAdeudado: deudaCuotas + deudaSenia,
+                deudaSenia: deudaSenia,
+                seniaEsPrimeraCuota: seniaEsPrimeraCuota,
                 padreResponsable: `${g.padres_responsables.filter(p=> p.principal == true)[0].nombre!} ${g.padres_responsables.filter(p=> p.principal == true)[0].apellido!}`,
                 contacto: g.padres_responsables.filter(p=> p.principal == true)[0].telefono!,
-                diasAtraso: this.calcularDiasAtraso(fechaHoy, g.pedidos[0].cuotas)
-            }))
+                diasAtraso: diasAtraso
+            });
+        }
         
         return colegiosDeudores
+    }
+
+    // Seña acordada (senia_total o valor_senia * cantidad de cada producto) menos lo pagado con motivo 'Seña'.
+    // Mismo cálculo que registrar_pago_completo / cuenta corriente.
+    private calcularDeudaSenia(productos: {valor_senia:number,cantidad:number}[], pagosSenia: {monto:number|null}[], seniaGuardada: number | null): number
+    {
+        const totalSenia = calcularSeniaTotal(seniaGuardada, productos);
+        const seniaPagada = pagosSenia.reduce((acumulador, pago) => acumulador + (pago.monto ?? 0), 0);
+        const deuda = Math.round((totalSenia - seniaPagada) * 100) / 100;
+
+        return deuda > 0 ? deuda : 0;
+    }
+
+    // Copia de obtenerPlanesConSenia de gestion-pedidos: si un plan (cantidad de cuotas) tiene seña distinta a la cuota.
+    // Se saca del catálogo y no del pedido, porque en el pedido la cuota incluye los agregados individuales
+    // y un plan de cuotas iguales quedaría con seña != cuota.
+    private async obtenerPlanesConSenia(): Promise<Map<number, boolean>>
+    {
+        const { data, error } = await this.sb.supabase
+        .from("precios_productos")
+        .select("cuotas, valor_senia, valor_cuota");
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        const planes = new Map<number, boolean>();
+        for (const precio of data)
+        {
+            const conSenia = Number(precio.valor_senia) !== Number(precio.valor_cuota);
+            planes.set(precio.cuotas, (planes.get(precio.cuotas) ?? false) || conSenia);
+        }
+        return planes;
     }
 
     private calcularDiasAtraso(fechaHoy:string, cuotas:{estado:string|null,fecha_vencimiento:string|null}[])
@@ -267,14 +336,21 @@ export class GruposService
         .filter(cuota => cuota.estado !== 'Pagada')
         .sort((a, b) => a.fecha_vencimiento!.localeCompare(b.fecha_vencimiento!))[0];
 
-        const diasAtraso = primeraCuotaVencida
-            ? Math.floor(
-                (new Date(fechaHoy + 'T00:00:00Z').getTime() -
-                new Date(primeraCuotaVencida.fecha_vencimiento + 'T00:00:00Z').getTime())
-                / (1000 * 60 * 60 * 24)
-            )
-            : 0;
-        
-        return diasAtraso;
+        return primeraCuotaVencida ? this.diasEntre(primeraCuotaVencida.fecha_vencimiento!, fechaHoy) : 0;
+    }
+
+    // Días entre dos fechas 'YYYY-MM-DD' (en UTC para que el horario de verano no corra un día)
+    private diasEntre(desde: string, hasta: string): number
+    {
+        return Math.floor(
+            (new Date(hasta + 'T00:00:00Z').getTime() - new Date(desde + 'T00:00:00Z').getTime())
+            / (1000 * 60 * 60 * 24)
+        );
+    }
+
+    // Fecha 'YYYY-MM-DD' en horario argentino
+    private fechaArgentina(fecha: Date): string
+    {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(fecha);
     }
 }

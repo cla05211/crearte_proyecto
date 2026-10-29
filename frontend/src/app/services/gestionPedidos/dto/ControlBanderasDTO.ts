@@ -10,6 +10,8 @@ export interface BanderaDTO
     idDisenadora: number | null;
     motivoPerdidaBeneficio: string | null;
     estadoBoceto: EstadoBocetoBandera;
+    // La marcan a mano cuando la mandan a fábrica (no tiene que ver con el estado del pedido)
+    enviadaProduccion: boolean;
 }
 
 // Un pedido (colegio) con todas sus banderas
@@ -20,7 +22,6 @@ export interface ControlBanderasDTO
     fechaEntrega: string;
     contacto: string | null;
     banderas: BanderaDTO[];
-    enviadaProduccion: boolean;
 }
 
 // PATCH de una bandera: solo se actualizan los campos que vienen
@@ -29,4 +30,5 @@ export interface ModificarBanderaDTO
     estadoBoceto?: EstadoBocetoBandera;
     idDiseniadora?: number | null;
     motivoPerdidaBeneficio?: string | null;
+    enviadaProduccion?: boolean;
 }

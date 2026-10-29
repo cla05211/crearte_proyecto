@@ -22,11 +22,12 @@ import { PadreResponsableService } from 'src/padre-responsable/padre-responsable
 import { ContratosModule } from 'src/contratos/contratos.module';
 import { ResumenTallesModule } from 'src/resumen-talles/resumen-talles.module';
 import { DiseniosModule } from 'src/disenios/disenios.module';
+import { RecalculoPlanTallesService } from 'src/prendas-pedido-talles/recalculo-plan-talles.service';
 
 @Module({
     imports:[SupabaseModule, OcrModule, ReportesModule, GestionPedidosModule, StorageModule, ContratosModule, ResumenTallesModule, DiseniosModule],
     controllers: [ClientesPortalController],
-    providers:[PrendasPedidoTallesService,PedidosService, PagosService, CuotasService, ProductosPedidoService, DocumentosService, SupabaseService, GruposService, ProductosService, BeneficiosPedidoService, PadreResponsableService]
+    providers:[PrendasPedidoTallesService,PedidosService, PagosService, CuotasService, ProductosPedidoService, DocumentosService, SupabaseService, GruposService, ProductosService, BeneficiosPedidoService, PadreResponsableService, RecalculoPlanTallesService]
 })
 export class ClientesPortalModule {
 

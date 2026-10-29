@@ -5,6 +5,8 @@ export interface colegioDeudorDTO
     colegio: string;
     nroCuotasAdeudadas: number;
     montoAdeudado: number;
+    deudaSenia: number;
+    seniaEsPrimeraCuota: boolean;
     padreResponsable: string;
     contacto: string;
     diasAtraso:number;

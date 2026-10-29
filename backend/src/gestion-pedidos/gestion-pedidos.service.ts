@@ -31,6 +31,7 @@ import { BeneficioPedidoDTO } from 'src/beneficios-pedido/dto/beneficioPedidoDTO
 import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
 import { NotificacionesService } from 'src/notificaciones/notificaciones.service';
 import { ControlProduccionDTO, EstadoPrenda } from './dto/ControlProduccionDTO';
+import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
 import { ControlBanderasDTO, EstadoBocetoBandera, ModificarBanderaDTO, OrigenBandera } from './dto/ControlBanderasDTO';
 
 const CAMPERAS_BUZOS = [63,64,67,68,69,70,71];
@@ -39,7 +40,7 @@ const PANTALONES = [72];
 const ESTADO_TALLES_CONFIRMADO = 'Confirmado';
 const ESTADO_TALLES_CARGANDO = 'Cargando';
 const ESTADO_LISTO_PARA_PRODUCCION = 'Listo para enviar a producción';
-// Pedidos que aparecen en la planilla de banderas: con cruz si todavía no se mandaron a producción, con tic después
+// Pedidos que aparecen en la planilla de banderas
 const ESTADOS_PEDIDO_BANDERAS = [ESTADO_LISTO_PARA_PRODUCCION, 'En producción', 'Listo para entregar', 'Entregado'];
 const ESTADO_TALLES_NO_ACCEDIO = 'No accedió';
 
@@ -167,42 +168,25 @@ export class GestionPedidosService
         return data;
     }
 
+    // Total del pedido = seña acordada + importes de las cuotas (después de modificar el plan,
+    // las cuotas ya no son todas iguales, así que se suman las reales en vez de productos * nroCuotas)
     async obtenerImporteTotalPedido(idPedido: number): Promise<number>
     {
-        let importe = 0;
-
-        const {data,error} = await this.sb.supabase
-            .from('productos_pedidos')
-            .select('valor_cuota, valor_senia, cantidad')
-            .eq('id_pedido',idPedido)
+        const { data, error } = await this.sb.supabase
+            .from('pedidos')
+            .select('senia_total, productos_pedidos(valor_senia, cantidad), cuotas(importe)')
+            .eq('id', idPedido)
+            .single();
 
         if (error)
         {
             throw new BadRequestException(error.message);
         }
 
-        const {data: dataAgregados, error: errorAgregados} = await this.sb.supabase
-            .from('agregados_globales_pedido')
-            .select('agregados(precio)')
-            .eq('id_pedido',idPedido)
+        const senia = calcularSeniaTotal(data.senia_total, data.productos_pedidos);
+        const totalCuotas = data.cuotas.reduce((total, cuota) => total + Number(cuota.importe || 0), 0);
 
-        if (errorAgregados)
-        {
-            throw new BadRequestException(errorAgregados.message);
-        }
-
-        const nroCuotas = (await this.cuotas.traerCuotasPorIdPedido(idPedido)).length;
-
-        // valor_cuota/valor_senia en productos_pedidos son precios por unidad
-        // (ver ProductosService.obtenerPreciosBeneficios): hay que multiplicar
-        // por la cantidad del renglón, y el total de cuota se paga nroCuotas
-        // veces. La seña, en cambio, se paga una sola vez.
-        const totalCuotaPorUnidad = data.reduce((total, producto) => total + Number(producto.valor_cuota || 0) * Number(producto.cantidad || 0),0);
-        const totalSenias = data.reduce((total, producto) => total + Number(producto.valor_senia || 0) * Number(producto.cantidad || 0),0);
-        const totalAgregadosGlobales = dataAgregados.reduce((total, agregado) => total + Number(agregado.agregados?.precio || 0),0);
-        importe = totalSenias + (totalCuotaPorUnidad + totalAgregadosGlobales) * nroCuotas;
-
-        return importe;
+        return senia + totalCuotas;
     }
 
     async obtenerPresupuestoPedidosClientes(idGrupo: number):Promise<presupuestoPedidoClientesPage>
@@ -236,7 +220,7 @@ export class GestionPedidosService
         let query = this.sb.supabase
         .from("pedidos")
         .select(`*,
-            productos_pedidos(valor_senia,valor_cuota,
+            productos_pedidos(valor_senia,valor_cuota,cantidad,
                 productos(nombre)),
             cuotas(id, numero, estado),
             grupos!inner(id,
@@ -272,7 +256,7 @@ export class GestionPedidosService
             // Si el plan ya no está en el catálogo se compara el primer producto (como antes)
             senia: planTieneSenia.get(pedido.cuotas.length)
                 ?? pedido.productos_pedidos[0]?.valor_senia != pedido.productos_pedidos[0]?.valor_cuota,
-            seniaPaga:  pedido.pagos.reduce((total, pago) => total + pago.monto!, 0) >= pedido.productos_pedidos.reduce((total, producto) => total + producto.valor_senia, 0),
+            seniaPaga:  pedido.pagos.reduce((total, pago) => total + pago.monto!, 0) >= calcularSeniaTotal(pedido.senia_total, pedido.productos_pedidos),
             promo: pedido.grupos.promo!,
             nombreColegio: pedido.grupos.colegios.nombre,
             alumnosResponsables: pedido.grupos.alumnos_responsables,
@@ -434,7 +418,7 @@ export class GestionPedidosService
         const {data,error} = await this.sb.supabase
         .from("pedidos")
         .select(`id,estado_general,fecha_entrega_aproximada,
-            banderas_pedido!inner(id, estado_boceto, motivo_perdida_beneficio, origen, id_disenadora,
+            banderas_pedido!inner(id, estado_boceto, motivo_perdida_beneficio, origen, id_disenadora, enviado_produccion,
                 usuarios(nombre)),
             grupos!inner(nivel, colegios!inner(nombre),
                 padres_responsables(telefono, principal),
@@ -469,8 +453,8 @@ export class GestionPedidosService
                     disenadora: b.usuarios?.nombre ?? null,
                     motivoPerdidaBeneficio: b.motivo_perdida_beneficio,
                     estadoBoceto: b.estado_boceto as EstadoBocetoBandera,
+                    enviadaProduccion: b.enviado_produccion,
                 })),
-                enviadaProduccion: pedido.estado_general !== ESTADO_LISTO_PARA_PRODUCCION,
             };
         });
 
@@ -479,12 +463,13 @@ export class GestionPedidosService
 
     async modificarBandera(idBandera: number, dto: ModificarBanderaDTO)
     {
-        const cambios: { estado_boceto?: string; id_disenadora?: number | null; motivo_perdida_beneficio?: string | null } = {};
+        const cambios: { estado_boceto?: string; id_disenadora?: number | null; motivo_perdida_beneficio?: string | null; enviado_produccion?: boolean } = {};
 
         if (dto.estadoBoceto !== undefined) cambios.estado_boceto = dto.estadoBoceto;
         if (dto.idDiseniadora !== undefined) cambios.id_disenadora = dto.idDiseniadora;
         // String vacío = ya no pierde el beneficio
         if (dto.motivoPerdidaBeneficio !== undefined) cambios.motivo_perdida_beneficio = dto.motivoPerdidaBeneficio?.trim() || null;
+        if (dto.enviadaProduccion !== undefined) cambios.enviado_produccion = dto.enviadaProduccion;
 
         if (Object.keys(cambios).length === 0)
         {
@@ -508,4 +493,5 @@ export class GestionPedidosService
             throw new BadRequestException('La bandera no existe.');
         }
     }
+
 }

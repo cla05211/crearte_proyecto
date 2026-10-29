@@ -55,7 +55,7 @@
                   @for (pago of pagosCliente(); track pago.id) {
                     <tr>
                       <td data-label="Fecha">{{ pago.fecha | date: 'dd/MM/yyyy' }}</td>
-                      <td data-label="Motivo">{{ pago.motivo || '—' }}</td>
+                      <td data-label="Motivo">{{ etiquetaMotivo(pago.motivo) }}</td>
                       <td data-label="Monto">{{ pago.monto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                       <td data-label="Banco">{{ pago.banco || '—' }}</td>
                       <td data-label="Entidad de pago">{{ mostrarEntidadPago(pago) ? (pago.entidad_pago || '—') : '' }}</td>
@@ -105,7 +105,7 @@
                 <tbody>
                   @if (seniaTotal(); as senia) {
                     <tr>
-                      <td data-label="Nº">Seña</td>
+                      <td data-label="Nº">{{ etiquetaSenia() }}</td>
                       <td data-label="Vencimiento">—</td>
                       <td data-label="Importe">{{ senia | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                       <td data-label="Cubierto">{{ seniaPagada() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
@@ -116,7 +116,7 @@
                   }
                   @for (cuota of cuotasCliente(); track cuota.id) {
                     <tr>
-                      <td data-label="Nº">{{ cuota.numero }}</td>
+                      <td data-label="Nº">{{ numeroCuota(cuota) }}</td>
                       <td data-label="Vencimiento">{{ cuota.fecha_vencimiento | date: 'dd/MM/yyyy' }}</td>
                       <td data-label="Importe">{{ cuota.importe | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                       <td data-label="Cubierto">{{ cuota.monto_cubierto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>

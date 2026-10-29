@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseBoolPipe, ParseIntPipe, Patch, Post, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -74,6 +74,15 @@ export class DiseniosController
     )
     {
         return await this.diseniosService.subirFirmado(idGrupo, idDocumento, archivo);
+    }
+
+    // Habilita o cierra la edición excepcional de talles ya confirmados
+    @Patch(':idGrupo/edicion-talles')
+    @UseGuards(AuthGuard, PermisosGuard)
+    @RequierePermiso('ver_clientes_talles_disenio')
+    async modificarEdicionTalles(@Param('idGrupo', ParseIntPipe) idGrupo: number, @Query('habilitada', ParseBoolPipe) habilitada: boolean)
+    {
+        return await this.diseniosService.modificarEdicionTalles(idGrupo, habilitada);
     }
 
     @Post('url-subida')

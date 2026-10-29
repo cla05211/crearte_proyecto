@@ -12,4 +12,6 @@ export interface DiseniosGrupoResponseDTO
     disenios: DisenioResponseDTO[];
     tieneBandera: boolean;
     tallesConfirmados: boolean;
+    // Administración reabrió la planilla de talles ya confirmados
+    edicionTallesHabilitada: boolean;
 }

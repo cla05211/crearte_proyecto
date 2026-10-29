@@ -10,11 +10,16 @@
 
     @if (confirmacion.confirmados() === null) {
       <p class="ds-text-muted talles-cargando" role="status" aria-live="polite">Cargando...</p>
-    } @else if (confirmacion.confirmados()) {
+    } @else if (confirmacion.confirmados() && !confirmacion.edicionHabilitada()) {
       <section class="colegio-content">
         <app-resumen-firmado />
       </section>
     } @else {
+      @if (confirmacion.edicionHabilitada()) {
+        <p class="ds-alert ds-alert--warning talles-edicion-aviso" role="status">
+          Se habilitó la modificación de los talles. Hacé los cambios y, al terminar, revisá el resumen y tocá <strong>Guardar cambios definitivamente</strong>.
+        </p>
+      }
       <nav class="colegio-tabs" aria-label="Secciones del colegio">
           @if (!muestrasFisicas()) {
             <a routerLink="tutorial" routerLinkActive="is-active">¿Cómo tomar las medidas?</a>

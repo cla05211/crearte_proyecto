@@ -6,4 +6,6 @@ import { Injectable, signal } from '@angular/core';
 export class TallesConfirmacionService
 {
     readonly confirmados = signal<boolean | null>(null);
+    // Administración reabrió los talles ya confirmados: se edita igual que al principio, pero se guarda sin firmar
+    readonly edicionHabilitada = signal(false);
 }

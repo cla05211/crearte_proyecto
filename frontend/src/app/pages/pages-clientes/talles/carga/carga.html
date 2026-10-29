@@ -15,6 +15,14 @@
         <iframe [src]="urlResumenSegura()" class="carga-resumen__iframe" title="Resumen de talles del pedido"></iframe>
       </div>
 
+      @if (modoEdicion()) {
+        <!-- Edición habilitada por administración: no se vuelve a firmar -->
+        <footer class="carga-footer">
+          <button type="button" class="ds-button ds-button--large" [disabled]="confirmando()" (click)="guardarCambiosDefinitivos()">
+            {{ confirmando() ? 'Guardando...' : 'Guardar cambios definitivamente' }}
+          </button>
+        </footer>
+      } @else {
       <section class="ds-card carga-firma">
         <h3 class="ds-heading-3">Firma</h3>
         <p class="ds-text-muted">Revisá el resumen y firmá en el recuadro para confirmar los talles del pedido.</p>
@@ -29,6 +37,7 @@
           {{ confirmando() ? 'Confirmando...' : 'Confirmar' }}
         </button>
       </footer>
+      }
     </section>
   } @else {
     <header class="carga-header">

@@ -53,6 +53,8 @@ export class CuentaCorriente implements OnInit
   readonly pagosCliente = signal<PagoResponseDTO[]>([]);
   readonly importeTotal = signal<number | null>(null);
   readonly seniaTotal = signal<number | null>(null);
+  // true = plan de cuotas iguales (sin seña real): ver numeroCuota()
+  readonly cuotasIguales = signal(false);
 
   readonly totalPagado = computed(() =>
     this.pagosCliente().reduce((total, pago) => total + (pago.monto ?? 0), 0),
@@ -101,6 +103,7 @@ export class CuentaCorriente implements OnInit
     try
     {
       this.idPedido = await firstValueFrom(this.pedidosService.obtenerIdPedidoGrupo(idGrupo));
+      this.cargarTipoPlan(idGrupo);
       this.cargarPagos();
       this.cargarImporteTotal();
       this.cargarSeniaTotal();
@@ -142,6 +145,17 @@ export class CuentaCorriente implements OnInit
           this.cargando.set(false);
           this.notificaciones.error({ title: 'Error', description: 'No se pudieron obtener los pagos del cliente.' });
         },
+      });
+  }
+
+  private cargarTipoPlan(idGrupo: number): void
+  {
+    this.gestionPedidosService.obtenerPresupuestoPedidoClientesPage(idGrupo)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ productosPedido }) => this.cuotasIguales.set((productosPedido).length > 0 && (productosPedido).every((producto) => Number(producto.valor_senia) === Number(producto.valor_cuota))),
+        // Si falla se muestra como seña + cuotas (como antes)
+        error: () => this.cuotasIguales.set(false),
       });
   }
 
@@ -212,6 +226,27 @@ export class CuentaCorriente implements OnInit
     }
   }
 
+  // ── Plan de cuotas iguales ──
+  // Si en los productos del pedido la seña es igual al valor de la cuota, el plan es "N cuotas iguales":
+  // lo que se guarda como seña es en realidad la cuota 1, y las cuotas guardadas se muestran corridas en uno.
+  // Es solo visual: en la base sigue siendo seña + cuotas.
+
+  numeroCuota(cuota: CuotaResponseDTO): number
+  {
+    return this.cuotasIguales() ? cuota.numero + 1 : cuota.numero;
+  }
+
+  etiquetaSenia(): string
+  {
+    return this.cuotasIguales() ? '1' : 'Seña';
+  }
+
+  etiquetaMotivo(motivo: string | null): string
+  {
+    if (!motivo) return '—';
+    return this.cuotasIguales() && motivo === 'Seña' ? 'Cuota 1' : motivo;
+  }
+
   estadoSenia(): string
   {
     if (this.seniaFaltante() <= 0) return 'Pagada';
@@ -242,7 +277,7 @@ export class CuentaCorriente implements OnInit
 
     if (monto <= 0)
     {
-      this.notificaciones.error({ title: 'Seña sin saldo', description: 'La seña ya está totalmente pagada.' });
+      this.notificaciones.error({ title: 'Sin saldo', description: this.cuotasIguales() ? 'La cuota 1 ya está totalmente pagada.' : 'La seña ya está totalmente pagada.' });
       return;
     }
 
@@ -264,7 +299,7 @@ export class CuentaCorriente implements OnInit
       .subscribe({
         next: () => {
           this.pagandoSenia.set(false);
-          this.notificaciones.success({ title: 'Seña pagada', description: 'El pago se registró correctamente.' });
+          this.notificaciones.success({ title: this.cuotasIguales() ? 'Cuota 1 pagada' : 'Seña pagada', description: 'El pago se registró correctamente.' });
           this.cerrarPagoSenia();
           this.cargarPagos();
         },

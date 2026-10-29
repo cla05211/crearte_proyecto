@@ -72,7 +72,9 @@
                       {{ deudor.colegio }}
                     </button>
                   </td>
-                  <td data-label="Monto adeudado">{{ deudor.montoAdeudado | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Monto adeudado">
+                    {{ deudor.montoAdeudado | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}
+                  </td>
                   <td data-label="Días de atraso">{{ deudor.diasAtraso }} {{ deudor.diasAtraso === 1 ? 'día' : 'días' }}</td>
                   <td data-label="Cuotas adeudadas">
                     @if (variasCuotas) {

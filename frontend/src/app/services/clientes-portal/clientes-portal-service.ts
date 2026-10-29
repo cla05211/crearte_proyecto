@@ -99,6 +99,18 @@ export class ClientesPortalService
     return this.http.get<boolean>(`${this.base}/talles-confirmados`);
   }
 
+  // true = administración reabrió la planilla de talles ya confirmados
+  obtenerEdicionTallesHabilitada(): Observable<boolean>
+  {
+    return this.http.get<boolean>(`${this.base}/edicion-talles`);
+  }
+
+  // Guarda definitivamente los talles editados (sin firma): recalcula el presupuesto y cierra la edición
+  guardarTallesEditados()
+  {
+    return this.http.post(`${this.base}/guardar-talles-editados`, null);
+  }
+
   confirmarTalles(firma: Blob)
   {
     const formData = new FormData();

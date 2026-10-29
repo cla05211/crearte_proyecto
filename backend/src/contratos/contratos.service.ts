@@ -23,6 +23,8 @@ const partesFecha = (fecha: string) =>
 };
 
 // Contrato de venta: lo usan el admin (pagos/contrato) y el portal de clientes, así los dos ven el mismo PDF.
+import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
+
 @Injectable()
 export class ContratosService
 {
@@ -74,8 +76,7 @@ export class ContratosService
             firma: padre.firma ? await this.descargarFirmaBase64(padre.firma) : null,
         })));
 
-        const montoSenia = presupuesto.productosPedido
-            .reduce((total, producto) => total + producto.valor_senia * producto.cantidad, 0);
+        const montoSenia = calcularSeniaTotal(presupuesto.pedido.senia_total, presupuesto.productosPedido);
         const montoCuotas = cuotas.reduce((total, cuota) => total + (cuota.importe ?? 0), 0);
 
         return {

@@ -113,7 +113,7 @@ export class Banderas
   readonly totalBanderas = computed(() => this.banderasFiltradas().length);
 
   readonly enviadasProduccion = computed(() =>
-    this.banderasFiltradas().filter((b) => b.pedido.enviadaProduccion).length,
+    this.banderasFiltradas().filter((b) => b.bandera.enviadaProduccion).length,
   );
 
   readonly beneficioPerdido = computed(() =>
@@ -236,6 +236,14 @@ export class Banderas
     if (nuevoEstado === bandera.estadoBoceto) return;
 
     this.guardarCambios(bandera, { estadoBoceto: nuevoEstado }, { estadoBoceto: nuevoEstado }, 'No se pudo actualizar el estado de boceto');
+  }
+
+  //--- Enviada a producción ---
+
+  alternarEnviadaProduccion(bandera: BanderaDTO): void
+  {
+    const nuevoValor = !bandera.enviadaProduccion;
+    this.guardarCambios(bandera, { enviadaProduccion: nuevoValor }, { enviadaProduccion: nuevoValor }, 'No se pudo actualizar el envío a producción');
   }
 
   //--- Diseñadora ---

@@ -6,6 +6,7 @@ import { filter, firstValueFrom, switchMap, tap } from 'rxjs';
 import { DiseniosService } from '../../../../services/disenios/disenios-service';
 import { DisenioResponseDTO } from '../../../../services/disenios/dto/DisenioResponseDTO';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
+import { ConfirmationService } from '../../../../services/confirmation/confirmation.service';
 import { ExtraDTO, ExtrasService } from '../../../../services/extras/extras-service';
 import { DatePipe } from '@angular/common';
 
@@ -42,6 +43,7 @@ export class TallesDisenio implements OnInit
     private readonly diseniosService = inject(DiseniosService);
     private readonly extrasService = inject(ExtrasService);
     private readonly notificaciones = inject(NotificationService);
+    private readonly confirmationService = inject(ConfirmationService);
     private readonly route = inject(ActivatedRoute);
     private readonly destroyRef = inject(DestroyRef);
 
@@ -51,6 +53,8 @@ export class TallesDisenio implements OnInit
     readonly disenios = signal<DisenioResponseDTO[]>([]);
     readonly tieneBandera = signal(false);
     readonly tallesConfirmados = signal(false);
+    readonly edicionTallesHabilitada = signal(false);
+    readonly cambiandoEdicionTalles = signal(false);
     readonly ranurasNuevas = signal<string[]>([]);
 
     readonly subida = signal<{ tipo: string; progreso: number } | null>(null);
@@ -103,7 +107,8 @@ export class TallesDisenio implements OnInit
         this.diseniosService.listar(this.idGrupo)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: ({ disenios, tieneBandera, tallesConfirmados }) => {
+                next: ({ disenios, tieneBandera, tallesConfirmados, edicionTallesHabilitada }) => {
+                    this.edicionTallesHabilitada.set(edicionTallesHabilitada);
                     this.disenios.set(disenios);
                     this.tieneBandera.set(tieneBandera);
                     this.tallesConfirmados.set(tallesConfirmados);
@@ -313,6 +318,47 @@ export class TallesDisenio implements OnInit
         finally
         {
             this.descargandoTalles.set(false);
+        }
+    }
+
+    // Reabre la planilla de talles ya confirmados para el cliente (casos excepcionales, sin nueva firma)
+    async alternarEdicionTalles(): Promise<void>
+    {
+        const habilitar = !this.edicionTallesHabilitada();
+
+        const confirmado = await this.confirmationService.confirm(habilitar
+            ? {
+                title: 'Permitir edición de talles',
+                description: 'El cliente va a poder volver a cargar talles, cantidades e inscripciones. ¿Querés continuar?',
+            }
+            : {
+                title: 'Cerrar edición de talles',
+                description: 'Se cierra la planilla y se recalcula el presupuesto con lo que el cliente haya dejado cargado. ¿Querés continuar?',
+            });
+
+        if (!confirmado) return;
+
+        this.cambiandoEdicionTalles.set(true);
+
+        try
+        {
+            const { edicionTallesHabilitada } = await firstValueFrom(
+                this.diseniosService.modificarEdicionTalles(this.idGrupo, habilitar));
+
+            this.edicionTallesHabilitada.set(edicionTallesHabilitada);
+            this.notificaciones.success(habilitar
+                ? { title: 'Edición habilitada', description: 'El cliente ya puede modificar los talles desde el portal.' }
+                : { title: 'Edición cerrada', description: 'Los talles quedaron guardados y el presupuesto actualizado.' });
+        }
+        catch (err: any)
+        {
+            this.notificaciones.error({ title: 'Error', description: err?.error?.message ?? 'No se pudo cambiar la edición de talles.' });
+            // Por si el cliente ya había guardado y cerrado la edición mientras tanto
+            this.cargarDisenios();
+        }
+        finally
+        {
+            this.cambiandoEdicionTalles.set(false);
         }
     }
 

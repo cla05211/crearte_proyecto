@@ -16,4 +16,6 @@ export class PedidoDTO
     estado_boceto!: string | null;
     molderias!: string | null;
     fecha_entrega_aproximada?: string | null;
+    // Seña acordada; null = nunca se modificó el plan (vale la suma de los productos)
+    senia_total?: number | null;
 }

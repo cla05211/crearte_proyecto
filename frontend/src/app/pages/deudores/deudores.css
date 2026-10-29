@@ -80,6 +80,16 @@
   white-space: normal;
 }
 
+.deudores-table td[data-label='Monto adeudado'] {
+  white-space: normal;
+}
+.detalle-senia {
+  color: var(--color-text-muted);
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: normal;
+}
+
 /* Filas con más de una cuota adeudada */
 .deudores-table tbody tr.fila-alerta {
   background-color: #fbe2eb;

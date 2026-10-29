@@ -105,6 +105,11 @@ export class GestionPedidosController
             throw new BadRequestException('Motivo inválido.');
         }
 
+        if (dto.enviadaProduccion !== undefined && typeof dto.enviadaProduccion !== 'boolean')
+        {
+            throw new BadRequestException('Enviada a producción inválido.');
+        }
+
         await this.gestionService.modificarBandera(idBandera, dto);
     }
 

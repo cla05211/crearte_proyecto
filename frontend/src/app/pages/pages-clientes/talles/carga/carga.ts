@@ -77,6 +77,9 @@ export class Carga implements OnInit, OnDestroy
     readonly confirmando = signal(false);
     readonly firmaFaltante = signal(false);
 
+    // Edición excepcional habilitada por administración: en vez de firmar se guarda definitivo
+    readonly modoEdicion = this.tallesConfirmacion.edicionHabilitada;
+
     private readonly idPedido = signal<number | null>(null);
     private readonly secundaria = signal(false);
     private readonly productos = signal<productosPedidoIdNombreDTO[]>([]);
@@ -469,6 +472,50 @@ export class Carga implements OnInit, OnDestroy
             this.notificaciones.error({
                 title: 'No se pudieron confirmar los talles',
                 description: 'Revisá tu conexión e intentá de nuevo.',
+            });
+        }
+        finally
+        {
+            this.confirmando.set(false);
+        }
+    }
+
+    async guardarCambiosDefinitivos()
+    {
+        if (this.confirmando())
+        {
+            return;
+        }
+
+        const confirmado = await this.confirmationService.confirm({
+            title: 'Guardar cambios',
+            description: 'Se van a guardar los talles modificados y se va a actualizar el presupuesto. Después ya no se van a poder modificar. ¿Querés continuar?',
+        });
+
+        if (!confirmado)
+        {
+            return;
+        }
+
+        this.confirmando.set(true);
+
+        try
+        {
+            await firstValueFrom(this.clientesPortalService.guardarTallesEditados());
+
+            this.notificaciones.success({
+                title: 'Cambios guardados',
+                description: 'Los talles se actualizaron correctamente.',
+            });
+
+            // Se cierra la edición: la página vuelve a mostrar el resumen firmado
+            this.tallesConfirmacion.edicionHabilitada.set(false);
+        }
+        catch (err: any)
+        {
+            this.notificaciones.error({
+                title: 'No se pudieron guardar los cambios',
+                description: err?.error?.message ?? 'Revisá tu conexión e intentá de nuevo.',
             });
         }
         finally

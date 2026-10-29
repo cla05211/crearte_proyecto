@@ -197,18 +197,18 @@
             }
           </select>
         </td>
+        <td data-label="Enviada a producción" class="celda-centro">
+          @if (bandera.enviadaProduccion) {
+            <button type="button" class="marca marca--si marca--boton" title="Enviada a producción · click para desmarcar" (click)="alternarEnviadaProduccion(bandera)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+            </button>
+          } @else {
+            <button type="button" class="marca marca--no marca--boton" title="No enviada a producción · click para marcar como enviada" (click)="alternarEnviadaProduccion(bandera)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+          }
+        </td>
         @if (primera) {
-          <td data-label="Enviada a producción" class="celda-grupo celda-centro" [attr.rowspan]="grupo.banderas.length">
-            @if (grupo.pedido.enviadaProduccion) {
-              <span class="marca marca--si" title="Enviada a producción">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
-              </span>
-            } @else {
-              <span class="marca marca--no" title="No enviada a producción">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-              </span>
-            }
-          </td>
           <td data-label="Fecha" class="celda-grupo celda-centro" [attr.rowspan]="grupo.banderas.length">
             {{ grupo.pedido.fechaEntrega ? (grupo.pedido.fechaEntrega | date: 'dd/MM/yyyy') : '—' }}
           </td>

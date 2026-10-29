@@ -45,6 +45,14 @@ export class DiseniosService
         return this.http.get(`${environment.apiUrl}/disenios/${idGrupo}/resumen-talles`, { responseType: 'blob' });
     }
 
+    // Reabre (true) o cierra (false) la planilla de talles ya confirmados para el cliente.
+    // Al cerrar, el back recalcula el plan con lo que haya quedado cargado.
+    modificarEdicionTalles(idGrupo: number, habilitada: boolean)
+    {
+        return this.http.patch<{ edicionTallesHabilitada: boolean }>(
+            `${environment.apiUrl}/disenios/${idGrupo}/edicion-talles`, null, { params: { habilitada } });
+    }
+
     pedirUrlSubida(idGrupo: number)
     {
         return this.http.post<{ ruta: string; signedUrl: string }>(

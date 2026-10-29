@@ -26,10 +26,12 @@ export class Talles implements OnInit
 
     async ngOnInit()
     {
-        const [confirmados, tipoTalles] = await Promise.all([
+        const [confirmados, tipoTalles, edicionHabilitada] = await Promise.all([
             // Si no se pudo consultar, se muestran las pestañas normales: el back igual rechaza una segunda confirmación
             firstValueFrom(this.clientesPortalService.obtenerTallesConfirmados()).catch(() => false),
             firstValueFrom(this.clientesPortalService.determinartipoTalles()).catch(() => null),
+            // Si falla, se muestra el resumen firmado: el back igual rechaza guardar sin permiso
+            firstValueFrom(this.clientesPortalService.obtenerEdicionTallesHabilitada()).catch(() => false),
         ]);
 
         this.muestrasFisicas.set(tipoTalles?.trim() === TALLES_MUESTRAS_FISICAS);
@@ -40,6 +42,7 @@ export class Talles implements OnInit
             await this.router.navigate(['carga'], { relativeTo: this.route, replaceUrl: true });
         }
 
+        this.confirmacion.edicionHabilitada.set(confirmados && edicionHabilitada);
         this.confirmacion.confirmados.set(confirmados);
     }
 }

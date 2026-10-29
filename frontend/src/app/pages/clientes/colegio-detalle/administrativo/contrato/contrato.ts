@@ -137,8 +137,9 @@ export class Contrato implements OnInit
 
     const beneficios = (presupuesto.beneficios ?? []).map((b) => `${b.cantidad} ${b.beneficio}`);
 
-    const montoSenia = presupuesto.productosPedido
-      .reduce((total, producto) => total + producto.valor_senia * producto.cantidad, 0);
+    // La seña queda fija desde la primera modificación del plan (senia_total); si es null, la suma de los productos
+    const montoSenia = presupuesto.pedido.senia_total
+      ?? presupuesto.productosPedido.reduce((total, producto) => total + producto.valor_senia * producto.cantidad, 0);
 
     const montoCuotas = cuotas.reduce((total, cuota) => total + (cuota.importe ?? 0), 0);
 

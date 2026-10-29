@@ -16,7 +16,6 @@ import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
 import { GruposService } from 'src/grupos/grupos.service';
 import { PrendaPedidoDTO } from 'src/prendas-pedido-talles/dto/PrendasPedido.dto';
 import { PrendasPedidoTallesService } from 'src/prendas-pedido-talles/prendas-pedido-talles.service';
-import { ProductosService } from 'src/productos/productos.service';
 import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
 import { BeneficioPedidoDTO } from 'src/beneficios-pedido/dto/beneficioPedidoDTO';
 import { PadreResponsableService } from 'src/padre-responsable/padre-responsable-service.service';
@@ -25,6 +24,7 @@ import { ContratosService } from 'src/contratos/contratos.service';
 import { ResumenTallesService } from 'src/resumen-talles/resumen-talles.service';
 import { DiseniosService } from 'src/disenios/disenios.service';
 import { DiseniosGrupoResponseDTO } from 'src/disenios/dto/DisenioResponseDTO';
+import { RecalculoPlanTallesService } from 'src/prendas-pedido-talles/recalculo-plan-talles.service';
 
 
 const TIPO_DOCUMENTO_FIRMA_TALLES = 'Firma Talles';
@@ -48,11 +48,11 @@ export class ClientesPortalController
         private sb: SupabaseService,
         private storageService: StorageService,
         private prendasService: PrendasPedidoTallesService,
-        private productosService: ProductosService,
         private padresService: PadreResponsableService,
         private diseniosService: DiseniosService,
         private contratosService: ContratosService,
         private resumenTallesService: ResumenTallesService,
+        private recalculoPlanTalles: RecalculoPlanTallesService,
     ) {}
 
     private async obtenerIdPedidoCliente(req: any): Promise<number>
@@ -219,8 +219,15 @@ export class ClientesPortalController
     @Get('talles-confirmados')
     async obtenerTallesConfirmados(@Req() req): Promise<boolean>
     {
-        const documentoFirma = await this.documentosService.obtenerDocumentoPorTipo(req.cliente.id_grupo, TIPO_DOCUMENTO_FIRMA_TALLES);
-        return !!documentoFirma;
+        return await this.tallesConfirmados(req.cliente.id_grupo);
+    }
+
+    // true = administración reabrió la planilla de talles ya confirmados
+    @Get('edicion-talles')
+    async obtenerEdicionTallesHabilitada(@Req() req): Promise<boolean>
+    {
+        const idPedido = await this.obtenerIdPedidoCliente(req);
+        return await this.pedidosService.obtenerEdicionTallesHabilitada(idPedido);
     }
 
     @Post('firmar-contrato')
@@ -308,6 +315,13 @@ export class ClientesPortalController
     async guardarPrendasPedido(@Req() req, @Body() prendas: PrendaPedidoDTO[])
     {
         const idPedido = await this.obtenerIdPedidoCliente(req);
+
+        // Con los talles confirmados solo se pueden modificar si administración habilitó la edición
+        if (await this.tallesConfirmados(req.cliente.id_grupo) && !(await this.pedidosService.obtenerEdicionTallesHabilitada(idPedido)))
+        {
+            throw new ForbiddenException('Los talles ya fueron confirmados y no se pueden modificar.');
+        }
+
         return await this.prendasService.guardarPrendasPedido(idPedido, prendas);
     }
 
@@ -317,24 +331,19 @@ export class ClientesPortalController
     {
         const idGrupo = req.cliente.id_grupo;
         const idPedido = await this.obtenerIdPedidoCliente(req);
-        const presupuesto = await this.gestionPedidosService.obtenerPresupuestoPedidosClientes(idGrupo);
 
         if (!firma || firma.mimetype !== 'image/png')
         {
             throw new BadRequestException('Falta la firma o no es una imagen PNG.');
         }
 
-        if (await this.documentosService.obtenerDocumentoPorTipo(idGrupo, TIPO_DOCUMENTO_FIRMA_TALLES))
+        if (await this.tallesConfirmados(idGrupo))
         {
             throw new ConflictException('Los talles de este pedido ya fueron confirmados.');
         }
 
-        //Obtener cantidad prendas (antes de subir la firma: si faltan talles de prendas liberadas, corta acá)
-        const prendas = await this.prendasService.traerResumenPrendasPedido(idPedido);
-        const prendasCobrables = this.prendasService.restarLiberadas(prendas, presupuesto.beneficios);
-        // Se cobran las cobrables, pero el tramo de precio se elige con el total (las liberadas son gratis pero cuentan en cantidad).
-        const productosFinales = await this.prendasService.traerProductosFinalesPedido(prendasCobrables);
-        const productosFinalesTotales = await this.prendasService.traerProductosFinalesPedido(prendas);
+        // Se arma el plan antes de subir la firma: si faltan talles de prendas liberadas, corta acá
+        const plan = await this.recalculoPlanTalles.prepararPlan(idGrupo, idPedido);
 
         //Guardar firma en storage
         const rutaFirma = await this.storageService.guardarImagen(
@@ -342,39 +351,7 @@ export class ClientesPortalController
             firma,
         );
 
-        //Modificar cantidad
-        const nroCuotas = presupuesto.nroCuotas;
-
-        const productos = await Promise.all(productosFinales.map(async producto =>
-        {
-            const cantidadTramo = productosFinalesTotales.find(p => p.idProducto === producto.idProducto)?.cantidadPedida ?? producto.cantidadPedida;
-            const precios = await this.productosService.obtenerPreciosId(producto.idProducto, nroCuotas, Math.max(cantidadTramo, producto.cantidadPedida));
-            const anterior = presupuesto.productosPedido.find(p => p.id_producto_original === producto.idProducto);
-
-            return {
-                id_pedido: idPedido,
-                id_producto_original: producto.idProducto,
-                descripcion: anterior?.descripcion ?? producto.nombreProducto,
-                valor_senia: precios!.valor_senia,
-                valor_cuota: precios!.valor_cuota,
-                cantidad: producto.cantidadPedida,
-            };
-        }));
-
-        const totalSenia = productos.reduce((total, p) => total + p.valor_senia * p.cantidad, 0);
-        const totalCuotaSinDescuento = productos.reduce((total, p) => total + p.valor_cuota * p.cantidad, 0)
-        const porcentaje = Number(presupuesto.pedido.porcentaje_descuento_hermanos) || 0;
-        const hermanos = Number(presupuesto.pedido.cantidad_hermanos) || 0;
-        const totalCuota = totalCuotaSinDescuento - totalCuotaSinDescuento * (porcentaje / 100) * hermanos;
-
-        const resultado = await this.gestionPedidosService.modificarPlanPedido({
-            id_pedido: idPedido,
-            productos,
-            agregadosGlobales: presupuesto.agregadosGlobales.map(a => ({ id_agregado: a.id_agregado })),
-            nueva_cantidad_cuotas: nroCuotas,
-            valor_cuota_nuevo: totalCuota,
-            valor_senia_nuevo: totalSenia,
-        });
+        const resultado = await this.recalculoPlanTalles.aplicarPlan(plan);
 
         const fechaFirma = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
         await this.pedidosService.modificarEstadoTalles('Confirmado', idPedido, fechaFirma);
@@ -382,5 +359,29 @@ export class ClientesPortalController
         await this.documentosService.subirDocumento({ id_grupo: idGrupo, tipo: TIPO_DOCUMENTO_FIRMA_TALLES, archivo_url: rutaFirma });
 
         return resultado;
+    }
+
+    // Edición excepcional (habilitada por administración): se recalcula el plan con los talles nuevos
+    // pero NO se pide firma ni se toca la confirmación original, el estado ni el nro de fábrica.
+    @Post('guardar-talles-editados')
+    async guardarTallesEditados(@Req() req)
+    {
+        const idGrupo = req.cliente.id_grupo;
+        const idPedido = await this.obtenerIdPedidoCliente(req);
+
+        if (!(await this.tallesConfirmados(idGrupo)) || !(await this.pedidosService.obtenerEdicionTallesHabilitada(idPedido)))
+        {
+            throw new ForbiddenException('La edición de talles no está habilitada.');
+        }
+
+        const resultado = await this.recalculoPlanTalles.recalcular(idGrupo, idPedido);
+        await this.pedidosService.modificarEdicionTallesHabilitada(idPedido, false);
+
+        return resultado;
+    }
+
+    private async tallesConfirmados(idGrupo: number): Promise<boolean>
+    {
+        return !!(await this.documentosService.obtenerDocumentoPorTipo(idGrupo, TIPO_DOCUMENTO_FIRMA_TALLES));
     }
 }

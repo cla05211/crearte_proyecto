@@ -138,6 +138,9 @@ export class Presupuesto implements OnInit
     this.productosConPrecios().reduce((total, producto) => total + producto.valorSeniaGrupal, 0),
   );
 
+  // Seña acordada: queda fija desde la primera modificación del plan (aunque cambien los productos)
+  readonly seniaAcordada = computed(() => this.presupuestoGrupo()?.pedido.senia_total ?? this.totalSenia());
+
   readonly totalCuota = computed(() => {
     const productos = this.productosConPrecios().reduce(
       (total, producto) =>

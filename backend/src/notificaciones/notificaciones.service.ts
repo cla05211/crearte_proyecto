@@ -412,7 +412,7 @@ export class NotificacionesService
         const { data, error } = await this.sb.supabase
             .from('pedidos')
             .select(`
-                id, id_grupo, envio_gratis,
+                id, id_grupo, envio_gratis, senia_total,
                 grupos (id, promo, nivel, colegios ( nombre, localidad, provincia, zona_sur ),
                         padres_responsables (telefono, principal ),
                         alumnos_responsables (telefono, principal )),
@@ -425,7 +425,7 @@ export class NotificacionesService
 
         if (error) throw new Error(error.message);
 
-        const estadoSenia = calcularEstadoSenia(data.productos_pedidos, data.pagos);
+        const estadoSenia = calcularEstadoSenia(data.productos_pedidos, data.pagos, data.senia_total);
 
         const telefonoPadre = data.grupos.padres_responsables.find(padre => padre.principal)!.telefono!;
         // Los mensajes de diseño en Secundaria van al alumno principal (si no hay, al padre principal)

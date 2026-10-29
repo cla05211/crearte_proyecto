@@ -7,10 +7,18 @@ export interface EstadoSenia
     fechaUltimoPago: string | null;  
 }
 
-export function calcularEstadoSenia(productos: { valor_senia: number; cantidad: number }[],
-pagos: { monto: number | null; motivo: string | null; fecha: string | null }[],): EstadoSenia
+// Seña acordada del pedido: pedidos.senia_total queda fija desde la primera modificación del plan.
+// Mientras sea null (nunca se modificó) vale la suma de valor_senia * cantidad de los productos.
+export function calcularSeniaTotal(seniaGuardada: number | null | undefined, productos: { valor_senia: number; cantidad: number }[]): number
 {
-    const total = productos.reduce((suma, p) => suma + p.valor_senia * p.cantidad, 0);
+    if (seniaGuardada !== null && seniaGuardada !== undefined) return Number(seniaGuardada);
+    return productos.reduce((suma, p) => suma + Number(p.valor_senia || 0) * Number(p.cantidad || 0), 0);
+}
+
+export function calcularEstadoSenia(productos: { valor_senia: number; cantidad: number }[],
+pagos: { monto: number | null; motivo: string | null; fecha: string | null }[], seniaGuardada?: number | null): EstadoSenia
+{
+    const total = calcularSeniaTotal(seniaGuardada, productos);
 
     const pagosSenia = pagos.filter(p => p.motivo === 'Seña');
     const pagado = pagosSenia.reduce((suma, p) => suma + (p.monto ?? 0), 0);

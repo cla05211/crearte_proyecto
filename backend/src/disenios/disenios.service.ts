@@ -7,6 +7,7 @@ import { SubirDisenioDTO } from './dto/SubirDisenioDTO';
 import { ReemplazarDisenioDTO } from './dto/ReemplazarDisenioDTO';
 import { DisenioResponseDTO, DiseniosGrupoResponseDTO } from './dto/DisenioResponseDTO';
 import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
+import { RecalculoPlanTallesService } from 'src/prendas-pedido-talles/recalculo-plan-talles.service';
 
 export const PREFIJO_TIPO_DISENIO = 'Disenio ';
 // El boceto firmado (JPG que el cliente devuelve por WhatsApp) se guarda en documentos como 'Firma ' + tipo del diseño
@@ -26,17 +27,19 @@ export class DiseniosService
         private documentosService: DocumentosService,
         private resumenTallesService: ResumenTallesService,
         private pedidosService: PedidosService,
+        private recalculoPlanTalles: RecalculoPlanTallesService,
     ) {}
 
     async listar(idGrupo: number): Promise<DiseniosGrupoResponseDTO>
     {
         const idPedido = await this.pedidosService.obtenerIdPedidoGrupo(idGrupo);
 
-        const [documentos, firmas, tieneBandera, estadoTalles] = await Promise.all([
+        const [documentos, firmas, tieneBandera, estadoTalles, edicionTallesHabilitada] = await Promise.all([
             this.documentosService.obtenerDocumentosPorPrefijoTipo(idGrupo, PREFIJO_TIPO_DISENIO),
             this.documentosService.obtenerDocumentosPorPrefijoTipo(idGrupo, PREFIJO_TIPO_FIRMA + PREFIJO_TIPO_DISENIO),
             this.pedidosService.determinarBandera(idPedido),
             this.pedidosService.obtenerEstadoTalles(idPedido),
+            this.pedidosService.obtenerEdicionTallesHabilitada(idPedido),
         ]);
 
         const tiposFirmados = new Set(firmas.map(f => f.tipo));
@@ -48,7 +51,7 @@ export class DiseniosService
             firmado: tiposFirmados.has(PREFIJO_TIPO_FIRMA + d.tipo),
         }));
 
-        return { disenios, tieneBandera, tallesConfirmados: estadoTalles === ESTADO_TALLES_CONFIRMADO };
+        return { disenios, tieneBandera, tallesConfirmados: estadoTalles === ESTADO_TALLES_CONFIRMADO, edicionTallesHabilitada };
     }
 
     async crearUrlSubida(idGrupo: number)
@@ -79,12 +82,9 @@ export class DiseniosService
     {
         await this.validarArchivoSubido(dto.ruta, dto.idGrupo);
 
+        // Se puede reemplazar aunque ya tenga el firmado (cambios excepcionales acordados con el cliente):
+        // no toca la aprobación del boceto, el estado del pedido ni el nro de fábrica.
         const disenio = await this.obtenerDisenioDelGrupo(dto.idGrupo, dto.idDocumento);
-
-        if (await this.documentosService.obtenerDocumentoPorTipo(dto.idGrupo, PREFIJO_TIPO_FIRMA + disenio.tipo))
-        {
-            throw new ConflictException('El diseño ya tiene el firmado cargado y no se puede reemplazar.');
-        }
 
         await this.documentosService.actualizarArchivoUrl(dto.idDocumento, dto.ruta);
         await this.storageService.eliminarDiseno(disenio.archivo_url!);
@@ -119,6 +119,31 @@ export class DiseniosService
         const nombre = `${this.nombreArchivoSeguro(nombreArchivo)}.${extension}`;
 
         return { url: await this.storageService.obtenerUrlArchivo(firmado.archivo_url, nombre) };
+    }
+
+    // Administración reabre (true) o cierra (false) la planilla de talles ya confirmados.
+    // Al cerrar se recalcula el plan con lo que haya quedado cargado, así nunca quedan talles
+    // modificados sin su presupuesto (por si el cliente no llegó a tocar "Guardar definitivo").
+    async modificarEdicionTalles(idGrupo: number, habilitada: boolean)
+    {
+        const idPedido = await this.pedidosService.obtenerIdPedidoGrupo(idGrupo);
+
+        if (await this.pedidosService.obtenerEstadoTalles(idPedido) !== ESTADO_TALLES_CONFIRMADO)
+        {
+            throw new ConflictException('Los talles todavía no fueron confirmados: el cliente puede editarlos sin permiso.');
+        }
+
+        const actual = await this.pedidosService.obtenerEdicionTallesHabilitada(idPedido);
+        if (actual === habilitada) return { edicionTallesHabilitada: habilitada };
+
+        if (!habilitada)
+        {
+            await this.recalculoPlanTalles.recalcular(idGrupo, idPedido);
+        }
+
+        await this.pedidosService.modificarEdicionTallesHabilitada(idPedido, habilitada);
+
+        return { edicionTallesHabilitada: habilitada };
     }
 
     async generarResumenTalles(idGrupo: number)

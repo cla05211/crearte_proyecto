@@ -200,6 +200,36 @@ export class PedidosService
         }
     }
 
+    // Edición excepcional de talles ya confirmados (la habilita administración)
+    async obtenerEdicionTallesHabilitada(idPedido: number): Promise<boolean>
+    {
+        const { data, error } = await this.sb.supabase
+        .from("pedidos")
+        .select("talles_edicion_habilitada")
+        .eq("id", idPedido)
+        .single();
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        return data.talles_edicion_habilitada;
+    }
+
+    async modificarEdicionTallesHabilitada(idPedido: number, habilitada: boolean)
+    {
+        const { error } = await this.sb.supabase
+        .from("pedidos")
+        .update({ talles_edicion_habilitada: habilitada })
+        .eq("id", idPedido);
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+    }
+
     // Estado de producción de una categoría de prendas del pedido (control de fábrica)
     async modificarEstadoPrenda(idPedido: number, prenda: CategoriaPrenda, nuevoEstado: EstadoPrendaGuardado)
     {

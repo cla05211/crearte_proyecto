@@ -9,7 +9,6 @@ export class ControlBanderasDTO
     fechaEntrega!: string;
     contacto!: string | null;
     banderas!: BanderaDTO[];
-    enviadaProduccion!: boolean;
 }
 
 export class BanderaDTO
@@ -20,6 +19,7 @@ export class BanderaDTO
     idDisenadora!: number | null;
     motivoPerdidaBeneficio!: string |null;
     estadoBoceto!: EstadoBocetoBandera;
+    enviadaProduccion!: boolean;
 }
 
 export class ModificarBanderaDTO
@@ -27,4 +27,5 @@ export class ModificarBanderaDTO
     estadoBoceto?: EstadoBocetoBandera;
     idDiseniadora?: number | null;
     motivoPerdidaBeneficio?: string | null;
+    enviadaProduccion?: boolean;
 }

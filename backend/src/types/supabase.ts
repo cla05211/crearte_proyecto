@@ -154,6 +154,7 @@ export type Database = {
       banderas_pedido: {
         Row: {
           created_at: string
+          enviado_produccion: boolean
           estado_boceto: string
           id: number
           id_disenadora: number | null
@@ -163,6 +164,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          enviado_produccion?: boolean
           estado_boceto?: string
           id?: never
           id_disenadora?: number | null
@@ -172,6 +174,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          enviado_produccion?: boolean
           estado_boceto?: string
           id?: never
           id_disenadora?: number | null
@@ -369,7 +372,6 @@ export type Database = {
       cuotas: {
         Row: {
           estado: string | null
-          fecha_pago: string | null
           fecha_vencimiento: string | null
           id: number
           id_pedido: number
@@ -379,7 +381,6 @@ export type Database = {
         }
         Insert: {
           estado?: string | null
-          fecha_pago?: string | null
           fecha_vencimiento?: string | null
           id?: number
           id_pedido: number
@@ -389,7 +390,6 @@ export type Database = {
         }
         Update: {
           estado?: string | null
-          fecha_pago?: string | null
           fecha_vencimiento?: string | null
           id?: number
           id_pedido?: number
@@ -752,7 +752,9 @@ export type Database = {
           nro_fabrica: number | null
           observaciones: string | null
           porcentaje_descuento_hermanos: number | null
+          senia_total: number | null
           talles: string | null
+          talles_edicion_habilitada: boolean
         }
         Insert: {
           cantidad_hermanos?: number | null
@@ -776,7 +778,9 @@ export type Database = {
           nro_fabrica?: number | null
           observaciones?: string | null
           porcentaje_descuento_hermanos?: number | null
+          senia_total?: number | null
           talles?: string | null
+          talles_edicion_habilitada?: boolean
         }
         Update: {
           cantidad_hermanos?: number | null
@@ -800,7 +804,9 @@ export type Database = {
           nro_fabrica?: number | null
           observaciones?: string | null
           porcentaje_descuento_hermanos?: number | null
+          senia_total?: number | null
           talles?: string | null
+          talles_edicion_habilitada?: boolean
         }
         Relationships: [
           {

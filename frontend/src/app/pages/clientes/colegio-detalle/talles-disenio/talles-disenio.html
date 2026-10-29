@@ -43,13 +43,11 @@
             <input #inputArchivo type="file" accept="application/pdf" hidden (change)="alElegirArchivo($event, fila)" />
 
             @if (fila.documento) {
-              <!-- Con el firmado cargado el boceto queda cerrado: no se puede reemplazar -->
-              @if (!fila.documento.firmado) {
+              <!-- Se puede cambiar aunque tenga el firmado (cambios excepcionales acordados con el cliente) -->
               <button type="button" class="td-accion" [disabled]="subida() !== null"
                       (click)="inputArchivo.click()" title="Cambiar archivo" [attr.aria-label]="'Cambiar archivo de ' + fila.etiqueta">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
               </button>
-              }
               <button type="button" class="td-accion" [disabled]="descargandoTipo() === fila.tipo"
                       (click)="descargarDisenio(fila)" title="Descargar" [attr.aria-label]="'Descargar ' + fila.etiqueta">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
@@ -148,7 +146,9 @@
         </span>
         <div class="td-fila__info">
           <span class="td-fila__nombre">Planilla de talles</span>
-          @if (tallesConfirmados()) {
+          @if (edicionTallesHabilitada()) {
+            <span class="ds-badge ds-badge--warning">Edición habilitada al cliente</span>
+          } @else if (tallesConfirmados()) {
             <span class="td-fila__estado">{{ descargandoTalles() ? 'Generando…' : '' }}</span>
           } @else {
             <span class="ds-badge ds-badge--warning">Pendiente</span>
@@ -156,6 +156,11 @@
         </div>
         @if (tallesConfirmados()) {
           <div class="td-fila__acciones">
+            <button type="button" class="ds-button ds-button--small"
+                    [class.ds-button--secondary]="!edicionTallesHabilitada()"
+                    [disabled]="cambiandoEdicionTalles()" (click)="alternarEdicionTalles()">
+              {{ cambiandoEdicionTalles() ? 'Guardando…' : (edicionTallesHabilitada() ? 'Cerrar edición' : 'Permitir edición') }}
+            </button>
             <button type="button" class="td-accion" [disabled]="descargandoTalles()" (click)="descargarTalles()"
                     title="Descargar" aria-label="Descargar resumen de talles">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
