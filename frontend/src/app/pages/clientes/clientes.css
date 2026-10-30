@@ -187,3 +187,9 @@
   .clientes-header p { font-size: var(--font-size-sm); }
   .loading-state { align-items: center; flex-direction: column; text-align: center; }
 }
+
+/* Pedido dado de baja */
+.badge-cancelado {
+  margin-left: var(--space-2);
+  vertical-align: middle;
+}

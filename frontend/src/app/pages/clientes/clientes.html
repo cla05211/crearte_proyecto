@@ -88,7 +88,12 @@
                   (keydown.enter)="abrirColegio(cliente)"
                 >
                   <td data-label="Fecha venta" class="clientes-table__fecha">{{ cliente.fechaVenta | date: 'dd/MM/yyyy' }}</td>
-                  <td data-label="Colegio"><span class="school-name">{{this.rolUsuario == 5 ? cliente.nroFabrica :cliente.colegio.nombre }}</span></td>
+                  <td data-label="Colegio">
+                    <span class="school-name">{{this.rolUsuario == 5 ? cliente.nroFabrica :cliente.colegio.nombre }}</span>
+                    @if (cliente.estadoPedido === 'Cancelado') {
+                      <span class="ds-badge ds-badge--danger badge-cancelado">Cancelado</span>
+                    }
+                  </td>
                   <td data-label="Nivel">
                     <span class="ds-badge nivel-badge" [attr.data-nivel]="cliente.nivel">{{ cliente.nivel }}</span>
                   </td>

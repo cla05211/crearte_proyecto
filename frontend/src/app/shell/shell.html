@@ -78,6 +78,12 @@
       @if (tienePermiso('ver_deudores')) {
         <a routerLink="/deudores" routerLinkActive="activo" (click)="cerrarSidebar()">Deudores</a>
       }
+      @if (tienePermiso('ver_auditoria')) {
+        <a routerLink="/auditoria" routerLinkActive="activo" (click)="cerrarSidebar()">Auditoría</a>
+      }
+      @if (tienePermiso('ver_estadisticas')) {
+        <a routerLink="/estadisticas" routerLinkActive="activo" (click)="cerrarSidebar()">Estadisticas</a>
+      }
     </nav>
   </aside>
 

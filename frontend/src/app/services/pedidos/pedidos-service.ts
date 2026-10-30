@@ -4,7 +4,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { PedidoDTOResponse } from './dto/pedidoResponse.dto';
 
-export type CategoriaPrenda = 'camperas_buzos' | 'chombas_remeras' | 'pantalon' | 'bandera';
+export type CategoriaPrenda = 'camperas' | 'buzos' | 'chombas' | 'remeras' | 'pantalon' | 'bandera';
 
 @Injectable({
   providedIn: 'root',

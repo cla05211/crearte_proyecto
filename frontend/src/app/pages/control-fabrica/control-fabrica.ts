@@ -70,8 +70,10 @@ export class ControlFabrica implements OnInit
   readonly aniosEntrega = Array.from({ length: 4 }, (_, i) => this.anioActual + i);
 
   readonly columnasPrendas: ColumnaPrenda[] = [
-    { categoria: 'camperas_buzos', titulo: 'Camperas / Buzos' },
-    { categoria: 'chombas_remeras', titulo: 'Chombas / Remeras' },
+    { categoria: 'camperas', titulo: 'Camperas' },
+    { categoria: 'buzos', titulo: 'Buzos' },
+    { categoria: 'chombas', titulo: 'Chombas' },
+    { categoria: 'remeras', titulo: 'Remeras' },
     { categoria: 'pantalon', titulo: 'Pantalón' },
     { categoria: 'bandera', titulo: 'Bandera' },
   ];

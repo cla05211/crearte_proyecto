@@ -25,6 +25,8 @@ import { ResumenTallesService } from 'src/resumen-talles/resumen-talles.service'
 import { DiseniosService } from 'src/disenios/disenios.service';
 import { DiseniosGrupoResponseDTO } from 'src/disenios/dto/DisenioResponseDTO';
 import { RecalculoPlanTallesService } from 'src/prendas-pedido-talles/recalculo-plan-talles.service';
+import { AuditoriasService } from 'src/auditorias/auditorias.service';
+import { ACCIONES_AUDITORIA } from 'src/auditorias/dto/insertarAuditoria.dto';
 
 
 const TIPO_DOCUMENTO_FIRMA_TALLES = 'Firma Talles';
@@ -53,6 +55,7 @@ export class ClientesPortalController
         private contratosService: ContratosService,
         private resumenTallesService: ResumenTallesService,
         private recalculoPlanTalles: RecalculoPlanTallesService,
+        private auditoriaService: AuditoriasService,
     ) {}
 
     private async obtenerIdPedidoCliente(req: any): Promise<number>
@@ -351,12 +354,21 @@ export class ClientesPortalController
             firma,
         );
 
-        const resultado = await this.recalculoPlanTalles.aplicarPlan(plan);
+        const resultado = await this.recalculoPlanTalles.aplicarPlan(plan, { idCliente: req.cliente.id });
 
         const fechaFirma = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
         await this.pedidosService.modificarEstadoTalles('Confirmado', idPedido, fechaFirma);
 
         await this.documentosService.subirDocumento({ id_grupo: idGrupo, tipo: TIPO_DOCUMENTO_FIRMA_TALLES, archivo_url: rutaFirma });
+
+        // Foto de los talles tal como se firmaron: sirve para comparar con cualquier cambio posterior
+        await this.auditoriaService.registrar({
+            tipo: 'talles',
+            accion: ACCIONES_AUDITORIA.TALLES_CONFIRMADOS,
+            idPedido,
+            autor: { idCliente: req.cliente.id },
+            datoNuevo: await this.auditoriaService.fotoTalles(idPedido),
+        });
 
         return resultado;
     }
@@ -374,8 +386,18 @@ export class ClientesPortalController
             throw new ForbiddenException('La edición de talles no está habilitada.');
         }
 
-        const resultado = await this.recalculoPlanTalles.recalcular(idGrupo, idPedido);
+        const resultado = await this.recalculoPlanTalles.recalcular(idGrupo, idPedido, { idCliente: req.cliente.id });
         await this.pedidosService.modificarEdicionTallesHabilitada(idPedido, false);
+
+        // Antes = talles cuando administración reabrió la planilla; después = lo que guardó el cliente
+        await this.auditoriaService.registrar({
+            tipo: 'talles',
+            accion: ACCIONES_AUDITORIA.TALLES_EDITADOS,
+            idPedido,
+            autor: { idCliente: req.cliente.id },
+            datoAnterior: await this.auditoriaService.fotoTallesAlHabilitarEdicion(idPedido),
+            datoNuevo: await this.auditoriaService.fotoTalles(idPedido),
+        });
 
         return resultado;
     }

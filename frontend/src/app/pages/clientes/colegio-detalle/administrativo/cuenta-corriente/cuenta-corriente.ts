@@ -55,6 +55,8 @@ export class CuentaCorriente implements OnInit
   readonly seniaTotal = signal<number | null>(null);
   // true = plan de cuotas iguales (sin seña real): ver numeroCuota()
   readonly cuotasIguales = signal(false);
+  // Colegio dado de baja: en vez de lo que falta pagar se muestra "Pedido cancelado"
+  readonly pedidoCancelado = signal(false);
 
   readonly totalPagado = computed(() =>
     this.pagosCliente().reduce((total, pago) => total + (pago.monto ?? 0), 0),
@@ -102,7 +104,9 @@ export class CuentaCorriente implements OnInit
 
     try
     {
-      this.idPedido = await firstValueFrom(this.pedidosService.obtenerIdPedidoGrupo(idGrupo));
+      const pedido = await firstValueFrom(this.pedidosService.obtenerPedidoGrupo(idGrupo));
+      this.idPedido = pedido.id;
+      this.pedidoCancelado.set(pedido.estado_general === 'Cancelado');
       this.cargarTipoPlan(idGrupo);
       this.cargarPagos();
       this.cargarImporteTotal();

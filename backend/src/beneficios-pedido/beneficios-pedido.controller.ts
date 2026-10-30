@@ -1,4 +1,4 @@
-import { Body, Controller, Param, ParseIntPipe, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, ParseIntPipe, Patch, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
@@ -13,8 +13,8 @@ export class BeneficiosPedidoController
     @Patch(':id')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('modificar_pedidos')
-    modificarBeneficio(@Param("id", ParseIntPipe) id: number, @Body() nuevosBeneficios: BeneficioPedidoDTO[])
+    modificarBeneficio(@Param("id", ParseIntPipe) id: number, @Body() nuevosBeneficios: BeneficioPedidoDTO[], @Req() req)
     {
-        return this.beneficiosServices.modificarBeneficios(id, nuevosBeneficios);
+        return this.beneficiosServices.modificarBeneficios(id, nuevosBeneficios, req.usuario.id);
     }    
 }

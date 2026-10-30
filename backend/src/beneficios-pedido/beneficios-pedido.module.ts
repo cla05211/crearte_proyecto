@@ -5,10 +5,11 @@ import { UsuariosModule } from 'src/usuarios/usuarios.module';
 import { BeneficiosPedidoService } from './beneficios-pedido.service';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { PermisosService } from 'src/permisos/permisos.service';
+import { AuditoriasService } from 'src/auditorias/auditorias.service';
 
 @Module({
   imports: [SupabaseModule, BeneficiosPedidoModule, UsuariosModule],
   controllers: [BeneficiosPedidoController],
-  providers: [BeneficiosPedidoService, SupabaseService, PermisosService]
+  providers: [BeneficiosPedidoService, SupabaseService, PermisosService, AuditoriasService]
 })
 export class BeneficiosPedidoModule {}

@@ -4,15 +4,19 @@ import { PedidoDTO } from './dto/pedido.dto';
 import { BadRequestException } from '@nestjs/common';
 import { PedidoDTOResponse } from './dto/pedidoResponse.dto';
 
-export type CategoriaPrenda = 'camperas_buzos' | 'chombas_remeras' | 'pantalon' | 'bandera';
+export const ESTADO_PEDIDO_CANCELADO = 'Cancelado';
+
+export type CategoriaPrenda = 'camperas' | 'buzos' | 'chombas' | 'remeras' | 'pantalon' | 'bandera';
 export type EstadoPrendaGuardado = 'Pendiente' | 'Ok';
 
-export const CATEGORIAS_PRENDA: CategoriaPrenda[] = ['camperas_buzos', 'chombas_remeras', 'pantalon', 'bandera'];
+export const CATEGORIAS_PRENDA: CategoriaPrenda[] = ['camperas', 'buzos', 'chombas', 'remeras', 'pantalon', 'bandera'];
 export const ESTADOS_PRENDA: EstadoPrendaGuardado[] = ['Pendiente', 'Ok'];
 
 const COLUMNA_ESTADO_PRENDA = {
-    camperas_buzos: 'estado_camperas_buzos',
-    chombas_remeras: 'estado_chombas_remeras',
+    camperas: 'estado_camperas',
+    buzos: 'estado_buzos',
+    chombas: 'estado_chombas',
+    remeras: 'estado_remeras',
     pantalon: 'estado_pantalon',
     bandera: 'estado_bandera',
 } as const;
@@ -235,7 +239,7 @@ export class PedidosService
     {
         const { error } = await this.sb.supabase
         .from("pedidos")
-        // La clave calculada se tipa como string; el cast la acota a las 4 columnas de estado
+        // La clave calculada se tipa como string; el cast la acota a las columnas de estado
         .update({ [COLUMNA_ESTADO_PRENDA[prenda]]: nuevoEstado } as Partial<Record<ColumnaEstadoPrenda, EstadoPrendaGuardado>>)
         .eq("id", idPedido);
 

@@ -12,6 +12,9 @@ import { PedidoDTOResponse } from '../pedidos/dto/pedidoResponse.dto';
 import { ControlTallesDisenioDTO } from './dto/ControlTallesDisenioDTO';
 import { ControlProduccionDTO } from './dto/ControlProduccionDTO';
 import { ControlBanderasDTO, ModificarBanderaDTO } from './dto/ControlBanderasDTO';
+import { AuditoriaPaginaDTO, FiltrosAuditoria } from './dto/AuditoriaDTO';
+
+export type BancoDevolucion = 'COMAFI' | 'Santander' | 'Efectivo';
 
 @Injectable({
   providedIn: 'root',
@@ -102,4 +105,28 @@ export class GestionPedidosService
     return this.http.patch(`${environment.apiUrl}/gestion-pedidos/banderas/${idBandera}`, dto);
   }
 
+
+  // Baja del colegio: pasa el pedido a "Cancelado" y, si se devolvió la plata, carga el pago negativo
+  cancelarPedido(idPedido: number, devolucionPlata: boolean, banco?: BancoDevolucion): Observable<void>
+  {
+    return this.http.patch<void>(`${environment.apiUrl}/gestion-pedidos/cancelar/${idPedido}`, { devolucionPlata, banco });
+  }
+
+  //--- Auditoría ---
+
+  obtenerAuditoria(rangoDesde: number, rangoHasta: number, filtros: FiltrosAuditoria): Observable<AuditoriaPaginaDTO>
+  {
+    const params: Record<string, string | number | boolean> = { rangoDesde, rangoHasta };
+
+    if (filtros.tipo) params['tipo'] = filtros.tipo;
+    if (filtros.busqueda) params['busqueda'] = filtros.busqueda;
+    if (filtros.idPedido) params['idPedido'] = filtros.idPedido;
+
+    return this.http.get<AuditoriaPaginaDTO>(`${environment.apiUrl}/gestion-pedidos/auditoria`, { params });
+  }
+
+  obtenerUrlArchivoAuditoria(idAuditoria: number, version: 'anterior' | 'nuevo'): Observable<{ url: string }>
+  {
+    return this.http.get<{ url: string }>(`${environment.apiUrl}/gestion-pedidos/auditoria/${idAuditoria}/archivo`, { params: { version } });
+  }
 }

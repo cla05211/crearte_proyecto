@@ -116,32 +116,55 @@ export type Database = {
           created_at: string
           dato_anterior: string | null
           dato_nuevo: string | null
+          despues_produccion: boolean
           id: number
+          id_cliente: number | null
+          id_pedido: number | null
           registro_id_modificado: number | null
           tabla: string
-          usuario: number
+          usuario: number | null
         }
         Insert: {
           accion: string
           created_at?: string
           dato_anterior?: string | null
           dato_nuevo?: string | null
+          despues_produccion?: boolean
           id?: number
+          id_cliente?: number | null
+          id_pedido?: number | null
           registro_id_modificado?: number | null
           tabla: string
-          usuario: number
+          usuario?: number | null
         }
         Update: {
           accion?: string
           created_at?: string
           dato_anterior?: string | null
           dato_nuevo?: string | null
+          despues_produccion?: boolean
           id?: number
+          id_cliente?: number | null
+          id_pedido?: number | null
           registro_id_modificado?: number | null
           tabla?: string
-          usuario?: number
+          usuario?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "auditoria_id_cliente_fkey"
+            columns: ["id_cliente"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auditoria_id_pedido_fkey"
+            columns: ["id_pedido"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "auditoria_usuario_fkey"
             columns: ["usuario"]
@@ -736,10 +759,12 @@ export type Database = {
           envio_gratis: boolean | null
           estado_bandera: string
           estado_boceto: string | null
-          estado_camperas_buzos: string
-          estado_chombas_remeras: string
+          estado_buzos: string
+          estado_camperas: string
+          estado_chombas: string
           estado_general: string | null
           estado_pantalon: string
+          estado_remeras: string
           estado_talles: string | null
           fecha_aprobacion_boceto: string | null
           fecha_aprobacion_talles: string | null
@@ -762,10 +787,12 @@ export type Database = {
           envio_gratis?: boolean | null
           estado_bandera?: string
           estado_boceto?: string | null
-          estado_camperas_buzos?: string
-          estado_chombas_remeras?: string
+          estado_buzos?: string
+          estado_camperas?: string
+          estado_chombas?: string
           estado_general?: string | null
           estado_pantalon?: string
+          estado_remeras?: string
           estado_talles?: string | null
           fecha_aprobacion_boceto?: string | null
           fecha_aprobacion_talles?: string | null
@@ -788,10 +815,12 @@ export type Database = {
           envio_gratis?: boolean | null
           estado_bandera?: string
           estado_boceto?: string | null
-          estado_camperas_buzos?: string
-          estado_chombas_remeras?: string
+          estado_buzos?: string
+          estado_camperas?: string
+          estado_chombas?: string
           estado_general?: string | null
           estado_pantalon?: string
+          estado_remeras?: string
           estado_talles?: string | null
           fecha_aprobacion_boceto?: string | null
           fecha_aprobacion_talles?: string | null

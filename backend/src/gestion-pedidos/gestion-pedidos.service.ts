@@ -18,6 +18,8 @@ import { SupabaseService } from 'src/supabase/supabase.service';
 import { BadRequestException } from '@nestjs/common';
 import { PedidoResponseVentas } from './dto/PedidoResponseVentas.dto';
 import { AuditoriasService } from 'src/auditorias/auditorias.service';
+import { ACCIONES_AUDITORIA, AutorAuditoria } from 'src/auditorias/dto/insertarAuditoria.dto';
+import { AuditoriaPaginaDTO, FiltrosAuditoria } from 'src/auditorias/dto/AuditoriaResponse.dto';
 import { ModificarPlanPedidoDTO } from './dto/ModificarPlanPedido';
 import { Json } from 'src/types/supabase';
 import { PedidoDTOResponse } from 'src/pedidos/dto/pedidoResponse.dto';
@@ -32,10 +34,10 @@ import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido
 import { NotificacionesService } from 'src/notificaciones/notificaciones.service';
 import { ControlProduccionDTO, EstadoPrenda } from './dto/ControlProduccionDTO';
 import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
+import { IDS_BUZO, IDS_CAMPERA, IDS_CHOMBA, IDS_REMERA } from 'src/productos/ids-prendas';
 import { ControlBanderasDTO, EstadoBocetoBandera, ModificarBanderaDTO, OrigenBandera } from './dto/ControlBanderasDTO';
+import { ESTADO_PEDIDO_CANCELADO } from 'src/pedidos/pedidos.service';
 
-const CAMPERAS_BUZOS = [63,64,67,68,69,70,71];
-const CHOMBAS_REMERAS = [65,66,67,68,69,70];
 const PANTALONES = [72];
 const ESTADO_TALLES_CONFIRMADO = 'Confirmado';
 const ESTADO_TALLES_CARGANDO = 'Cargando';
@@ -154,8 +156,11 @@ export class GestionPedidosService
         return pedidosVentas;
     }
 
-    async modificarPlanPedido(dto: ModificarPlanPedidoDTO)
+    // accion: desde Presupuesto es "Plan modificado"; cuando lo dispara la carga de talles, "Plan recalculado por talles"
+    async modificarPlanPedido(dto: ModificarPlanPedidoDTO, autor: AutorAuditoria, accion: string = ACCIONES_AUDITORIA.PLAN_MODIFICADO)
     {
+        const presupuestoAnterior = await this.auditoriaService.fotoPresupuesto(dto.id_pedido);
+
         const { data, error } = await this.sb.supabase.rpc(
             'modificar_plan_pedido',
             { payload: dto as unknown as Json }
@@ -165,7 +170,63 @@ export class GestionPedidosService
         {
             throw new BadRequestException(error.message);
         }
+
+        await this.auditoriaService.registrar({
+            tipo: 'presupuesto',
+            accion,
+            idPedido: dto.id_pedido,
+            autor,
+            datoAnterior: presupuestoAnterior,
+            datoNuevo: await this.auditoriaService.fotoPresupuesto(dto.id_pedido),
+            omitirSiNoCambia: true,
+        });
+
         return data;
+    }
+
+    // Baja de un colegio. Primero la devolución: si falla, el pedido no queda cancelado a medias.
+    // devolverPagos no duplica la devolución si se reintenta (suma también la devolución anterior).
+    async cancelarPedido(idPedido: number, devolucionPlata: boolean, banco?: string)
+    {
+        const { data: pedido, error } = await this.sb.supabase
+        .from('pedidos')
+        .select('estado_general')
+        .eq('id', idPedido)
+        .single();
+
+        if (error)
+        {
+            throw new BadRequestException('El pedido no existe.');
+        }
+
+        if (pedido.estado_general === ESTADO_PEDIDO_CANCELADO)
+        {
+            throw new BadRequestException('El pedido ya está cancelado.');
+        }
+
+        if (devolucionPlata)
+        {
+            if (!banco)
+            {
+                throw new BadRequestException('Falta indicar el banco de la devolución.');
+            }
+            await this.pagos.devolverPagos(idPedido, banco);
+        }
+
+        await this.pedidos.modificarEstadoGeneralPedido(idPedido, ESTADO_PEDIDO_CANCELADO);
+        await this.notificacionesService.cancelarNotificacionesPedido(idPedido);
+    }
+
+    //--- Auditoría ---
+
+    async obtenerAuditoria(filtros: FiltrosAuditoria): Promise<AuditoriaPaginaDTO>
+    {
+        return await this.auditoriaService.listar(filtros);
+    }
+
+    async obtenerUrlArchivoAuditoria(idAuditoria: number, version: 'anterior' | 'nuevo'): Promise<{ url: string }>
+    {
+        return await this.auditoriaService.crearUrlArchivo(idAuditoria, version);
     }
 
     // Total del pedido = seña acordada + importes de las cuotas (después de modificar el plan,
@@ -233,6 +294,8 @@ export class GestionPedidosService
                 ,pagos(monto, motivo),
             prendas_pedido(count)`)
         .eq("pagos.motivo", "Seña")
+        // Los pedidos cancelados no siguen con talles ni diseño
+        .or(`estado_general.is.null,estado_general.neq.${ESTADO_PEDIDO_CANCELADO}`)
         .gte("grupos.created_at", primerDiaMes.toISOString())
         .lt("grupos.created_at", primerDiaMesSiguiente.toISOString())
         .order("id", { ascending: false });
@@ -275,9 +338,6 @@ export class GestionPedidosService
         return pedidos;
     }
 
-    // Que un plan tenga seña o sea de cuotas iguales depende solo de la cantidad de cuotas (igual para todos
-    // los productos y cantidades). Se saca del catálogo y no del pedido, porque en el pedido la cuota incluye
-    // los agregados individuales y un plan de cuotas iguales quedaría con seña != cuota. Mismo criterio que Ventas.
     private async obtenerPlanesConSenia(): Promise<Map<number, boolean>>
     {
         const { data, error } = await this.sb.supabase
@@ -298,8 +358,6 @@ export class GestionPedidosService
         return planes;
     }
 
-    // Estado de talles que ve Diseño: "Confirmado" lo pone el portal al firmar la planilla;
-    // antes de eso depende de si el colegio ya guardó alguna prenda en la plataforma.
     private calcularEstadoTalles(estadoGuardado: string | null, cantidadPrendas: number): string
     {
         if (estadoGuardado === ESTADO_TALLES_CONFIRMADO) return ESTADO_TALLES_CONFIRMADO;
@@ -308,7 +366,6 @@ export class GestionPedidosService
 
     async obtenerDatosProduccion(mesEntrega:number, añoEntrega: number, enviadosFabrica: boolean):Promise<ControlProduccionDTO[]>
     {
-        // Strings 'YYYY-MM-DD': un Date se mandaría como "Thu Oct 01 2026 ..." y Postgres no lo entiende
         const mes = String(mesEntrega).padStart(2, '0');
         const desde = `${añoEntrega}-${mes}-01`;
         const hasta = mesEntrega === 12
@@ -318,7 +375,7 @@ export class GestionPedidosService
         let query = this.sb.supabase
         .from("pedidos")
         .select(`id,fecha_entrega_aproximada,nro_fabrica,estado_general,
-            estado_camperas_buzos,estado_chombas_remeras,estado_pantalon,estado_bandera,
+            estado_camperas,estado_buzos,estado_chombas,estado_remeras,estado_pantalon,estado_bandera,
             beneficios_pedido(id_beneficio),agregados_globales_pedido(id_agregado),
             productos_pedidos(productos(id)),
             grupos!inner(
@@ -353,8 +410,10 @@ export class GestionPedidosService
                 colegio: pedido.grupos.colegios.nombre,
                 localidad: pedido.grupos.colegios.localidad,
                 provincia: pedido.grupos.colegios.provincia,
-                camperas_buzos: this.estadoPrenda(this.determinarPedidoIncluyePrenda(pedido.productos_pedidos, CAMPERAS_BUZOS), pedido.estado_camperas_buzos),
-                chombas_remeras: this.estadoPrenda(this.determinarPedidoIncluyePrenda(pedido.productos_pedidos, CHOMBAS_REMERAS), pedido.estado_chombas_remeras),
+                camperas: this.estadoPrenda(this.determinarPedidoIncluyePrenda(pedido.productos_pedidos, IDS_CAMPERA), pedido.estado_camperas),
+                buzos: this.estadoPrenda(this.determinarPedidoIncluyePrenda(pedido.productos_pedidos, IDS_BUZO), pedido.estado_buzos),
+                chombas: this.estadoPrenda(this.determinarPedidoIncluyePrenda(pedido.productos_pedidos, IDS_CHOMBA), pedido.estado_chombas),
+                remeras: this.estadoPrenda(this.determinarPedidoIncluyePrenda(pedido.productos_pedidos, IDS_REMERA), pedido.estado_remeras),
                 bandera: this.estadoPrenda(this.pedidos.tieneBandera(pedido.beneficios_pedido,pedido.agregados_globales_pedido), pedido.estado_bandera),
                 pantalon: this.estadoPrenda(this.determinarPedidoIncluyePrenda(pedido.productos_pedidos, PANTALONES), pedido.estado_pantalon),
                 estado_pedido: pedido.estado_general!,

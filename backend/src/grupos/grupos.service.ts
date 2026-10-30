@@ -68,7 +68,8 @@ export class GruposService
                 contacto:grupo.padres_responsables.filter(p=> p.principal == true)[0].telefono!,
                 orientacion: grupo.orientacion!,
                 turno: grupo.turno!,
-                fechaVenta: grupo.created_at!
+                fechaVenta: grupo.created_at!,
+                estadoPedido: grupo.pedidos[0].estado_general,
             }))
         return gruposClientes;
     }
@@ -245,6 +246,8 @@ export class GruposService
                 productos_pedidos(valor_senia,cantidad),
                 pagos(monto,motivo)),
             padres_responsables(nombre,apellido,telefono,principal)`)
+        // Los colegios dados de baja no son deudores (estado_general puede ser null en pedidos viejos)
+        .or('estado_general.is.null,estado_general.neq.Cancelado', { referencedTable: 'pedidos' })
         .neq('pedidos.cuotasVencidas.estado', 'Pagada')
         .lt('pedidos.cuotasVencidas.fecha_vencimiento', fechaHoy)
         .eq('pedidos.pagos.motivo', 'Seña');

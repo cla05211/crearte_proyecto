@@ -1,0 +1,285 @@
+<main class="auditoria-page">
+  <section class="ds-container auditoria-container">
+    <header class="auditoria-header">
+      <div>
+        <span class="ds-eyebrow">Administración</span>
+        <h1 class="ds-heading-1">Auditoría</h1>
+        <p class="ds-text-muted auditoria-header__ayuda">
+          Quién cambió el presupuesto, los beneficios, el diseño o los talles de cada pedido, cuándo y qué cambió.
+        </p>
+      </div>
+    </header>
+
+    <div class="auditoria-toolbar">
+      <div class="auditoria-tipos" role="group" aria-label="Filtrar por tipo de cambio">
+        @for (tipo of tipos; track tipo.etiqueta) {
+          <button type="button" class="auditoria-tipo" [class.activo]="tipoSeleccionado() === tipo.valor"
+                  [attr.aria-pressed]="tipoSeleccionado() === tipo.valor" (click)="elegirTipo(tipo.valor)">
+            {{ tipo.etiqueta }}
+          </button>
+        }
+      </div>
+
+      <label class="ds-field auditoria-busqueda">
+        <span class="ds-label">Colegio</span>
+        <input class="ds-input" type="search" placeholder="Buscar colegio…"
+               [ngModel]="busquedaInput()" (ngModelChange)="actualizarBusqueda($any($event))" />
+      </label>
+    </div>
+
+    <section class="ds-card auditoria-card" aria-label="Registro de cambios">
+      @if (cargando() && !filas().length) {
+        <div class="loading-state" role="status" aria-live="polite">
+          <span class="loading-state__spinner" aria-hidden="true"></span>
+          <div>
+            <h2>Cargando auditoría</h2>
+            <p>Estamos buscando los cambios registrados.</p>
+          </div>
+        </div>
+      } @else if (!filas().length) {
+        <div class="empty-state">
+          <div class="empty-state__illustration" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <h2>No hay cambios registrados.</h2>
+          <p>Probá con otro filtro, o todavía no se hizo ningún cambio auditado.</p>
+        </div>
+      } @else {
+        <div class="ds-table-wrapper auditoria-table-wrapper" [class.auditoria-table-wrapper--cargando]="cargando()">
+          <table class="ds-table auditoria-table">
+            <colgroup>
+              <col style="width: 13%" />
+              <col style="width: 21%" />
+              <col style="width: 10%" />
+              <col style="width: 27%" />
+              <col style="width: 17%" />
+              <col style="width: 12%" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Colegio</th>
+                <th>Tipo</th>
+                <th>Cambio</th>
+                <th>Realizado por</th>
+                <th><span class="visually-hidden">Detalle</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of filas(); track fila.id) {
+                @let abierto = expandidos().has(fila.id);
+                <tr class="auditoria-fila" [class.auditoria-fila--produccion]="fila.despuesProduccion" [class.auditoria-fila--abierta]="abierto">
+                  <td data-label="Fecha">
+                    <span class="auditoria-fecha">{{ fila.fecha | date: 'dd/MM/yyyy' }}</span>
+                    <span class="auditoria-hora">{{ fila.fecha | date: 'HH:mm' }} hs</span>
+                  </td>
+                  <td data-label="Colegio">
+                    <strong>{{ fila.colegio }}</strong>
+                    <span class="auditoria-sub">
+                      {{ fila.promo ? 'Promo ' + fila.promo : '' }}{{ fila.nroFabrica ? ' · Nro ' + fila.nroFabrica : '' }}
+                    </span>
+                  </td>
+                  <td data-label="Tipo">
+                    <span class="auditoria-badge-tipo" [attr.data-tipo]="fila.tipo">{{ etiquetaTipo(fila.tipo) }}</span>
+                  </td>
+                  <td data-label="Cambio">
+                    <span class="auditoria-accion">{{ fila.accion }}</span>
+                    <span class="auditoria-sub">{{ fila.resumen }}</span>
+                    @if (fila.despuesProduccion) {
+                      <span class="ds-badge ds-badge--danger auditoria-badge-produccion">Con el pedido en producción</span>
+                    }
+                  </td>
+                  <td data-label="Realizado por">
+                    {{ fila.autor }}
+                    @if (fila.autorEsCliente) {
+                      <span class="auditoria-sub">Desde el portal del cliente</span>
+                    }
+                  </td>
+                  <td data-label="Detalle">
+                    <button type="button" class="ds-button ds-button--secondary ds-button--small"
+                            [attr.aria-expanded]="abierto" [attr.aria-controls]="'detalle-' + fila.id" (click)="alternarDetalle(fila.id)">
+                      {{ abierto ? 'Ocultar' : 'Ver detalle' }}
+                    </button>
+                  </td>
+                </tr>
+
+                @if (abierto) {
+                  <tr class="auditoria-detalle-fila" [id]="'detalle-' + fila.id">
+                    <td colspan="6">
+                      <div class="auditoria-detalle">
+                        @switch (fila.detalle.tipo) {
+                          @case ('presupuesto') {
+                            @let detalle = $any(fila.detalle);
+                            <table class="auditoria-comparacion">
+                              <thead>
+                                <tr><th>Concepto</th><th>Antes</th><th>Después</th></tr>
+                              </thead>
+                              <tbody>
+                                @for (comparacion of detalle.filas; track comparacion.concepto) {
+                                  <tr [class.cambio]="comparacion.cambio" [class.destacado]="comparacion.destacado">
+                                    <td>{{ comparacion.concepto }}</td>
+                                    <td>{{ comparacion.antes }}</td>
+                                    <td>{{ comparacion.despues }}</td>
+                                  </tr>
+                                }
+                              </tbody>
+                            </table>
+                          }
+
+                          @case ('beneficios') {
+                            @let detalle = $any(fila.detalle);
+                            @if (!detalle.filas.length) {
+                              <p class="ds-text-muted">El pedido no tenía ni tiene beneficios.</p>
+                            } @else {
+                              <table class="auditoria-comparacion">
+                                <thead>
+                                  <tr><th>Beneficio</th><th>Antes</th><th>Después</th><th></th></tr>
+                                </thead>
+                                <tbody>
+                                  @for (beneficio of detalle.filas; track beneficio.beneficio) {
+                                    <tr [class.cambio]="beneficio.estado !== 'igual'">
+                                      <td>{{ beneficio.beneficio }}</td>
+                                      <td>{{ beneficio.estado === 'agregado' ? '—' : beneficio.antes }}</td>
+                                      <td>{{ beneficio.estado === 'quitado' ? '—' : beneficio.despues }}</td>
+                                      <td>
+                                        @switch (beneficio.estado) {
+                                          @case ('agregado') { <span class="auditoria-estado auditoria-estado--mas">Agregado</span> }
+                                          @case ('quitado') { <span class="auditoria-estado auditoria-estado--menos">Quitado</span> }
+                                          @case ('modificado') { <span class="auditoria-estado">Cantidad modificada</span> }
+                                        }
+                                      </td>
+                                    </tr>
+                                  }
+                                </tbody>
+                              </table>
+                            }
+                          }
+
+                          @case ('disenio') {
+                            @let detalle = $any(fila.detalle);
+                            <div class="auditoria-archivos">
+                              <span class="auditoria-archivos__nombre">{{ detalle.nombre }}</span>
+                              @if (detalle.tieneAnterior) {
+                                <button type="button" class="ds-button ds-button--secondary ds-button--small"
+                                        [disabled]="descargando() === fila.id + '-anterior'" (click)="descargarArchivo(fila, 'anterior')">
+                                  {{ descargando() === fila.id + '-anterior' ? 'Descargando…' : 'Descargar versión anterior' }}
+                                </button>
+                              }
+                              @if (detalle.tieneNuevo) {
+                                <button type="button" class="ds-button ds-button--small"
+                                        [disabled]="descargando() === fila.id + '-nuevo'" (click)="descargarArchivo(fila, 'nuevo')">
+                                  {{ descargando() === fila.id + '-nuevo' ? 'Descargando…' : (detalle.tieneAnterior ? 'Descargar versión nueva' : 'Descargar archivo subido') }}
+                                </button>
+                              }
+                            </div>
+                          }
+
+                          @case ('talles') {
+                            @let detalle = $any(fila.detalle);
+                            @switch (detalle.lados) {
+                              @case ('ambos') {
+                                <p class="auditoria-detalle__resumen">
+                                  Antes: <strong>{{ detalle.totalAntes }}</strong> prendas · Después: <strong>{{ detalle.totalDespues }}</strong> prendas
+                                </p>
+                                @if (!detalle.filas.length && !detalle.agregadas.length && !detalle.quitadas.length) {
+                                  <p class="ds-text-muted">No hubo cambios en los talles.</p>
+                                }
+                              }
+                              @case ('antes') {
+                                <p class="auditoria-detalle__resumen">Talles al momento de reabrir la planilla: <strong>{{ detalle.totalAntes }}</strong> prendas</p>
+                              }
+                              @case ('despues') {
+                                <p class="auditoria-detalle__resumen">Talles cargados: <strong>{{ detalle.totalDespues }}</strong> prendas</p>
+                              }
+                              @default {
+                                <p class="ds-text-muted">No se pudo guardar la foto de los talles en este registro.</p>
+                              }
+                            }
+
+                            @if (detalle.filas.length) {
+                              <table class="auditoria-comparacion auditoria-comparacion--talles">
+                                <thead>
+                                  <tr>
+                                    <th>Prenda</th><th>Talle</th>
+                                    @if (detalle.lados === 'ambos') {
+                                      <th>Antes</th><th>Después</th><th>Diferencia</th>
+                                    } @else {
+                                      <th>Cantidad</th>
+                                    }
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  @for (talle of detalle.filas; track talle.producto + talle.talle) {
+                                    <tr>
+                                      <td>{{ talle.producto }}</td>
+                                      <td>{{ talle.talle }}</td>
+                                      @if (detalle.lados === 'ambos') {
+                                        <td>{{ talle.antes }}</td>
+                                        <td>{{ talle.despues }}</td>
+                                        <td [class.auditoria-estado--mas]="talle.diferencia > 0" [class.auditoria-estado--menos]="talle.diferencia < 0">
+                                          {{ talle.diferencia > 0 ? '+' : '' }}{{ talle.diferencia }}
+                                        </td>
+                                      } @else {
+                                        <td>{{ detalle.lados === 'antes' ? talle.antes : talle.despues }}</td>
+                                      }
+                                    </tr>
+                                  }
+                                </tbody>
+                              </table>
+                            }
+
+                            @if (detalle.quitadas.length || detalle.agregadas.length) {
+                              <div class="auditoria-inscripciones">
+                                @if (detalle.quitadas.length) {
+                                  <div>
+                                    <span class="ds-label">Se quitaron</span>
+                                    <ul>
+                                      @for (prenda of detalle.quitadas; track $index) {
+                                        <li class="auditoria-estado--menos">{{ prenda.producto }} · {{ prenda.talle }} · {{ prenda.inscripcion || 'sin inscripción' }}</li>
+                                      }
+                                    </ul>
+                                  </div>
+                                }
+                                @if (detalle.agregadas.length) {
+                                  <div>
+                                    <span class="ds-label">Se agregaron</span>
+                                    <ul>
+                                      @for (prenda of detalle.agregadas; track $index) {
+                                        <li class="auditoria-estado--mas">{{ prenda.producto }} · {{ prenda.talle }} · {{ prenda.inscripcion || 'sin inscripción' }}</li>
+                                      }
+                                    </ul>
+                                  </div>
+                                }
+                              </div>
+                              @if (detalle.inscripcionesOcultas) {
+                                <p class="ds-text-muted">Y {{ detalle.inscripcionesOcultas }} cambios más.</p>
+                              }
+                            }
+                          }
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <nav class="ds-pagination" aria-label="Paginación de la auditoría">
+          <span class="ds-text-muted">
+            Mostrando {{ pagina() * TAMANIO_PAGINA + 1 }}–{{ pagina() * TAMANIO_PAGINA + filas().length }} de {{ total() }}
+          </span>
+          <div class="ds-pagination__actions">
+            <button type="button" class="ds-button ds-button--secondary ds-button--small" [disabled]="pagina() === 0 || cargando()" (click)="paginaAnterior()">
+              Anterior
+            </button>
+            <button type="button" class="ds-button ds-button--secondary ds-button--small" [disabled]="!hayMasPaginas() || cargando()" (click)="paginaSiguiente()">
+              Siguiente
+            </button>
+          </div>
+        </nav>
+      }
+    </section>
+  </section>
+</main>

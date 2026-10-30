@@ -64,6 +64,7 @@ import { DiseniosModule } from './disenios/disenios.module';
 import { ExtrasModule } from './extras/extras.module';
 import { AlumnoResponsableController } from './alumno-responsable/alumno-responsable.controller';
 import { AlumnoResponsableModule } from './alumno-responsable/alumno-responsable.module';
+import { EstadisticasService } from './estadisticas/estadisticas.service';
 
 
 @Module({
@@ -73,6 +74,6 @@ import { AlumnoResponsableModule } from './alumno-responsable/alumno-responsable
   controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController, MovimientosCajaController, GruposController, MuestrasFisicasController],
   providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService,
      ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, 
-     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, PrendasPedidoTallesService, BeneficiosPedidoService, MuestrasFisicasService],
+     DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, PrendasPedidoTallesService, BeneficiosPedidoService, MuestrasFisicasService, EstadisticasService],
 })
 export class AppModule {}

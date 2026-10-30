@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { GestionPedidosService } from 'src/gestion-pedidos/gestion-pedidos.service';
 import { ProductosService } from 'src/productos/productos.service';
 import { PrendasPedidoTallesService } from './prendas-pedido-talles.service';
+import { ACCIONES_AUDITORIA, AutorAuditoria } from 'src/auditorias/dto/insertarAuditoria.dto';
 
 // Recalcula productos, precios y cuotas del pedido a partir de los talles cargados.
 // Lo usan la confirmación de talles (con firma) y la edición excepcional posterior (sin firma).
@@ -59,13 +60,14 @@ export class RecalculoPlanTallesService
         };
     }
 
-    async aplicarPlan(plan: Awaited<ReturnType<RecalculoPlanTallesService['prepararPlan']>>)
+    // autor: el cliente (al confirmar o al guardar talles editados) o el usuario que cerró la edición
+    async aplicarPlan(plan: Awaited<ReturnType<RecalculoPlanTallesService['prepararPlan']>>, autor: AutorAuditoria)
     {
-        return await this.gestionPedidosService.modificarPlanPedido(plan);
+        return await this.gestionPedidosService.modificarPlanPedido(plan, autor, ACCIONES_AUDITORIA.PLAN_RECALCULADO_TALLES);
     }
 
-    async recalcular(idGrupo: number, idPedido: number)
+    async recalcular(idGrupo: number, idPedido: number, autor: AutorAuditoria)
     {
-        return await this.aplicarPlan(await this.prepararPlan(idGrupo, idPedido));
+        return await this.aplicarPlan(await this.prepararPlan(idGrupo, idPedido), autor);
     }
 }

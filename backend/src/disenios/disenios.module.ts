@@ -12,11 +12,12 @@ import { GestionPedidosModule } from 'src/gestion-pedidos/gestion-pedidos.module
 import { PrendasPedidoTallesService } from 'src/prendas-pedido-talles/prendas-pedido-talles.service';
 import { ProductosService } from 'src/productos/productos.service';
 import { RecalculoPlanTallesService } from 'src/prendas-pedido-talles/recalculo-plan-talles.service';
+import { AuditoriasService } from 'src/auditorias/auditorias.service';
 
 @Module({
     imports: [SupabaseModule, StorageModule, ResumenTallesModule, PedidosModule, GestionPedidosModule],
     controllers: [DiseniosController],
-    providers: [DiseniosService, DocumentosService, UsuariosService, PermisosService, PrendasPedidoTallesService, ProductosService, RecalculoPlanTallesService],
+    providers: [DiseniosService, DocumentosService, UsuariosService, PermisosService, PrendasPedidoTallesService, ProductosService, RecalculoPlanTallesService, AuditoriasService],
     exports:[DiseniosService]
 })
 export class DiseniosModule {}

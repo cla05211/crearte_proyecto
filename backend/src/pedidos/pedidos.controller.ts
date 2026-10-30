@@ -55,7 +55,7 @@ export class PedidosController
         return await this.pedidosService.obtenerIdPedidoGrupo(id);
     }
 
-    // Control de fábrica: marca una categoría de prendas (camperas_buzos, chombas_remeras, pantalon, bandera) como Ok o Pendiente
+    // Control de fábrica: marca una categoría de prendas (camperas, buzos, chombas, remeras, pantalon, bandera) como Ok o Pendiente
     @Patch('estado-prenda/:id')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_control_produccion')

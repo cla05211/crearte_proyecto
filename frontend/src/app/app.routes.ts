@@ -126,6 +126,18 @@ export const routes: Routes = [
         data: { permiso: 'ver_deudores' },
       },
       {
+        path: "estadisticas",
+        loadComponent: () => import('./pages/estadisticas/estadisticas').then((archivo) => archivo.Estadisticas),
+        canActivate: [PermisosGuard],
+        data: { permiso: 'ver_deudores' },
+      },
+      {
+        path: "auditoria",
+        loadComponent: () => import('./pages/auditoria/auditoria').then((archivo) => archivo.Auditoria),
+        canActivate: [PermisosGuard],
+        data: { permiso: 'ver_estadisticas' },
+      },
+      {
         path: "clientes/:id",
         loadComponent: () => import('./pages/clientes/colegio-detalle/colegio-detalle').then((archivo) => archivo.ColegioDetalle),
         canActivate: [PermisosGuard],

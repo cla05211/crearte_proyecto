@@ -8,9 +8,8 @@ import { PdfService } from 'src/reportes/pdf/pdf.service';
 import { PedidosService } from 'src/pedidos/pedidos.service';
 import { GenerarResumenTallesDTO } from 'src/reportes/pdf/dto/generarResumenTalles.dto';
 import { ProductoPrendasResumenDTO } from 'src/prendas-pedido-talles/dto/ResumenPrendasPedido.dto';
+import { IDS_BUZO, IDS_CAMPERA, IDS_CHOMBA, IDS_REMERA } from 'src/productos/ids-prendas';
 
-const IDS_CAMPERA_BUZO = [63, 64, 71];
-const IDS_REMERA_CHOMBA = [65, 66];
 
 export const TIPO_DOCUMENTO_FIRMA_TALLES = 'Firma Talles';
 
@@ -84,8 +83,15 @@ export class ResumenTallesService
 
     private construirCombosYSueltas(prendas: ProductoPrendasResumenDTO[])
     {
-        const productoCamperaBuzo = prendas.find(p => IDS_CAMPERA_BUZO.includes(p.idProducto));
-        const productoRemeraChomba = prendas.find(p => IDS_REMERA_CHOMBA.includes(p.idProducto));
+        const productoCampera = prendas.find(p => IDS_CAMPERA.includes(p.idProducto));
+        const productoBuzo = prendas.find(p => IDS_BUZO.includes(p.idProducto));
+        const productoRemera = prendas.find(p => IDS_REMERA.includes(p.idProducto));
+        const productoChomba = prendas.find(p => IDS_CHOMBA.includes(p.idProducto));
+
+        // Combo = prenda de arriba (campera o buzo) + prenda de abajo (remera o chomba)
+        const productoCamperaBuzo = productoCampera ?? productoBuzo;
+        const productoRemeraChomba = productoRemera ?? productoChomba;
+        // Solo se sacan las dos que arman el combo: si hay otra (ej. campera y buzo), va como suelta
         const otros = prendas.filter(p => p !== productoCamperaBuzo && p !== productoRemeraChomba);
 
         const combos: { nombreCombo: string; cantidad: number; componentes: { nombre: string; cantidad: number }[] }[] = [];

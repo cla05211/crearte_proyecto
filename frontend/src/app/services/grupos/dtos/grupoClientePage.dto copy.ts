@@ -12,4 +12,5 @@ export interface grupoClientePageResponseDTO
     padreResponsableApellido: string;
     contacto: string;
     fechaVenta: string;
+    estadoPedido: string | null;
 }

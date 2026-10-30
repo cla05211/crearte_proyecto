@@ -16,6 +16,9 @@ import { DetalleCuotaPago } from './dto/detalleCuotaPago.dto';
 import { FiltrosPagosBancoDTO } from './dto/filtrosPagosBanco.dto';
 import { ResumenPagosBancoDTO } from './dto/resumenPagosBanco.dto';
 
+// Pago negativo que se carga al cancelar un pedido con devolución de la plata
+export const MOTIVO_DEVOLUCION = 'Devolución';
+
 @Injectable()
 export class PagosService 
 {
@@ -528,5 +531,30 @@ export class PagosService
             throw new BadRequestException(error.message);
         }
         return data;        
+    }
+
+    // Baja de un colegio: un pago negativo que contrarresta todo lo pagado (los pagos originales quedan).
+    // Se suman TODOS los pagos, incluida una devolución anterior: si ya se devolvió, da 0 y no se inserta otra.
+    async devolverPagos(idPedido:number, banco:string)
+    {
+        const pagos = await this.traerPagosPedido(idPedido);
+        const totalPagado = Math.round(pagos.reduce((total, pago) => total + Number(pago.monto ?? 0), 0) * 100) / 100;
+
+        if (totalPagado <= 0)
+        {
+            return;
+        }
+
+        // Fecha de hoy en Argentina (toISOString es UTC: después de las 21 hs daría el día siguiente)
+        const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+
+        const { error } = await this.sb.supabase
+        .from('pagos')
+        .insert({id_pedido: idPedido, monto: -totalPagado, motivo: MOTIVO_DEVOLUCION, fecha: hoy, aprobado: true, banco: banco});
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
     }
 }

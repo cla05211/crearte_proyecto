@@ -187,5 +187,66 @@
         </div>
       </section>
     }
+
+    <!-- Baja del colegio -->
+    @if (pedidoCancelado()) {
+      <section class="ds-card datos-cancelar datos-cancelar--hecho" role="status">
+        <span class="ds-badge ds-badge--danger">Pedido cancelado</span>
+        <p class="ds-text-muted">Este colegio está dado de baja.</p>
+      </section>
+    } @else if (puedeCancelarPedido()) {
+      <section class="ds-card datos-cancelar">
+        <div>
+          <h2 class="ds-heading-3">Cancelar pedido</h2>
+          <p class="ds-text-muted">Da de baja al colegio. El pedido pasa a "Cancelado" y se cancelan los mensajes de WhatsApp pendientes.</p>
+        </div>
+        <button type="button" class="ds-button datos-cancelar__boton" (click)="abrirModalCancelar()">Cancelar pedido</button>
+      </section>
+    }
+  </div>
+}
+
+@if (modalCancelarAbierto()) {
+  <div class="cancelar-overlay" (click)="cerrarModalDesdeFondo($event)">
+    <section class="cancelar-dialog ds-card" role="dialog" aria-modal="true" aria-labelledby="cancelar-titulo">
+      <div class="cancelar-dialog__contenido">
+        <h2 class="ds-heading-3" id="cancelar-titulo">¿Cancelar el pedido de {{ datosColegio()?.grupo?.colegio?.nombre }}?</h2>
+        <p class="ds-text-muted">El colegio queda dado de baja: el pedido pasa a "Cancelado" y se cancelan los mensajes de WhatsApp pendientes. Esto no se puede deshacer.</p>
+
+        <fieldset class="cancelar-dialog__pregunta">
+          <legend class="ds-label">¿Se le devolvió la plata?</legend>
+          <div class="cancelar-dialog__opciones">
+            <label class="cancelar-opcion" [class.activa]="devolucionPlata() === true">
+              <input type="radio" name="devolucion" [checked]="devolucionPlata() === true" (change)="elegirDevolucion(true)" />
+              Sí
+            </label>
+            <label class="cancelar-opcion" [class.activa]="devolucionPlata() === false">
+              <input type="radio" name="devolucion" [checked]="devolucionPlata() === false" (change)="elegirDevolucion(false)" />
+              No
+            </label>
+          </div>
+        </fieldset>
+
+        @if (devolucionPlata() === true) {
+          <label class="ds-field">
+            <span class="ds-label">¿Desde qué cuenta?</span>
+            <select class="ds-select" [ngModel]="bancoDevolucion()" (ngModelChange)="bancoDevolucion.set($event)">
+              <option [ngValue]="null" disabled>Elegí la cuenta</option>
+              @for (banco of bancosDevolucion; track banco) {
+                <option [ngValue]="banco">{{ banco }}</option>
+              }
+            </select>
+            <span class="ds-field__help">Se carga un pago negativo por todo lo que pagó el colegio. Los pagos anteriores quedan registrados.</span>
+          </label>
+        }
+      </div>
+
+      <div class="cancelar-dialog__acciones">
+        <button type="button" class="ds-button ds-button--secondary" [disabled]="cancelando()" (click)="cerrarModalCancelar()">Volver</button>
+        <button type="button" class="ds-button datos-cancelar__boton" [disabled]="!cancelacionCompleta() || cancelando()" (click)="confirmarCancelacion()">
+          {{ cancelando() ? 'Cancelando…' : 'Confirmar cancelación' }}
+        </button>
+      </div>
+    </section>
   </div>
 }

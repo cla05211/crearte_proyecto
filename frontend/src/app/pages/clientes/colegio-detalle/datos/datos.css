@@ -141,3 +141,88 @@
   font-size: var(--font-size-sm);
   margin: 0;
 }
+
+/* Cancelar pedido (baja del colegio) */
+.datos-cancelar {
+  align-items: center;
+  border: 1px solid #f2c4d3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-6);
+}
+.datos-cancelar h2 {
+  margin: 0 0 var(--space-1);
+}
+.datos-cancelar p {
+  margin: 0;
+}
+.datos-cancelar--hecho {
+  justify-content: flex-start;
+}
+.datos-cancelar__boton {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+}
+.datos-cancelar__boton:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+.cancelar-overlay {
+  align-items: center;
+  background-color: rgba(61, 21, 48, 0.4);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: var(--space-4);
+  position: fixed;
+  z-index: 1100;
+}
+.cancelar-dialog {
+  box-shadow: var(--shadow-md);
+  max-width: 32rem;
+  width: 100%;
+}
+.cancelar-dialog__contenido {
+  display: grid;
+  gap: var(--space-4);
+}
+.cancelar-dialog__contenido h2,
+.cancelar-dialog__contenido p {
+  margin: 0;
+}
+.cancelar-dialog__pregunta {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.cancelar-dialog__opciones {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+.cancelar-opcion {
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 1;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+}
+.cancelar-opcion.activa {
+  background: var(--color-primary-100);
+  border-color: var(--color-primary-600);
+}
+.cancelar-opcion input {
+  accent-color: var(--color-primary-700);
+}
+.cancelar-dialog__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  margin-top: var(--space-6);
+}

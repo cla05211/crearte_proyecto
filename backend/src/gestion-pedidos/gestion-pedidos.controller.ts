@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Post, UseGuards, Body, Get, Patch, Query, ParseIntPipe, Param, ParseBoolPipe } from '@nestjs/common';
+import { BadRequestException, Controller, Post, UseGuards, Body, Get, Patch, Query, ParseIntPipe, Param, ParseBoolPipe, Req } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
@@ -6,6 +6,9 @@ import { GestionPedidosService } from './gestion-pedidos.service';
 import { CrearPedidoDTO } from './dto/crearPedido.dto';
 import { ModificarPlanPedidoDTO } from './dto/ModificarPlanPedido';
 import { ESTADOS_BOCETO_BANDERA, ModificarBanderaDTO } from './dto/ControlBanderasDTO';
+import { TIPOS_AUDITORIA, TipoAuditoria } from 'src/auditorias/dto/insertarAuditoria.dto';
+
+const TAMANIO_MAXIMO_PAGINA_AUDITORIA = 100;
 
 @Controller('gestion-pedidos')
 export class GestionPedidosController 
@@ -116,9 +119,81 @@ export class GestionPedidosController
     @Patch('modificar-pedidos')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('modificar_pedidos')
-    async modificarPlanPedido(@Body() dto: ModificarPlanPedidoDTO)
+    async modificarPlanPedido(@Body() dto: ModificarPlanPedidoDTO, @Req() req)
     {
-        return await this.gestionService.modificarPlanPedido(dto);
+        return await this.gestionService.modificarPlanPedido(dto, { idUsuario: req.usuario.id });
+    }
+
+    // Baja de un colegio: pasa el pedido a "Cancelado", opcionalmente devuelve lo pagado
+    // (un pago negativo, los pagos originales quedan) y cancela los WhatsApp pendientes
+    @Patch('cancelar/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('modificar_pedidos')
+    async cancelarPedido(@Param('id', ParseIntPipe) idPedido: number, @Body() dto: { devolucionPlata: boolean; banco?: string })
+    {
+        if (typeof dto?.devolucionPlata !== 'boolean')
+        {
+            throw new BadRequestException('Falta indicar si se devuelve la plata.');
+        }
+
+        if (dto.banco !== undefined && (typeof dto.banco !== 'string' || !dto.banco.trim()))
+        {
+            throw new BadRequestException('Banco inválido.');
+        }
+
+        await this.gestionService.cancelarPedido(idPedido, dto.devolucionPlata, dto.banco?.trim());
+    }
+
+    //--- Auditoría: cambios de presupuesto, beneficios, diseño y talles ---
+
+    @Get('auditoria')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_auditoria')
+    async obtenerAuditoria(
+        @Query('rangoDesde', ParseIntPipe) rangoDesde: number,
+        @Query('rangoHasta', ParseIntPipe) rangoHasta: number,
+        @Query('tipo') tipo?: string,
+        @Query('busqueda') busqueda?: string,
+        @Query('idPedido') idPedido?: string,
+    )
+    {
+        if (rangoDesde < 0 || rangoHasta < rangoDesde || rangoHasta - rangoDesde >= TAMANIO_MAXIMO_PAGINA_AUDITORIA)
+        {
+            throw new BadRequestException('Rango de paginación inválido.');
+        }
+
+        if (tipo && !TIPOS_AUDITORIA.includes(tipo as TipoAuditoria))
+        {
+            throw new BadRequestException('Tipo de auditoría inválido.');
+        }
+
+        const idPedidoNumero = idPedido ? Number(idPedido) : undefined;
+        if (idPedidoNumero !== undefined && !Number.isInteger(idPedidoNumero))
+        {
+            throw new BadRequestException('Pedido inválido.');
+        }
+
+        return await this.gestionService.obtenerAuditoria({
+            rangoDesde,
+            rangoHasta,
+            tipo: (tipo || undefined) as TipoAuditoria | undefined,
+            busqueda: busqueda?.trim() || undefined,
+            idPedido: idPedidoNumero,
+        });
+    }
+
+    // Descarga la versión anterior o nueva de un boceto/firmado que se cambió
+    @Get('auditoria/:id/archivo')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_auditoria')
+    async obtenerUrlArchivoAuditoria(@Param('id', ParseIntPipe) idAuditoria: number, @Query('version') version: string)
+    {
+        if (version !== 'anterior' && version !== 'nuevo')
+        {
+            throw new BadRequestException('Versión inválida.');
+        }
+
+        return await this.gestionService.obtenerUrlArchivoAuditoria(idAuditoria, version);
     }
 
 

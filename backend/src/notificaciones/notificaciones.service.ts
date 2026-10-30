@@ -441,4 +441,19 @@ export class NotificacionesService
         
         return venta;
     }
+
+    // Solo las pendientes: las enviadas o con error quedan como historial
+    async cancelarNotificacionesPedido(idPedido:number)
+    {
+        const { error } = await this.sb.supabase
+        .from('notificaciones_whatsapp')
+        .update({estado: 'cancelado'})
+        .eq('id_pedido', idPedido)
+        .eq('estado', 'pendiente');
+
+        if (error)
+        {
+            throw new Error(error.message);
+        }
+    }
 }

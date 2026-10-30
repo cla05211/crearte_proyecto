@@ -10,10 +10,17 @@ import { PadreResponsableService } from '../../../../services/padreResponsable/p
 import { PadreResponsableResponseDTO } from '../../../../services/padreResponsable/dto/padreResponsableResponse.dto';
 import { ClientesAuthService } from '../../../../services/clientes-auth-service/clientes-auth-service';
 import { NotificationService } from '../../../../shared/notifications/notification.service';
+import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
+import { PedidosService } from '../../../../services/pedidos/pedidos-service';
+import { PermisosService } from '../../../../services/permisos/permisos';
+import { BancoDevolucion, GestionPedidosService } from '../../../../services/gestionPedidos/gestion-pedidos-service';
+
+const ESTADO_CANCELADO = 'Cancelado';
 
 @Component({
   selector: 'app-datos',
-  imports: [DatePipe],
+  imports: [DatePipe, FormsModule],
   templateUrl: './datos.html',
   styleUrl: './datos.css',
 })
@@ -24,6 +31,9 @@ export class Datos implements OnInit
   private readonly padreResponsableService = inject(PadreResponsableService);
   private readonly clientesAuthService = inject(ClientesAuthService);
   private readonly notificaciones = inject(NotificationService);
+  private readonly pedidosService = inject(PedidosService);
+  private readonly permisosService = inject(PermisosService);
+  private readonly gestionPedidosService = inject(GestionPedidosService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -38,12 +48,106 @@ export class Datos implements OnInit
   readonly linkActivacion = signal<{ link: string; expira: string } | null>(null);
   readonly generandoLink = signal(false);
 
+  // Cancelar pedido (baja del colegio)
+  readonly bancosDevolucion: BancoDevolucion[] = ['COMAFI', 'Santander', 'Efectivo'];
+  readonly idPedido = signal<number | null>(null);
+  readonly estadoPedido = signal<string | null>(null);
+  readonly modalCancelarAbierto = signal(false);
+  readonly devolucionPlata = signal<boolean | null>(null);
+  readonly bancoDevolucion = signal<BancoDevolucion | null>(null);
+  readonly cancelando = signal(false);
+
   private readonly idGrupo = Number(this.route.parent?.snapshot.paramMap.get('id'));
 
   ngOnInit(): void
   {
     this.traerDatosColegio();
     this.traerAlumnosResponsables();
+    this.traerPedido();
+  }
+
+  //--- Cancelar pedido ---
+
+  private traerPedido(): void
+  {
+    this.pedidosService.obtenerPedidoGrupo(this.idGrupo)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (pedido) => {
+          this.idPedido.set(pedido.id);
+          this.estadoPedido.set(pedido.estado_general);
+        },
+        error: () => this.idPedido.set(null),
+      });
+  }
+
+  pedidoCancelado(): boolean
+  {
+    return this.estadoPedido() === ESTADO_CANCELADO;
+  }
+
+  puedeCancelarPedido(): boolean
+  {
+    return this.permisosService.tienePermiso('modificar_pedidos') && this.idPedido() !== null && !this.pedidoCancelado();
+  }
+
+  abrirModalCancelar(): void
+  {
+    this.devolucionPlata.set(null);
+    this.bancoDevolucion.set(null);
+    this.modalCancelarAbierto.set(true);
+  }
+
+  cerrarModalCancelar(): void
+  {
+    if (this.cancelando()) return;
+    this.modalCancelarAbierto.set(false);
+  }
+
+  cerrarModalDesdeFondo(event: MouseEvent): void
+  {
+    if (event.target === event.currentTarget) this.cerrarModalCancelar();
+  }
+
+  elegirDevolucion(devuelve: boolean): void
+  {
+    this.devolucionPlata.set(devuelve);
+    if (!devuelve) this.bancoDevolucion.set(null);
+  }
+
+  // Hay que contestar si se devolvió la plata y, si se devolvió, desde qué cuenta
+  cancelacionCompleta(): boolean
+  {
+    const devuelve = this.devolucionPlata();
+    return devuelve === false || (devuelve === true && this.bancoDevolucion() !== null);
+  }
+
+  async confirmarCancelacion(): Promise<void>
+  {
+    const idPedido = this.idPedido();
+    if (idPedido === null || !this.cancelacionCompleta() || this.cancelando()) return;
+
+    const devuelve = this.devolucionPlata() === true;
+    this.cancelando.set(true);
+
+    try
+    {
+      await firstValueFrom(this.gestionPedidosService.cancelarPedido(idPedido, devuelve, devuelve ? this.bancoDevolucion()! : undefined));
+      this.estadoPedido.set(ESTADO_CANCELADO);
+      this.modalCancelarAbierto.set(false);
+      this.notificaciones.success({
+        title: 'Pedido cancelado',
+        description: devuelve ? `Se registró la devolución desde ${this.bancoDevolucion()}.` : 'El colegio quedó dado de baja.',
+      });
+    }
+    catch (e: any)
+    {
+      this.notificaciones.error({ title: 'No se pudo cancelar el pedido', description: e?.error?.message ?? 'Intentá nuevamente.' });
+    }
+    finally
+    {
+      this.cancelando.set(false);
+    }
   }
 
   traerDatosColegio(): void

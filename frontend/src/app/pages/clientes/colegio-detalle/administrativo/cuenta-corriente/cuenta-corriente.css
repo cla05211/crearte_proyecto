@@ -181,3 +181,7 @@
   .loading-state { align-items: center; flex-direction: column; text-align: center; }
   .cc-card__header { align-items: flex-start; flex-direction: column; }
 }
+
+.cc-summary__cancelado {
+  align-self: center;
+}

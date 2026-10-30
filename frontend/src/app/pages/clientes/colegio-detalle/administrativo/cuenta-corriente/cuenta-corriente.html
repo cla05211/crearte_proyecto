@@ -19,10 +19,14 @@
         <strong>{{ totalPagado() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
       </div>
       <span class="cc-summary__separator" aria-hidden="true">·</span>
-      <div class="cc-summary__item">
-        <span>Falta</span>
-        <strong>{{ totalFaltante() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
-      </div>
+      @if (pedidoCancelado()) {
+        <span class="ds-badge ds-badge--danger cc-summary__cancelado">Pedido cancelado</span>
+      } @else {
+        <div class="cc-summary__item">
+          <span>Falta</span>
+          <strong>{{ totalFaltante() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+        </div>
+      }
     </section>
 
     <section class="ds-card cc-card">
@@ -76,6 +80,8 @@
                     }
                   </td>
                   <td data-label="Recibo">
+                    <!-- La devolución por baja es un pago negativo: no lleva recibo -->
+                    @if ((pago.monto ?? 0) > 0) {
                     <button
                       type="button"
                       class="download-button"
@@ -86,6 +92,9 @@
                     >
                       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
                     </button>
+                    } @else {
+                      <span class="ds-text-muted">—</span>
+                    }
                   </td>
                   <td data-label="Eliminar">
                     <button

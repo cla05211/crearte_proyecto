@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseBoolPipe, ParseIntPipe, Patch, Post, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseBoolPipe, ParseIntPipe, Patch, Post, Query, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -71,18 +71,19 @@ export class DiseniosController
         @Param('idGrupo', ParseIntPipe) idGrupo: number,
         @Param('idDocumento', ParseIntPipe) idDocumento: number,
         @UploadedFile() archivo: ArchivoSubidoDTO,
+        @Req() req,
     )
     {
-        return await this.diseniosService.subirFirmado(idGrupo, idDocumento, archivo);
+        return await this.diseniosService.subirFirmado(idGrupo, idDocumento, archivo, req.usuario.id);
     }
 
     // Habilita o cierra la edición excepcional de talles ya confirmados
     @Patch(':idGrupo/edicion-talles')
     @UseGuards(AuthGuard, PermisosGuard)
     @RequierePermiso('ver_clientes_talles_disenio')
-    async modificarEdicionTalles(@Param('idGrupo', ParseIntPipe) idGrupo: number, @Query('habilitada', ParseBoolPipe) habilitada: boolean)
+    async modificarEdicionTalles(@Param('idGrupo', ParseIntPipe) idGrupo: number, @Query('habilitada', ParseBoolPipe) habilitada: boolean, @Req() req)
     {
-        return await this.diseniosService.modificarEdicionTalles(idGrupo, habilitada);
+        return await this.diseniosService.modificarEdicionTalles(idGrupo, habilitada, req.usuario.id);
     }
 
     @Post('url-subida')
@@ -96,16 +97,16 @@ export class DiseniosController
     @Post('confirmar')
     @UseGuards(AuthGuard, PermisosGuard)
     @RequierePermiso('ver_clientes_talles_disenio')
-    async confirmar(@Body() dto: SubirDisenioDTO)
+    async confirmar(@Body() dto: SubirDisenioDTO, @Req() req)
     {
-        return await this.diseniosService.confirmar(dto);
+        return await this.diseniosService.confirmar(dto, req.usuario.id);
     }
 
     @Post('reemplazar')
     @UseGuards(AuthGuard, PermisosGuard)
     @RequierePermiso('ver_clientes_talles_disenio')
-    async reemplazar(@Body() dto: ReemplazarDisenioDTO)
+    async reemplazar(@Body() dto: ReemplazarDisenioDTO, @Req() req)
     {
-        return await this.diseniosService.reemplazar(dto);
+        return await this.diseniosService.reemplazar(dto, req.usuario.id);
     }
 }

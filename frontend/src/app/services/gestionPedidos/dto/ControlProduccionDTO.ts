@@ -9,8 +9,10 @@ export interface ControlProduccionDTO
     colegio: string;
     localidad: string;
     provincia: string;
-    camperas_buzos: EstadoPrenda;
-    chombas_remeras: EstadoPrenda;
+    camperas: EstadoPrenda;
+    buzos: EstadoPrenda;
+    chombas: EstadoPrenda;
+    remeras: EstadoPrenda;
     bandera: EstadoPrenda;
     pantalon: EstadoPrenda;
     estado_pedido: string;
