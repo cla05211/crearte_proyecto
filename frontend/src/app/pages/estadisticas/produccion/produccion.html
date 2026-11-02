@@ -1,0 +1,111 @@
+@if (cargando() && !datos()) {
+  <div class="loading-state" role="status" aria-live="polite">
+    <span class="loading-state__spinner" aria-hidden="true"></span>
+    <div>
+      <h2>Cargando estadísticas</h2>
+      <p>Estamos juntando los datos de producción del año.</p>
+    </div>
+  </div>
+} @else {
+  <div class="estadisticas-ventana">
+    <!-- Totales del año -->
+    <div class="kpis-grid">
+      <div class="ds-card kpi-card">
+        <span class="ds-label">Colegios vendidos en {{ anio }}</span>
+        <strong class="kpi-valor">{{ totalVendidos() }}</strong>
+      </div>
+      <div class="ds-card kpi-card">
+        <span class="ds-label">Enviados a producción</span>
+        <strong class="kpi-valor">{{ totalEnviados() }}</strong>
+        <span class="kpi-detalle">{{ porcentajeEnviados() | number: '1.0-0' }}% de los vendidos</span>
+      </div>
+      <div class="ds-card kpi-card">
+        <span class="ds-label">Prendas producidas</span>
+        <strong class="kpi-valor">{{ totalPrendas() | number }}</strong>
+      </div>
+      <div class="ds-card kpi-card">
+        <span class="ds-label">Banderas a producción</span>
+        <strong class="kpi-valor">{{ banderasProduccion() }}</strong>
+      </div>
+      <div class="ds-card kpi-card">
+        <span class="ds-label">Banderas de beneficio</span>
+        <strong class="kpi-valor">{{ banderasBeneficio() }}</strong>
+      </div>
+    </div>
+    <p class="nota">
+      Colegios vendidos en {{ anio }}, sin cancelados, agrupados por mes de venta.
+      Las prendas cuentan solo los pedidos que ya están en producción.
+    </p>
+
+    <!-- Vendidos vs. enviados a producción, por mes -->
+    <section class="ds-card panel">
+      <header class="panel__header">
+        <h2 class="ds-heading-3">Enviados a producción por mes</h2>
+        <span class="ds-text-muted">De los colegios vendidos en cada mes de {{ anio }}</span>
+      </header>
+
+      <div class="grafico-meses">
+        @for (mes of produccionPorMes(); track mes.mes) {
+          <div class="grafico-meses__columna"
+               [attr.aria-label]="mes.mes + ': ' + mes.enviados + ' enviados de ' + mes.vendidos + ' vendidos'"
+               [title]="mes.enviados + ' de ' + mes.vendidos + ' enviados a producción'">
+            <span class="grafico-meses__valor">{{ mes.vendidos ? mes.enviados + '/' + mes.vendidos : '' }}</span>
+            <div class="grafico-meses__pista">
+              <div class="grafico-meses__barra grafico-meses__barra--fondo" [style.height.%]="mes.porcentajeVendidos">
+                <div class="grafico-meses__barra" [style.height.%]="mes.porcentajeEnviados"></div>
+              </div>
+            </div>
+            <span class="grafico-meses__etiqueta">{{ mes.mes }}</span>
+          </div>
+        }
+      </div>
+
+      <ul class="leyenda">
+        <li><span class="leyenda__color leyenda__color--fuerte"></span>Enviados a producción</li>
+        <li><span class="leyenda__color leyenda__color--suave"></span>Vendidos</li>
+      </ul>
+    </section>
+
+    <!-- Prendas por mes de venta -->
+    <section class="ds-card panel">
+      <header class="panel__header">
+        <h2 class="ds-heading-3">Prendas enviadas a producción por mes</h2>
+        <span class="ds-text-muted">Según el mes de venta del colegio</span>
+      </header>
+
+      <div class="ds-table-wrapper">
+        <table class="ds-table tabla-mensual">
+          <thead>
+            <tr>
+              <th>Prenda</th>
+              @for (mes of meses; track mes) {
+                <th>{{ mes }}</th>
+              }
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (prenda of prendasPorMes(); track prenda.tipo) {
+              <tr>
+                <td class="celda-fuerte">{{ prenda.etiqueta }}</td>
+                @for (cantidad of prenda.porMes; track $index) {
+                  <td [class.celda-cero]="!cantidad">{{ cantidad | number }}</td>
+                }
+                <td class="celda-total">{{ prenda.total | number }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>Total</td>
+              @for (cantidad of totalPrendasPorMes(); track $index) {
+                <td>{{ cantidad | number }}</td>
+              }
+              <td>{{ totalPrendas() | number }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </div>
+}

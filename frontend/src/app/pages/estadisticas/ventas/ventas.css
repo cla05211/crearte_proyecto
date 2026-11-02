@@ -1,93 +1,4 @@
-.ventas-stats {
-  display: grid;
-  gap: var(--space-6);
-}
-
-/* Carteles de totales (mismo estilo que Deudores) */
-.kpis-grid {
-  display: grid;
-  gap: var(--space-2);
-  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-}
-.kpi-card {
-  display: grid;
-  gap: 2px;
-  padding: var(--space-2) var(--space-3);
-}
-.kpi-card .ds-label {
-  font-size: 0.78rem;
-}
-.kpi-valor {
-  color: var(--color-primary-700);
-  font-size: var(--font-size-lg);
-}
-.kpi-valor--alerta {
-  color: var(--color-danger);
-}
-.nota {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  margin: calc(var(--space-4) * -1) 0 0;
-}
-
-/* Paneles */
-.paneles-grid {
-  display: grid;
-  gap: var(--space-6);
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
-}
-.panel {
-  align-content: start;
-  display: grid;
-  gap: var(--space-5);
-}
-.panel__header {
-  display: grid;
-  gap: var(--space-1);
-}
-.panel__header h2 {
-  margin: 0;
-}
-.panel__header .ds-text-muted {
-  font-size: var(--font-size-sm);
-}
-
-/* Gráfico de barras por mes */
-.grafico-meses {
-  display: grid;
-  gap: var(--space-2);
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-}
-.grafico-meses__columna {
-  display: grid;
-  gap: var(--space-1);
-  grid-template-rows: auto 12rem auto;
-  justify-items: center;
-}
-.grafico-meses__valor {
-  color: var(--color-text-strong);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  min-height: 1rem;
-}
-.grafico-meses__pista {
-  align-items: flex-end;
-  background: var(--color-primary-100);
-  border-radius: var(--radius-sm);
-  display: flex;
-  height: 100%;
-  width: 100%;
-}
-.grafico-meses__barra {
-  background: var(--color-primary-700);
-  border-radius: var(--radius-sm);
-  transition: height var(--transition-fast);
-  width: 100%;
-}
-.grafico-meses__etiqueta {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-}
+/* Lo común (carteles, paneles, gráficos, tablas) está en ../estadisticas-compartido.css */
 
 /* Filtros de provincia / localidad */
 .filtros {
@@ -97,69 +8,6 @@
   grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
 }
 
-/* Barras horizontales por nivel */
-.grafico-niveles {
-  display: grid;
-  gap: var(--space-3);
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.grafico-niveles__fila {
-  align-items: center;
-  display: grid;
-  gap: var(--space-3);
-  grid-template-columns: 6.5rem 1fr 2.5rem;
-}
-.grafico-niveles__etiqueta {
-  color: var(--color-text-strong);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-}
-.grafico-niveles__pista {
-  background: var(--color-primary-100);
-  border-radius: var(--radius-sm);
-  height: 1.5rem;
-}
-.grafico-niveles__barra {
-  background: var(--color-primary-700);
-  border-radius: var(--radius-sm);
-  height: 100%;
-  transition: width var(--transition-fast);
-}
-.grafico-niveles__valor {
-  color: var(--color-primary-700);
-  text-align: right;
-}
-
-/* Tabla por vendedora */
-.vendedoras-table {
-  min-width: 56rem;
-}
-.vendedoras-table th,
-.vendedoras-table td {
-  padding: var(--space-2);
-  text-align: center;
-}
-.vendedoras-table th:first-child,
-.vendedoras-table td:first-child {
-  text-align: left;
-  white-space: nowrap;
-}
-.vendedoras-table .celda-cero {
-  color: var(--color-text-subtle);
-}
-.vendedoras-table .celda-total {
-  color: var(--color-primary-700);
-  font-weight: var(--font-weight-bold);
-}
-.vendedoras-table tfoot td {
-  background-color: var(--color-primary-100);
-  border-top: 1px solid var(--color-border);
-  color: var(--color-text-strong);
-  font-weight: var(--font-weight-bold);
-}
-
 /* Tabla de cancelados */
 .cancelados-table {
   min-width: 52rem;
@@ -167,52 +15,10 @@
 .cancelados-table td {
   vertical-align: top;
 }
-.celda-fuerte {
-  color: var(--color-text-strong);
-  font-weight: var(--font-weight-semibold);
-}
 .celda-motivo {
   white-space: pre-line;
-}
-.sin-datos {
-  margin: 0;
-}
-
-/* Estado de carga (mismo estilo que Deudores) */
-.loading-state {
-  align-items: center;
-  display: flex;
-  gap: var(--space-4);
-  justify-content: center;
-  min-height: 23rem;
-  padding: var(--space-10);
-}
-.loading-state h2 {
-  color: var(--color-text-strong);
-  font-size: var(--font-size-xl);
-  margin: 0;
-}
-.loading-state p {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  margin: var(--space-2) 0 0;
-}
-.loading-state__spinner {
-  animation: spin 750ms linear infinite;
-  border: 3px solid var(--color-primary-200);
-  border-radius: 50%;
-  border-top-color: var(--color-primary-700);
-  flex: 0 0 auto;
-  height: 2.25rem;
-  width: 2.25rem;
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 @media (max-width: 680px) {
   .filtros { grid-template-columns: 1fr; }
-  .grafico-meses { gap: 2px; }
-  .grafico-meses__columna { grid-template-rows: auto 9rem auto; }
-  .grafico-meses__etiqueta { font-size: 0.65rem; }
 }

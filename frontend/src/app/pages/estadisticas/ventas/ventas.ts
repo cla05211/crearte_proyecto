@@ -25,7 +25,7 @@ const NIVELES = ['Jardin', 'Primaria', 'Secundaria'];
   selector: 'app-estadisticas-ventas',
   imports: [DatePipe, DecimalPipe],
   templateUrl: './ventas.html',
-  styleUrl: './ventas.css',
+  styleUrls: ['../estadisticas-compartido.css', './ventas.css'],
 })
 export class Ventas implements OnInit
 {

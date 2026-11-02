@@ -1,0 +1,21 @@
+/* Lo común (carteles, paneles, gráficos, tablas) está en ../estadisticas-compartido.css */
+
+.grafico-meses__barra--alerta {
+  background: var(--color-danger);
+}
+.leyenda__color--alerta {
+  background: var(--color-danger);
+}
+
+/* Los montos son largos: la tabla necesita más ancho y letra más chica */
+.tabla-montos {
+  min-width: 72rem;
+}
+.tabla-montos td {
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+.tabla-montos .celda-vencida {
+  color: var(--color-danger);
+  font-weight: var(--font-weight-semibold);
+}

@@ -136,6 +136,18 @@ export const routes: Routes = [
             path: "ventas",
             loadComponent: () => import('./pages/estadisticas/ventas/ventas').then((archivo) => archivo.Ventas),
           },
+          {
+            path: "produccion",
+            loadComponent: () => import('./pages/estadisticas/produccion/produccion').then((archivo) => archivo.Produccion),
+          },
+          {
+            path: "bancos",
+            loadComponent: () => import('./pages/estadisticas/bancos/bancos').then((archivo) => archivo.Bancos),
+          },
+          {
+            path: "cobranzas",
+            loadComponent: () => import('./pages/estadisticas/cobranzas/cobranzas').then((archivo) => archivo.Cobranzas),
+          },
         ]
       },
       {

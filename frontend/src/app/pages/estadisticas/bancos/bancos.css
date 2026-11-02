@@ -1,0 +1,5 @@
+/* Lo común (carteles, paneles, gráficos) está en ../estadisticas-compartido.css */
+
+.grafico-bancos .grafico-horizontal__pista {
+  height: 2rem;
+}

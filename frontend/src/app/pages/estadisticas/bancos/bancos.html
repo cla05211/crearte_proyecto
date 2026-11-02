@@ -1,0 +1,50 @@
+@if (cargando() && !datos()) {
+  <div class="loading-state" role="status" aria-live="polite">
+    <span class="loading-state__spinner" aria-hidden="true"></span>
+    <div>
+      <h2>Cargando estadísticas</h2>
+      <p>Estamos sumando la facturación del año.</p>
+    </div>
+  </div>
+} @else {
+  <div class="estadisticas-ventana">
+    <!-- Totales del año -->
+    <div class="kpis-grid">
+      <div class="ds-card kpi-card">
+        <span class="ds-label">Facturación total {{ anio }}</span>
+        <strong class="kpi-valor">{{ totalFacturado() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+      </div>
+      @for (banco of facturacionPorBanco(); track banco.banco) {
+        <div class="ds-card kpi-card">
+          <span class="ds-label">{{ banco.banco }}</span>
+          <strong class="kpi-valor">{{ banco.monto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+          <span class="kpi-detalle">{{ banco.porcentaje | number: '1.0-0' }}% del total</span>
+        </div>
+      }
+    </div>
+
+    <!-- Reparto entre bancos -->
+    <section class="ds-card panel">
+      <header class="panel__header">
+        <h2 class="ds-heading-3">Facturación por banco</h2>
+        <span class="ds-text-muted">Enero a diciembre {{ anio }}</span>
+      </header>
+
+      @if (!totalFacturado()) {
+        <p class="ds-text-muted sin-datos">Todavía no hay pagos registrados en bancos este año.</p>
+      } @else {
+        <ul class="grafico-horizontal grafico-bancos">
+          @for (banco of facturacionPorBanco(); track banco.banco) {
+            <li class="grafico-horizontal__fila">
+              <span class="grafico-horizontal__etiqueta">{{ banco.banco }}</span>
+              <div class="grafico-horizontal__pista">
+                <div class="grafico-horizontal__barra" [style.width.%]="banco.porcentaje"></div>
+              </div>
+              <strong class="grafico-horizontal__valor">{{ banco.porcentaje | number: '1.0-0' }}%</strong>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+}

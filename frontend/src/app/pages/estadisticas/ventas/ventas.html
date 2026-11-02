@@ -7,7 +7,7 @@
     </div>
   </div>
 } @else {
-  <div class="ventas-stats">
+  <div class="estadisticas-ventana">
     <!-- Totales: 1 (total del año), 2 (promos) y 3 (promedio de egresados) -->
     <div class="kpis-grid">
       <div class="ds-card kpi-card">
@@ -89,14 +89,14 @@
           }
         </div>
 
-        <ul class="grafico-niveles">
+        <ul class="grafico-horizontal">
           @for (nivel of ventasPorNivel(); track nivel.etiqueta) {
-            <li class="grafico-niveles__fila">
-              <span class="grafico-niveles__etiqueta">{{ nivel.etiqueta }}</span>
-              <div class="grafico-niveles__pista">
-                <div class="grafico-niveles__barra" [style.width.%]="nivel.porcentaje"></div>
+            <li class="grafico-horizontal__fila">
+              <span class="grafico-horizontal__etiqueta">{{ nivel.etiqueta }}</span>
+              <div class="grafico-horizontal__pista">
+                <div class="grafico-horizontal__barra" [style.width.%]="nivel.porcentaje"></div>
               </div>
-              <strong class="grafico-niveles__valor">{{ nivel.cantidad }}</strong>
+              <strong class="grafico-horizontal__valor">{{ nivel.cantidad }}</strong>
             </li>
           }
         </ul>
@@ -114,7 +114,7 @@
         <p class="ds-text-muted sin-datos">Todavía no hay colegios vendidos este año.</p>
       } @else {
         <div class="ds-table-wrapper">
-          <table class="ds-table vendedoras-table">
+          <table class="ds-table tabla-mensual">
             <thead>
               <tr>
                 <th>Vendedora</th>
