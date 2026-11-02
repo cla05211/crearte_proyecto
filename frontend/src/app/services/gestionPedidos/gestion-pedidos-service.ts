@@ -15,6 +15,9 @@ import { ControlBanderasDTO, ModificarBanderaDTO } from './dto/ControlBanderasDT
 import { AuditoriaPaginaDTO, FiltrosAuditoria } from './dto/AuditoriaDTO';
 
 export type BancoDevolucion = 'COMAFI' | 'Santander' | 'Efectivo';
+// Tiene que coincidir con MOTIVOS_CANCELACION del back y el check de la base
+export const MOTIVOS_CANCELACION = ['Pocos egresados', 'Problemas con diseño', 'Problemas con talles', 'Otras cuestiones'] as const;
+export type MotivoCancelacion = (typeof MOTIVOS_CANCELACION)[number];
 
 @Injectable({
   providedIn: 'root',
@@ -107,9 +110,9 @@ export class GestionPedidosService
 
 
   // Baja del colegio: pasa el pedido a "Cancelado" y, si se devolvió la plata, carga el pago negativo
-  cancelarPedido(idPedido: number, devolucionPlata: boolean, banco?: BancoDevolucion): Observable<void>
+  cancelarPedido(idPedido: number, motivo: MotivoCancelacion, devolucionPlata: boolean, banco?: BancoDevolucion): Observable<void>
   {
-    return this.http.patch<void>(`${environment.apiUrl}/gestion-pedidos/cancelar/${idPedido}`, { devolucionPlata, banco });
+    return this.http.patch<void>(`${environment.apiUrl}/gestion-pedidos/cancelar/${idPedido}`, { motivo, devolucionPlata, banco });
   }
 
   //--- Auditoría ---

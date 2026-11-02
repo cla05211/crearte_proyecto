@@ -36,7 +36,7 @@ import { ControlProduccionDTO, EstadoPrenda } from './dto/ControlProduccionDTO';
 import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
 import { IDS_BUZO, IDS_CAMPERA, IDS_CHOMBA, IDS_REMERA } from 'src/productos/ids-prendas';
 import { ControlBanderasDTO, EstadoBocetoBandera, ModificarBanderaDTO, OrigenBandera } from './dto/ControlBanderasDTO';
-import { ESTADO_PEDIDO_CANCELADO } from 'src/pedidos/pedidos.service';
+import { ESTADO_PEDIDO_CANCELADO, MotivoCancelacion } from 'src/pedidos/pedidos.service';
 
 const PANTALONES = [72];
 const ESTADO_TALLES_CONFIRMADO = 'Confirmado';
@@ -186,7 +186,7 @@ export class GestionPedidosService
 
     // Baja de un colegio. Primero la devolución: si falla, el pedido no queda cancelado a medias.
     // devolverPagos no duplica la devolución si se reintenta (suma también la devolución anterior).
-    async cancelarPedido(idPedido: number, devolucionPlata: boolean, banco?: string)
+    async cancelarPedido(idPedido: number, motivo: MotivoCancelacion, devolucionPlata: boolean, banco?: string)
     {
         const { data: pedido, error } = await this.sb.supabase
         .from('pedidos')
@@ -213,7 +213,17 @@ export class GestionPedidosService
             await this.pagos.devolverPagos(idPedido, banco);
         }
 
-        await this.pedidos.modificarEstadoGeneralPedido(idPedido, ESTADO_PEDIDO_CANCELADO);
+        // Estado y motivo en un mismo update: no puede quedar cancelado sin motivo
+        const { error: errorCancelar } = await this.sb.supabase
+        .from('pedidos')
+        .update({ estado_general: ESTADO_PEDIDO_CANCELADO, motivo_cancelacion: motivo })
+        .eq('id', idPedido);
+
+        if (errorCancelar)
+        {
+            throw new BadRequestException(errorCancelar.message);
+        }
+
         await this.notificacionesService.cancelarNotificacionesPedido(idPedido);
     }
 

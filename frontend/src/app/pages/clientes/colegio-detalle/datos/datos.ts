@@ -14,7 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { PedidosService } from '../../../../services/pedidos/pedidos-service';
 import { PermisosService } from '../../../../services/permisos/permisos';
-import { BancoDevolucion, GestionPedidosService } from '../../../../services/gestionPedidos/gestion-pedidos-service';
+import { BancoDevolucion, GestionPedidosService, MOTIVOS_CANCELACION, MotivoCancelacion } from '../../../../services/gestionPedidos/gestion-pedidos-service';
 
 const ESTADO_CANCELADO = 'Cancelado';
 
@@ -52,6 +52,10 @@ export class Datos implements OnInit
   readonly bancosDevolucion: BancoDevolucion[] = ['COMAFI', 'Santander', 'Efectivo'];
   readonly idPedido = signal<number | null>(null);
   readonly estadoPedido = signal<string | null>(null);
+  readonly motivosCancelacion = MOTIVOS_CANCELACION;
+  readonly motivoCancelacion = signal<MotivoCancelacion | null>(null);
+  // Motivo guardado del pedido ya cancelado (se muestra en la tarjeta)
+  readonly motivoCancelacionGuardado = signal<string | null>(null);
   readonly modalCancelarAbierto = signal(false);
   readonly devolucionPlata = signal<boolean | null>(null);
   readonly bancoDevolucion = signal<BancoDevolucion | null>(null);
@@ -76,6 +80,7 @@ export class Datos implements OnInit
         next: (pedido) => {
           this.idPedido.set(pedido.id);
           this.estadoPedido.set(pedido.estado_general);
+          this.motivoCancelacionGuardado.set(pedido.motivo_cancelacion ?? null);
         },
         error: () => this.idPedido.set(null),
       });
@@ -93,6 +98,7 @@ export class Datos implements OnInit
 
   abrirModalCancelar(): void
   {
+    this.motivoCancelacion.set(null);
     this.devolucionPlata.set(null);
     this.bancoDevolucion.set(null);
     this.modalCancelarAbierto.set(true);
@@ -115,11 +121,12 @@ export class Datos implements OnInit
     if (!devuelve) this.bancoDevolucion.set(null);
   }
 
-  // Hay que contestar si se devolvió la plata y, si se devolvió, desde qué cuenta
+  // Hay que elegir el motivo, contestar si se devolvió la plata y, si se devolvió, desde qué cuenta
   cancelacionCompleta(): boolean
   {
     const devuelve = this.devolucionPlata();
-    return devuelve === false || (devuelve === true && this.bancoDevolucion() !== null);
+    return this.motivoCancelacion() !== null
+      && (devuelve === false || (devuelve === true && this.bancoDevolucion() !== null));
   }
 
   async confirmarCancelacion(): Promise<void>
@@ -128,12 +135,14 @@ export class Datos implements OnInit
     if (idPedido === null || !this.cancelacionCompleta() || this.cancelando()) return;
 
     const devuelve = this.devolucionPlata() === true;
+    const motivo = this.motivoCancelacion()!;
     this.cancelando.set(true);
 
     try
     {
-      await firstValueFrom(this.gestionPedidosService.cancelarPedido(idPedido, devuelve, devuelve ? this.bancoDevolucion()! : undefined));
+      await firstValueFrom(this.gestionPedidosService.cancelarPedido(idPedido, motivo, devuelve, devuelve ? this.bancoDevolucion()! : undefined));
       this.estadoPedido.set(ESTADO_CANCELADO);
+      this.motivoCancelacionGuardado.set(motivo);
       this.modalCancelarAbierto.set(false);
       this.notificaciones.success({
         title: 'Pedido cancelado',

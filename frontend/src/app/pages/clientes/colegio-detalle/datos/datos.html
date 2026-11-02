@@ -192,7 +192,12 @@
     @if (pedidoCancelado()) {
       <section class="ds-card datos-cancelar datos-cancelar--hecho" role="status">
         <span class="ds-badge ds-badge--danger">Pedido cancelado</span>
-        <p class="ds-text-muted">Este colegio está dado de baja.</p>
+        <p class="ds-text-muted">
+          Este colegio está dado de baja.
+          @if (motivoCancelacionGuardado()) {
+            Motivo: <strong class="datos-cancelar__motivo">{{ motivoCancelacionGuardado() }}</strong>
+          }
+        </p>
       </section>
     } @else if (puedeCancelarPedido()) {
       <section class="ds-card datos-cancelar">
@@ -212,6 +217,16 @@
       <div class="cancelar-dialog__contenido">
         <h2 class="ds-heading-3" id="cancelar-titulo">¿Cancelar el pedido de {{ datosColegio()?.grupo?.colegio?.nombre }}?</h2>
         <p class="ds-text-muted">El colegio queda dado de baja: el pedido pasa a "Cancelado" y se cancelan los mensajes de WhatsApp pendientes. Esto no se puede deshacer.</p>
+
+        <label class="ds-field">
+          <span class="ds-label">Motivo de la cancelación</span>
+          <select class="ds-select" [ngModel]="motivoCancelacion()" (ngModelChange)="motivoCancelacion.set($event)">
+            <option [ngValue]="null" disabled>Elegí el motivo</option>
+            @for (motivo of motivosCancelacion; track motivo) {
+              <option [ngValue]="motivo">{{ motivo }}</option>
+            }
+          </select>
+        </label>
 
         <fieldset class="cancelar-dialog__pregunta">
           <legend class="ds-label">¿Se le devolvió la plata?</legend>

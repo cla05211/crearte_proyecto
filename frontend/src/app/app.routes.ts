@@ -129,13 +129,20 @@ export const routes: Routes = [
         path: "estadisticas",
         loadComponent: () => import('./pages/estadisticas/estadisticas').then((archivo) => archivo.Estadisticas),
         canActivate: [PermisosGuard],
-        data: { permiso: 'ver_deudores' },
+        data: { permiso: 'ver_estadisticas' },
+        children: [
+          { path: '', redirectTo: 'ventas', pathMatch: 'full' },
+          {
+            path: "ventas",
+            loadComponent: () => import('./pages/estadisticas/ventas/ventas').then((archivo) => archivo.Ventas),
+          },
+        ]
       },
       {
         path: "auditoria",
         loadComponent: () => import('./pages/auditoria/auditoria').then((archivo) => archivo.Auditoria),
         canActivate: [PermisosGuard],
-        data: { permiso: 'ver_estadisticas' },
+        data: { permiso: 'ver_auditoria' },
       },
       {
         path: "clientes/:id",

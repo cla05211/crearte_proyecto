@@ -5,6 +5,9 @@ import { BadRequestException } from '@nestjs/common';
 import { PedidoDTOResponse } from './dto/pedidoResponse.dto';
 
 export const ESTADO_PEDIDO_CANCELADO = 'Cancelado';
+// Tiene que coincidir con el check pedidos_motivo_cancelacion_check de la base
+export const MOTIVOS_CANCELACION = ['Pocos egresados', 'Problemas con diseño', 'Problemas con talles', 'Otras cuestiones'] as const;
+export type MotivoCancelacion = (typeof MOTIVOS_CANCELACION)[number];
 
 export type CategoriaPrenda = 'camperas' | 'buzos' | 'chombas' | 'remeras' | 'pantalon' | 'bandera';
 export type EstadoPrendaGuardado = 'Pendiente' | 'Ok';

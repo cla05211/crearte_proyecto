@@ -1,0 +1,191 @@
+@if (cargando() && !datos()) {
+  <div class="loading-state" role="status" aria-live="polite">
+    <span class="loading-state__spinner" aria-hidden="true"></span>
+    <div>
+      <h2>Cargando estadísticas</h2>
+      <p>Estamos juntando las ventas del año.</p>
+    </div>
+  </div>
+} @else {
+  <div class="ventas-stats">
+    <!-- Totales: 1 (total del año), 2 (promos) y 3 (promedio de egresados) -->
+    <div class="kpis-grid">
+      <div class="ds-card kpi-card">
+        <span class="ds-label">Colegios vendidos en {{ anio }}</span>
+        <strong class="kpi-valor">{{ totalAnio() }}</strong>
+      </div>
+      <div class="ds-card kpi-card">
+        <span class="ds-label">Promo {{ promoActual }}</span>
+        <strong class="kpi-valor">{{ cantidadPromoActual() }}</strong>
+      </div>
+      <div class="ds-card kpi-card">
+        <span class="ds-label">Promo {{ promoSiguiente }}</span>
+        <strong class="kpi-valor">{{ cantidadPromoSiguiente() }}</strong>
+      </div>
+      <div class="ds-card kpi-card">
+        <span class="ds-label">Promedio de egresados</span>
+        <strong class="kpi-valor">{{ promedioEgresados() | number: '1.0-1' }}</strong>
+      </div>
+      <div class="ds-card kpi-card">
+        <span class="ds-label">Pedidos cancelados</span>
+        <strong class="kpi-valor kpi-valor--alerta">{{ cancelados().length }}</strong>
+      </div>
+    </div>
+    <p class="nota">
+      Los cancelados no cuentan como vendidos. Las promos incluyen colegios vendidos en otros años.
+    </p>
+
+    <div class="paneles-grid">
+      <!-- 1) Vendidos por mes -->
+      <section class="ds-card panel">
+        <header class="panel__header">
+          <h2 class="ds-heading-3">Colegios vendidos por mes</h2>
+          <span class="ds-text-muted">Enero a diciembre {{ anio }}</span>
+        </header>
+
+        <div class="grafico-meses">
+          @for (mes of ventasPorMes(); track mes.etiqueta) {
+            <div class="grafico-meses__columna" [attr.aria-label]="mes.etiqueta + ': ' + mes.cantidad">
+              <span class="grafico-meses__valor">{{ mes.cantidad || '' }}</span>
+              <div class="grafico-meses__pista">
+                <div class="grafico-meses__barra" [style.height.%]="mes.porcentaje"></div>
+              </div>
+              <span class="grafico-meses__etiqueta">{{ mes.etiqueta }}</span>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- 4 y 5) Por nivel, filtrable por provincia y localidad -->
+      <section class="ds-card panel">
+        <header class="panel__header">
+          <h2 class="ds-heading-3">Colegios vendidos por nivel</h2>
+          <span class="ds-text-muted">{{ anio }} · {{ totalFiltrado() }} {{ totalFiltrado() === 1 ? 'colegio' : 'colegios' }}</span>
+        </header>
+
+        <div class="filtros">
+          <label class="ds-field">
+            <span class="ds-label">Provincia</span>
+            <select class="ds-select" (change)="cambiarProvincia($any($event.target).value)">
+              <option value="" [selected]="!provincia()">Todas</option>
+              @for (p of provincias(); track p) {
+                <option [value]="p" [selected]="p === provincia()">{{ p }}</option>
+              }
+            </select>
+          </label>
+          <label class="ds-field">
+            <span class="ds-label">Localidad</span>
+            <select class="ds-select" (change)="cambiarLocalidad($any($event.target).value)">
+              <option value="" [selected]="!localidad()">Todas</option>
+              @for (l of localidades(); track l) {
+                <option [value]="l" [selected]="l === localidad()">{{ l }}</option>
+              }
+            </select>
+          </label>
+          @if (hayFiltro()) {
+            <button type="button" class="ds-button ds-button--ghost ds-button--small" (click)="limpiarFiltros()">
+              Limpiar
+            </button>
+          }
+        </div>
+
+        <ul class="grafico-niveles">
+          @for (nivel of ventasPorNivel(); track nivel.etiqueta) {
+            <li class="grafico-niveles__fila">
+              <span class="grafico-niveles__etiqueta">{{ nivel.etiqueta }}</span>
+              <div class="grafico-niveles__pista">
+                <div class="grafico-niveles__barra" [style.width.%]="nivel.porcentaje"></div>
+              </div>
+              <strong class="grafico-niveles__valor">{{ nivel.cantidad }}</strong>
+            </li>
+          }
+        </ul>
+      </section>
+    </div>
+
+    <!-- Vendidos por vendedora, por mes y total del año -->
+    <section class="ds-card panel">
+      <header class="panel__header">
+        <h2 class="ds-heading-3">Colegios vendidos por vendedora</h2>
+        <span class="ds-text-muted">Enero a diciembre {{ anio }}</span>
+      </header>
+
+      @if (!ventasPorVendedora().length) {
+        <p class="ds-text-muted sin-datos">Todavía no hay colegios vendidos este año.</p>
+      } @else {
+        <div class="ds-table-wrapper">
+          <table class="ds-table vendedoras-table">
+            <thead>
+              <tr>
+                <th>Vendedora</th>
+                @for (mes of meses; track mes) {
+                  <th>{{ mes }}</th>
+                }
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of ventasPorVendedora(); track fila.vendedora) {
+                <tr>
+                  <td class="celda-fuerte">{{ fila.vendedora }}</td>
+                  @for (cantidad of fila.porMes; track $index) {
+                    <td [class.celda-cero]="!cantidad">{{ cantidad }}</td>
+                  }
+                  <td class="celda-total">{{ fila.total }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>Total</td>
+                @for (cantidad of totalesPorMes(); track $index) {
+                  <td>{{ cantidad }}</td>
+                }
+                <td>{{ totalAnio() }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      }
+    </section>
+
+    <!-- Pedidos cancelados / dados de baja -->
+    <section class="ds-card panel">
+      <header class="panel__header">
+        <h2 class="ds-heading-3">Pedidos cancelados</h2>
+        <span class="ds-text-muted">Vendidos en {{ anio }} o de las promos {{ promoActual }} y {{ promoSiguiente }}</span>
+      </header>
+
+      @if (!cancelados().length) {
+        <p class="ds-text-muted sin-datos">No hay pedidos cancelados.</p>
+      } @else {
+        <div class="ds-table-wrapper">
+          <table class="ds-table cancelados-table">
+            <thead>
+              <tr>
+                <th>Colegio</th>
+                <th>Localidad</th>
+                <th>Promo</th>
+                <th>Fecha de venta</th>
+                <th>Vendedora</th>
+                <th>Motivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (pedido of cancelados(); track $index) {
+                <tr>
+                  <td data-label="Colegio" class="celda-fuerte">{{ pedido.colegio }}</td>
+                  <td data-label="Localidad">{{ pedido.localidad }}, {{ pedido.provincia }}</td>
+                  <td data-label="Promo">{{ pedido.promo ?? '-' }}</td>
+                  <td data-label="Fecha de venta">{{ pedido.fechaVenta | date: 'dd/MM/yyyy' }}</td>
+                  <td data-label="Vendedora">{{ pedido.vendedora }}</td>
+                  <td data-label="Motivo" class="celda-motivo">{{ pedido.motivoCancelacion || 'Sin motivo cargado' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </div>
+}

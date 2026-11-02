@@ -774,6 +774,7 @@ export type Database = {
           id_grupo: number
           id_vendedora: number | null
           molderias: string | null
+          motivo_cancelacion: string | null
           nro_fabrica: number | null
           observaciones: string | null
           porcentaje_descuento_hermanos: number | null
@@ -802,6 +803,7 @@ export type Database = {
           id_grupo: number
           id_vendedora?: number | null
           molderias?: string | null
+          motivo_cancelacion?: string | null
           nro_fabrica?: number | null
           observaciones?: string | null
           porcentaje_descuento_hermanos?: number | null
@@ -830,6 +832,7 @@ export type Database = {
           id_grupo?: number
           id_vendedora?: number | null
           molderias?: string | null
+          motivo_cancelacion?: string | null
           nro_fabrica?: number | null
           observaciones?: string | null
           porcentaje_descuento_hermanos?: number | null

@@ -7,6 +7,7 @@ export class PedidoDTO
     envio_gratis!:boolean;
     observaciones!: string;
     estado_general!: string;
+    motivo_cancelacion?: string | null;
     fecha_aprobacion_boceto!:string|null;
     fecha_aprobacion_talles!: string|null;
     colores!: string;

@@ -7,6 +7,7 @@ import { CrearPedidoDTO } from './dto/crearPedido.dto';
 import { ModificarPlanPedidoDTO } from './dto/ModificarPlanPedido';
 import { ESTADOS_BOCETO_BANDERA, ModificarBanderaDTO } from './dto/ControlBanderasDTO';
 import { TIPOS_AUDITORIA, TipoAuditoria } from 'src/auditorias/dto/insertarAuditoria.dto';
+import { MOTIVOS_CANCELACION, MotivoCancelacion } from 'src/pedidos/pedidos.service';
 
 const TAMANIO_MAXIMO_PAGINA_AUDITORIA = 100;
 
@@ -129,8 +130,13 @@ export class GestionPedidosController
     @Patch('cancelar/:id')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('modificar_pedidos')
-    async cancelarPedido(@Param('id', ParseIntPipe) idPedido: number, @Body() dto: { devolucionPlata: boolean; banco?: string })
+    async cancelarPedido(@Param('id', ParseIntPipe) idPedido: number, @Body() dto: { motivo: MotivoCancelacion; devolucionPlata: boolean; banco?: string })
     {
+        if (!MOTIVOS_CANCELACION.includes(dto?.motivo))
+        {
+            throw new BadRequestException('Falta el motivo de la cancelación o no es válido.');
+        }
+
         if (typeof dto?.devolucionPlata !== 'boolean')
         {
             throw new BadRequestException('Falta indicar si se devuelve la plata.');
@@ -141,7 +147,7 @@ export class GestionPedidosController
             throw new BadRequestException('Banco inválido.');
         }
 
-        await this.gestionService.cancelarPedido(idPedido, dto.devolucionPlata, dto.banco?.trim());
+        await this.gestionService.cancelarPedido(idPedido, dto.motivo, dto.devolucionPlata, dto.banco?.trim());
     }
 
     //--- Auditoría: cambios de presupuesto, beneficios, diseño y talles ---

@@ -65,13 +65,15 @@ import { ExtrasModule } from './extras/extras.module';
 import { AlumnoResponsableController } from './alumno-responsable/alumno-responsable.controller';
 import { AlumnoResponsableModule } from './alumno-responsable/alumno-responsable.module';
 import { EstadisticasService } from './estadisticas/estadisticas.service';
+import { EstadisticasController } from './estadisticas/estadisticas.controller';
+import { EstadisticasModule } from './estadisticas/estadisticas.module';
 
 
 @Module({
   imports: [ConfigModule.forRoot({
       isGlobal: true,
-    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, ClientesPortalModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule, MovimientosCajaModule, GruposModule, AgregadosGlobalesPedidoModule, ClientesAuthModule, PrendasPedidoTallesModule, BeneficiosPedidoModule, MuestrasFisicasModule, WatsappModule, NotificacionesModule, ContratosModule, DiseniosModule, ExtrasModule, AlumnoResponsableModule],
-  controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController, MovimientosCajaController, GruposController, MuestrasFisicasController],
+    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, ClientesPortalModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule, MovimientosCajaModule, GruposModule, AgregadosGlobalesPedidoModule, ClientesAuthModule, PrendasPedidoTallesModule, BeneficiosPedidoModule, MuestrasFisicasModule, WatsappModule, NotificacionesModule, ContratosModule, DiseniosModule, ExtrasModule, AlumnoResponsableModule, EstadisticasModule],
+  controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController, MovimientosCajaController, GruposController, MuestrasFisicasController, EstadisticasController],
   providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService,
      ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, 
      DocumentosService, CuotasService, ProductosService,AuditoriasService, MovimientosCajaService, PrendasPedidoTallesService, BeneficiosPedidoService, MuestrasFisicasService, EstadisticasService],

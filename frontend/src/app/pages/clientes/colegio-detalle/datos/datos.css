@@ -226,3 +226,7 @@
   justify-content: flex-end;
   margin-top: var(--space-6);
 }
+
+.datos-cancelar__motivo {
+  color: var(--color-text-strong);
+}
