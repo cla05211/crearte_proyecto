@@ -89,6 +89,7 @@ export class GruposService
 
     // Listado de Clientes. Período por fecha de venta (created_at del grupo) en hora de Argentina:
     // con año y mes, ese mes; solo año, el año entero; sin año, sin filtro de fecha.
+    // Si hay búsqueda, el período no se aplica: el colegio se busca en todas las fechas.
     private consultaGruposClientes(soloContar: boolean, esFabrica: boolean, busqueda?: string, mes?: number, anio?: number)
     {
         let query = this.sb.supabase
@@ -111,7 +112,7 @@ export class GruposService
             query = query.eq('pedidos.estado_general', 'En producción');
         }
 
-        if (anio)
+        if (anio && !busqueda)
         {
             const desde = mes ? this.inicioMesArgentina(anio, mes) : this.inicioMesArgentina(anio, 1);
             const hasta = mes

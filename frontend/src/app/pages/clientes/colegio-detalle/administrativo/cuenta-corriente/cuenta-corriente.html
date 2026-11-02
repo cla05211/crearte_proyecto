@@ -149,7 +149,7 @@
                   <td data-label="Acción">
                     @if (seniaFaltante() > 0) {
                       <button type="button" class="ds-button ds-button--small ds-button--secondary" (click)="abrirPagoSenia()">
-                        {{ estadoSenia() === 'Parcial' ? 'Terminar de pagar' : 'Pagar' }}
+                        {{ seniaPagada() > 0 ? 'Terminar de pagar' : 'Pagar' }}
                       </button>
                     } @else {
                       <span class="ds-text-muted">—</span>
@@ -164,7 +164,7 @@
                   <td data-label="Importe">{{ cuota.importe | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                   <td data-label="Cubierto">{{ cuota.monto_cubierto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                   <td data-label="Estado">
-                    <span class="ds-badge" [class]="claseBadgeEstado(cuota.estado)">{{ cuota.estado }}</span>
+                    <span class="ds-badge" [class]="claseBadgeEstado(estadoCuota(cuota))">{{ estadoCuota(cuota) }}</span>
                   </td>
                   <td data-label="Acción">
                     @if (esCuotaPagable(cuota)) {

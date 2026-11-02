@@ -18,7 +18,7 @@
     <div class="clientes-toolbar">
       <label class="ds-field">
         <span class="ds-label">Mes</span>
-        <select class="ds-select" [ngModel]="mesSeleccionado() ?? ''" [disabled]="!anioSeleccionado()" (ngModelChange)="cambiarMes($any($event))">
+        <select class="ds-select" [ngModel]="mesSeleccionado() ?? ''" [disabled]="!anioSeleccionado() || !!busqueda()" (ngModelChange)="cambiarMes($any($event))">
           <option value="">Todos</option>
           @for (mes of meses; track mes.valor) {
             <option [value]="mes.valor">{{ mes.nombre }}</option>
@@ -27,7 +27,7 @@
       </label>
       <label class="ds-field">
         <span class="ds-label">Año</span>
-        <select class="ds-select" [ngModel]="anioSeleccionado() ?? ''" (ngModelChange)="cambiarAnio($any($event))">
+        <select class="ds-select" [ngModel]="anioSeleccionado() ?? ''" [disabled]="!!busqueda()" (ngModelChange)="cambiarAnio($any($event))">
           <option value="">Todos</option>
           @for (anio of anios; track anio) {
             <option [value]="anio">{{ anio }}</option>
@@ -43,6 +43,9 @@
           [ngModel]="busquedaInput()"
           (ngModelChange)="actualizarBusqueda($any($event))"
         />
+        @if (busqueda()) {
+          <span class="ds-field__help">Buscando en todas las fechas de venta</span>
+        }
       </label>
     </div>
 

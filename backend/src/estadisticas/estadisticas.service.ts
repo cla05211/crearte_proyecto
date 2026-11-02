@@ -133,7 +133,6 @@ export class EstadisticasService {
     {
         const anio = new Date().getFullYear();
 
-        // Sin filtro de fecha: la deuda de este año también puede venir de colegios vendidos en años anteriores
         const { data, error } = await this.sb.supabase
         .from("grupos")
         .select(`
@@ -198,8 +197,6 @@ export class EstadisticasService {
         return datos.filter(d => d.facturacion !== 0 || d.deudaAnterior > 0 || d.deudaPorMes.some(m => m > 0));
     }
 
-    // Total del pedido (seña + cuotas). Si se canceló, lo que quedó cobrado: si se devolvió la plata,
-    // el pago negativo de la devolución lo deja en 0.
     private calcularFacturacion(
         pedido: { senia_total: number | null; productos_pedidos: { valor_senia: number; cantidad: number }[]; cuotas: { importe: number | null }[]; pagos: { monto: number | null }[] },
         cancelado: boolean): number
@@ -215,7 +212,6 @@ export class EstadisticasService {
         return totalSenia + totalCuotas;
     }
 
-    // Seña acordada menos lo pagado con motivo 'Seña' (mismo cálculo que deudores)
     private calcularDeudaSenia(seniaGuardada: number | null, productos: { valor_senia: number; cantidad: number }[], pagos: { monto: number | null; motivo: string | null }[]): number
     {
         const totalSenia = calcularSeniaTotal(seniaGuardada, productos);
@@ -226,7 +222,6 @@ export class EstadisticasService {
         return Math.max(0, Math.round((totalSenia - seniaPagada) * 100) / 100);
     }
 
-    // Lo que falta pagar de una cuota (0 si ya está pagada)
     private calcularDeudaCuota(cuota: { importe: number | null; monto_cubierto: number; estado: string | null }): number
     {
         if (cuota.estado === 'Pagada')

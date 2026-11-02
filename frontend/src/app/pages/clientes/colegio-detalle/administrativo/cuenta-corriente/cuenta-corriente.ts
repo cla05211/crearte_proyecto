@@ -214,6 +214,22 @@ export class CuentaCorriente implements OnInit
     return (cuota.importe ?? 0) - (cuota.monto_cubierto ?? 0);
   }
 
+  // Fecha de hoy en Argentina ('YYYY-MM-DD'), para comparar con los vencimientos
+  private readonly hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+
+  // Estado que se muestra: si la cuota venció y no está pagada (aunque esté parcial), se ve como Adeudada.
+  // Es solo visual: en la base el estado no cambia.
+  estadoCuota(cuota: CuotaResponseDTO): string
+  {
+    if (this.pedidoCancelado() || cuota.estado === 'Pagada' || !cuota.fecha_vencimiento)
+    {
+      return cuota.estado;
+    }
+
+    const vencida = String(cuota.fecha_vencimiento).slice(0, 10) < this.hoy;
+    return vencida ? 'Adeudada' : cuota.estado;
+  }
+
   esCuotaPagable(cuota: CuotaResponseDTO): boolean
   {
     return cuota.estado !== 'Pagada';
@@ -251,11 +267,12 @@ export class CuentaCorriente implements OnInit
     return this.cuotasIguales() && motivo === 'Seña' ? 'Cuota 1' : motivo;
   }
 
+  // La seña vence el día de la venta: si falta pagar algo, ya está adeudada
   estadoSenia(): string
   {
     if (this.seniaFaltante() <= 0) return 'Pagada';
-    if (this.seniaPagada() > 0) return 'Parcial';
-    return 'Pendiente';
+    if (this.pedidoCancelado()) return this.seniaPagada() > 0 ? 'Parcial' : 'Pendiente';
+    return 'Adeudada';
   }
 
   abrirPagoSenia(): void
