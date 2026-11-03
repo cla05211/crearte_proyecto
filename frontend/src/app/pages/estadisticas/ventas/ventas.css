@@ -22,3 +22,18 @@
 @media (max-width: 680px) {
   .filtros { grid-template-columns: 1fr; }
 }
+
+/* Colegio cancelado: link a su ficha (mismo estilo que en Novedades) */
+.link-colegio {
+  border-radius: var(--radius-sm);
+  color: var(--color-primary-700);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+}
+.link-colegio:hover {
+  text-decoration: underline;
+}
+.link-colegio:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: 0;
+}

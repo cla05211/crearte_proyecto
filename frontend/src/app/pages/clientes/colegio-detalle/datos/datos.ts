@@ -15,6 +15,7 @@ import { firstValueFrom } from 'rxjs';
 import { PedidosService } from '../../../../services/pedidos/pedidos-service';
 import { PermisosService } from '../../../../services/permisos/permisos';
 import { BancoDevolucion, GestionPedidosService, MOTIVOS_CANCELACION, MotivoCancelacion } from '../../../../services/gestionPedidos/gestion-pedidos-service';
+import { CancelacionPedidoDTO } from '../../../../services/gestionPedidos/dto/AuditoriaDTO';
 
 const ESTADO_CANCELADO = 'Cancelado';
 
@@ -56,6 +57,8 @@ export class Datos implements OnInit
   readonly motivoCancelacion = signal<MotivoCancelacion | null>(null);
   // Motivo guardado del pedido ya cancelado (se muestra en la tarjeta)
   readonly motivoCancelacionGuardado = signal<string | null>(null);
+  // Quién canceló y cuándo (sale de la auditoría; null en pedidos cancelados antes de registrarlo)
+  readonly cancelacion = signal<CancelacionPedidoDTO | null>(null);
   readonly modalCancelarAbierto = signal(false);
   readonly devolucionPlata = signal<boolean | null>(null);
   readonly bancoDevolucion = signal<BancoDevolucion | null>(null);
@@ -81,8 +84,20 @@ export class Datos implements OnInit
           this.idPedido.set(pedido.id);
           this.estadoPedido.set(pedido.estado_general);
           this.motivoCancelacionGuardado.set(pedido.motivo_cancelacion ?? null);
+          if (pedido.estado_general === ESTADO_CANCELADO) this.traerCancelacion(pedido.id);
         },
         error: () => this.idPedido.set(null),
+      });
+  }
+
+  private traerCancelacion(idPedido: number): void
+  {
+    this.gestionPedidosService.obtenerCancelacion(idPedido)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cancelacion) => this.cancelacion.set(cancelacion),
+        // Si falla, la tarjeta se muestra igual con el motivo
+        error: () => this.cancelacion.set(null),
       });
   }
 
@@ -143,6 +158,7 @@ export class Datos implements OnInit
       await firstValueFrom(this.gestionPedidosService.cancelarPedido(idPedido, motivo, devuelve, devuelve ? this.bancoDevolucion()! : undefined));
       this.estadoPedido.set(ESTADO_CANCELADO);
       this.motivoCancelacionGuardado.set(motivo);
+      this.traerCancelacion(idPedido);
       this.modalCancelarAbierto.set(false);
       this.notificaciones.success({
         title: 'Pedido cancelado',

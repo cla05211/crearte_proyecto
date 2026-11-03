@@ -57,11 +57,11 @@ export class ProductosController
         return await this.productosService.agregarAgregado(dto);
     }
 
-    @Get('/cuotas-disponibles')
+    @Get('/planes-disponibles')
     @UseGuards(AuthGuard,PermisosGuard)
-    async obtenerCuotasDisponibles() 
+    async obtenerPlanesDisponibles() 
     {
-        return await this.productosService.obtenerCuotasDisponibles();
+        return await this.productosService.obtenerPlanesDisponibles();
     }  
 
     @Patch('/precios')

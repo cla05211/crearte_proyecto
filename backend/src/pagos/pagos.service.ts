@@ -392,7 +392,7 @@ export class PagosService
 
         const { data: pedido, error: errPedido } = await this.sb.supabase
             .from('pedidos')
-            .select('id_grupo')
+            .select('id_grupo, con_senia')
             .eq('id', pago.id_pedido)
             .single();
 
@@ -435,12 +435,16 @@ export class PagosService
 
         const padre = padres?.[0];
 
+        // Plan de cuotas iguales: lo que se guarda como seña es la cuota 1 y las cuotas guardadas van corridas en uno
+        // (mismo criterio que la cuenta corriente y el contrato).
+        const cuotasIguales = !pedido.con_senia;
+
         return {
             numero: String(pago.id).padStart(6, '0'),
             fecha: new Date(pago.fecha ?? '').toLocaleDateString('es-AR'),
             clienteNombre: grupo.colegios.nombre,
             localidad: grupo.colegios.localidad,
-            concepto: this.armarConceptoRecibo(pago.motivo, pago.detalle_cuotas as unknown as DetalleCuotaPago[] | null),
+            concepto: this.armarConceptoRecibo(pago.motivo, pago.detalle_cuotas as unknown as DetalleCuotaPago[] | null, cuotasIguales),
             importe: pago.monto ?? 0,
             leyendaSenia: pago.motivo === 'Seña',
             turno: grupo.turno ?? '',
@@ -448,27 +452,31 @@ export class PagosService
             nivel: grupo.nivel ?? '',
             nombrePadre: padre?.nombre ?? '',
             apellidoPadre: padre?.apellido ?? '',
-            nroCuotas: nroCuotas ?? 0,
+            nroCuotas: (nroCuotas ?? 0) + (cuotasIguales ? 1 : 0),
         };
     }
 
-    private armarConceptoRecibo(motivo: string | null, detalle: DetalleCuotaPago[] | null): string
+    private armarConceptoRecibo(motivo: string | null, detalle: DetalleCuotaPago[] | null, cuotasIguales: boolean): string
     {
+        const conceptoSenia = cuotasIguales ? 'Cuota 1' : 'Seña';
+        const corrimiento = cuotasIguales ? 1 : 0;
+
         if (!detalle || detalle.length === 0)
         {
-            return motivo === 'Seña' ? 'Seña' : 'Cuota';
+            return motivo === 'Seña' ? conceptoSenia : 'Cuota';
         }
 
         if (detalle.some(d => d.tipo === 'senia'))
         {
-            return 'Seña';
+            return conceptoSenia;
         }
 
         const partes = detalle
             .filter(d => d.tipo === 'completa' || (d.tipo === 'parcial' && (d.monto ?? 0) >= 0.01))
             .map(d => {
                 const monto = this.formatearMontoRecibo(d.monto);
-                return d.tipo === 'parcial' ? `Cuota ${d.numero} (parcial) ($ ${monto})` : `Cuota ${d.numero} ($ ${monto})`;
+                const numero = (d.numero ?? 0) + corrimiento;
+                return d.tipo === 'parcial' ? `Cuota ${numero} (parcial) ($ ${monto})` : `Cuota ${numero} ($ ${monto})`;
             });
 
         return partes.length > 0 ? this.unirConY(partes) : 'Cuota';

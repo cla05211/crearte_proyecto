@@ -6,6 +6,7 @@ import { MuestrasTablaDTO } from '../../services/muestrasFisicas/dto/muestrasTab
 import { MuestrasFisicasResponseDTO } from '../../services/muestrasFisicas/dto/MuestrasFisicasResponse.dto';
 import { PlanCuotasDTO } from '../../services/cuotas/dto/PlanDeCuotas.dto';
 import { NotificationService } from '../../shared/notifications/notification.service';
+import { etiquetaPlan } from '../../services/cuotas/plan-cuotas';
 
 type Pestania = 'activas' | 'devueltas';
 type CampoFecha = 'fecha_entrega' | 'fecha_devolucion';
@@ -113,8 +114,7 @@ export class MuestrasFisicas implements OnInit
 
   etiquetaCuotas(plan: PlanCuotasDTO): string
   {
-    const cuotasIguales = Math.abs((plan.senia ?? 0) - (plan.importeCuota ?? 0)) < 0.01;
-    return cuotasIguales ? `${plan.nroCuotas + 1} cuotas iguales` : `${plan.nroCuotas} + Seña`;
+    return etiquetaPlan(plan.nroCuotas, plan.conSenia);
   }
 
   // Las fechas vienen como timestamptz ("2026-09-28T00:00:00+00:00"): tomamos solo la parte de la fecha

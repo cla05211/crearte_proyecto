@@ -142,7 +142,7 @@
                   <td data-label="Nº">{{ etiquetaSenia() }}</td>
                   <td data-label="Vencimiento">—</td>
                   <td data-label="Importe">{{ senia | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
-                  <td data-label="Cubierto">{{ seniaPagada() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Cubierto">{{ seniaCubierta() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                   <td data-label="Estado">
                     <span class="ds-badge" [class]="claseBadgeEstado(estadoSenia())">{{ estadoSenia() }}</span>
                   </td>
@@ -238,7 +238,7 @@
           <span class="cc-summary__separator" aria-hidden="true">·</span>
           <div class="cc-summary__item">
             <span>Cubierto</span>
-            <strong>{{ seniaPagada() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+            <strong>{{ seniaCubierta() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
           </div>
           <span class="cc-summary__separator" aria-hidden="true">·</span>
           <div class="cc-summary__item">

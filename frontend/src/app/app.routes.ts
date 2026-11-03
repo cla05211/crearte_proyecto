@@ -1,4 +1,6 @@
-import { Routes } from '@angular/router';
+import { Router, Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { PermisosService } from './services/permisos/permisos';
 import { LogueadoGuard } from '../guards/logueado';
 import { PermisosGuard } from '../guards/permisos';
 import { ClienteLogueadoGuard } from '../guards/clienteLogueado';
@@ -58,6 +60,16 @@ export const routes: Routes = [
     canActivate: [LogueadoGuard],
     children: [
       { path: "home", loadComponent: () => import('./pages/home/home').then((archivo) => archivo.Home) },
+      {
+        // Se entra con cualquiera de los dos permisos; la página muestra solo las secciones que correspondan
+        path: "novedades",
+        loadComponent: () => import('./pages/novedades/novedades').then((archivo) => archivo.Novedades),
+        canActivate: [() => {
+          const permisos = inject(PermisosService);
+          return permisos.tienePermiso('ver_novedades_ventas') || permisos.tienePermiso('ver_novedades_produccion')
+            || inject(Router).createUrlTree(['/home']);
+        }],
+      },
        { path: "pruebas", loadComponent: () => import('./pages/pruebas-pagos/pruebas-pagos').then((archivo) => archivo.PruebasPagos) },
       {
         path: "usuarios",

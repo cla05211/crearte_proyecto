@@ -12,6 +12,7 @@ import { PedidosService } from '../../services/pedidos/pedidos-service';
 import { AlumnoResponsable } from '../../services/alumnoResponsable/alumno-responsable';
 import { PadreResponsableService } from '../../services/padreResponsable/padre-responsable-service';
 import { NotificationService } from '../../shared/notifications/notification.service';
+import { etiquetaPlan } from '../../services/cuotas/plan-cuotas';
 
 interface FilaPedido
 {
@@ -227,7 +228,7 @@ export class TallesDisenio
 
   etiquetaCuotas(pedido: ControlTallesDisenioDTO): string
   {
-    return pedido.senia ? `${pedido.nroCuotas} Cuotas + Seña` : `${pedido.nroCuotas + 1} Cuotas iguales`;
+    return etiquetaPlan(pedido.nroCuotas, pedido.senia);
   }
 
   // Prioridad de producción: primero los planes con menos pagos en total.

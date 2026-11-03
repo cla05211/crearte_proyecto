@@ -5,6 +5,7 @@ import { presupuestoPedidoClientesPage } from '../../../services/gestionPedidos/
 import { ClientesPortalService } from '../../../services/clientes-portal/clientes-portal-service';
 import { NotificationService } from '../../../shared/notifications/notification.service';
 import { cantidadSinCargo, formatearBeneficios } from '../../../services/gestionPedidos/dto/BeneficioPedido.dto';
+import { etiquetaPlan } from '../../../services/cuotas/plan-cuotas';
 
 interface ProductoPedidoConTotales
 {
@@ -106,13 +107,24 @@ export class Presupuesto implements OnInit
     return productos + agregadosGlobales;
   });
 
+  // Descuento por hermanos: se aplica sobre el total de cuotas (mismo criterio que Ventas y el recálculo por talles)
+  readonly factorDescuentoHermanos = computed(() => {
+    const pedido = this.presupuestoGrupo()?.pedido;
+    const porcentaje = Number(pedido?.porcentaje_descuento_hermanos) || 0;
+    const hermanos = Number(pedido?.cantidad_hermanos) || 0;
+    return (porcentaje / 100) * hermanos;
+  });
+
+  readonly descuentoHermanos = computed(() => this.totalCuota() * this.factorDescuentoHermanos());
+  readonly descuentoHermanosIndividual = computed(() => this.totalCuotaIndividual() * this.factorDescuentoHermanos());
+  readonly totalCuotaFinal = computed(() => this.totalCuota() - this.descuentoHermanos());
+  readonly totalCuotaIndividualFinal = computed(() => this.totalCuotaIndividual() - this.descuentoHermanosIndividual());
+
   readonly etiquetaPlanCuotas = computed(() => {
     const presupuesto = this.presupuestoGrupo();
     if (!presupuesto) return '';
 
-    const nroCuotas = presupuesto.nroCuotas;
-    if (this.totalSeniaIndividual() === this.totalCuotaIndividual()) return `${nroCuotas + 1} Cuotas iguales`;
-    return `${nroCuotas} Cuotas + Seña`;
+    return etiquetaPlan(presupuesto.nroCuotas, presupuesto.pedido.con_senia);
   });
 
   ngOnInit(): void

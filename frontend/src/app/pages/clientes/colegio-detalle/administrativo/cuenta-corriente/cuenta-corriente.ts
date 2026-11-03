@@ -85,6 +85,9 @@ export class CuentaCorriente implements OnInit
       .reduce((total, pago) => total + (pago.monto ?? 0), 0),
   );
 
+  // Lo que se muestra como cubierto de la seña: el excedente de pagos 'Seña' se imputa a las cuotas
+  readonly seniaCubierta = computed(() => Math.min(this.seniaPagada(), this.seniaTotal() ?? this.seniaPagada()));
+
   readonly seniaFaltante = computed(() => Math.max((this.seniaTotal() ?? 0) - this.seniaPagada(), 0));
 
   readonly pagoSeniaAbierto = signal(false);
@@ -157,7 +160,7 @@ export class CuentaCorriente implements OnInit
     this.gestionPedidosService.obtenerPresupuestoPedidoClientesPage(idGrupo)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ productosPedido }) => this.cuotasIguales.set((productosPedido).length > 0 && (productosPedido).every((producto) => Number(producto.valor_senia) === Number(producto.valor_cuota))),
+        next: ({ pedido }) => this.cuotasIguales.set(!pedido.con_senia),
         // Si falla se muestra como seña + cuotas (como antes)
         error: () => this.cuotasIguales.set(false),
       });
@@ -247,7 +250,7 @@ export class CuentaCorriente implements OnInit
   }
 
   // ── Plan de cuotas iguales ──
-  // Si en los productos del pedido la seña es igual al valor de la cuota, el plan es "N cuotas iguales":
+  // Si el pedido no tiene seña (pedidos.con_senia = false), el plan es "N cuotas iguales":
   // lo que se guarda como seña es en realidad la cuota 1, y las cuotas guardadas se muestran corridas en uno.
   // Es solo visual: en la base sigue siendo seña + cuotas.
 

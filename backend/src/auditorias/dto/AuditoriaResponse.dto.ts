@@ -45,7 +45,32 @@ export interface PrendaAuditoria
     inscripcion: string | null;
 }
 
-export type DatoAuditoria = PresupuestoAuditoria | BeneficioAuditoria[] | DisenioAuditoria | PrendaAuditoria[] | null;
+// Cancelación: en dato_anterior va { estado } (cómo estaba el pedido al cancelarlo)
+// y en dato_nuevo el motivo y si se devolvió la plata
+export interface EstadoPedidoAuditoria
+{
+    estado: string | null;
+}
+
+export interface CancelacionAuditoria
+{
+    motivo: string;
+    devolucionPlata: boolean;
+    banco: string | null;
+}
+
+export type DatoAuditoria = PresupuestoAuditoria | BeneficioAuditoria[] | DisenioAuditoria | PrendaAuditoria[]
+    | EstadoPedidoAuditoria | CancelacionAuditoria | null;
+
+// --- Cancelación del pedido (se muestra en la ficha del cliente) ---
+
+export interface CancelacionPedidoDTO
+{
+    fecha: string;
+    autor: string;
+    devolucionPlata: boolean | null;
+    banco: string | null;
+}
 
 // --- Respuesta de la página de auditoría ---
 

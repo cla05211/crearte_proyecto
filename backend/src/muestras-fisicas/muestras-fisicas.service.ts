@@ -14,10 +14,10 @@ export class MuestrasFisicasService
             .from('muestras_fisicas')
             .select(`id, id_pedido, estado, muestras, envio, fecha_entrega, fecha_devolucion,
                 pedido:pedidos!inner(
+                    con_senia,
                     vendedora:usuarios!pedidos_id_vendedora_fkey ( nombre ),
                     grupo:grupos ( nivel, colegio:colegios ( nombre ) ),
-                    cuotas ( numero ),
-                    productos_pedidos ( cantidad, valor_senia, valor_cuota )
+                    cuotas ( numero )
                 )
             `)
             .order('id', { ascending: false });
@@ -32,7 +32,7 @@ export class MuestrasFisicasService
             colegio: d.pedido.grupo.colegio.nombre,
             nivel: d.pedido.grupo.nivel!,
             vendedora: d.pedido.vendedora?.nombre!,
-            planCuotas: {nroCuotas: d.pedido.cuotas.length, importeCuota: d.pedido.productos_pedidos[0].valor_cuota, senia: d.pedido.productos_pedidos[0].valor_senia}
+            planCuotas: {nroCuotas: d.pedido.cuotas.length, conSenia: d.pedido.con_senia}
         }))
 
         return muestras

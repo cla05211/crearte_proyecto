@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ACCIONES_AUDITORIA, insertarAuditoriaDTO, TABLAS_AUDITORIA, TipoAuditoria } from './dto/insertarAuditoria.dto';
+import { ACCIONES_AUDITORIA, insertarAuditoriaDTO, TABLAS_AUDITORIA, TIPOS_PAGINA_AUDITORIA, TipoAuditoria } from './dto/insertarAuditoria.dto';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
 import {
-    AuditoriaPaginaDTO, AuditoriaRegistroDTO, BeneficioAuditoria, DatoAuditoria, DisenioAuditoria,
+    AuditoriaPaginaDTO, AuditoriaRegistroDTO, BeneficioAuditoria, CancelacionAuditoria, CancelacionPedidoDTO, DatoAuditoria, DisenioAuditoria,
     FiltrosAuditoria, PrendaAuditoria, PresupuestoAuditoria,
 } from './dto/AuditoriaResponse.dto';
 
@@ -210,7 +210,7 @@ export class AuditoriasService
             usuarios(nombre, apellido),
             clientes(usuario),
             pedidos!inner(nro_fabrica, grupos!inner(promo, colegios!inner(nombre)))`, { count: 'exact' })
-        .in('tabla', Object.values(TABLAS_AUDITORIA))
+        .in('tabla', TIPOS_PAGINA_AUDITORIA.map(t => TABLAS_AUDITORIA[t]))
         // Talles y diseño solo interesan con el pedido en producción
         .or(`despues_produccion.eq.true,tabla.not.in.(${TIPOS_SOLO_EN_PRODUCCION.map(t => TABLAS_AUDITORIA[t]).join(',')})`)
         .order('created_at', { ascending: false })
@@ -246,7 +246,7 @@ export class AuditoriasService
             promo: fila.pedidos.grupos.promo,
             nroFabrica: fila.pedidos.nro_fabrica,
             autor: fila.usuarios
-                ? `${fila.usuarios.nombre ?? ''} ${fila.usuarios.apellido ?? ''}`.trim() || 'Usuario'
+                ? this.nombreUsuario(fila.usuarios)
                 : fila.clientes ? `Cliente (${fila.clientes.usuario.trim()})` : 'Cliente',
             autorEsCliente: !fila.usuarios,
             despuesProduccion: fila.despues_produccion,
@@ -255,6 +255,37 @@ export class AuditoriasService
         }));
 
         return { registros, total: count ?? registros.length };
+    }
+
+    // Quién canceló el pedido y cuándo (para la ficha del cliente). null si no hay registro,
+    // por ejemplo en pedidos cancelados antes de que se auditara la cancelación.
+    async obtenerCancelacion(idPedido: number): Promise<CancelacionPedidoDTO | null>
+    {
+        const { data, error } = await this.sb.supabase
+        .from('auditoria')
+        .select('created_at, dato_nuevo, usuarios(nombre, apellido)')
+        .eq('id_pedido', idPedido)
+        .eq('tabla', TABLAS_AUDITORIA.cancelacion)
+        .eq('accion', ACCIONES_AUDITORIA.PEDIDO_CANCELADO)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        if (!data) return null;
+
+        const detalle = this.parsear(data.dato_nuevo) as CancelacionAuditoria | null;
+
+        return {
+            fecha: data.created_at,
+            autor: data.usuarios ? this.nombreUsuario(data.usuarios) : 'Usuario',
+            devolucionPlata: detalle?.devolucionPlata ?? null,
+            banco: detalle?.banco ?? null,
+        };
     }
 
     // URL para bajar la versión anterior o nueva de un boceto/firmado auditado.
@@ -292,6 +323,11 @@ export class AuditoriasService
         }
 
         return { url: firmada.signedUrl };
+    }
+
+    private nombreUsuario(usuario: { nombre: string | null; apellido: string | null }): string
+    {
+        return `${usuario.nombre ?? ''} ${usuario.apellido ?? ''}`.trim() || 'Usuario';
     }
 
     private tipoDeTabla(tabla: string): TipoAuditoria

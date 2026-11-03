@@ -157,7 +157,7 @@ export class Contrato implements OnInit
       provincia: datosGrupo.grupo.colegio?.provincia ?? '',
       productos,
       beneficios,
-      tieneSenia: montoSenia > 0,
+      tieneSenia: presupuesto.pedido.con_senia,
       montoSenia: montoSenia > 0 ? montoSenia : undefined,
       montoTotal: montoSenia + montoCuotas,
       cuotas: cuotas.map((cuota) => ({

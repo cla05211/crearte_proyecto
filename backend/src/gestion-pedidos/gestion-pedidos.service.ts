@@ -19,7 +19,7 @@ import { BadRequestException } from '@nestjs/common';
 import { PedidoResponseVentas } from './dto/PedidoResponseVentas.dto';
 import { AuditoriasService } from 'src/auditorias/auditorias.service';
 import { ACCIONES_AUDITORIA, AutorAuditoria } from 'src/auditorias/dto/insertarAuditoria.dto';
-import { AuditoriaPaginaDTO, FiltrosAuditoria } from 'src/auditorias/dto/AuditoriaResponse.dto';
+import { AuditoriaPaginaDTO, CancelacionPedidoDTO, FiltrosAuditoria } from 'src/auditorias/dto/AuditoriaResponse.dto';
 import { ModificarPlanPedidoDTO } from './dto/ModificarPlanPedido';
 import { Json } from 'src/types/supabase';
 import { PedidoDTOResponse } from 'src/pedidos/dto/pedidoResponse.dto';
@@ -186,7 +186,7 @@ export class GestionPedidosService
 
     // Baja de un colegio. Primero la devolución: si falla, el pedido no queda cancelado a medias.
     // devolverPagos no duplica la devolución si se reintenta (suma también la devolución anterior).
-    async cancelarPedido(idPedido: number, motivo: MotivoCancelacion, devolucionPlata: boolean, banco?: string)
+    async cancelarPedido(idPedido: number, motivo: MotivoCancelacion, devolucionPlata: boolean, autor: AutorAuditoria, banco?: string)
     {
         const { data: pedido, error } = await this.sb.supabase
         .from('pedidos')
@@ -224,10 +224,26 @@ export class GestionPedidosService
             throw new BadRequestException(errorCancelar.message);
         }
 
+        // Quién canceló y cuándo (el motivo también queda en pedidos.motivo_cancelacion para las estadísticas).
+        // Se guarda el estado que tenía para ver si se canceló estando ya en producción.
+        await this.auditoriaService.registrar({
+            tipo: 'cancelacion',
+            accion: ACCIONES_AUDITORIA.PEDIDO_CANCELADO,
+            idPedido,
+            autor,
+            datoAnterior: { estado: pedido.estado_general },
+            datoNuevo: { motivo, devolucionPlata, banco: devolucionPlata ? banco ?? null : null },
+        });
+
         await this.notificacionesService.cancelarNotificacionesPedido(idPedido);
     }
 
     //--- Auditoría ---
+
+    async obtenerCancelacion(idPedido: number): Promise<CancelacionPedidoDTO | null>
+    {
+        return await this.auditoriaService.obtenerCancelacion(idPedido);
+    }
 
     async obtenerAuditoria(filtros: FiltrosAuditoria): Promise<AuditoriaPaginaDTO>
     {
@@ -315,7 +331,7 @@ export class GestionPedidosService
             query = query.or(`nombre.ilike.%${busqueda}%`, { referencedTable: "grupos.colegios" });
         }
 
-        const [{ data, error }, planTieneSenia] = await Promise.all([query, this.obtenerPlanesConSenia()]);
+        const { data, error } = await query;
 
         if (error)
         {
@@ -326,9 +342,7 @@ export class GestionPedidosService
             id: pedido.id,
             nroCuotas: pedido.cuotas.length,
             estadoPrimerCuota: pedido.cuotas.find(c => c.numero === 1)?.estado ?? null,
-            // Si el plan ya no está en el catálogo se compara el primer producto (como antes)
-            senia: planTieneSenia.get(pedido.cuotas.length)
-                ?? pedido.productos_pedidos[0]?.valor_senia != pedido.productos_pedidos[0]?.valor_cuota,
+            senia: pedido.con_senia,
             seniaPaga:  pedido.pagos.reduce((total, pago) => total + pago.monto!, 0) >= calcularSeniaTotal(pedido.senia_total, pedido.productos_pedidos),
             promo: pedido.grupos.promo!,
             nombreColegio: pedido.grupos.colegios.nombre,
@@ -346,26 +360,6 @@ export class GestionPedidosService
         }));
 
         return pedidos;
-    }
-
-    private async obtenerPlanesConSenia(): Promise<Map<number, boolean>>
-    {
-        const { data, error } = await this.sb.supabase
-        .from("precios_productos")
-        .select("cuotas, valor_senia, valor_cuota");
-
-        if (error)
-        {
-            throw new Error(error.message);
-        }
-
-        const planes = new Map<number, boolean>();
-        for (const precio of data)
-        {
-            const conSenia = Number(precio.valor_senia) !== Number(precio.valor_cuota);
-            planes.set(precio.cuotas, (planes.get(precio.cuotas) ?? false) || conSenia);
-        }
-        return planes;
     }
 
     private calcularEstadoTalles(estadoGuardado: string | null, cantidadPrendas: number): string

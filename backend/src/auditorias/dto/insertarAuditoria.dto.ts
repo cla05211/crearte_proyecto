@@ -7,10 +7,13 @@ export const TABLAS_AUDITORIA = {
     beneficios: 'beneficios_pedido',
     disenio: 'documentos',
     talles: 'prendas_pedido',
+    cancelacion: 'pedidos',
 } as const;
 
 export type TipoAuditoria = keyof typeof TABLAS_AUDITORIA;
-export const TIPOS_AUDITORIA = Object.keys(TABLAS_AUDITORIA) as TipoAuditoria[];
+// Tipos que se muestran en la página de auditoría.
+// La cancelación se registra igual, pero se muestra en la ficha del cliente (Datos), no ahí.
+export const TIPOS_PAGINA_AUDITORIA: TipoAuditoria[] = ['presupuesto', 'beneficios', 'disenio', 'talles'];
 
 export const ACCIONES_AUDITORIA = {
     PLAN_MODIFICADO: 'Plan modificado',
@@ -24,6 +27,7 @@ export const ACCIONES_AUDITORIA = {
     EDICION_TALLES_HABILITADA: 'Edición de talles habilitada',
     TALLES_EDITADOS: 'Talles editados por el cliente',
     EDICION_TALLES_CERRADA: 'Edición de talles cerrada',
+    PEDIDO_CANCELADO: 'Pedido cancelado',
 } as const;
 
 export class insertarAuditoriaDTO

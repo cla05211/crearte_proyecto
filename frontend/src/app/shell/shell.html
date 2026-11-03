@@ -45,6 +45,9 @@
     </div>
     <nav>
       <a routerLink="/home" routerLinkActive="activo" (click)="cerrarSidebar()">Inicio</a>
+      @if (tienePermiso('ver_novedades_ventas') || tienePermiso('ver_novedades_produccion')) {
+        <a routerLink="/novedades" routerLinkActive="activo" (click)="cerrarSidebar()">Novedades</a>
+      }
       @if (tienePermiso('ver_usuarios')) {
         <a routerLink="/usuarios" routerLinkActive="activo" (click)="cerrarSidebar()">Usuarios</a>
       }

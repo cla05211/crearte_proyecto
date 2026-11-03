@@ -230,3 +230,7 @@
 .datos-cancelar__motivo {
   color: var(--color-text-strong);
 }
+/* La tarjeta de pedido cancelado es flex: el "quién y cuándo" va en su propia línea */
+.datos-cancelar__quien {
+  flex-basis: 100%;
+}

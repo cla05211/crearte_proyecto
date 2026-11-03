@@ -94,7 +94,7 @@ export class ContratosService
                 producto: producto.nombreProductoOriginal,
             })),
             beneficios: (presupuesto.beneficios ?? []).map(b => `${b.cantidad} ${b.beneficio}`),
-            tieneSenia: montoSenia > 0,
+            tieneSenia: presupuesto.pedido.con_senia,
             montoSenia: montoSenia > 0 ? montoSenia : undefined,
             montoTotal: montoSenia + montoCuotas,
             cuotas: cuotas.map(cuota =>

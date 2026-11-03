@@ -236,13 +236,12 @@ export class GruposService
     {
         const fechaHoy = this.fechaArgentina(new Date());
 
-        // cuotasVencidas: solo las vencidas sin pagar. cuotas: todas, para saber de cuántas cuotas es el plan.
+        // cuotasVencidas: solo las vencidas sin pagar.
         // Sin !inner en las cuotas: un grupo que solo debe la seña (todavía sin cuotas vencidas) también tiene que venir.
         const { data, error } = await this.sb.supabase
         .from("grupos")
         .select(`id, created_at, colegios(nombre),
-            pedidos!inner(nro_fabrica, senia_total,
-                cuotas(id),
+            pedidos!inner(nro_fabrica, senia_total, con_senia,
                 cuotasVencidas:cuotas(importe,monto_cubierto,fecha_vencimiento,estado),
                 productos_pedidos(valor_senia,cantidad),
                 pagos(monto,motivo)),
@@ -258,7 +257,6 @@ export class GruposService
             throw new BadRequestException(error.message);
         }
 
-        const planesConSenia = await this.obtenerPlanesConSenia();
         const colegiosDeudores: colegioDeudorDTO[] = [];
 
         for (const g of data)
@@ -267,8 +265,8 @@ export class GruposService
             const cuotasVencidas = pedido.cuotasVencidas;
 
             // Si el plan es de cuotas iguales, la "seña" es en realidad la primera cuota y lo que falte cuenta como deuda.
-            // Si es una seña real (seña != cuota), no se toma como deuda.
-            const seniaEsPrimeraCuota = !(planesConSenia.get(pedido.cuotas.length) ?? true);
+            // Si el plan es con seña, no se toma como deuda.
+            const seniaEsPrimeraCuota = !pedido.con_senia;
             const deudaSenia = seniaEsPrimeraCuota ? this.calcularDeudaSenia(pedido.productos_pedidos, pedido.pagos, pedido.senia_total) : 0;
 
             if (cuotasVencidas.length === 0 && deudaSenia === 0)
@@ -309,29 +307,6 @@ export class GruposService
         const deuda = Math.round((totalSenia - seniaPagada) * 100) / 100;
 
         return deuda > 0 ? deuda : 0;
-    }
-
-    // Copia de obtenerPlanesConSenia de gestion-pedidos: si un plan (cantidad de cuotas) tiene seña distinta a la cuota.
-    // Se saca del catálogo y no del pedido, porque en el pedido la cuota incluye los agregados individuales
-    // y un plan de cuotas iguales quedaría con seña != cuota.
-    private async obtenerPlanesConSenia(): Promise<Map<number, boolean>>
-    {
-        const { data, error } = await this.sb.supabase
-        .from("precios_productos")
-        .select("cuotas, valor_senia, valor_cuota");
-
-        if (error)
-        {
-            throw new BadRequestException(error.message);
-        }
-
-        const planes = new Map<number, boolean>();
-        for (const precio of data)
-        {
-            const conSenia = Number(precio.valor_senia) !== Number(precio.valor_cuota);
-            planes.set(precio.cuotas, (planes.get(precio.cuotas) ?? false) || conSenia);
-        }
-        return planes;
     }
 
     private calcularDiasAtraso(fechaHoy:string, cuotas:{estado:string|null,fecha_vencimiento:string|null}[])

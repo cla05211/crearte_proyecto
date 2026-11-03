@@ -41,6 +41,15 @@ export interface PrendaAuditoria
 
 export type DatoAuditoria = PresupuestoAuditoria | BeneficioAuditoria[] | DisenioAuditoria | PrendaAuditoria[] | null;
 
+// Quién canceló el pedido y cuándo (se muestra en la ficha del cliente, no en la página de auditoría)
+export interface CancelacionPedidoDTO
+{
+    fecha: string;
+    autor: string;
+    devolucionPlata: boolean | null;
+    banco: string | null;
+}
+
 export interface AuditoriaRegistroDTO
 {
     id: number;

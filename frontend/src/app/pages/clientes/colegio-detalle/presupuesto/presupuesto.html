@@ -118,13 +118,23 @@
                 }
               </tbody>
               <tfoot>
+                @if (descuentoHermanos()) {
+                  <tr>
+                    <td data-label="Producto">Descuento hermanos</td>
+                    <td data-label="Cantidad"></td>
+                    <td data-label="Seña individual"></td>
+                    <td data-label="Seña grupal"></td>
+                    <td data-label="Cuota individual">-{{ descuentoHermanosIndividual() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                    <td data-label="Cuota grupal">-{{ descuentoHermanos() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  </tr>
+                }
                 <tr class="fila-totales">
                   <td data-label="Producto">Total</td>
                   <td data-label="Cantidad"></td>
                   <td data-label="Seña individual">{{ totalSeniaIndividual() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                   <td data-label="Seña grupal">{{ totalSenia() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
-                  <td data-label="Cuota individual">{{ totalCuotaIndividual() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
-                  <td data-label="Cuota grupal">{{ totalCuota() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Cuota individual">{{ totalCuotaIndividualFinal() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Cuota grupal">{{ totalCuotaFinal() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                 </tr>
               </tfoot>
             </table>
@@ -205,7 +215,7 @@
           </div>
           <div class="presupuesto-grid__item">
             <dt>Valor de cada cuota</dt>
-            <dd>{{ totalCuota() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</dd>
+            <dd>{{ totalCuotaFinal() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</dd>
           </div>
         </dl>
       </div>

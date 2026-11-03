@@ -10,7 +10,6 @@ import { presupuestoPedidoClientesPage } from '../../../../services/gestionPedid
 import { AgregadoGlobalPedidoResponseDTO } from '../../../../services/gestionPedidos/dto/AgregadoGlobalPedidoResponse.dto';
 import { ProductoPedidoResponseConNombreOriginalDTO } from '../../../../services/productosPedidos/dto/ProductoPedidoResponse.dto';
 import { ProductosService } from '../../../../services/productos/productos-service';
-import { ProductoPreciosDTO } from '../../../../services/productos/dto/ProductoPrecios.dto';
 import { ProductoConPrecioResponseDTO } from '../../../../services/productos/dto/ProductoConPrecioResponse';
 import { AgregadoDBDTO } from '../../../../services/productos/dto/agregadoDB.dto';
 import { GruposService } from '../../../../services/grupos/grupos-service';
@@ -20,6 +19,7 @@ import { PermisosService } from '../../../../services/permisos/permisos';
 import { BeneficioResponseDTO } from '../../../../services/gestionPedidos/dto/BeneficioResponse.dto';
 import { BeneficioPedidoPostDTO, cantidadSinCargo, formatearBeneficios } from '../../../../services/gestionPedidos/dto/BeneficioPedido.dto';
 import { ModificarPlanPedidoDTO } from '../../../../services/gestionPedidos/dto/modficaciones/ModificarPlanPedido';
+import { etiquetaPlan } from '../../../../services/cuotas/plan-cuotas';
 
 const SEPARADOR_AGREGADOS = ' · Agregado: ';
 
@@ -100,6 +100,8 @@ export class Presupuesto implements OnInit
   readonly agregadosDisponibles = signal<AgregadoDBDTO[]>([]);
   readonly beneficiosDisponibles = signal<BeneficioResponseDTO[]>([]);
   readonly cuotasDisponibles = signal<number[]>([]);
+  // Planes del catálogo (cuotas -> lleva seña), para elegir un plan nuevo en la edición
+  readonly planTieneSenia = signal(new Map<number, boolean>());
 
   readonly agregadosIndividuales = computed(() =>
     this.agregadosDisponibles().filter((agregado) => agregado.individual),
@@ -165,13 +167,24 @@ export class Presupuesto implements OnInit
     return productos + agregadosGlobales;
   });
 
+  // Descuento por hermanos: se aplica sobre el total de cuotas (mismo criterio que Ventas y el recálculo por talles)
+  readonly factorDescuentoHermanos = computed(() => {
+    const pedido = this.presupuestoGrupo()?.pedido;
+    const porcentaje = Number(pedido?.porcentaje_descuento_hermanos) || 0;
+    const hermanos = Number(pedido?.cantidad_hermanos) || 0;
+    return (porcentaje / 100) * hermanos;
+  });
+
+  readonly descuentoHermanos = computed(() => this.totalCuota() * this.factorDescuentoHermanos());
+  readonly descuentoHermanosIndividual = computed(() => this.totalCuotaIndividual() * this.factorDescuentoHermanos());
+  readonly totalCuotaFinal = computed(() => this.totalCuota() - this.descuentoHermanos());
+  readonly totalCuotaIndividualFinal = computed(() => this.totalCuotaIndividual() - this.descuentoHermanosIndividual());
+
   readonly etiquetaPlanCuotas = computed(() => {
     const presupuesto = this.presupuestoGrupo();
     if (!presupuesto) return '';
 
-    const nroCuotas = presupuesto.nroCuotas;
-    if (this.totalSeniaIndividual() === this.totalCuotaIndividual()) return `${nroCuotas + 1} Cuotas iguales`;
-    return `${nroCuotas} Cuotas + Seña`;
+    return etiquetaPlan(presupuesto.nroCuotas, presupuesto.pedido.con_senia);
   });
 
   ngOnInit(): void
@@ -182,7 +195,7 @@ export class Presupuesto implements OnInit
     {
       this.obtenerProductosDisponibles();
       this.obtenerBeneficiosDisponibles();
-      this.obtenerCuotasDisponibles();
+      this.obtenerPlanesDisponibles();
     }
   }
 
@@ -232,36 +245,23 @@ export class Presupuesto implements OnInit
   {
     this.cargandoPrecios.set(true);
 
-    const precios$ = presupuesto.productosPedido.length
-      ? forkJoin(
-          presupuesto.productosPedido.map((producto) =>
-            // El tramo se elige contando las prendas sin cargo (gratis pero cuentan en cantidad).
-            this.productosService.obtenerPreciosProducto(
-              producto.id_producto_original,
-              presupuesto.nroCuotas,
-              producto.cantidad + cantidadSinCargo(presupuesto.beneficios, producto.id_producto_original),
-            ),
-          ),
-        )
-      : of([] as ProductoPreciosDTO[]);
-
     const agregadosDisponibles$ = this.productosService.obtenerAgregados();
 
     const cantidadEgresados$ = presupuesto.agregadosGlobales.length
       ? this.gruposService.obtenerCantidadEgresados(idGrupo)
       : of(0);
 
-    forkJoin([precios$, agregadosDisponibles$, cantidadEgresados$])
+    forkJoin([agregadosDisponibles$, cantidadEgresados$])
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ([precios, agregadosDisponibles, cantidadEgresados]) => {
+        next: ([agregadosDisponibles, cantidadEgresados]) => {
           const agregadosIndividuales = agregadosDisponibles.filter((agregado) => agregado.individual);
 
           this.agregadosDisponibles.set(agregadosDisponibles);
 
           this.productosConPrecios.set(
-            presupuesto.productosPedido.map((producto, indice) =>
-              this.combinarProductoConPrecios(producto, precios[indice], presupuesto.nroCuotas, agregadosIndividuales),
+            presupuesto.productosPedido.map((producto) =>
+              this.combinarProductoConPrecios(producto, presupuesto.nroCuotas, agregadosIndividuales),
             ),
           );
 
@@ -282,7 +282,6 @@ export class Presupuesto implements OnInit
 
   private combinarProductoConPrecios(
     producto: ProductoPedidoResponseConNombreOriginalDTO,
-    precios: ProductoPreciosDTO,
     nroCuotas: number,
     agregadosIndividuales: AgregadoDBDTO[],
   ): ProductoPedidoConPrecios
@@ -298,16 +297,21 @@ export class Presupuesto implements OnInit
         cuotaGrupal: (agregado.precio * producto.cantidad) / nroCuotas,
       }));
 
+    // Se usan los valores guardados del pedido (lo que realmente se cobra), no la lista de precios actual.
+    // valor_cuota ya incluye los agregados individuales: se descuentan para mostrarlos en su propia fila.
+    const cuotaAgregados = agregados.reduce((total, agregado) => total + agregado.cuotaIndividual, 0);
+    const valorCuotaBase = Number(producto.valor_cuota) - cuotaAgregados;
+
     return {
       id: producto.id,
       sinCargo: cantidadSinCargo(this.presupuestoGrupo()?.beneficios, producto.id_producto_original),
       nombreProductoOriginal: producto.nombreProductoOriginal,
       descripcion: descripcionBase || null,
       cantidad: producto.cantidad,
-      valorSeniaIndividual: precios.valor_senia,
-      valorSeniaGrupal: precios.valor_senia * producto.cantidad,
-      valorCuotaIndividual: precios.valor_cuota,
-      valorCuotaGrupal: precios.valor_cuota * producto.cantidad,
+      valorSeniaIndividual: Number(producto.valor_senia),
+      valorSeniaGrupal: Number(producto.valor_senia) * producto.cantidad,
+      valorCuotaIndividual: valorCuotaBase,
+      valorCuotaGrupal: valorCuotaBase * producto.cantidad,
       agregados,
     };
   }
@@ -343,10 +347,13 @@ export class Presupuesto implements OnInit
     });
   }
 
-  private obtenerCuotasDisponibles(): void
+  private obtenerPlanesDisponibles(): void
   {
-    this.productosService.obtenerCuotasDisponibles().subscribe({
-      next: (cuotas) => this.cuotasDisponibles.set(cuotas),
+    this.productosService.obtenerPlanesDisponibles().subscribe({
+      next: (planes) => {
+        this.cuotasDisponibles.set(planes.map((plan) => plan.cuotas));
+        this.planTieneSenia.set(new Map(planes.map((plan) => [plan.cuotas, plan.conSenia])));
+      },
     });
   }
 
@@ -691,8 +698,9 @@ export class Presupuesto implements OnInit
 
   etiquetaCuotasProducto(producto: ProductoCarrito): string
   {
-    if (producto.valorSenia === producto.valorCuota) return `${producto.cuotas + 1} cuotas iguales`;
-    return `${producto.cuotas} cuotas + Seña`;
+    const conSenia = this.planTieneSenia().get(Number(producto.cuotas));
+    if (conSenia === undefined) return `${producto.cuotas} cuotas`;
+    return etiquetaPlan(producto.cuotas, conSenia);
   }
 
   totalSeniaPlan(): number
@@ -706,7 +714,10 @@ export class Presupuesto implements OnInit
       (total, producto) => total + producto.valorCuota * producto.cantidad,
       0,
     );
-    return productos + (this.banderaSeleccionadaPlan ? this.bandera()?.precio ?? 0 : 0);
+    // La bandera se cobra una vez, dividida entre las cuotas
+    const cuotas = this.cuotasPlanSeleccionadas();
+    const bandera = this.banderaSeleccionadaPlan && cuotas ? (this.bandera()?.precio ?? 0) / cuotas : 0;
+    return productos + bandera;
   }
 
   descuentoCuotasPlan(): number
@@ -745,6 +756,7 @@ export class Presupuesto implements OnInit
       nueva_cantidad_cuotas: this.cuotasPlanSeleccionadas(),
       valor_cuota_nuevo: this.totalCuotasPlan(),
       valor_senia_nuevo: this.totalSeniaPlan(),
+      con_senia: this.planTieneSenia().get(this.cuotasPlanSeleccionadas()),
     };
 
     this.guardandoPlan.set(true);

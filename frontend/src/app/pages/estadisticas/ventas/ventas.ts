@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { Estadisticas as EstadisticasService } from '../../../services/estadisticas/estadisticas';
 import { EstadisticasVentasDTO } from '../../../services/estadisticas/dto/estadisticasVentas.dto';
 import { NotificationService } from '../../../shared/notifications/notification.service';
@@ -23,7 +24,7 @@ const NIVELES = ['Jardin', 'Primaria', 'Secundaria'];
 
 @Component({
   selector: 'app-estadisticas-ventas',
-  imports: [DatePipe, DecimalPipe],
+  imports: [DatePipe, DecimalPipe, RouterLink],
   templateUrl: './ventas.html',
   styleUrls: ['../estadisticas-compartido.css', './ventas.css'],
 })

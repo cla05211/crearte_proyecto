@@ -27,25 +27,38 @@ export class RecalculoPlanTallesService
         const productosFinalesTotales = await this.prendasService.traerProductosFinalesPedido(prendas);
 
         const nroCuotas = presupuesto.nroCuotas;
+        const agregadosIndividuales = (await this.productosService.obtenerAgregados()).filter(a => a.individual);
 
         const productos = await Promise.all(productosFinales.map(async producto =>
         {
             const cantidadTramo = productosFinalesTotales.find(p => p.idProducto === producto.idProducto)?.cantidadPedida ?? producto.cantidadPedida;
             const precios = await this.productosService.obtenerPreciosId(producto.idProducto, nroCuotas, Math.max(cantidadTramo, producto.cantidadPedida));
             const anterior = presupuesto.productosPedido.find(p => p.id_producto_original === producto.idProducto);
+            const descripcion = anterior?.descripcion ?? producto.nombreProducto;
+
+            // Los agregados individuales viven en la descripción ("... · Agregado: X · Agregado: Y"), igual que en el front.
+            // Su precio es total por prenda y se reparte entre las cuotas (mismo criterio que Ventas/Presupuesto).
+            const [, ...nombresAgregados] = descripcion.split(' · Agregado: ');
+            const costoAgregados = agregadosIndividuales
+                .filter(a => nombresAgregados.includes(a.agregado))
+                .reduce((total, a) => total + Number(a.precio || 0), 0);
 
             return {
                 id_pedido: idPedido,
                 id_producto_original: producto.idProducto,
-                descripcion: anterior?.descripcion ?? producto.nombreProducto,
+                descripcion,
                 valor_senia: precios!.valor_senia,
-                valor_cuota: precios!.valor_cuota,
+                valor_cuota: precios!.valor_cuota + (nroCuotas ? costoAgregados / nroCuotas : 0),
                 cantidad: producto.cantidadPedida,
             };
         }));
 
+        // Agregados globales (bandera): se cobran una vez, divididos entre las cuotas
+        const costoAgregadosGlobales = presupuesto.agregadosGlobales.reduce((total, a) => total + Number(a.precio || 0), 0);
+
         const totalSenia = productos.reduce((total, p) => total + p.valor_senia * p.cantidad, 0);
-        const totalCuotaSinDescuento = productos.reduce((total, p) => total + p.valor_cuota * p.cantidad, 0);
+        const totalCuotaSinDescuento = productos.reduce((total, p) => total + p.valor_cuota * p.cantidad, 0)
+            + (nroCuotas ? costoAgregadosGlobales / nroCuotas : 0);
         const porcentaje = Number(presupuesto.pedido.porcentaje_descuento_hermanos) || 0;
         const hermanos = Number(presupuesto.pedido.cantidad_hermanos) || 0;
         const totalCuota = totalCuotaSinDescuento - totalCuotaSinDescuento * (porcentaje / 100) * hermanos;

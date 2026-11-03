@@ -29,6 +29,7 @@ import { CrearCuotasDTO } from '../../services/cuotas/dto/crearCuotas.dto';
 import { PagosService } from '../../services/pagos/pagos-service';
 import { PagoResponseDTO } from '../../services/pagos/dto/pagoResponse.dto';
 import { PagoComprobanteDatosDTO } from '../../services/pagos/dto/pagoComprobanteDatos.dto';
+import { etiquetaPlan } from '../../services/cuotas/plan-cuotas';
 
 interface ProductoCarrito {
   idProducto: number;
@@ -289,9 +290,12 @@ export class Ventas implements OnInit {
   obtenerNroCuotasDispoinibles()
   {
     //ACA
-    this.productosService.obtenerCuotasDisponibles().subscribe({
-      next: (cuotas) => {
-        this.cuotasDisponibles.set(cuotas);}});
+    this.productosService.obtenerPlanesDisponibles().subscribe({
+      next: (planes) => {
+        this.cuotasDisponibles.set(planes.map((plan) => plan.cuotas));
+        this.planTieneSenia.set(new Map(planes.map((plan) => [plan.cuotas, plan.conSenia])));
+      },
+    });
   }
 
   cerrarFormulario(): void {
@@ -376,27 +380,31 @@ export class Ventas implements OnInit {
     this.calcularProducto();
   }
 
-  // Que un plan tenga seña o sea de cuotas iguales depende solo de la cantidad de cuotas:
-  // es igual para todos los productos y cantidades. Se arma un mapa cuotas -> tiene seña
-  // con todo el catálogo, así la etiqueta no depende del producto elegido ni de los agregados
-  // (que se suman a la cuota y harían que seña != cuota en un plan de cuotas iguales).
-  readonly planTieneSenia = computed(() => {
-    const mapa = new Map<number, boolean>();
-    for (const precio of this.productosDisponibles()) {
-      const cuotas = Number(precio.cuotas);
-      const conSenia = Number(precio.valor_senia) !== Number(precio.valor_cuota);
-      mapa.set(cuotas, (mapa.get(cuotas) ?? false) || conSenia);
-    }
-    return mapa;
-  });
+  // Planes del catálogo (cuotas -> lleva seña). Solo sirve para elegir un plan nuevo:
+  // los pedidos ya creados guardan su tipo de plan en pedidos.con_senia.
+  readonly planTieneSenia = signal(new Map<number, boolean>());
 
-  // Sin seña la primera cuota se guarda como seña: se muestran cuotas + 1 iguales.
+  // Etiqueta de un plan del catálogo (al elegir cuotas en el alta o en la edición del plan)
   etiquetaPlanCuotas(cuotas: number): string
   {
     const nroCuotas = Number(cuotas);
     const conSenia = this.planTieneSenia().get(nroCuotas);
     if (conSenia === undefined) return `${nroCuotas} cuotas`;
-    return conSenia ? `${nroCuotas} cuotas + Seña` : `${nroCuotas + 1} cuotas iguales`;
+    return etiquetaPlan(nroCuotas, conSenia);
+  }
+
+  // Tipo de plan del catálogo para guardar en el pedido
+  private conSeniaPlan(cuotas: number): boolean
+  {
+    const conSenia = this.planTieneSenia().get(Number(cuotas));
+    if (conSenia === undefined) throw new Error(`El plan de ${cuotas} cuotas no está en el catálogo.`);
+    return conSenia;
+  }
+
+  // Etiqueta de una venta ya creada: sale de lo guardado en el pedido
+  etiquetaPlanVenta(venta: PedidoResponseVentas): string
+  {
+    return etiquetaPlan(venta.nroCuotas, venta.pedidoDTO.con_senia);
   }
 
   etiquetaCuotasProducto(producto: ProductoCarrito): string
@@ -992,6 +1000,7 @@ export class Ventas implements OnInit {
         porcentaje_descuento_hermanos: Number(this.detallePedido.porcentaje_descuento_hermanos) || 0,
         estado_talles: '',
         estado_boceto: '',
+        con_senia: this.conSeniaPlan(this.carrito()[0]?.cuotas ?? 0),
       },
       productosPedidoDTO: this.carrito().map((producto, indice) => ({
         id_pedido: idPedido,
@@ -1060,7 +1069,10 @@ export class Ventas implements OnInit {
       (total, producto) => total + producto.valorCuota * producto.cantidad,
       0,
     );
-    return productos + (this.banderaSeleccionada ? this.bandera()?.precio ?? 0 : 0);
+    // La bandera se cobra una vez, dividida entre las cuotas
+    const cuotas = this.carrito()[0]?.cuotas ?? 0;
+    const bandera = this.banderaSeleccionada && cuotas ? (this.bandera()?.precio ?? 0) / cuotas : 0;
+    return productos + bandera;
   }
 
   private obtenerUsuario(): Usuario | null {
@@ -1380,7 +1392,10 @@ export class Ventas implements OnInit {
       (total, producto) => total + producto.valorCuota * producto.cantidad,
       0,
     );
-    return productos + (this.banderaSeleccionadaPlan ? this.bandera()?.precio ?? 0 : 0);
+    // La bandera se cobra una vez, dividida entre las cuotas
+    const cuotas = this.cuotasPlanSeleccionadas();
+    const bandera = this.banderaSeleccionadaPlan && cuotas ? (this.bandera()?.precio ?? 0) / cuotas : 0;
+    return productos + bandera;
   }
 
   descuentoCuotasPlan(): number {
@@ -1416,6 +1431,7 @@ export class Ventas implements OnInit {
       nueva_cantidad_cuotas: this.cuotasPlanSeleccionadas(),
       valor_cuota_nuevo: this.totalCuotasPlan(),
       valor_senia_nuevo: this.totalSeniaPlan(),
+      con_senia: this.conSeniaPlan(this.cuotasPlanSeleccionadas()),
     };
 
     this.guardandoPlan.set(true);

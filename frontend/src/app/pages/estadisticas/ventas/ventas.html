@@ -172,9 +172,11 @@
               </tr>
             </thead>
             <tbody>
-              @for (pedido of cancelados(); track $index) {
+              @for (pedido of cancelados(); track pedido.idGrupo) {
                 <tr>
-                  <td data-label="Colegio" class="celda-fuerte">{{ pedido.colegio }}</td>
+                  <td data-label="Colegio" class="celda-fuerte">
+                    <a class="link-colegio" [routerLink]="['/clientes', pedido.idGrupo, 'datos']" [title]="'Abrir ficha de ' + pedido.colegio">{{ pedido.colegio }}</a>
+                  </td>
                   <td data-label="Localidad">{{ pedido.localidad }}, {{ pedido.provincia }}</td>
                   <td data-label="Promo">{{ pedido.promo ?? '-' }}</td>
                   <td data-label="Fecha de venta">{{ pedido.fechaVenta | date: 'dd/MM/yyyy' }}</td>

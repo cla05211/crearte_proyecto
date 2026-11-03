@@ -15,6 +15,10 @@ const formatearMonto = (monto?: number) =>
 const ORDINALES_CUOTA = ['1er', '2da', '3er', '4ta', '5ta', '6ta', '7ma', '8va', '9na', '10ma'];
 const ordinalCuota = (n: number) => ORDINALES_CUOTA[n - 1] ?? `${n}°`;
 
+// Cantidad de cuotas en letras para el plan de cuotas iguales ("Tres cuotas iguales de...")
+const CANTIDADES_EN_LETRAS = ['Una', 'Dos', 'Tres', 'Cuatro', 'Cinco', 'Seis', 'Siete', 'Ocho', 'Nueve', 'Diez', 'Once', 'Doce'];
+const cantidadEnLetras = (n: number) => CANTIDADES_EN_LETRAS[n - 1] ?? String(n);
+
 // Une una lista de strings en formato "a, b y c".
 const unirConY = (items: string[]) =>
 {
@@ -280,18 +284,26 @@ export class PdfService
             const hayBeneficios = !!dto.beneficios && dto.beneficios.length > 0;
 
             // Cláusula TERCERA: cuotas
-            const nroCuotas = dto.cuotas.length;
+            // En el plan de cuotas iguales lo que se guarda como seña es la 1era cuota: se suma al detalle
+            // para que el contrato liste todas (ej. "3 cuotas iguales" = seña + 2 cuotas guardadas).
+            const seniaComoCuota = !dto.tieneSenia;
+            const cuotasContrato = seniaComoCuota
+                ? [{ monto: dto.montoSenia ?? 0, vencimiento: undefined }, ...dto.cuotas]
+                : dto.cuotas;
+
+            const nroCuotas = cuotasContrato.length;
             const primerParrafoValores = dto.tieneSenia
                 ? `En concepto de adelanto y fijación de precio de $ ${formatearMonto(dto.montoSenia)}.- por egresado más, ${nroCuotas} mensuales que serán abonadas de la siguiente forma:`
-                : `Dos cuotas iguales de $ ${formatearMonto(dto.cuotas[0]?.monto)} que serán abonadas de la siguiente forma:`;
+                : `${cantidadEnLetras(nroCuotas)} cuotas iguales de $ ${formatearMonto(cuotasContrato[0]?.monto)} que serán abonadas de la siguiente forma:`;
 
-            const detalleCuotas: Content[] = dto.cuotas.map((cuota, i) =>
+            const detalleCuotas: Content[] = cuotasContrato.map((cuota, i) =>
             {
                 const ordinal = ordinalCuota(i + 1);
-                const esUltima = i === dto.cuotas.length - 1;
-                const texto = esUltima
-                    ? `${ordinal} cuota de $ ${formatearMonto(cuota.monto)}. La misma será contra entrega de las prendas/o 72hs antes de la entrega, según lo convenido.`
-                    : `${ordinal} cuota de $ ${formatearMonto(cuota.monto)} vencimiento el ${cuota.vencimiento ?? '____'}.`;
+                const esUltima = i === cuotasContrato.length - 1;
+                let texto: string;
+                if (seniaComoCuota && i === 0) texto = `${ordinal} cuota de $ ${formatearMonto(cuota.monto)}, a abonar al momento de la contratación.`;
+                else if (esUltima) texto = `${ordinal} cuota de $ ${formatearMonto(cuota.monto)}. La misma será contra entrega de las prendas/o 72hs antes de la entrega, según lo convenido.`;
+                else texto = `${ordinal} cuota de $ ${formatearMonto(cuota.monto)} vencimiento el ${cuota.vencimiento ?? '____'}.`;
                 return { text: texto, margin: [0, 2, 0, 0] };
             });
 
@@ -302,12 +314,12 @@ export class PdfService
                 ? 'Esta cuota deberá abonarse exclusivamente una vez que el área de entregas se haya comunicado con el cliente para informar que el pedido se encuentra finalizado y listo para su entrega, y para coordinar fecha, modalidad de pago y entrega.'
                 : 'Debe realizarse al momento de retirar el pedido o 72hs antes de la entrega de este, según lo convenido anteriormente. El mismo será retirado por un adulto autorizado previamente en la oficina de Crearte o lo recibirá en el domicilio pactado por ambas partes.';
 
-            const instanciasProduccion: Content[] = dto.cuotas.map((_, i) =>
+            const instanciasProduccion: Content[] = cuotasContrato.map((_, i) =>
             {
                 const ordinal = ordinalCuota(i + 1);
                 let texto: string;
                 if (i === 0) texto = textoPrimeraInstancia;
-                else if (i === dto.cuotas.length - 1) texto = textoUltimaInstancia;
+                else if (i === cuotasContrato.length - 1) texto = textoUltimaInstancia;
                 else texto = `Se realizará luego de 30 días de haber abonado la ${ordinalCuota(i)} cuota. En esta instancia se realizará la firma de este acuerdo de partes.`;
                 return { text: [{ text: `${ordinal} cuota: `, bold: true }, texto], margin: [0, 6, 0, 0], alignment: 'justify' as const };
             });

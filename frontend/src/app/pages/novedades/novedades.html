@@ -1,0 +1,101 @@
+<main class="novedades-page">
+  <section class="ds-container novedades-container">
+    <header class="novedades-header">
+      <span class="ds-eyebrow">Inicio</span>
+      <h1 class="ds-heading-1">Novedades</h1>
+    </header>
+
+    @if (!puedeVerVentas && !puedeVerProduccion) {
+      <div class="empty-state">
+        <div class="empty-state__illustration" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <h2>No hay novedades para mostrar.</h2>
+        <p>Tu usuario no tiene permisos para ver novedades.</p>
+      </div>
+    }
+
+    <!-- Ventas de los últimos 3 días -->
+    @if (puedeVerVentas) {
+      <section class="bloque" aria-labelledby="titulo-ventas">
+        <div class="bloque__header">
+          <h2 id="titulo-ventas" class="ds-heading-2">Ventas recientes</h2>
+          @if (ventas()) {
+            <span class="ds-badge">{{ totalVentas() }} {{ totalVentas() === 1 ? 'venta' : 'ventas' }}</span>
+          }
+        </div>
+
+        @if (cargandoVentas() && !ventas()) {
+          <div class="loading-state loading-state--compacto" role="status" aria-live="polite">
+            <span class="loading-state__spinner" aria-hidden="true"></span>
+            <p>Cargando ventas recientes…</p>
+          </div>
+        } @else if (ventas()) {
+          <div class="dias-grid">
+            @for (dia of ventasPorDia(); track dia.titulo) {
+              <article class="ds-card dia-card" [class.dia-card--hoy]="$first">
+                <header class="dia-card__header">
+                  <div>
+                    <h3 class="dia-card__titulo">{{ dia.titulo }}</h3>
+                    <span class="dia-card__fecha">{{ dia.fecha | date: 'd/M' }}</span>
+                  </div>
+                  <span class="dia-card__contador">{{ dia.ventas.length }}</span>
+                </header>
+
+                @if (dia.ventas.length) {
+                  <ul class="lista-colegios">
+                    @for (venta of dia.ventas; track venta.idGrupo) {
+                      <li>
+                        <a class="link-colegio" [routerLink]="['/clientes', venta.idGrupo]" [title]="'Abrir ficha de ' + venta.colegio">
+                          {{ venta.colegio }}
+                        </a>
+                        <span class="hora">{{ venta.fecha | date: 'HH:mm' }}</span>
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <p class="dia-card__vacio">Sin ventas</p>
+                }
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <!-- Pedidos listos para enviar a producción -->
+    @if (puedeVerProduccion) {
+      <section class="bloque" aria-labelledby="titulo-produccion">
+        <div class="bloque__header">
+          <h2 id="titulo-produccion" class="ds-heading-2">Listos para enviar a producción</h2>
+          @if (produccion()) {
+            <span class="ds-badge ds-badge--warning">{{ produccionOrdenada().length }} {{ produccionOrdenada().length === 1 ? 'pedido' : 'pedidos' }}</span>
+          }
+        </div>
+
+        @if (cargandoProduccion() && !produccion()) {
+          <div class="loading-state loading-state--compacto" role="status" aria-live="polite">
+            <span class="loading-state__spinner" aria-hidden="true"></span>
+            <p>Cargando pedidos…</p>
+          </div>
+        } @else if (produccion()) {
+          @if (produccionOrdenada().length) {
+            <ul class="ds-card produccion-lista">
+              @for (pedido of produccionOrdenada(); track pedido.idGrupo) {
+                <li>
+                  <a class="link-colegio" [routerLink]="['/clientes', pedido.idGrupo]" [title]="'Abrir ficha de ' + pedido.colegio">
+                    {{ pedido.colegio }}
+                  </a>
+                </li>
+              }
+            </ul>
+          } @else {
+            <div class="ds-card bloque__vacio">
+              <p>No hay pedidos esperando para ir a producción.</p>
+            </div>
+          }
+        }
+      </section>
+    }
+  </section>
+</main>

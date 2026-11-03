@@ -20,7 +20,7 @@ export class EstadisticasService {
         const {data, error} = await this.sb.supabase
         .from("grupos")
         .select(`
-            created_at,nivel,promo,
+            id,created_at,nivel,promo,
             colegios(nombre,localidad,provincia),
             pedidos!inner(estado_general,motivo_cancelacion,
             usuarios(nombre),
@@ -36,6 +36,7 @@ export class EstadisticasService {
 
         const datos: EstadisticasVentasDTO[] = data.map(g => (
         {
+            idGrupo: g.id,
             fechaVenta: g.created_at ?? '',
             promo:g.promo,
             vendedora: g.pedidos[0].usuarios?.nombre ?? 'Sin asignar',

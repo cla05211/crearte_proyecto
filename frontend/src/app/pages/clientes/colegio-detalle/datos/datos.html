@@ -198,6 +198,17 @@
             Motivo: <strong class="datos-cancelar__motivo">{{ motivoCancelacionGuardado() }}</strong>
           }
         </p>
+        @if (cancelacion(); as baja) {
+          <p class="ds-text-muted datos-cancelar__quien">
+            Cancelado por <strong class="datos-cancelar__motivo">{{ baja.autor }}</strong>
+            el {{ baja.fecha | date: 'dd/MM/yyyy' }} a las {{ baja.fecha | date: 'HH:mm' }} hs.
+            @if (baja.devolucionPlata === true) {
+              Se devolvió el dinero{{ baja.banco ? ' (' + baja.banco + ')' : '' }}.
+            } @else if (baja.devolucionPlata === false) {
+              No se devolvió dinero.
+            }
+          </p>
+        }
       </section>
     } @else if (puedeCancelarPedido()) {
       <section class="ds-card datos-cancelar">

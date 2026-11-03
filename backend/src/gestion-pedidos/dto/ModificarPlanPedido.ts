@@ -10,4 +10,6 @@ export class ModificarPlanPedidoDTO
     nueva_cantidad_cuotas!: number;
     valor_cuota_nuevo!: number;
     valor_senia_nuevo!: number;
+    // Tipo del plan elegido. Si no viene (recálculo por talles) se conserva el del pedido.
+    con_senia?: boolean;
 }

@@ -6,7 +6,7 @@ import { GestionPedidosService } from './gestion-pedidos.service';
 import { CrearPedidoDTO } from './dto/crearPedido.dto';
 import { ModificarPlanPedidoDTO } from './dto/ModificarPlanPedido';
 import { ESTADOS_BOCETO_BANDERA, ModificarBanderaDTO } from './dto/ControlBanderasDTO';
-import { TIPOS_AUDITORIA, TipoAuditoria } from 'src/auditorias/dto/insertarAuditoria.dto';
+import { TIPOS_PAGINA_AUDITORIA, TipoAuditoria } from 'src/auditorias/dto/insertarAuditoria.dto';
 import { MOTIVOS_CANCELACION, MotivoCancelacion } from 'src/pedidos/pedidos.service';
 
 const TAMANIO_MAXIMO_PAGINA_AUDITORIA = 100;
@@ -130,7 +130,7 @@ export class GestionPedidosController
     @Patch('cancelar/:id')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('modificar_pedidos')
-    async cancelarPedido(@Param('id', ParseIntPipe) idPedido: number, @Body() dto: { motivo: MotivoCancelacion; devolucionPlata: boolean; banco?: string })
+    async cancelarPedido(@Param('id', ParseIntPipe) idPedido: number, @Body() dto: { motivo: MotivoCancelacion; devolucionPlata: boolean; banco?: string }, @Req() req)
     {
         if (!MOTIVOS_CANCELACION.includes(dto?.motivo))
         {
@@ -147,7 +147,17 @@ export class GestionPedidosController
             throw new BadRequestException('Banco inválido.');
         }
 
-        await this.gestionService.cancelarPedido(idPedido, dto.motivo, dto.devolucionPlata, dto.banco?.trim());
+        await this.gestionService.cancelarPedido(idPedido, dto.motivo, dto.devolucionPlata, { idUsuario: req.usuario.id }, dto.banco?.trim());
+    }
+
+    // Quién canceló el pedido y cuándo, para mostrarlo en la ficha del cliente (Datos).
+    // Devuelve null si no hay registro (pedidos cancelados antes de auditar la cancelación).
+    @Get('cancelacion/:id')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_clientes_datos')
+    async obtenerCancelacion(@Param('id', ParseIntPipe) idPedido: number)
+    {
+        return await this.gestionService.obtenerCancelacion(idPedido);
     }
 
     //--- Auditoría: cambios de presupuesto, beneficios, diseño y talles ---
@@ -168,7 +178,7 @@ export class GestionPedidosController
             throw new BadRequestException('Rango de paginación inválido.');
         }
 
-        if (tipo && !TIPOS_AUDITORIA.includes(tipo as TipoAuditoria))
+        if (tipo && !TIPOS_PAGINA_AUDITORIA.includes(tipo as TipoAuditoria))
         {
             throw new BadRequestException('Tipo de auditoría inválido.');
         }

@@ -1,3 +1,4 @@
+import { PlanDisponibleDTO } from './dto/PlanDisponible.dto';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { ProductoConPrecioResponseDTO } from './dto/ProductoConPrecioResponse';
@@ -69,9 +70,9 @@ export class ProductosService
         });
     }
 
-    obtenerCuotasDisponibles(): Observable<number[]>
+    obtenerPlanesDisponibles(): Observable<PlanDisponibleDTO[]>
     {
-        return this.http.get<number[]>(`${environment.apiUrl}/productos/cuotas-disponibles`);
+        return this.http.get<PlanDisponibleDTO[]>(`${environment.apiUrl}/productos/planes-disponibles`);
     }
 
     modificarPreciosProducto(idProducto:number, dto:ModificarProductoPreciosDTO): Observable<number>

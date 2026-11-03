@@ -1,3 +1,4 @@
+import { PlanDisponibleDTO } from './dto/PlanDisponible.dto';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { ProductoConPrecioResponseDTO} from './dto/ProductoConPrecioResponse.dto';
@@ -191,17 +192,28 @@ export class ProductosService
         return data as PreciosBeneficiosResponseDTO | null;
     }
     
-    async obtenerCuotasDisponibles():Promise<number[]>
+    // Planes que ofrece el catálogo. Es el único lugar donde se deduce si un plan lleva seña
+    // (seña != cuota en la lista de precios); una vez elegido, el pedido lo guarda en pedidos.con_senia.
+    async obtenerPlanesDisponibles():Promise<PlanDisponibleDTO[]>
     {
-        const { data } = await this.sb.supabase
+        const { data, error } = await this.sb.supabase
         .from('precios_productos')
-        .select('cuotas');
+        .select('cuotas, valor_senia, valor_cuota');
 
-        const cuotasTabla = data?.map(x => x.cuotas);
-        const set = new Set (cuotasTabla);
-        const cuotasDisponibles = [...set].sort((a, b) => a - b)
+        if (error) {
+            throw new Error(error.message);
+        }
 
-        return cuotasDisponibles
+        const planes = new Map<number, boolean>();
+        for (const precio of data)
+        {
+            const conSenia = Number(precio.valor_senia) !== Number(precio.valor_cuota);
+            planes.set(precio.cuotas, (planes.get(precio.cuotas) ?? false) || conSenia);
+        }
+
+        return [...planes.entries()]
+            .map(([cuotas, conSenia]) => ({ cuotas, conSenia }))
+            .sort((a, b) => a.cuotas - b.cuotas);
     }
 
 

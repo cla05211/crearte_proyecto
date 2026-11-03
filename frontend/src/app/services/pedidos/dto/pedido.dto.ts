@@ -19,4 +19,6 @@ export class PedidoDTO
     fecha_entrega_aproximada?: string | null;
     // Seña acordada; null = nunca se modificó el plan (vale la suma de los productos)
     senia_total?: number | null;
+    // Tipo de plan: true = "N cuotas + Seña", false = "N+1 cuotas iguales" (la seña es la cuota 1)
+    con_senia!: boolean;
 }

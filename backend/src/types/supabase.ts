@@ -755,6 +755,7 @@ export type Database = {
       pedidos: {
         Row: {
           cantidad_hermanos: number | null
+          con_senia: boolean
           colores: string | null
           envio_gratis: boolean | null
           estado_bandera: string
@@ -784,6 +785,7 @@ export type Database = {
         }
         Insert: {
           cantidad_hermanos?: number | null
+          con_senia?: boolean
           colores?: string | null
           envio_gratis?: boolean | null
           estado_bandera?: string
@@ -813,6 +815,7 @@ export type Database = {
         }
         Update: {
           cantidad_hermanos?: number | null
+          con_senia?: boolean
           colores?: string | null
           envio_gratis?: boolean | null
           estado_bandera?: string

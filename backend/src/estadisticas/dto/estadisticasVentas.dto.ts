@@ -1,5 +1,6 @@
 export class EstadisticasVentasDTO
 {
+    idGrupo!: number;
     fechaVenta!: string;
     colegio!: string;
     vendedora!:string;

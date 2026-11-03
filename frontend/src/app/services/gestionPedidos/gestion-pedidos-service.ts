@@ -12,7 +12,7 @@ import { PedidoDTOResponse } from '../pedidos/dto/pedidoResponse.dto';
 import { ControlTallesDisenioDTO } from './dto/ControlTallesDisenioDTO';
 import { ControlProduccionDTO } from './dto/ControlProduccionDTO';
 import { ControlBanderasDTO, ModificarBanderaDTO } from './dto/ControlBanderasDTO';
-import { AuditoriaPaginaDTO, FiltrosAuditoria } from './dto/AuditoriaDTO';
+import { AuditoriaPaginaDTO, CancelacionPedidoDTO, FiltrosAuditoria } from './dto/AuditoriaDTO';
 
 export type BancoDevolucion = 'COMAFI' | 'Santander' | 'Efectivo';
 // Tiene que coincidir con MOTIVOS_CANCELACION del back y el check de la base
@@ -113,6 +113,12 @@ export class GestionPedidosService
   cancelarPedido(idPedido: number, motivo: MotivoCancelacion, devolucionPlata: boolean, banco?: BancoDevolucion): Observable<void>
   {
     return this.http.patch<void>(`${environment.apiUrl}/gestion-pedidos/cancelar/${idPedido}`, { motivo, devolucionPlata, banco });
+  }
+
+  // Quién canceló el pedido y cuándo (null si no hay registro)
+  obtenerCancelacion(idPedido: number): Observable<CancelacionPedidoDTO | null>
+  {
+    return this.http.get<CancelacionPedidoDTO | null>(`${environment.apiUrl}/gestion-pedidos/cancelacion/${idPedido}`);
   }
 
   //--- Auditoría ---
