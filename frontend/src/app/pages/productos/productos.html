@@ -1,2 +1,331 @@
-<p>{{ productos() | json }}</p>
-<p>{{ agregados() | json }}</p>
+<main class="products-page">
+  <div class="products-page__shape products-page__shape--left" aria-hidden="true"></div>
+  <div class="products-page__shape products-page__shape--right" aria-hidden="true"></div>
+
+  <section class="ds-container products-container">
+    <header class="products-header">
+      <div>
+        <span class="ds-eyebrow">Catálogo</span>
+        <h1 class="ds-heading-1">Productos y planes</h1>
+        <p class="ds-text-muted">Actualizá la lista de precios y elegí qué planes de pago se ofrecen en las ventas nuevas.</p>
+      </div>
+
+      <nav class="promo-tabs" aria-label="Sección">
+        <button type="button" [class.is-active]="pestania() === 'precios'" [attr.aria-pressed]="pestania() === 'precios'" (click)="cambiarPestania('precios')">
+          Precios
+        </button>
+        <button type="button" [class.is-active]="pestania() === 'planes'" [attr.aria-pressed]="pestania() === 'planes'" (click)="cambiarPestania('planes')">
+          Planes de pago
+        </button>
+      </nav>
+    </header>
+
+    @if (cargando() && precios().length === 0) {
+      <div class="ds-card products-empty">Cargando precios…</div>
+    } @else if (errorCarga()) {
+      <div class="ds-alert ds-alert--danger products-empty">
+        {{ errorCarga() }}
+        <button type="button" class="ds-button ds-button--small ds-button--secondary" (click)="cargarPrecios()">Reintentar</button>
+      </div>
+    } @else if (pestania() === 'precios') {
+
+      <!-- ═══════════════════════ PRECIOS ═══════════════════════ -->
+      <div class="prices-layout">
+        <aside class="product-list" aria-label="Productos">
+          @for (grupo of grupos(); track grupo.clave) {
+            <button
+              type="button"
+              class="product-list__item"
+              [class.is-active]="grupo.clave === grupoSeleccionado()"
+              [attr.aria-pressed]="grupo.clave === grupoSeleccionado()"
+              (click)="seleccionarGrupo(grupo.clave)"
+            >
+              {{ grupo.titulo }}
+            </button>
+          }
+        </aside>
+
+        <section class="ds-card prices-panel">
+          <header class="prices-panel__header">
+            <div>
+              <h2 class="ds-heading-2">{{ grupoActual()?.titulo }}</h2>
+              <p class="ds-text-muted">
+                Precio por prenda según el plan y la cantidad de alumnos.
+                @if ((grupoActual()?.ids?.length ?? 0) > 1) {
+                  Se aplica a: {{ grupoActual()!.nombres.join(', ') }}.
+                }
+              </p>
+            </div>
+          </header>
+
+          @if (desparejos().length) {
+            <div class="ds-alert ds-alert--warning prices-panel__alert">
+              <p>
+                La tabla muestra los precios de <strong>{{ grupoActual()!.nombres[0] }}</strong>, pero no todo el grupo coincide:
+              </p>
+              <ul>
+                @for (d of desparejos(); track d.idProducto) {
+                  <li>
+                    <strong>{{ d.nombre }}</strong>:
+                    @if (d.distintos.length) { {{ d.distintos.length }} precio{{ d.distintos.length === 1 ? '' : 's' }} distinto{{ d.distintos.length === 1 ? '' : 's' }}}
+                    @if (d.distintos.length && d.sinPar) { y }
+                    @if (d.sinPar) { {{ d.sinPar }} fila{{ d.sinPar === 1 ? '' : 's' }} (plan o tramo de cantidad) que no tiene{{ d.sinPar === 1 ? '' : 'n' }} equivalente }
+                  </li>
+                }
+              </ul>
+              @if (hayFilasSinPar()) {
+                <p class="prices-panel__alert-note">
+                  Las filas sin equivalente no se pueden igualar desde acá: hay un plan o un tramo de cantidad cargado en un producto y no en el otro. Hay que revisarlo en la tabla <code>precios_productos</code>.
+                </p>
+              }
+              @if (preciosParaIgualar() > 0) {
+                <button type="button" class="ds-button ds-button--small" [disabled]="igualando() || cantidadCambios() > 0" (click)="igualarPrecios()">
+                  {{ igualando() ? 'Igualando…' : 'Igualar precios a ' + grupoActual()!.nombres[0] }}
+                </button>
+                @if (cantidadCambios() > 0) {
+                  <span class="prices-panel__alert-note">Guardá o descartá los cambios antes de igualar.</span>
+                }
+              }
+            </div>
+          }
+
+          @if (planesProducto().length === 0) {
+            <p class="ds-text-muted">Este producto todavía no tiene precios cargados.</p>
+          } @else {
+            <div class="ds-table-wrapper">
+              <table class="ds-table prices-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Plan</th>
+                    @for (tramo of tramosProducto(); track tramo.desde) {
+                      <th scope="col">{{ tramo.etiqueta }}</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (plan of planesProducto(); track plan.clave) {
+                    <tr [class.is-inactive]="!plan.activo">
+                      <th scope="row" class="prices-table__plan">
+                        <span>{{ plan.etiqueta }}</span>
+                        @if (!plan.activo) {
+                          <span class="ds-badge">Inactivo</span>
+                        }
+                      </th>
+                      @for (tramo of tramosProducto(); track tramo.desde) {
+                        <td>
+                          @if (celda(plan, tramo.desde); as fila) {
+                            <div class="price-cell" [class.is-modified]="estaModificada(fila)">
+                              @if (plan.conSenia) {
+                                <label class="price-input">
+                                  <span class="price-input__label">Seña</span>
+                                  <span class="price-input__box">
+                                    <span aria-hidden="true">$</span>
+                                    <input
+                                      type="number" min="0" step="1" inputmode="numeric"
+                                      [attr.aria-label]="'Seña ' + plan.etiqueta + ' ' + tramo.etiqueta"
+                                      [ngModel]="valorSenia(fila)"
+                                      (ngModelChange)="editarSenia(fila, $event)"
+                                    />
+                                  </span>
+                                </label>
+                              }
+                              <label class="price-input">
+                                @if (plan.conSenia) { <span class="price-input__label">Cuota</span> }
+                                <span class="price-input__box">
+                                  <span aria-hidden="true">$</span>
+                                  <input
+                                    type="number" min="0" step="1" inputmode="numeric"
+                                    [attr.aria-label]="'Cuota ' + plan.etiqueta + ' ' + tramo.etiqueta"
+                                    [ngModel]="valorCuota(fila)"
+                                    (ngModelChange)="editarCuota(fila, $event)"
+                                  />
+                                </span>
+                              </label>
+                            </div>
+                          } @else {
+                            <span class="prices-table__empty">—</span>
+                          }
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      </div>
+
+      @if (cantidadCambios() > 0) {
+        <div class="save-bar" role="region" aria-label="Cambios sin guardar">
+          <div class="save-bar__info">
+            <strong>{{ cantidadCambios() }} precio{{ cantidadCambios() === 1 ? '' : 's' }} modificado{{ cantidadCambios() === 1 ? '' : 's' }}</strong>
+            @if (cambiosInvalidos()) {
+              <span class="save-bar__error">Hay precios vacíos o en cero.</span>
+            }
+          </div>
+          <div class="save-bar__actions">
+            <button type="button" class="ds-button ds-button--ghost" [disabled]="guardandoPrecios()" (click)="descartarCambios()">Descartar</button>
+            <button type="button" class="ds-button" [disabled]="guardandoPrecios() || cambiosInvalidos()" (click)="guardarPrecios()">
+              {{ guardandoPrecios() ? 'Guardando…' : 'Guardar cambios' }}
+            </button>
+          </div>
+        </div>
+      }
+
+    } @else {
+
+      <!-- ═══════════════════════ PLANES ═══════════════════════ -->
+      <section class="plans">
+        <div class="plans__toolbar">
+          <button type="button" class="ds-button" (click)="abrirAgregarPlan()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+            Agregar plan
+          </button>
+        </div>
+
+        <ul class="plans__list">
+          @for (plan of planes(); track plan.clave) {
+            <li class="plan-card" [class.is-inactive]="!plan.activo">
+              <div class="plan-card__info">
+                <span class="plan-card__name">{{ plan.etiqueta }}</span>
+              </div>
+              <button
+                type="button"
+                class="switch"
+                role="switch"
+                [attr.aria-checked]="plan.activo"
+                [attr.aria-label]="(plan.activo ? 'Desactivar ' : 'Activar ') + plan.etiqueta"
+                [disabled]="planCambiando() === plan.clave"
+                (click)="cambiarEstadoPlan(plan)"
+              >
+                <span class="switch__track"><span class="switch__thumb"></span></span>
+                <span class="switch__text">{{ plan.activo ? 'Activo' : 'Inactivo' }}</span>
+              </button>
+            </li>
+          } @empty {
+            <li class="ds-text-muted">No hay planes cargados.</li>
+          }
+        </ul>
+      </section>
+    }
+  </section>
+
+  <!-- ═══════════════════════ AGREGAR PLAN ═══════════════════════ -->
+  @if (agregandoPlan()) {
+    <div class="plan-dialog__overlay" (click)="$event.target === $event.currentTarget && cerrarAgregarPlan()">
+      <section class="plan-dialog" role="dialog" aria-modal="true" aria-labelledby="titulo-nuevo-plan">
+        <header class="plan-dialog__header">
+          <div>
+            <span class="ds-eyebrow">Paso {{ pasoPlan() }} de 2</span>
+            <h2 id="titulo-nuevo-plan" class="ds-heading-2">
+              {{ pasoPlan() === 1 ? 'Nuevo plan de pago' : etiquetaNuevoPlan() }}
+            </h2>
+          </div>
+          <button type="button" class="ds-button ds-button--ghost ds-button--small" aria-label="Cerrar" (click)="cerrarAgregarPlan()">✕</button>
+        </header>
+
+        @if (pasoPlan() === 1) {
+          <div class="plan-dialog__body ds-stack">
+            <fieldset class="plan-type">
+              <legend class="ds-label">Tipo de plan</legend>
+              <button type="button" class="plan-type__option" [class.is-active]="tipoNuevoPlan() === 'senia'" [attr.aria-pressed]="tipoNuevoPlan() === 'senia'" (click)="cambiarTipoNuevoPlan('senia')">
+                <strong>Cuotas + seña</strong>
+                <span>Se paga una seña aparte y después las cuotas.</span>
+              </button>
+              <button type="button" class="plan-type__option" [class.is-active]="tipoNuevoPlan() === 'iguales'" [attr.aria-pressed]="tipoNuevoPlan() === 'iguales'" (click)="cambiarTipoNuevoPlan('iguales')">
+                <strong>Cuotas iguales</strong>
+                <span>Todos los pagos valen lo mismo; el primero funciona como seña.</span>
+              </button>
+            </fieldset>
+
+            <label class="ds-field">
+              <span class="ds-label">{{ nuevoPlanConSenia() ? 'Cantidad de cuotas (sin contar la seña)' : 'Cantidad total de cuotas' }}</span>
+              <input class="ds-input plan-dialog__number" type="number" min="1" step="1" inputmode="numeric"
+                [ngModel]="pagosNuevoPlan()" (ngModelChange)="pagosNuevoPlan.set($event)" />
+              @if (etiquetaNuevoPlan() && !nuevoPlanRepetido()) {
+                <span class="ds-field__help">Se va a mostrar como <strong>{{ etiquetaNuevoPlan() }}</strong>.</span>
+              }
+              @if (pagosNuevoPlan() !== null && errorPaso1()) {
+                <span class="ds-field__error">{{ errorPaso1() }}</span>
+              }
+            </label>
+
+            <label class="ds-field">
+              <span class="ds-label">Copiar precios de</span>
+              <select class="ds-select" [ngModel]="planACopiar()" (ngModelChange)="planACopiar.set($event)">
+                <option value="">Ninguno, los cargo de cero</option>
+                @for (plan of planes(); track plan.clave) {
+                  <option [value]="plan.clave">{{ plan.etiqueta }}{{ plan.activo ? '' : ' (inactivo)' }}</option>
+                }
+              </select>
+              <span class="ds-field__help">Precarga los precios para que solo ajustes los que cambian.</span>
+            </label>
+          </div>
+
+          <footer class="plan-dialog__footer">
+            <button type="button" class="ds-button ds-button--ghost" (click)="cerrarAgregarPlan()">Cancelar</button>
+            <button type="button" class="ds-button" [disabled]="!!errorPaso1()" (click)="irAPasoPrecios()">Siguiente: precios</button>
+          </footer>
+        } @else {
+          <div class="plan-dialog__body">
+            <p class="ds-text-muted plan-dialog__intro">
+              Precio por prenda de cada tramo de cantidad.
+              @if (nuevoPlanConSenia()) { Cada tramo lleva seña y cuota. }
+            </p>
+
+            <div class="family-list">
+              @for (familia of familias; track familia.clave) {
+                <section class="family">
+                  <header class="family__header">
+                    <h3>{{ familia.titulo }}</h3>
+                    @if (familia.detalle) { <span>{{ familia.detalle }}</span> }
+                  </header>
+                  <div class="family__grid" [class.family__grid--senia]="nuevoPlanConSenia()">
+                    <span class="family__col">Cantidad</span>
+                    @if (nuevoPlanConSenia()) { <span class="family__col">Seña</span> }
+                    <span class="family__col">Cuota</span>
+
+                    @for (tramo of familia.tramos; track tramo) {
+                      <span class="family__tramo">{{ etiquetaTramo[tramo] }}</span>
+                      @if (nuevoPlanConSenia()) {
+                        <span class="price-input__box" [class.is-invalid]="campoInvalido(campo('Senia', familia, tramo))">
+                          <span aria-hidden="true">$</span>
+                          <input type="number" min="0" step="1" inputmode="numeric"
+                            [attr.aria-label]="'Seña ' + familia.titulo + ' ' + etiquetaTramo[tramo]"
+                            [ngModel]="valorNuevoPlan(campo('Senia', familia, tramo))"
+                            (ngModelChange)="editarNuevoPlan(campo('Senia', familia, tramo), $event)" />
+                        </span>
+                      }
+                      <span class="price-input__box" [class.is-invalid]="campoInvalido(campo('Cuota', familia, tramo))">
+                        <span aria-hidden="true">$</span>
+                        <input type="number" min="0" step="1" inputmode="numeric"
+                          [attr.aria-label]="'Cuota ' + familia.titulo + ' ' + etiquetaTramo[tramo]"
+                          [ngModel]="valorNuevoPlan(campo('Cuota', familia, tramo))"
+                          (ngModelChange)="editarNuevoPlan(campo('Cuota', familia, tramo), $event)" />
+                      </span>
+                    }
+                  </div>
+                </section>
+              }
+            </div>
+          </div>
+
+          <footer class="plan-dialog__footer">
+            <button type="button" class="ds-button ds-button--ghost" [disabled]="guardandoPlan()" (click)="pasoPlan.set(1)">Volver</button>
+            <span class="plan-dialog__status" [class.is-error]="intentoGuardarPlan() && preciosFaltantes() > 0">
+              @if (preciosFaltantes() > 0) {
+                Faltan {{ preciosFaltantes() }} precio{{ preciosFaltantes() === 1 ? '' : 's' }}
+              } @else {
+                Todo completo
+              }
+            </span>
+            <button type="button" class="ds-button" [disabled]="guardandoPlan()" (click)="guardarPlan()">
+              {{ guardandoPlan() ? 'Guardando…' : 'Crear plan' }}
+            </button>
+          </footer>
+        }
+      </section>
+    </div>
+  }
+</main>

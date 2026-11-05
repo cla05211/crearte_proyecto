@@ -50,6 +50,18 @@ export class DiseniosController
         return await this.diseniosService.crearUrlDescarga(idGrupo, idDocumento, nombre || 'disenio');
     }
 
+    // Imagen del boceto (primera página en JPG); si no existe todavía, se genera en el momento
+    @Get(':idGrupo/:idDocumento/url-preview')
+    @UseGuards(AuthGuard, PermisosGuard)
+    @RequierePermiso('ver_clientes_talles_disenio')
+    async crearUrlPreview(
+        @Param('idGrupo', ParseIntPipe) idGrupo: number,
+        @Param('idDocumento', ParseIntPipe) idDocumento: number,
+    )
+    {
+        return await this.diseniosService.crearUrlPreview(idGrupo, idDocumento);
+    }
+
     @Get(':idGrupo/:idDocumento/url-descarga-firmado')
     @UseGuards(AuthGuard, PermisosGuard)
     @RequierePermiso('ver_clientes_talles_disenio')

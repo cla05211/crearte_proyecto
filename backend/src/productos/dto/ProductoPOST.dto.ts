@@ -9,4 +9,5 @@ export class ProductoPostDTO
     id_producto!: number;
     nombre!: string;
     descripcion!:string;
+    senia!: boolean;
 }

@@ -29,7 +29,7 @@ import { CrearCuotasDTO } from '../../services/cuotas/dto/crearCuotas.dto';
 import { PagosService } from '../../services/pagos/pagos-service';
 import { PagoResponseDTO } from '../../services/pagos/dto/pagoResponse.dto';
 import { PagoComprobanteDatosDTO } from '../../services/pagos/dto/pagoComprobanteDatos.dto';
-import { etiquetaPlan } from '../../services/cuotas/plan-cuotas';
+import { clavePlan, etiquetaPlan, PlanCuotas, planDesdeClave, planesConActual } from '../../services/cuotas/plan-cuotas';
 
 interface ProductoCarrito {
   idProducto: number;
@@ -37,6 +37,7 @@ interface ProductoCarrito {
   descripcion: string;
   cantidad: number;
   cuotas: number;
+  conSenia: boolean;
   valorSenia: number;
   valorCuota: number;
   agregados: number[];
@@ -124,7 +125,8 @@ export class Ventas implements OnInit {
   readonly productoCalculado = signal<ProductoCarrito | null>(null);
   readonly ventasExpandidas = signal<number[]>([]);
   readonly detalleProductosVenta = signal<PedidoResponseVentas | null>(null);
-  cuotasDisponibles = signal<number[]>([]);
+  // Planes activos del catálogo (cuotas + si lleva seña)
+  planesDisponibles = signal<PlanCuotas[]>([]);
 
   readonly anioActual = new Date().getFullYear();
   readonly promoSeleccionada = signal(this.anioActual);
@@ -155,6 +157,12 @@ export class Ventas implements OnInit {
   readonly edicionPlan = signal<PedidoResponseVentas | null>(null);
   readonly carritoEdicionPlan = signal<ProductoCarrito[]>([]);
   readonly cuotasPlanSeleccionadas = signal<number>(0);
+  readonly conSeniaPlanSeleccionada = signal(false);
+  readonly clavePlanSeleccionada = computed(() =>
+    clavePlan({ cuotas: this.cuotasPlanSeleccionadas(), conSenia: this.conSeniaPlanSeleccionada() }));
+  // Plan que tenía el pedido al abrir la edición: se ofrece aunque esté desactivado en el catálogo
+  private readonly planOriginalEdicion = signal<PlanCuotas | null>(null);
+  readonly planesEdicion = computed(() => planesConActual(this.planesDisponibles(), this.planOriginalEdicion()));
   readonly productoCalculadoPlan = signal<ProductoCarrito | null>(null);
   readonly guardandoPlan = signal(false);
   readonly indiceEdicionProductoPlan = signal<number | null>(null);
@@ -292,8 +300,7 @@ export class Ventas implements OnInit {
     //ACA
     this.productosService.obtenerPlanesDisponibles().subscribe({
       next: (planes) => {
-        this.cuotasDisponibles.set(planes.map((plan) => plan.cuotas));
-        this.planTieneSenia.set(new Map(planes.map((plan) => [plan.cuotas, plan.conSenia])));
+        this.planesDisponibles.set(planes);
       },
     });
   }
@@ -380,25 +387,17 @@ export class Ventas implements OnInit {
     this.calcularProducto();
   }
 
-  // Planes del catálogo (cuotas -> lleva seña). Solo sirve para elegir un plan nuevo:
-  // los pedidos ya creados guardan su tipo de plan en pedidos.con_senia.
-  readonly planTieneSenia = signal(new Map<number, boolean>());
-
-  // Etiqueta de un plan del catálogo (al elegir cuotas en el alta o en la edición del plan)
-  etiquetaPlanCuotas(cuotas: number): string
+  // Clave del plan para los <select> (cuotas + seña)
+  clavePlan(plan: PlanCuotas): string
   {
-    const nroCuotas = Number(cuotas);
-    const conSenia = this.planTieneSenia().get(nroCuotas);
-    if (conSenia === undefined) return `${nroCuotas} cuotas`;
-    return etiquetaPlan(nroCuotas, conSenia);
+    return clavePlan(plan);
   }
 
-  // Tipo de plan del catálogo para guardar en el pedido
-  private conSeniaPlan(cuotas: number): boolean
+  // Etiqueta de un plan del catálogo (al elegir el plan en el alta o en la edición)
+  etiquetaPlanCatalogo(plan: PlanCuotas): string
   {
-    const conSenia = this.planTieneSenia().get(Number(cuotas));
-    if (conSenia === undefined) throw new Error(`El plan de ${cuotas} cuotas no está en el catálogo.`);
-    return conSenia;
+    const activo = this.planesDisponibles().some((p) => clavePlan(p) === clavePlan(plan));
+    return etiquetaPlan(plan.cuotas, plan.conSenia) + (activo ? '' : ' (desactivado)');
   }
 
   // Etiqueta de una venta ya creada: sale de lo guardado en el pedido
@@ -409,19 +408,21 @@ export class Ventas implements OnInit {
 
   etiquetaCuotasProducto(producto: ProductoCarrito): string
   {
-    return this.etiquetaPlanCuotas(producto.cuotas);
+    return etiquetaPlan(producto.cuotas, producto.conSenia);
   }
 
   calcularProducto(): void {
-    const { idProducto, cantidad, cuotas, agregados } = this.productoEnEdicion;
-    if (!idProducto || !cantidad || !cuotas) {
+    const { idProducto, cantidad, agregados } = this.productoEnEdicion;
+    const plan = planDesdeClave(this.productoEnEdicion.plan);
+    if (!idProducto || !cantidad || !plan) {
       this.productoCalculado.set(null);
       return;
     }
+    const { cuotas, conSenia } = plan;
 
     // El tramo de precio se elige contando las prendas sin cargo (son gratis pero cuentan en cantidad).
     const cantidadTramo = Number(cantidad) + cantidadSinCargo(this.beneficiosSeleccionados(), Number(idProducto));
-    this.productosService.obtenerPrecioBeneficioProducto(idProducto, cuotas, cantidadTramo).subscribe({
+    this.productosService.obtenerPrecioBeneficioProducto(idProducto, cuotas, cantidadTramo, conSenia).subscribe({
       next: (precio) => {
         const producto = this.productosParaElegir().find(
           (item) => item.id_producto === idProducto,
@@ -437,6 +438,7 @@ export class Ventas implements OnInit {
             .join(' · Agregado: '),
           cantidad,
           cuotas,
+          conSenia,
           valorSenia: precio.valor_senia,
           valorCuota: precio.valor_cuota + costoExtras / cuotas,
           agregados,
@@ -480,6 +482,7 @@ export class Ventas implements OnInit {
           producto.idProducto,
           producto.cuotas,
           producto.cantidad + cantidadSinCargo(this.beneficiosSeleccionados(), producto.idProducto),
+          producto.conSenia,
         )
         .pipe(
           map((precio) => {
@@ -1000,7 +1003,7 @@ export class Ventas implements OnInit {
         porcentaje_descuento_hermanos: Number(this.detallePedido.porcentaje_descuento_hermanos) || 0,
         estado_talles: '',
         estado_boceto: '',
-        con_senia: this.conSeniaPlan(this.carrito()[0]?.cuotas ?? 0),
+        con_senia: this.carrito()[0]?.conSenia ?? false,
       },
       productosPedidoDTO: this.carrito().map((producto, indice) => ({
         id_pedido: idPedido,
@@ -1124,7 +1127,7 @@ export class Ventas implements OnInit {
   }
 
   private crearProductoEnEdicion() {
-    return { idProducto: 0, cantidad: 0, cuotas: 0, agregados: [] as number[] };
+    return { idProducto: 0, cantidad: 0, plan: '', agregados: [] as number[] };   // plan: clave cuotas-seña
   }
 
   private crearProductoEnEdicionPlan() {
@@ -1233,13 +1236,16 @@ export class Ventas implements OnInit {
 
   abrirEdicionPlan(venta: PedidoResponseVentas): void {
     const cuotas = venta.nroCuotas;
+    const conSenia = venta.pedidoDTO.con_senia;
     this.carritoEdicionPlan.set(
-      venta.productosPedidoDTO.map((producto) => this.productoPedidoAProductoCarrito(producto, cuotas)),
+      venta.productosPedidoDTO.map((producto) => this.productoPedidoAProductoCarrito(producto, cuotas, conSenia)),
     );
     this.banderaSeleccionadaPlan = this.bandera()
       ? venta.agregadosGlobalesDTO.some((agregado) => agregado.id_agregado === this.bandera()!.id)
       : false;
     this.cuotasPlanSeleccionadas.set(cuotas);
+    this.conSeniaPlanSeleccionada.set(conSenia);
+    this.planOriginalEdicion.set({ cuotas, conSenia });
     this.productoEnEdicionPlan = this.crearProductoEnEdicionPlan();
     this.productoCalculadoPlan.set(null);
     this.indiceEdicionProductoPlan.set(null);
@@ -1255,8 +1261,12 @@ export class Ventas implements OnInit {
     this.banderaSeleccionadaPlan = false;
   }
 
-  cambiarCuotasPlan(nuevasCuotas: number): void {
-    this.cuotasPlanSeleccionadas.set(nuevasCuotas);
+  cambiarCuotasPlan(clave: string): void {
+    const plan = planDesdeClave(clave);
+    if (!plan) return;
+    const nuevasCuotas = plan.cuotas;
+    this.cuotasPlanSeleccionadas.set(plan.cuotas);
+    this.conSeniaPlanSeleccionada.set(plan.conSenia);
 
     const productos = this.carritoEdicionPlan();
     if (!productos.length) return;
@@ -1267,6 +1277,7 @@ export class Ventas implements OnInit {
           producto.idProducto,
           nuevasCuotas,
           producto.cantidad + cantidadSinCargo(this.edicionPlan()?.beneficios, producto.idProducto),
+          plan.conSenia,
         )
         .pipe(
           map((precio) => {
@@ -1276,6 +1287,7 @@ export class Ventas implements OnInit {
             return {
               ...producto,
               cuotas: nuevasCuotas,
+              conSenia: plan.conSenia,
               valorSenia: precio.valor_senia,
               valorCuota: precio.valor_cuota + costoExtras / nuevasCuotas,
             };
@@ -1307,13 +1319,14 @@ export class Ventas implements OnInit {
   calcularProductoPlan(): void {
     const { idProducto, cantidad, agregados } = this.productoEnEdicionPlan;
     const cuotas = this.cuotasPlanSeleccionadas();
+    const conSenia = this.conSeniaPlanSeleccionada();
     if (!idProducto || !cantidad || !cuotas) {
       this.productoCalculadoPlan.set(null);
       return;
     }
 
     const cantidadTramo = Number(cantidad) + cantidadSinCargo(this.edicionPlan()?.beneficios, Number(idProducto));
-    this.productosService.obtenerPrecioBeneficioProducto(idProducto, cuotas, cantidadTramo).subscribe({
+    this.productosService.obtenerPrecioBeneficioProducto(idProducto, cuotas, cantidadTramo, conSenia).subscribe({
       next: (precio) => {
         const producto = this.productosParaElegir().find((item) => item.id_producto === idProducto);
         const extras = this.agregadosIndividuales().filter((item) => agregados.includes(item.id));
@@ -1325,6 +1338,7 @@ export class Ventas implements OnInit {
           descripcion: [producto?.descripcion, ...nombresExtras].filter(Boolean).join(' · Agregado: '),
           cantidad,
           cuotas,
+          conSenia,
           valorSenia: precio.valor_senia,
           valorCuota: precio.valor_cuota + costoExtras / cuotas,
           agregados,
@@ -1431,7 +1445,7 @@ export class Ventas implements OnInit {
       nueva_cantidad_cuotas: this.cuotasPlanSeleccionadas(),
       valor_cuota_nuevo: this.totalCuotasPlan(),
       valor_senia_nuevo: this.totalSeniaPlan(),
-      con_senia: this.conSeniaPlan(this.cuotasPlanSeleccionadas()),
+      con_senia: this.conSeniaPlanSeleccionada(),
     };
 
     this.guardandoPlan.set(true);
@@ -1452,7 +1466,7 @@ export class Ventas implements OnInit {
     });
   }
 
-  private productoPedidoAProductoCarrito(producto: ProductoPedidoDTO, cuotas: number): ProductoCarrito {
+  private productoPedidoAProductoCarrito(producto: ProductoPedidoDTO, cuotas: number, conSenia: boolean): ProductoCarrito {
     const [, ...nombresExtras] = producto.descripcion.split(' · Agregado: ');
     const agregados = this.agregadosIndividuales()
       .filter((extra) => nombresExtras.includes(extra.agregado))
@@ -1464,6 +1478,7 @@ export class Ventas implements OnInit {
       descripcion: producto.descripcion,
       cantidad: producto.cantidad,
       cuotas,
+      conSenia,
       valorSenia: producto.valor_senia,
       valorCuota: producto.valor_cuota,
       agregados,

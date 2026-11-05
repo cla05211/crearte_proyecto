@@ -195,6 +195,15 @@ export class ClientesPortalController
         return await this.diseniosService.crearUrlDescarga(idGrupo, idDocumento, nombreArchivo || 'disenio');
     }
 
+    // Imagen del boceto (primera página en JPG) para verlo en pantalla sin bajar el PDF
+    @Get('url-preview-disenios/:id')
+    async obtenerUrlPreviewDisenio(@Req() req, @Param('id', ParseIntPipe) idDocumento: number): Promise<{ url: string }>
+    {
+        const idGrupo = req.cliente.id_grupo;
+
+        return await this.diseniosService.crearUrlPreview(idGrupo, idDocumento);
+    }
+
     // Boceto firmado que subió el empleado (disponible una vez cargado)
     @Get('url-descarga-firmado/:id')
     async obtenerUrlDescargaFirmado(@Req() req, @Param('id', ParseIntPipe) idDocumento: number, @Query('nombreArchivo') nombreArchivo: string): Promise<{ url: string }>

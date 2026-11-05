@@ -291,9 +291,9 @@
       <div class="wizard-content product-step">
         <label class="ds-field">
           <span class="ds-label">Plan de cuotas</span>
-          <select class="ds-select" [ngModel]="cuotasPlanSeleccionadas()" (ngModelChange)="cambiarCuotasPlan(+$event)">
-            @for (cuotas of cuotasDisponibles(); track cuotas) {
-              <option [value]="cuotas">{{ cuotas }} cuotas</option>
+          <select class="ds-select" [ngModel]="clavePlanSeleccionada()" (ngModelChange)="cambiarCuotasPlan($event)">
+            @for (plan of planesEdicion(); track clavePlan(plan)) {
+              <option [value]="clavePlan(plan)">{{ etiquetaPlanCatalogo(plan) }}</option>
             }
           </select>
         </label>

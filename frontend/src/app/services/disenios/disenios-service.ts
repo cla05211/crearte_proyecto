@@ -22,6 +22,12 @@ export class DiseniosService
             `${environment.apiUrl}/disenios/${idGrupo}/${idDocumento}/url-descarga`, { params: { nombre } });
     }
 
+    // URL firmada de la imagen del boceto (primera página en JPG), para mostrarla en un <img>
+    obtenerUrlPreview(idGrupo: number, idDocumento: number)
+    {
+        return this.http.get<{ url: string; urlGrande: string }>(`${environment.apiUrl}/disenios/${idGrupo}/${idDocumento}/url-preview`);
+    }
+
     // URL firmada para descargar el boceto firmado (JPG) de un diseño
     obtenerUrlDescargaFirmado(idGrupo: number, idDocumento: number, nombre: string)
     {

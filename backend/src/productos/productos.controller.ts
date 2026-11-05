@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
@@ -6,6 +6,7 @@ import { ProductosService } from './productos.service';
 import { ProductoPostDTO } from './dto/ProductoPOST.dto';
 import { AgregadoPostDTO } from './dto/AgregadoPost.dto';
 import { ModificarProductoPreciosDTO } from './dto/ModificarProductoPrecios.dto';
+import { AgregarPlanDTO } from './dto/AgregarPlanDTO';
 
 @Controller('productos')
 export class ProductosController 
@@ -28,22 +29,22 @@ export class ProductosController
 
     @Get('/precio-beneficio')
     @UseGuards(AuthGuard,PermisosGuard)
-    async obtenerPrecioBeneficio(@Query('idProducto', ParseIntPipe) idProducto: number, @Query('cantidad', ParseIntPipe) cantidad: number, @Query('cuotas',ParseIntPipe) cuotas: number,) 
+    async obtenerPrecioBeneficio(@Query('idProducto', ParseIntPipe) idProducto: number, @Query('cantidad', ParseIntPipe) cantidad: number, @Query('cuotas',ParseIntPipe) cuotas: number, @Query('conSenia', new ParseBoolPipe({ optional: true })) conSenia?: boolean) 
     {
-        return await this.productosService.obtenerPreciosBeneficios(idProducto, cantidad, cuotas);
+        return await this.productosService.obtenerPreciosBeneficios(idProducto, cantidad, cuotas, conSenia);
     }  
 
     @Get('precios')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_clientes_presupuesto')
-    async obtenerPreciosId(@Query('idProducto', ParseIntPipe) idProducto: number, @Query('cuotas', ParseIntPipe) cuotas: number, @Query('cantidad', ParseIntPipe) cantidad: number)
+    async obtenerPreciosId(@Query('idProducto', ParseIntPipe) idProducto: number, @Query('cuotas', ParseIntPipe) cuotas: number, @Query('cantidad', ParseIntPipe) cantidad: number, @Query('conSenia', new ParseBoolPipe({ optional: true })) conSenia?: boolean)
     {
-        return await this.productosService.obtenerPreciosId(idProducto, cuotas, cantidad);
+        return await this.productosService.obtenerPreciosId(idProducto, cuotas, cantidad, conSenia);
     }
 
     @Post ('')
     @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('ver_productos')
+    @RequierePermiso('ver_pagina_productos')
     async agregarProducto(@Body() dto: ProductoPostDTO)
     {
         return await this.productosService.agregarProductoPrecio(dto);
@@ -51,7 +52,7 @@ export class ProductosController
 
     @Post ('/agregado')
     @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('ver_productos')
+    @RequierePermiso('ver_pagina_productos')
     async agregarAgregado(@Body() dto: AgregadoPostDTO)
     {
         return await this.productosService.agregarAgregado(dto);
@@ -64,12 +65,30 @@ export class ProductosController
         return await this.productosService.obtenerPlanesDisponibles();
     }  
 
+    //Productos
+
     @Patch('/precios')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_pagina_productos')
-    async modificarPreciosProducto(@Query('idProducto', ParseIntPipe) idProducto: number, @Body() dto: ModificarProductoPreciosDTO)
+    async modificarPreciosProducto(@Query('idProducto', ParseIntPipe) idProducto: number, @Body() dto: ModificarProductoPreciosDTO[])
     {
-        return await this.modificarPreciosProducto(idProducto,dto)
+        return await this.productosService.modificarPreciosProducto(idProducto,dto)
+    }
+    
+    @Patch('/activar-plan')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_pagina_productos')
+    async activarPlan(@Query('cuotas', ParseIntPipe) cuotas: number,@Query('senia', ParseBoolPipe) senia: boolean,@Query('activo', ParseBoolPipe) activo: boolean)
+    {
+        return await this.productosService.activarDesactivarPlan(cuotas,senia,activo)
+    }
+
+    @Post ('/plan')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_pagina_productos')
+    async agregarPlan(@Body() dto: AgregarPlanDTO)
+    {
+        return await this.productosService.agregarPlan(dto);
     }
 }
 

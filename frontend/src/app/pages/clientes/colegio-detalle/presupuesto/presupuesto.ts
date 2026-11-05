@@ -19,7 +19,7 @@ import { PermisosService } from '../../../../services/permisos/permisos';
 import { BeneficioResponseDTO } from '../../../../services/gestionPedidos/dto/BeneficioResponse.dto';
 import { BeneficioPedidoPostDTO, cantidadSinCargo, formatearBeneficios } from '../../../../services/gestionPedidos/dto/BeneficioPedido.dto';
 import { ModificarPlanPedidoDTO } from '../../../../services/gestionPedidos/dto/modficaciones/ModificarPlanPedido';
-import { etiquetaPlan } from '../../../../services/cuotas/plan-cuotas';
+import { clavePlan, etiquetaPlan, PlanCuotas, planDesdeClave, planesConActual } from '../../../../services/cuotas/plan-cuotas';
 
 const SEPARADOR_AGREGADOS = ' · Agregado: ';
 
@@ -52,6 +52,7 @@ interface ProductoCarrito
   descripcion: string;
   cantidad: number;
   cuotas: number;
+  conSenia: boolean;
   valorSenia: number;
   valorCuota: number;
   agregados: number[];
@@ -99,9 +100,8 @@ export class Presupuesto implements OnInit
   readonly productosDisponibles = signal<ProductoConPrecioResponseDTO[]>([]);
   readonly agregadosDisponibles = signal<AgregadoDBDTO[]>([]);
   readonly beneficiosDisponibles = signal<BeneficioResponseDTO[]>([]);
-  readonly cuotasDisponibles = signal<number[]>([]);
-  // Planes del catálogo (cuotas -> lleva seña), para elegir un plan nuevo en la edición
-  readonly planTieneSenia = signal(new Map<number, boolean>());
+  // Planes activos del catálogo (cuotas + si lleva seña), para elegir un plan nuevo en la edición
+  readonly planesDisponibles = signal<PlanCuotas[]>([]);
 
   readonly agregadosIndividuales = computed(() =>
     this.agregadosDisponibles().filter((agregado) => agregado.individual),
@@ -130,6 +130,12 @@ export class Presupuesto implements OnInit
   readonly edicionPlanAbierta = signal(false);
   readonly carritoEdicionPlan = signal<ProductoCarrito[]>([]);
   readonly cuotasPlanSeleccionadas = signal<number>(0);
+  readonly conSeniaPlanSeleccionada = signal(false);
+  readonly clavePlanSeleccionada = computed(() =>
+    clavePlan({ cuotas: this.cuotasPlanSeleccionadas(), conSenia: this.conSeniaPlanSeleccionada() }));
+  // Plan que tenía el pedido al abrir la edición: se ofrece aunque esté desactivado en el catálogo
+  private readonly planOriginalEdicion = signal<PlanCuotas | null>(null);
+  readonly planesEdicion = computed(() => planesConActual(this.planesDisponibles(), this.planOriginalEdicion()));
   readonly productoCalculadoPlan = signal<ProductoCarrito | null>(null);
   readonly guardandoPlan = signal(false);
   readonly indiceEdicionProductoPlan = signal<number | null>(null);
@@ -351,8 +357,7 @@ export class Presupuesto implements OnInit
   {
     this.productosService.obtenerPlanesDisponibles().subscribe({
       next: (planes) => {
-        this.cuotasDisponibles.set(planes.map((plan) => plan.cuotas));
-        this.planTieneSenia.set(new Map(planes.map((plan) => [plan.cuotas, plan.conSenia])));
+        this.planesDisponibles.set(planes);
       },
     });
   }
@@ -507,7 +512,7 @@ export class Presupuesto implements OnInit
     return { idProducto: 0, cantidad: 0, agregados: [] as number[] };
   }
 
-  private productoPedidoAProductoCarrito(producto: ProductoPedidoResponseConNombreOriginalDTO, cuotas: number): ProductoCarrito
+  private productoPedidoAProductoCarrito(producto: ProductoPedidoResponseConNombreOriginalDTO, cuotas: number, conSenia: boolean): ProductoCarrito
   {
     const [, ...nombresExtras] = producto.descripcion.split(SEPARADOR_AGREGADOS);
     const agregados = this.agregadosIndividuales()
@@ -520,6 +525,7 @@ export class Presupuesto implements OnInit
       descripcion: producto.descripcion,
       cantidad: producto.cantidad,
       cuotas,
+      conSenia,
       valorSenia: producto.valor_senia,
       valorCuota: producto.valor_cuota,
       agregados,
@@ -532,13 +538,16 @@ export class Presupuesto implements OnInit
     if (!presupuesto) return;
 
     const cuotas = presupuesto.nroCuotas;
+    const conSenia = presupuesto.pedido.con_senia;
     this.carritoEdicionPlan.set(
-      presupuesto.productosPedido.map((producto) => this.productoPedidoAProductoCarrito(producto, cuotas)),
+      presupuesto.productosPedido.map((producto) => this.productoPedidoAProductoCarrito(producto, cuotas, conSenia)),
     );
     this.banderaSeleccionadaPlan = this.bandera()
       ? presupuesto.agregadosGlobales.some((agregado) => agregado.id_agregado === this.bandera()!.id)
       : false;
     this.cuotasPlanSeleccionadas.set(cuotas);
+    this.conSeniaPlanSeleccionada.set(conSenia);
+    this.planOriginalEdicion.set({ cuotas, conSenia });
     this.productoEnEdicionPlan = this.crearProductoEnEdicionPlan();
     this.productoCalculadoPlan.set(null);
     this.indiceEdicionProductoPlan.set(null);
@@ -555,9 +564,13 @@ export class Presupuesto implements OnInit
     this.banderaSeleccionadaPlan = false;
   }
 
-  cambiarCuotasPlan(nuevasCuotas: number): void
+  cambiarCuotasPlan(clave: string): void
   {
-    this.cuotasPlanSeleccionadas.set(nuevasCuotas);
+    const plan = planDesdeClave(clave);
+    if (!plan) return;
+    const nuevasCuotas = plan.cuotas;
+    this.cuotasPlanSeleccionadas.set(plan.cuotas);
+    this.conSeniaPlanSeleccionada.set(plan.conSenia);
 
     const productos = this.carritoEdicionPlan();
     if (!productos.length) return;
@@ -568,6 +581,7 @@ export class Presupuesto implements OnInit
           producto.idProducto,
           nuevasCuotas,
           producto.cantidad + this.sinCargoProducto(producto.idProducto),
+          plan.conSenia,
         )
         .pipe(
           map((precio) => {
@@ -577,6 +591,7 @@ export class Presupuesto implements OnInit
             return {
               ...producto,
               cuotas: nuevasCuotas,
+              conSenia: plan.conSenia,
               valorSenia: precio.valor_senia,
               valorCuota: precio.valor_cuota + costoExtras / nuevasCuotas,
             };
@@ -611,6 +626,7 @@ export class Presupuesto implements OnInit
   {
     const { idProducto, cantidad, agregados } = this.productoEnEdicionPlan;
     const cuotas = this.cuotasPlanSeleccionadas();
+    const conSenia = this.conSeniaPlanSeleccionada();
     if (!idProducto || !cantidad || !cuotas)
     {
       this.productoCalculadoPlan.set(null);
@@ -618,7 +634,7 @@ export class Presupuesto implements OnInit
     }
 
     const cantidadTramo = Number(cantidad) + this.sinCargoProducto(Number(idProducto));
-    this.productosService.obtenerPrecioBeneficioProducto(idProducto, cuotas, cantidadTramo).subscribe({
+    this.productosService.obtenerPrecioBeneficioProducto(idProducto, cuotas, cantidadTramo, conSenia).subscribe({
       next: (precio) => {
         const producto = this.productosParaElegir().find((item) => item.id_producto === idProducto);
         const extras = this.agregadosIndividuales().filter((item) => agregados.includes(item.id));
@@ -630,6 +646,7 @@ export class Presupuesto implements OnInit
           descripcion: [producto?.descripcion, ...nombresExtras].filter(Boolean).join(' · Agregado: '),
           cantidad,
           cuotas,
+          conSenia,
           valorSenia: precio.valor_senia,
           valorCuota: precio.valor_cuota + costoExtras / cuotas,
           agregados,
@@ -698,9 +715,19 @@ export class Presupuesto implements OnInit
 
   etiquetaCuotasProducto(producto: ProductoCarrito): string
   {
-    const conSenia = this.planTieneSenia().get(Number(producto.cuotas));
-    if (conSenia === undefined) return `${producto.cuotas} cuotas`;
-    return etiquetaPlan(producto.cuotas, conSenia);
+    return etiquetaPlan(producto.cuotas, producto.conSenia);
+  }
+
+  // Clave del plan para el <select> (cuotas + seña)
+  clavePlan(plan: PlanCuotas): string
+  {
+    return clavePlan(plan);
+  }
+
+  etiquetaPlanCatalogo(plan: PlanCuotas): string
+  {
+    const activo = this.planesDisponibles().some((p) => clavePlan(p) === clavePlan(plan));
+    return etiquetaPlan(plan.cuotas, plan.conSenia) + (activo ? '' : ' (desactivado)');
   }
 
   totalSeniaPlan(): number
@@ -756,7 +783,7 @@ export class Presupuesto implements OnInit
       nueva_cantidad_cuotas: this.cuotasPlanSeleccionadas(),
       valor_cuota_nuevo: this.totalCuotasPlan(),
       valor_senia_nuevo: this.totalSeniaPlan(),
-      con_senia: this.planTieneSenia().get(this.cuotasPlanSeleccionadas()),
+      con_senia: this.conSeniaPlanSeleccionada(),
     };
 
     this.guardandoPlan.set(true);

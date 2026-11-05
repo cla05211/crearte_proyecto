@@ -3,6 +3,13 @@ import { firstValueFrom } from 'rxjs';
 import { ClientesPortalService } from '../../../services/clientes-portal/clientes-portal-service';
 import { NotificationService } from '../../../shared/notifications/notification.service';
 import { DisenioResponseDTO } from '../../../services/disenios/dto/DisenioResponseDTO';
+import { VisorBoceto } from '../../../shared/visor-boceto/visor-boceto';
+
+interface ImagenesBoceto
+{
+    url: string;        // chica: tarjeta
+    urlGrande: string;  // grande: visor
+}
 
 // Así se guardan en documentos.tipo; en pantalla se muestran como "Diseño ..."
 const PREFIJO_TIPO = 'Disenio ';
@@ -11,7 +18,7 @@ const ORDEN_FIJOS = ['Disenio Prendas', 'Disenio Bandera'];
 
 @Component({
   selector: 'app-disenio',
-  imports: [],
+  imports: [VisorBoceto],
   templateUrl: './disenio.html',
   styleUrl: './disenio.css',
 })
@@ -25,6 +32,11 @@ export class Disenio implements OnInit
 
     readonly descargandoId = signal<number | null>(null);
     readonly descargandoFirmadoId = signal<number | null>(null);
+
+    // Imagen de cada boceto por id de documento: undefined = cargando, null = no se pudo generar
+    readonly previews = signal<Record<number, ImagenesBoceto | null>>({});
+    // Boceto abierto en el visor
+    readonly previewAbierta = signal<{ imagenes: ImagenesBoceto; titulo: string } | null>(null);
 
     readonly diseniosOrdenados = computed(() =>
         [...this.disenios()].sort((a, b) => this.posicion(a.tipo) - this.posicion(b.tipo)));
@@ -44,11 +56,48 @@ export class Disenio implements OnInit
         {
             const { disenios } = await firstValueFrom(this.clientesPortalService.obtenerDisenios());
             this.disenios.set(disenios);
+
+            // Sin await: la lista aparece enseguida y cada imagen se completa cuando llega
+            this.cargarPreviews(disenios);
         }
         catch
         {
             this.notificaciones.error({ title: 'No se pudieron cargar los diseños', description: 'Recargá la página o intentá más tarde.' });
         }
+    }
+
+    // ── Previews ──────────────────────────────────────────────────────────
+
+    // La primera vez que se pide la de un boceto viejo, el backend la genera: puede tardar unos segundos
+    private cargarPreviews(disenios: DisenioResponseDTO[]): void
+    {
+        for (const disenio of disenios)
+        {
+            firstValueFrom(this.clientesPortalService.obtenerUrlPreviewDisenio(disenio.id))
+                .then(imagenes => this.guardarPreview(disenio.id, imagenes))
+                .catch(() => this.guardarPreview(disenio.id, null));
+        }
+    }
+
+    private guardarPreview(id: number, imagenes: ImagenesBoceto | null): void
+    {
+        this.previews.update(actuales => ({ ...actuales, [id]: imagenes }));
+    }
+
+    // Si la imagen no carga (ej: la URL venció), se vuelve al ícono
+    marcarPreviewRota(id: number): void
+    {
+        this.guardarPreview(id, null);
+    }
+
+    abrirPreview(disenio: DisenioResponseDTO, imagenes: ImagenesBoceto): void
+    {
+        this.previewAbierta.set({ imagenes, titulo: this.etiqueta(disenio) });
+    }
+
+    cerrarPreview(): void
+    {
+        this.previewAbierta.set(null);
     }
 
     etiqueta(disenio: DisenioResponseDTO): string

@@ -152,6 +152,12 @@ export class ClientesPortalService
     return this.http.get<{ url: string }>(`${this.base}/url-descarga-disenios/${idDocumento}`, { params: { nombreArchivo } });
   }
 
+  // URL firmada de la imagen del boceto (primera página en JPG), para mostrarla en un <img>
+  obtenerUrlPreviewDisenio(idDocumento: number): Observable<{ url: string; urlGrande: string }>
+  {
+    return this.http.get<{ url: string; urlGrande: string }>(`${this.base}/url-preview-disenios/${idDocumento}`);
+  }
+
   // URL firmada del boceto firmado (JPG) que subió el empleado
   obtenerUrlDescargaFirmado(idDocumento: number, nombreArchivo: string): Observable<{ url: string }>
   {

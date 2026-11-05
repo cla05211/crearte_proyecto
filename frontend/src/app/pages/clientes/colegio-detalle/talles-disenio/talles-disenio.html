@@ -10,6 +10,45 @@
   <section class="ds-card td-card">
     <header class="td-card__header">
       <div>
+        <h2 class="ds-heading-3">Talles</h2>
+      </div>
+    </header>
+
+    <ul class="td-lista">
+      <li class="td-fila" [class.td-fila--vacia]="!tallesConfirmados()">
+        <span class="td-fila__icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 17h4" /></svg>
+        </span>
+        <div class="td-fila__info">
+          <span class="td-fila__nombre">Planilla de talles</span>
+          @if (edicionTallesHabilitada()) {
+            <span class="ds-badge ds-badge--warning">Edición habilitada al cliente</span>
+          } @else if (tallesConfirmados()) {
+            <span class="td-fila__estado">{{ descargandoTalles() ? 'Generando…' : '' }}</span>
+          } @else {
+            <span class="ds-badge ds-badge--warning">Pendiente</span>
+          }
+        </div>
+        @if (tallesConfirmados()) {
+          <div class="td-fila__acciones">
+            <button type="button" class="ds-button ds-button--small"
+                    [class.ds-button--secondary]="!edicionTallesHabilitada()"
+                    [disabled]="cambiandoEdicionTalles()" (click)="alternarEdicionTalles()">
+              {{ cambiandoEdicionTalles() ? 'Guardando…' : (edicionTallesHabilitada() ? 'Cerrar edición' : 'Permitir edición') }}
+            </button>
+            <button type="button" class="td-accion" [disabled]="descargandoTalles()" (click)="descargarTalles()"
+                    title="Descargar" aria-label="Descargar resumen de talles">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+            </button>
+          </div>
+        }
+      </li>
+    </ul>
+  </section>
+
+  <section class="ds-card td-card">
+    <header class="td-card__header">
+      <div>
         <h2 class="ds-heading-3">Diseños</h2>
         <p class="td-card__ayuda">Bocetos en PDF de hasta 50 MB. Firmados en JPG de hasta 10 MB.</p>
       </div>
@@ -18,12 +57,29 @@
     <ul class="td-lista">
       @for (fila of filas(); track fila.tipo) {
         <li class="td-fila" [class.td-fila--vacia]="!fila.documento">
-          <span class="td-fila__icono" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /></svg>
-          </span>
+          @let preview = fila.documento ? previews()[fila.documento.id] : null;
+
+          <!-- Miniatura del boceto: undefined = cargando, null/sin PDF = ícono -->
+          @if (preview) {
+            <button type="button" class="td-miniatura" (click)="abrirPreview(fila, preview)"
+                    [attr.aria-label]="'Ver ' + fila.etiqueta + ' en grande'" title="Ver en grande">
+              <img [src]="preview.url" [alt]="'Boceto del ' + fila.etiqueta" loading="lazy" (error)="marcarPreviewRota(fila.documento!.id)" />
+            </button>
+          } @else if (fila.documento && preview === undefined) {
+            <span class="td-miniatura td-miniatura--cargando" role="status" aria-label="Cargando imagen del diseño"></span>
+          } @else {
+            <span class="td-fila__icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /></svg>
+            </span>
+          }
 
           <div class="td-fila__info">
-            <span class="td-fila__nombre">{{ fila.etiqueta }}</span>
+            @if (preview) {
+              <!-- Tocar el nombre también abre el visor, como en Drive -->
+              <button type="button" class="td-fila__nombre td-fila__nombre--link" (click)="abrirPreview(fila, preview)" title="Ver boceto">{{ fila.etiqueta }}</button>
+            } @else {
+              <span class="td-fila__nombre">{{ fila.etiqueta }}</span>
+            }
 
             @if (subida()?.tipo === fila.tipo) {
               <div class="td-progreso" role="progressbar" [attr.aria-valuenow]="subida()!.progreso" aria-valuemin="0" aria-valuemax="100">
@@ -132,45 +188,6 @@
     }
   </section>
 
-  <section class="ds-card td-card">
-    <header class="td-card__header">
-      <div>
-        <h2 class="ds-heading-3">Talles</h2>
-      </div>
-    </header>
-
-    <ul class="td-lista">
-      <li class="td-fila" [class.td-fila--vacia]="!tallesConfirmados()">
-        <span class="td-fila__icono" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 17h4" /></svg>
-        </span>
-        <div class="td-fila__info">
-          <span class="td-fila__nombre">Planilla de talles</span>
-          @if (edicionTallesHabilitada()) {
-            <span class="ds-badge ds-badge--warning">Edición habilitada al cliente</span>
-          } @else if (tallesConfirmados()) {
-            <span class="td-fila__estado">{{ descargandoTalles() ? 'Generando…' : '' }}</span>
-          } @else {
-            <span class="ds-badge ds-badge--warning">Pendiente</span>
-          }
-        </div>
-        @if (tallesConfirmados()) {
-          <div class="td-fila__acciones">
-            <button type="button" class="ds-button ds-button--small"
-                    [class.ds-button--secondary]="!edicionTallesHabilitada()"
-                    [disabled]="cambiandoEdicionTalles()" (click)="alternarEdicionTalles()">
-              {{ cambiandoEdicionTalles() ? 'Guardando…' : (edicionTallesHabilitada() ? 'Cerrar edición' : 'Permitir edición') }}
-            </button>
-            <button type="button" class="td-accion" [disabled]="descargandoTalles()" (click)="descargarTalles()"
-                    title="Descargar" aria-label="Descargar resumen de talles">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
-            </button>
-          </div>
-        }
-      </li>
-    </ul>
-  </section>
-
   <!-- Extras: archivos internos. El cliente no los ve (no hay nada de esto en el portal). -->
   <section class="ds-card td-card">
     <header class="td-card__header">
@@ -244,4 +261,11 @@
       Subir extras
     </button>
   </section>
+
+  <!-- Visor tipo Drive: ver el boceto sin descargarlo (zoom con rueda / pellizco / doble click) -->
+  @if (previewAbierta(); as abierta) {
+    <app-visor-boceto [urlGrande]="abierta.imagenes.urlGrande" [urlPreview]="abierta.imagenes.url" [titulo]="abierta.fila.etiqueta"
+                      [permiteDescargar]="true" [descargando]="descargandoTipo() === abierta.fila.tipo"
+                      (descargar)="descargarDisenio(abierta.fila)" (cerrar)="cerrarPreview()" />
+  }
 }

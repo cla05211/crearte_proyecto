@@ -31,10 +31,28 @@
       <ul class="disenio-lista">
         @for (disenio of diseniosOrdenados(); track disenio.id) {
           <li class="ds-card disenio-card">
+            @let preview = previews()[disenio.id];
+
+            <!-- Imagen del boceto: undefined = cargando, null = no hay (queda solo el ícono) -->
+            @if (preview) {
+              <button type="button" class="disenio-card__preview" (click)="abrirPreview(disenio, preview)"
+                      [attr.aria-label]="'Ver ' + etiqueta(disenio) + ' en grande'">
+                <img [src]="preview.url" [alt]="'Boceto del ' + etiqueta(disenio)" loading="lazy" (error)="marcarPreviewRota(disenio.id)" />
+                <span class="disenio-card__ampliar" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5M11 8v6M8 11h6" /></svg>
+                  Ver en grande
+                </span>
+              </button>
+            } @else if (preview === undefined) {
+              <div class="disenio-card__preview disenio-card__preview--cargando" role="status" aria-label="Cargando imagen del diseño"></div>
+            }
+
             <div class="disenio-card__fila">
-              <span class="disenio-card__icono" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /></svg>
-              </span>
+              @if (!preview) {
+                <span class="disenio-card__icono" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /></svg>
+                </span>
+              }
 
               <div class="disenio-card__info">
                 <h2 class="disenio-card__nombre">{{ etiqueta(disenio) }}</h2>
@@ -63,4 +81,10 @@
       </ul>
     }
   </section>
+
+  <!-- Visor: zoom con rueda / pellizco / doble toque -->
+  @if (previewAbierta(); as abierta) {
+    <app-visor-boceto [urlGrande]="abierta.imagenes.urlGrande" [urlPreview]="abierta.imagenes.url" [titulo]="abierta.titulo"
+                      (cerrar)="cerrarPreview()" />
+  }
 </main>

@@ -9,6 +9,7 @@ import { NotificationService } from '../../../../shared/notifications/notificati
 import { ConfirmationService } from '../../../../services/confirmation/confirmation.service';
 import { ExtraDTO, ExtrasService } from '../../../../services/extras/extras-service';
 import { DatePipe } from '@angular/common';
+import { VisorBoceto } from '../../../../shared/visor-boceto/visor-boceto';
 
 const PREFIJO_TIPO = 'Disenio ';
 const TIPO_PRENDAS = 'Disenio Prendas';
@@ -24,6 +25,12 @@ const LARGO_MAXIMO_NOMBRE = 60;
 const FORMATOS_EXTRA = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const TAMANIO_MAXIMO_EXTRA_MB = 20;
 
+interface ImagenesBoceto
+{
+    url: string;        // chica: miniatura
+    urlGrande: string;  // grande: visor
+}
+
 interface FilaDisenio
 {
     tipo: string;
@@ -34,7 +41,7 @@ interface FilaDisenio
 
 @Component({
   selector: 'app-talles-disenio',
-  imports: [DatePipe],
+  imports: [DatePipe, VisorBoceto],
   templateUrl: './talles-disenio.html',
   styleUrl: './talles-disenio.css',
 })
@@ -62,6 +69,11 @@ export class TallesDisenio implements OnInit
     readonly subiendoFirmadoTipo = signal<string | null>(null);
     readonly descargandoFirmadoTipo = signal<string | null>(null);
     readonly descargandoTalles = signal(false);
+
+    // Imágenes de cada boceto por id de documento: undefined = cargando, null = no se pudo generar
+    readonly previews = signal<Record<number, ImagenesBoceto | null>>({});
+    // Boceto abierto en el visor
+    readonly previewAbierta = signal<{ fila: FilaDisenio; imagenes: ImagenesBoceto } | null>(null);
 
     readonly agregando = signal(false);
     readonly nombreNuevo = signal('');
@@ -110,6 +122,7 @@ export class TallesDisenio implements OnInit
                 next: ({ disenios, tieneBandera, tallesConfirmados, edicionTallesHabilitada }) => {
                     this.edicionTallesHabilitada.set(edicionTallesHabilitada);
                     this.disenios.set(disenios);
+                    this.cargarPreviews(disenios);
                     this.tieneBandera.set(tieneBandera);
                     this.tallesConfirmados.set(tallesConfirmados);
                     this.cargando.set(false);
@@ -119,6 +132,40 @@ export class TallesDisenio implements OnInit
                     this.notificaciones.error({ title: 'Error', description: 'No se pudieron obtener los diseños.' });
                 },
             });
+    }
+
+    // ── Previews ──
+
+    // Se vuelve a pedir en cada recarga (ej: después de cambiar el PDF): la URL nueva apunta a la imagen del archivo nuevo.
+    // Mientras tanto se sigue viendo la anterior, para que no parpadee.
+    private cargarPreviews(disenios: DisenioResponseDTO[]): void
+    {
+        for (const disenio of disenios)
+        {
+            firstValueFrom(this.diseniosService.obtenerUrlPreview(this.idGrupo, disenio.id))
+                .then(imagenes => this.guardarPreview(disenio.id, imagenes))
+                .catch(() => this.guardarPreview(disenio.id, null));
+        }
+    }
+
+    private guardarPreview(id: number, imagenes: ImagenesBoceto | null): void
+    {
+        this.previews.update(actuales => ({ ...actuales, [id]: imagenes }));
+    }
+
+    marcarPreviewRota(id: number): void
+    {
+        this.guardarPreview(id, null);
+    }
+
+    abrirPreview(fila: FilaDisenio, imagenes: ImagenesBoceto): void
+    {
+        this.previewAbierta.set({ fila, imagenes });
+    }
+
+    cerrarPreview(): void
+    {
+        this.previewAbierta.set(null);
     }
 
     private armarFila(tipo: string, documento: DisenioResponseDTO | null, sinGuardar = false): FilaDisenio

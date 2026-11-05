@@ -347,11 +347,11 @@
                 ><label class="ds-field"
                   ><span class="ds-label">Plan de cuotas</span
                   ><select class="ds-select"
-                    [(ngModel)]="productoEnEdicion.cuotas"
+                    [(ngModel)]="productoEnEdicion.plan"
                     (change)="calcularProducto()">
-                    @for (cuotas of cuotasDisponibles(); track cuotas) {
-                      <option [ngValue]="cuotas">
-                        {{ etiquetaPlanCuotas(cuotas) }}
+                    @for (plan of planesDisponibles(); track clavePlan(plan)) {
+                      <option [ngValue]="clavePlan(plan)">
+                        {{ etiquetaPlanCatalogo(plan) }}
                       </option>
                     }
                   </select></label>
@@ -936,12 +936,12 @@
             <span class="ds-label">Plan de cuotas</span>
             <select
               class="ds-select"
-              [ngModel]="cuotasPlanSeleccionadas()"
-              (ngModelChange)="cambiarCuotasPlan(+$event)"
+              [ngModel]="clavePlanSeleccionada()"
+              (ngModelChange)="cambiarCuotasPlan($event)"
             >
-              @for (cuotas of cuotasDisponibles(); track cuotas) {
-                <option [value]="cuotas">
-                  {{ etiquetaPlanCuotas(cuotas) }}
+              @for (plan of planesEdicion(); track clavePlan(plan)) {
+                <option [value]="clavePlan(plan)">
+                  {{ etiquetaPlanCatalogo(plan) }}
                 </option>
               }
             </select>

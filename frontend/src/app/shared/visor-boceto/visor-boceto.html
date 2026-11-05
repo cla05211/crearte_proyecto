@@ -1,0 +1,45 @@
+<dialog #dialogo class="visor" [attr.aria-label]="titulo()" (cancel)="alCancelar($event)">
+  <header class="visor__barra">
+    <span class="visor__titulo">{{ titulo() }}</span>
+
+    <div class="visor__zoom" role="group" aria-label="Zoom">
+      <button type="button" class="visor__boton" (click)="alejar()" [disabled]="zoom() <= 1" title="Alejar (-)" aria-label="Alejar">
+        <svg viewBox="0 0 24 24"><path d="M5 12h14" /></svg>
+      </button>
+      <button type="button" class="visor__porcentaje" (click)="ajustar()" title="Ajustar a la pantalla (0)">{{ porcentaje() }}%</button>
+      <button type="button" class="visor__boton" (click)="acercar()" [disabled]="zoom() >= 8" title="Acercar (+)" aria-label="Acercar">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+      </button>
+    </div>
+
+    <div class="visor__acciones">
+      @if (permiteDescargar()) {
+        <button type="button" class="visor__boton visor__boton--texto" (click)="descargar.emit()" [disabled]="descargando()" title="Descargar PDF">
+          <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>
+          <span>{{ descargando() ? 'Descargando…' : 'Descargar PDF' }}</span>
+        </button>
+      }
+      <button type="button" class="visor__boton" (click)="cerrar.emit()" title="Cerrar (Esc)" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    </div>
+  </header>
+
+  <div #escenario class="visor__escenario" [class.visor__escenario--zoom]="zoom() > 1"
+       (wheel)="alRueda($event)" (dblclick)="alDobleClickMouse($event)"
+       (pointerdown)="alPresionar($event)" (pointermove)="alMover($event)"
+       (pointerup)="alSoltar($event)" (pointercancel)="alSoltar($event)">
+    @if (urlActual(); as url) {
+      <img class="visor__imagen" [src]="url" [alt]="'Boceto del ' + titulo()" draggable="false"
+           [style]="estiloImagen()" (load)="alCargarImagen($event)" />
+    }
+  </div>
+
+  @if (cargandoGrande()) {
+    <span class="visor__aviso" role="status">Cargando en alta calidad…</span>
+  } @else if (errorGrande()) {
+    <span class="visor__aviso visor__aviso--error" role="status">No se pudo cargar la imagen en alta calidad.</span>
+  } @else if (zoom() === 1) {
+    <span class="visor__aviso visor__aviso--ayuda">Rueda del mouse, pellizco o doble click para hacer zoom</span>
+  }
+</dialog>

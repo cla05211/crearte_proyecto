@@ -10,6 +10,7 @@ import { AgregadoPOSTDTO } from './dto/agregadoPOST.dto';
 import { PreciosBeneficiosResponseDTO } from './dto/PreciosBeneficiosResponse.dto';
 import { ProductoPreciosDTO } from './dto/ProductoPrecios.dto';
 import { ModificarProductoPreciosDTO } from './dto/ModificarProductoPrecios.dto';
+import { AgregarPlanDTO } from './dto/AgregarPlanDTO';
 
 @Injectable({
   providedIn: 'root',
@@ -28,9 +29,11 @@ export class ProductosService
         return this.http.get<AgregadoDBDTO[]>(`${environment.apiUrl}/productos/agregados`);
     }   
 
-    obtenerPreciosProducto(idProducto:number, nroCuotas:number, cantidad:number): Observable<ProductoPreciosDTO>
+    obtenerPreciosProducto(idProducto:number, nroCuotas:number, cantidad:number, conSenia?: boolean): Observable<ProductoPreciosDTO>
     {
-        return this.http.get<ProductoPreciosDTO>(`${environment.apiUrl}/productos/precios`,{params:{idProducto: idProducto, cuotas: nroCuotas, cantidad: cantidad}});
+        const params: Record<string, number | boolean> = {idProducto: idProducto, cuotas: nroCuotas, cantidad: cantidad};
+        if (conSenia !== undefined) params['conSenia'] = conSenia;
+        return this.http.get<ProductoPreciosDTO>(`${environment.apiUrl}/productos/precios`,{params});
     }   
 
     obtenerPrecioAgregadoGobal()
@@ -58,14 +61,16 @@ export class ProductosService
         return this.http.delete(`${environment.apiUrl}/agregado/${id}`);
     }
 
-    obtenerPrecioBeneficioProducto(producto: number, cuotas:number, cantidad:number)
+    // conSenia distingue dos planes con la misma cantidad de cuotas (con y sin seña)
+    obtenerPrecioBeneficioProducto(producto: number, cuotas:number, cantidad:number, conSenia: boolean)
     {
         return this.http.get<PreciosBeneficiosResponseDTO>(`${environment.apiUrl}/productos/precio-beneficio`,{
             params:
             {
                 idProducto: producto,
                 cantidad: cantidad,
-                cuotas: cuotas
+                cuotas: cuotas,
+                conSenia: conSenia
             }
         });
     }
@@ -74,9 +79,22 @@ export class ProductosService
     {
         return this.http.get<PlanDisponibleDTO[]>(`${environment.apiUrl}/productos/planes-disponibles`);
     }
+        
+    //productospage    
 
-    modificarPreciosProducto(idProducto:number, dto:ModificarProductoPreciosDTO): Observable<number>
+    modificarPreciosProducto(idProducto:number, dto:ModificarProductoPreciosDTO[]): Observable<number>
     {
         return this.http.patch<number>(`${environment.apiUrl}/productos/precios`,dto,{params:{idProducto}});
+    }
+
+    activarPlan(cuotas:number,senia:boolean,activo:boolean)
+    {
+        // El segundo parámetro de patch es el body: los params van en el tercero
+        return this.http.patch(`${environment.apiUrl}/productos/activar-plan`, null, {params:{cuotas,senia,activo}});
+    }
+
+    agregarPlan(plan: AgregarPlanDTO)
+    {
+        return this.http.post((`${environment.apiUrl}/productos/plan`), plan);
     }
 }

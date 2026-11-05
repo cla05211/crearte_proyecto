@@ -281,6 +281,50 @@ svg {
   gap: var(--space-2);
 }
 
+/* ── Miniatura del boceto (apaisado, tipo A4 horizontal) ── */
+.td-miniatura {
+  aspect-ratio: 297 / 210;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 6px);
+  cursor: zoom-in;
+  display: block;
+  flex: 0 0 auto;
+  overflow: hidden;
+  padding: 0;
+  transition: box-shadow 150ms, transform 150ms;
+  width: 6rem;
+}
+
+.td-miniatura:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); transform: translateY(-1px); }
+
+.td-miniatura img {
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+.td-miniatura--cargando {
+  animation: td-pulso 1.2s ease-in-out infinite;
+  background: var(--color-primary-100);
+  cursor: default;
+}
+
+@keyframes td-pulso { 50% { opacity: 0.5; } }
+
+.td-fila__nombre--link {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+.td-fila__nombre--link:hover { color: var(--color-primary-700); text-decoration: underline; }
+
 @media (max-width: 480px) {
   .loading-state { flex-direction: column; text-align: center; }
   .td-fila { flex-wrap: wrap; }

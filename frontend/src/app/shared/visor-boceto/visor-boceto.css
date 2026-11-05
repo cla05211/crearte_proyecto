@@ -1,0 +1,135 @@
+.visor {
+  background: rgba(20, 8, 16, 0.92);
+  border: 0;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  inset: 0;
+  margin: 0;
+  max-height: none;
+  max-width: none;
+  padding: 0;
+  position: fixed;
+  width: 100vw;
+}
+
+.visor:not([open]) { display: none; }
+
+/* El <dialog> trae su propio fondo oscuro: no hace falta, el visor ya cubre todo */
+.visor::backdrop { background: transparent; }
+
+.visor__barra {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  gap: var(--space-3, 0.75rem);
+  padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
+}
+
+.visor__titulo {
+  flex: 1 1 0;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visor__zoom,
+.visor__acciones {
+  align-items: center;
+  display: flex;
+  gap: var(--space-1, 0.25rem);
+}
+
+.visor__acciones {
+  flex: 1 1 0;
+  justify-content: flex-end;
+}
+
+.visor__boton,
+.visor__porcentaje {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  gap: var(--space-2, 0.5rem);
+  height: 2.5rem;
+  justify-content: center;
+  min-width: 2.5rem;
+  padding: 0 var(--space-2, 0.5rem);
+}
+
+.visor__porcentaje {
+  font-variant-numeric: tabular-nums;
+  min-width: 3.75rem;
+}
+
+.visor__boton:hover:not(:disabled),
+.visor__porcentaje:hover { background: rgba(255, 255, 255, 0.15); }
+
+.visor__boton:disabled { cursor: default; opacity: 0.4; }
+
+.visor__boton--texto {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0 var(--space-4, 1rem);
+}
+
+.visor__boton svg {
+  fill: none;
+  height: 1.25rem;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  width: 1.25rem;
+}
+
+.visor__escenario {
+  cursor: zoom-in;
+  flex: 1 1 auto;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+  user-select: none;
+}
+
+.visor__escenario--zoom { cursor: grab; }
+.visor__escenario--zoom:active { cursor: grabbing; }
+
+.visor__imagen {
+  background: #fff;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  left: 0;
+  max-width: none;
+  position: absolute;
+  top: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.visor__aviso {
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 999px;
+  bottom: var(--space-4, 1rem);
+  font-size: 0.85rem;
+  left: 50%;
+  padding: var(--space-1, 0.25rem) var(--space-3, 0.75rem);
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.visor__aviso--error { background: rgba(160, 30, 30, 0.85); }
+
+@media (max-width: 600px) {
+  .visor__barra { flex-wrap: wrap; }
+  .visor__titulo { flex-basis: 100%; order: -1; }
+  .visor__boton--texto span { display: none; }
+  .visor__aviso--ayuda { display: none; }
+}

@@ -131,6 +131,61 @@ export class StorageService {
         return data.signedUrl;
     }
 
+    //--- Preview de bocetos ---
+
+    // Las imágenes viven al lado del PDF con el mismo nombre: 12/abc.pdf -> 12/abc.preview.jpg y 12/abc.grande.jpg
+    // Así no hace falta guardarlas en la base y, si se reemplaza el boceto, acompañan al PDF nuevo.
+    rutaPreviewDiseno(rutaPdf: string): string
+    {
+        return rutaPdf.replace(/\.pdf$/i, '') + '.preview.jpg';
+    }
+
+    rutaGrandeDiseno(rutaPdf: string): string
+    {
+        return rutaPdf.replace(/\.pdf$/i, '') + '.grande.jpg';
+    }
+
+    async descargarDiseno(ruta: string): Promise<Buffer>
+    {
+        const { data, error } = await this.supabaseService.supabase.storage
+            .from(BUCKET_DISENIOS)
+            .download(ruta);
+
+        if (error)
+        {
+            throw new InternalServerErrorException(error.message);
+        }
+
+        return Buffer.from(await data.arrayBuffer());
+    }
+
+    async subirPreviewDiseno(ruta: string, imagen: Buffer): Promise<void>
+    {
+        const { error } = await this.supabaseService.supabase.storage
+            .from(BUCKET_DISENIOS)
+            .upload(ruta, imagen, { contentType: 'image/jpeg', upsert: true });
+
+        if (error)
+        {
+            throw new InternalServerErrorException(error.message);
+        }
+    }
+
+    // Sin "download": el navegador la muestra en un <img> en vez de bajarla
+    async crearUrlVerDiseno(ruta: string): Promise<string>
+    {
+        const { data, error } = await this.supabaseService.supabase.storage
+            .from(BUCKET_DISENIOS)
+            .createSignedUrl(ruta, 3600);
+
+        if (error)
+        {
+            throw new InternalServerErrorException(error.message);
+        }
+
+        return data.signedUrl;
+    }
+
     //--- Extras ---
 
     async crearUrlSubidaExtra(ruta: string): Promise<string>

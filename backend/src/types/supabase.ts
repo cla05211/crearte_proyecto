@@ -755,8 +755,8 @@ export type Database = {
       pedidos: {
         Row: {
           cantidad_hermanos: number | null
-          con_senia: boolean
           colores: string | null
+          con_senia: boolean
           envio_gratis: boolean | null
           estado_bandera: string
           estado_boceto: string | null
@@ -785,8 +785,8 @@ export type Database = {
         }
         Insert: {
           cantidad_hermanos?: number | null
-          con_senia?: boolean
           colores?: string | null
+          con_senia: boolean
           envio_gratis?: boolean | null
           estado_bandera?: string
           estado_boceto?: string | null
@@ -815,8 +815,8 @@ export type Database = {
         }
         Update: {
           cantidad_hermanos?: number | null
-          con_senia?: boolean
           colores?: string | null
+          con_senia?: boolean
           envio_gratis?: boolean | null
           estado_bandera?: string
           estado_boceto?: string | null
@@ -887,9 +887,11 @@ export type Database = {
       }
       precios_productos: {
         Row: {
+          activo: boolean
           beneficio: string | null
           cantidad_desde: number
           cantidad_hasta: number
+          con_senia: boolean
           cuotas: number
           id: number
           id_producto: number
@@ -897,9 +899,11 @@ export type Database = {
           valor_senia: number
         }
         Insert: {
+          activo?: boolean
           beneficio?: string | null
           cantidad_desde: number
           cantidad_hasta: number
+          con_senia: boolean
           cuotas: number
           id?: number
           id_producto: number
@@ -907,9 +911,11 @@ export type Database = {
           valor_senia: number
         }
         Update: {
+          activo?: boolean
           beneficio?: string | null
           cantidad_desde?: number
           cantidad_hasta?: number
+          con_senia?: boolean
           cuotas?: number
           id?: number
           id_producto?: number
