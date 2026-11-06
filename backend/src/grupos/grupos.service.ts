@@ -146,7 +146,9 @@ export class GruposService
     {
         const { data: grupo, error: errGrupo } = await this.sb.supabase
             .from("grupos")
-            .select(`*, colegios!inner (nombre, localidad, provincia, zona_sur)`)
+            .select(`*, 
+                pedidos!inner(vendedora:usuarios!pedidos_id_vendedora_fkey(nombre)),
+                colegios!inner (nombre, localidad, provincia, zona_sur)`)
             .eq('id', idGrupo)
             .single();
 
@@ -189,7 +191,8 @@ export class GruposService
             padresResponsables,
             alumnosResponsables,
             usuario: cliente?.usuario.trim() ?? null,
-            fechaVenta: grupo.created_at!
+            fechaVenta: grupo.created_at!,
+            vendedora: grupo.pedidos[0]!.vendedora?.nombre!
         };
 
     }

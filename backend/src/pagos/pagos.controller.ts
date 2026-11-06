@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import type { Response } from 'express';
 import { PagosService } from './pagos.service';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -15,11 +15,17 @@ import { GenerarContratoDTO } from 'src/reportes/pdf/dto/generarContrato.dto';
 import { PdfService } from 'src/reportes/pdf/pdf.service';
 import { PagoDTO } from './dto/pago.dto';
 import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
+import { StorageService } from 'src/storage/storage.service';
+import { DocumentoDTO } from 'src/documentos/dto/documento.dto';
+import { CrearPagoComprobanteDTO } from './dto/crearPagoComprobante.dto';
+
+// Cuentas de la empresa a las que se puede transferir (las mismas que acepta el portal de clientes)
+const BANCOS_TRANSFERENCIA = ['COMAFI', 'Santander'];
 
 @Controller('pagos')
 export class PagosController 
 {
-    constructor(private pagosService: PagosService, private ocrService: OcrService, private excelService: ExcelService, private pdfService: PdfService){}
+    constructor(private pagosService: PagosService, private ocrService: OcrService, private excelService: ExcelService, private pdfService: PdfService, private storageService: StorageService){}
     
     @Get('/total')
     @UseGuards(AuthGuard,PermisosGuard)
@@ -75,6 +81,70 @@ export class PagosController
     async crearPago(@Body() dto: PagoDTO)
     {
         return await this.pagosService.crearPago(dto);
+    }
+
+    // Transferencia cargada por un empleado (mismo flujo que POST clientes-portal/pagos):
+    // guarda el comprobante, crea el documento y registra el pago en una sola llamada.
+    // El motivo va como 'Cuota': registrar_pago_completo completa primero la seña si falta.
+    @Post('comprobante')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_clientes_administrativo')
+    @UseInterceptors(FileInterceptor('comprobante'))
+    async crearPagoTransferencia(@Body() dto: CrearPagoComprobanteDTO, @UploadedFile() archivo: ArchivoSubidoDTO)
+    {
+        const idPedido = Number(dto?.id_pedido);
+        const monto = Number(dto?.monto);
+
+        if (!archivo)
+        {
+            throw new BadRequestException('Falta el comprobante de la transferencia.');
+        }
+
+        if (!Number.isInteger(idPedido) || idPedido <= 0)
+        {
+            throw new BadRequestException('Pedido inválido.');
+        }
+
+        if (!Number.isFinite(monto) || monto <= 0)
+        {
+            throw new BadRequestException('El monto tiene que ser mayor a 0.');
+        }
+
+        if (!BANCOS_TRANSFERENCIA.includes(dto.banco))
+        {
+            throw new BadRequestException('El banco tiene que ser COMAFI o Santander.');
+        }
+
+        if (!dto.fecha || !dto.entidad_pago?.trim() || !dto.nroTransferencia?.trim())
+        {
+            throw new BadRequestException('Faltan datos de la transferencia.');
+        }
+
+        const idGrupo = await this.pagosService.obtenerIdGrupoPedido(idPedido);
+
+        const nombreArchivo = `comprobante-${idPedido}-${Date.now()}-${archivo.originalname}`
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9._-]/g, '-');
+
+        const rutaComprobante = await this.storageService.guardarImagen(
+            { pedidoId: idPedido.toString(), nombreArchivo, carpetaGuardado: 'comprobantes-clientes' },
+            archivo,
+        );
+
+        const documentoDTO: DocumentoDTO = { id_grupo: idGrupo, tipo: 'comprobante', archivo_url: rutaComprobante };
+
+        return await this.pagosService.crearPago({
+            id_pedido: idPedido,
+            nro_transferencia: dto.nroTransferencia.trim(),
+            monto,
+            motivo: 'Cuota',
+            fecha: dto.fecha,
+            aprobado: true,
+            banco: dto.banco,
+            entidad_pago: dto.entidad_pago.trim(),
+            documentoDTO,
+        });
     }
 
     @Post('ocr')

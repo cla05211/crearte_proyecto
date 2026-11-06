@@ -8,9 +8,10 @@ import { OcrService } from 'src/ocr/ocr.service';
 import { OcrModule } from 'src/ocr/ocr.module';
 import { ReportesModule } from 'src/reportes/reportes.module';
 import { DocumentosService } from 'src/documentos/documentos.service';
+import { StorageModule } from 'src/storage/storage.module';
 
 @Module({
-  imports:[SupabaseModule, OcrModule, ReportesModule],
+  imports:[SupabaseModule, OcrModule, ReportesModule, StorageModule],
   controllers: [PagosController],
   providers:[PermisosService, PagosService, UsuariosService, OcrService, DocumentosService]
 })

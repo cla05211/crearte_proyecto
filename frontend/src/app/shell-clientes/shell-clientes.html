@@ -5,6 +5,23 @@
     </a>
 
     <div class="navbar__actions">
+      @if (colegio) {
+        <div class="navbar-cliente">
+          <span class="navbar-cliente__colegio">{{ colegio }}</span>
+          @if (usuario) {
+            <span class="navbar-cliente__usuario">{{ usuario }}</span>
+          }
+        </div>
+      }
+
+      @if (!enInicio()) {
+        <a class="text-button" routerLink="/portal-cliente">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+          Inicio
+        </a>
+      }
 
       <button class="icon-button" type="button" (click)="cerrarSesion()" aria-label="Cerrar sesión" title="Cerrar sesión">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -13,43 +30,8 @@
           <path d="M21 19V5a2 2 0 0 0-2-2h-6" />
         </svg>
       </button>
-
-      <button
-        class="icon-button"
-        type="button"
-        (click)="toggleSidebar()"
-        [attr.aria-expanded]="sidebarAbierto()"
-        aria-controls="main-navigation"
-        [attr.aria-label]="sidebarAbierto() ? 'Cerrar menú' : 'Abrir menú'">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 7h16M4 12h16M4 17h16" />
-        </svg>
-      </button>
     </div>
   </header>
-
-  @if (sidebarAbierto()) {
-    <button class="sidebar-backdrop" type="button" (click)="cerrarSidebar()" aria-label="Cerrar menú"></button>
-  }
-
-  <aside id="main-navigation" class="sidebar" [class.abierto]="sidebarAbierto()" aria-label="Navegación principal">
-    <div class="sidebar__header">
-      <span>Menú</span>
-      <button class="icon-button icon-button--close" type="button" (click)="cerrarSidebar()" aria-label="Cerrar menú">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
-      </button>
-    </div>
-    <nav>
-      <a routerLink="/portal-cliente" routerLinkActive="activo" (click)="cerrarSidebar()">Inicio</a>
-      <a routerLink="/cuenta-corriente" routerLinkActive="activo" (click)="cerrarSidebar()">Cuenta corriente</a>
-      <a routerLink="/presupuesto" routerLinkActive="activo" (click)="cerrarSidebar()">Presupuesto y Beneficios</a>
-      <a routerLink="/talles" routerLinkActive="activo" (click)="cerrarSidebar()">Talles</a>
-      <a routerLink="/disenio" routerLinkActive="activo" (click)="cerrarSidebar()">Diseño</a>
-      @if (contratoDisponible()) {
-        <a routerLink="/contrato" routerLinkActive="activo" (click)="cerrarSidebar()">Contrato</a>
-      }
-    </nav>
-  </aside>
 
   <main class="contenido">
     <router-outlet></router-outlet>

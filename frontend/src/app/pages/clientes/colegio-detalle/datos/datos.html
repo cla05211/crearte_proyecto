@@ -53,6 +53,10 @@
             <dt>Fecha de venta</dt>
             <dd>{{ datosColegio()!.fechaVenta ? (datosColegio()!.fechaVenta | date: 'dd/MM/yyyy') : '—' }}</dd>
           </div>
+          <div class="datos-grid__item">
+            <dt>Vendedora</dt>
+            <dd>{{ datosColegio()!.vendedora || '—' }}</dd>
+          </div>
         </dl>
       </div>
     </section>

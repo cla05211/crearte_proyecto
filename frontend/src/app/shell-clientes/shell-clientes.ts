@@ -1,47 +1,42 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterOutlet, RouterLink } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { ClientesAuthService } from '../services/clientes-auth-service/clientes-auth-service';
-import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
-import { ClientesPortalService } from '../services/clientes-portal/clientes-portal-service';
- 
+
+// Los accesos a las páginas están como botones en el inicio (portal-cliente), no hay barra lateral.
 @Component({
   selector: 'app-shell-clientes',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink],
   templateUrl: './shell-clientes.html',
   styleUrl: './shell-clientes.css',
 })
-export class ShellClientes implements OnInit
- {
-  private readonly clientesPortalService = inject(ClientesPortalService);
+export class ShellClientes
+{
+  private readonly authService = inject(ClientesAuthService);
+  private readonly router = inject(Router);
 
-  sidebarAbierto = signal(false);
+  // Fuera del inicio se muestra el botón "Inicio" en la barra superior para volver
+  // Se guarda con la sesión al loguearse
+  readonly colegio = this.authService.cliente?.colegio ?? null;
+  readonly usuario = this.authService.cliente?.usuario ?? null;
 
-  // "Contrato" aparece en el menú recién cuando el pedido tiene fecha de entrega aproximada
-  contratoDisponible = signal(false);
- 
-  constructor(private authService: ClientesAuthService, private router: Router) {}
+  readonly enInicio = toSignal(
+    this.router.events.pipe(
+      filter((evento) => evento instanceof NavigationEnd),
+      map(() => this.esInicio()),
+    ),
+    { initialValue: this.esInicio() },
+  );
 
-  async ngOnInit()
+  private esInicio(): boolean
   {
-    const disponible = await firstValueFrom(this.clientesPortalService.obtenerContratoDisponible()).catch(() => false);
-    this.contratoDisponible.set(disponible);
+    return this.router.url.split(/[?#]/)[0] === '/portal-cliente';
   }
- 
- 
-  toggleSidebar(): void
-  {
-    this.sidebarAbierto.update(valor => !valor);
-  }
- 
-  cerrarSidebar(): void
-  {
-    this.sidebarAbierto.set(false);
-  }
- 
+
   cerrarSesion(): void
   {
     this.authService.cerrarSesion();
     this.router.navigate(['/login-clientes']);
   }
 }
- 

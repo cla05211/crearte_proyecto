@@ -19,6 +19,9 @@ const TALLES_REMERA_CHOMBA_SECUNDARIA = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL
 const TALLES_REMERA_CHOMBA_PRIMARIA = ['10', '12', '14', '16', '18', 'L', 'XL'];
 const TALLES_PANTALON = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
+// Largo máximo de cada inscripción (nombre o apodo) bordada
+export const LARGO_MAXIMO_NOMBRE = 10;
+
 
 function tallesDelProducto(idProducto: number, secundaria: boolean): string[]
 {
@@ -84,8 +87,14 @@ export class Carga implements OnInit, OnDestroy
     private readonly secundaria = signal(false);
     private readonly productos = signal<productosPedidoIdNombreDTO[]>([]);
 
-    // Pantalón: cantidad escrita. Resto de prendas: nombres separados por espacio.
+    // Pantalón: cantidad escrita.
     readonly valores = signal<Record<string, string>>({});
+
+    // Resto de prendas: un casillero ("ranura") por prenda con su nombre; vacío = prenda sin nombre.
+    // Normalmente hay tantos casilleros como la cantidad elegida; si hay más nombres que la cantidad,
+    // los que sobran quedan marcados en rojo (ver ajustarRanuras).
+    readonly nombres = signal<Record<string, string[]>>({});
+    readonly largoMaximoNombre = LARGO_MAXIMO_NOMBRE;
 
     // Cantidad total elegida por talle (solo prendas que no son pantalón).
     readonly cantidades = signal<Record<string, string>>({});
@@ -130,9 +139,10 @@ export class Carga implements OnInit, OnDestroy
             this.idPedido.set(idPedido);
             this.secundaria.set(secundaria);
             this.productos.set(productos);
-            const { valores, cantidades } = this.reconstruirValores(prendas);
+            const { valores, cantidades, nombres } = this.reconstruirValores(prendas);
             this.valores.set(valores);
             this.cantidades.set(cantidades);
+            this.nombres.set(nombres);
         }
         catch
         {
@@ -147,7 +157,7 @@ export class Carga implements OnInit, OnDestroy
         }
     }
 
-    private reconstruirValores(prendas: PrendaPedidoDTO[]): { valores: Record<string, string>; cantidades: Record<string, string> }
+    private reconstruirValores(prendas: PrendaPedidoDTO[]): { valores: Record<string, string>; cantidades: Record<string, string>; nombres: Record<string, string[]> }
     {
         const porClave = new Map<string, PrendaPedidoDTO[]>();
 
@@ -161,6 +171,7 @@ export class Carga implements OnInit, OnDestroy
 
         const valores: Record<string, string> = {};
         const cantidades: Record<string, string> = {};
+        const nombres: Record<string, string[]> = {};
 
         for (const [clave, lista] of porClave)
         {
@@ -172,16 +183,16 @@ export class Carga implements OnInit, OnDestroy
             }
             else
             {
-                // Cada fila guardada es una prenda (con o sin inscripción)
+                // Cada fila guardada es una prenda (con o sin inscripción): primero los nombres, después los vacíos
                 cantidades[clave] = String(lista.length);
-                valores[clave] = lista
-                    .filter(prenda => prenda.inscripcion !== null)
-                    .map(prenda => prenda.inscripcion)
-                    .join(' ');
+                const conNombre = lista
+                    .filter(prenda => prenda.inscripcion)
+                    .map(prenda => prenda.inscripcion as string);
+                nombres[clave] = this.ajustarRanuras(conNombre, lista.length);
             }
         }
 
-        return { valores, cantidades };
+        return { valores, cantidades, nombres };
     }
 
     private aEntero(valor: string): number
@@ -199,10 +210,47 @@ export class Carga implements OnInit, OnDestroy
       return this.valores()[clave] ?? '';
     }
 
+    ranuras(clave: string): string[]
+    {
+        return this.nombres()[clave] ?? [];
+    }
+
+    private nombresCargados(clave: string): string[]
+    {
+        return this.ranuras(clave).map(nombre => nombre.trim()).filter(nombre => nombre.length > 0);
+    }
+
     cantidadNombres(clave: string): number
     {
-        const texto = this.valor(clave).trim();
-        return texto.length === 0 ? 0 : texto.split(/\s+/).length;
+        return this.nombresCargados(clave).length;
+    }
+
+    // Casillero de más (hay más nombres que la cantidad elegida): se muestra en rojo
+    esRanuraExcedida(clave: string, indice: number): boolean
+    {
+        return indice >= this.cantidadSeleccionada(clave);
+    }
+
+    // Deja tantos casilleros como la cantidad. Si sobran, se sacan primero los vacíos (desde el final);
+    // si aun así hay más nombres que la cantidad, quedan todos (no se pierde ningún nombre) y se marca el error.
+    private ajustarRanuras(nombres: string[], cantidad: number): string[]
+    {
+        const resultado = [...nombres];
+
+        for (let i = resultado.length - 1; i >= 0 && resultado.length > cantidad; i--)
+        {
+            if (!resultado[i].trim())
+            {
+                resultado.splice(i, 1);
+            }
+        }
+
+        while (resultado.length < cantidad)
+        {
+            resultado.push('');
+        }
+
+        return resultado;
     }
 
     cantidadInput(clave: string): string
@@ -229,16 +277,34 @@ export class Carga implements OnInit, OnDestroy
     {
         const valor = (event.target as HTMLInputElement).value;
         this.cantidades.update(actual => ({ ...actual, [clave]: valor }));
+        this.nombres.update(actual => ({ ...actual, [clave]: this.ajustarRanuras(actual[clave] ?? [], this.aEntero(valor)) }));
+    }
+
+    // Para el bordado: mayúsculas y los espacios pasan a ser puntos ("profe clau" → "PROFE.CLAU")
+    onInputNombre(event: Event, clave: string, indice: number)
+    {
+        const input = event.target as HTMLInputElement;
+        const posicion = input.selectionStart;
+        const nombre = input.value.replace(/\s/g, '.').toUpperCase().slice(0, LARGO_MAXIMO_NOMBRE);
+
+        if (input.value !== nombre)
+        {
+            input.value = nombre;
+            if (posicion !== null) input.setSelectionRange(posicion, posicion);
+        }
+
+        this.nombres.update(actual =>
+        {
+            const ranuras = [...(actual[clave] ?? [])];
+            ranuras[indice] = nombre;
+            // Si se vació un casillero de más, desaparece
+            return { ...actual, [clave]: this.ajustarRanuras(ranuras, this.cantidadSeleccionada(clave)) };
+        });
     }
 
     actualizarValor(clave: string, valor: string)
     {
         this.valores.update(actual => ({ ...actual, [clave]: valor }));
-    }
-
-    onInputNombres(event: Event, clave: string)
-    {
-        this.actualizarValor(clave, (event.target as HTMLInputElement).value);
     }
 
     onInputCantidad(event: Event, clave: string)
@@ -275,12 +341,9 @@ export class Carga implements OnInit, OnDestroy
 				}
 				else
 				{
-					const nombres = valor.trim().length === 0 ? [] : valor.trim().split(/\s+/);
-
-					for (const nombre of nombres)
+					for (const nombre of this.nombresCargados(clave))
 					{
-						const nombreMayus = nombre.toUpperCase();
-						prendas.push({ id_pedido: idPedido, id_producto: producto.idProductoOriginal, talle, inscripcion: nombreMayus });
+						prendas.push({ id_pedido: idPedido, id_producto: producto.idProductoOriginal, talle, inscripcion: nombre.toUpperCase() });
 					}
 
 					// El resto de la cantidad elegida son prendas sin inscripción
@@ -296,6 +359,30 @@ export class Carga implements OnInit, OnDestroy
 
 		return prendas;
 	}
+
+    // Nombres cargados antes de que existiera el límite (el input ya no deja escribir más)
+    private primerNombreLargo(): { producto: string; talle: string; nombre: string } | null
+    {
+        for (const producto of this.productosConTalles())
+        {
+            if (producto.esPantalon) continue;
+
+            for (const talle of producto.talles)
+            {
+                const nombre = this.nombresCargados(this.clave(producto.idProductoOriginal, talle))
+                    .find(n => n.length > LARGO_MAXIMO_NOMBRE);
+
+                if (nombre) return { producto: producto.nombreProducto, talle, nombre };
+            }
+        }
+
+        return null;
+    }
+
+    nombreLargo(nombre: string): boolean
+    {
+        return nombre.trim().length > LARGO_MAXIMO_NOMBRE;
+    }
 
     private primerTalleExcedido(): { producto: string; talle: string } | null
     {
@@ -334,6 +421,17 @@ export class Carga implements OnInit, OnDestroy
 			this.notificaciones.error({
 				title: 'Hay más nombres que prendas',
 				description: `En ${excedido.producto} talle ${excedido.talle} ingresaste más nombres que la cantidad elegida. Aumentá la cantidad o quitá nombres.`,
+			});
+			return false;
+		}
+
+		const largo = this.primerNombreLargo();
+
+		if (largo)
+		{
+			this.notificaciones.error({
+				title: 'Nombre demasiado largo',
+				description: `En ${largo.producto} talle ${largo.talle}, "${largo.nombre}" tiene más de ${LARGO_MAXIMO_NOMBRE} caracteres. Acortalo para poder guardar.`,
 			});
 			return false;
 		}

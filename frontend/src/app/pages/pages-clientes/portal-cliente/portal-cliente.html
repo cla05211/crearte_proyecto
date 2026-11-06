@@ -1,1 +1,35 @@
-<p>portal-cliente works!</p>
+<main class="inicio-page">
+  <section class="ds-container inicio-container">
+    <header class="inicio-header">
+      <span class="ds-eyebrow">Portal de clientes</span>
+      <h1 class="ds-heading-1">¡Hola!</h1>
+      <p class="ds-text-muted">Desde acá podés seguir todo lo de tu pedido.</p>
+    </header>
+
+    <nav class="inicio-accesos" aria-label="Secciones del portal">
+      @for (acceso of accesos; track acceso.ruta) {
+        <ng-container *ngTemplateOutlet="tarjeta; context: { $implicit: acceso }" />
+      }
+      @if (contratoDisponible()) {
+        <ng-container *ngTemplateOutlet="tarjeta; context: { $implicit: accesoContrato }" />
+      }
+    </nav>
+  </section>
+</main>
+
+<ng-template #tarjeta let-acceso>
+  <a class="inicio-acceso" [routerLink]="acceso.ruta">
+    <span class="inicio-acceso__icono" aria-hidden="true">
+      <svg viewBox="0 0 24 24">
+        @for (trazo of acceso.icono; track $index) {
+          <path [attr.d]="trazo" />
+        }
+      </svg>
+    </span>
+    <span class="inicio-acceso__texto">
+      <strong>{{ acceso.titulo }}</strong>
+      <span>{{ acceso.descripcion }}</span>
+    </span>
+    <svg class="inicio-acceso__flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+  </a>
+</ng-template>

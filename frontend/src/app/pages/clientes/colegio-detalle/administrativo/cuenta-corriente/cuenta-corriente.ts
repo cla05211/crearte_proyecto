@@ -17,10 +17,28 @@ import { StorageService } from '../../../../../services/storage/storage-service'
 import { NotificationService } from '../../../../../shared/notifications/notification.service';
 import { ConfirmationService } from '../../../../../services/confirmation/confirmation.service';
 import { ProductosPedidoService } from '../../../../../services/productosPedidos/productos-pedido-service';
+import { PagoComprobanteDatosDTO } from '../../../../../services/pagos/dto/pagoComprobanteDatos.dto';
 
 interface FormularioPago {
   fecha: string;
   monto: number | null;
+}
+
+type TipoPago = 'Efectivo' | 'Transferencia';
+
+// Mismo comprobante que en el portal de clientes (pages-clientes/cuenta-corriente):
+// el OCR se dispara apenas se elige el archivo; si falla, se cargan a mano los tres datos.
+interface ComprobantePago {
+  archivo: File | null;
+  verificando: boolean;
+  error: string;
+  entidadPago: string;
+  entidadPagoPersonalizada: boolean;
+  requiereIngresoManual: boolean;
+  manualNroTransferencia: string;
+  manualMonto: number | null;
+  manualBanco: string;
+  datos: PagoComprobanteDatosDTO | null;
 }
 
 interface FormularioPagoCuota {
@@ -73,6 +91,12 @@ export class CuentaCorriente implements OnInit
   readonly descargandoReciboId = signal<number | null>(null);
   readonly eliminandoId = signal<number | null>(null);
   formularioPago: FormularioPago = this.crearFormularioVacio();
+
+  // "Agregar pago": en efectivo (monto a mano) o por transferencia (comprobante + OCR)
+  readonly tipoPago = signal<TipoPago>('Efectivo');
+  readonly comprobantePago = signal<ComprobantePago>(this.crearComprobanteVacio());
+  readonly entidadesPago = ['Mercado Pago', 'NaranjaX', 'Cuenta DNI', 'Galicia', 'BNA', 'Uala', 'Santander', 'Macro', 'Otra'];
+  readonly bancosComprobante = ['COMAFI', 'Santander'];
 
   readonly cuotasCliente = signal<CuotaResponseDTO[]>([]);
   readonly cuotaSeleccionada = signal<CuotaResponseDTO | null>(null);
@@ -196,10 +220,126 @@ export class CuentaCorriente implements OnInit
     return { fecha: new Date().toISOString().slice(0, 10) };
   }
 
+  private crearComprobanteVacio(): ComprobantePago
+  {
+    return {
+      archivo: null,
+      verificando: false,
+      error: '',
+      entidadPago: '',
+      entidadPagoPersonalizada: false,
+      requiereIngresoManual: false,
+      manualNroTransferencia: '',
+      manualMonto: null,
+      manualBanco: '',
+      datos: null,
+    };
+  }
+
   abrirFormulario(): void
   {
     this.formularioPago = this.crearFormularioVacio();
+    this.tipoPago.set('Efectivo');
+    this.comprobantePago.set(this.crearComprobanteVacio());
     this.vistaFormulario.set(true);
+  }
+
+  elegirTipoPago(tipo: TipoPago): void
+  {
+    this.tipoPago.set(tipo);
+  }
+
+  // ── Comprobante de transferencia (igual que en el portal de clientes) ──
+
+  seleccionarArchivoComprobante(event: Event): void
+  {
+    const input = event.target as HTMLInputElement;
+    const archivo = input.files?.[0] ?? null;
+    input.value = '';
+    if (!archivo) return;
+
+    this.comprobantePago.update((c) => ({
+      ...c,
+      archivo,
+      verificando: true,
+      error: '',
+      requiereIngresoManual: false,
+      manualNroTransferencia: '',
+      manualMonto: null,
+      manualBanco: '',
+      datos: null,
+    }));
+
+    this.verificarComprobante(archivo);
+  }
+
+  quitarArchivoComprobante(): void
+  {
+    this.comprobantePago.set(this.crearComprobanteVacio());
+  }
+
+  private verificarComprobante(archivo: File): void
+  {
+    const formData = new FormData();
+    formData.append('comprobante', archivo, archivo.name);
+
+    this.pagosService.comprobarDatosComprobante(formData)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (datos) => {
+          this.comprobantePago.update((c) => ({ ...c, datos, verificando: false, error: '' }));
+        },
+        error: (err) => {
+          // Si no se detectó una cuenta de la empresa se avisa con un mensaje propio, pero se permite la carga manual
+          const cuentaInvalida = err?.error?.codigo === 'CUENTA_DESTINO_INVALIDA';
+          this.comprobantePago.update((c) => ({
+            ...c,
+            datos: null,
+            verificando: false,
+            error: cuentaInvalida
+              ? 'No se pudo confirmar que sea una transferencia a una cuenta de Crearte. Revisá que el destino sea Centro Logístico Sur SRL o Coassini Adrián Alejandro: si lo es, ingresá los datos manualmente; si no, quitalo y subí el comprobante correcto.'
+              : 'No se pudieron extraer los datos del comprobante. Verificá el archivo e intentá nuevamente, o ingresá los datos manualmente.',
+            requiereIngresoManual: true,
+          }));
+        },
+      });
+  }
+
+  actualizarEntidadComprobante(entidadPago: string): void
+  {
+    this.comprobantePago.update((c) => {
+      if (entidadPago === 'Otra') return { ...c, entidadPagoPersonalizada: true, entidadPago: '' };
+      return { ...c, entidadPagoPersonalizada: false, entidadPago };
+    });
+  }
+
+  actualizarEntidadPagoPersonalizada(entidadPago: string): void
+  {
+    this.comprobantePago.update((c) => ({ ...c, entidadPago }));
+  }
+
+  actualizarDatoManualComprobante(campo: 'nro_transferencia' | 'monto' | 'banco', valor: string): void
+  {
+    this.comprobantePago.update((c) => {
+      const actualizado = { ...c };
+      if (campo === 'nro_transferencia') actualizado.manualNroTransferencia = valor.trim();
+      if (campo === 'banco') actualizado.manualBanco = valor;
+      if (campo === 'monto') actualizado.manualMonto = valor === '' ? null : Number(valor);
+
+      const completo = Boolean(
+        actualizado.manualNroTransferencia &&
+        actualizado.manualBanco &&
+        actualizado.manualMonto &&
+        actualizado.manualMonto > 0,
+      );
+
+      actualizado.datos = completo
+        ? { nro_transferencia: actualizado.manualNroTransferencia, monto: actualizado.manualMonto!, banco: actualizado.manualBanco }
+        : null;
+      actualizado.error = completo ? '' : c.error;
+
+      return actualizado;
+    });
   }
 
   cerrarFormulario(): void
@@ -404,6 +544,12 @@ export class CuentaCorriente implements OnInit
       return;
     }
 
+    if (this.tipoPago() === 'Transferencia')
+    {
+      this.guardarPagoTransferencia(formulario.fecha);
+      return;
+    }
+
     if (!formulario.monto || formulario.monto <= 0)
     {
       this.notificaciones.error({ title: 'Monto inválido', description: 'Ingresá un monto mayor a 0.' });
@@ -431,6 +577,64 @@ export class CuentaCorriente implements OnInit
           this.notificaciones.success({ title: 'Pago agregado', description: 'El pago se registró correctamente.' });
           this.cerrarFormulario();
           this.cargarPagos();
+          this.cargarCuotas();
+        },
+        error: (err: HttpErrorResponse) => {
+          this.guardando.set(false);
+          this.notificarErrorGuardado(err);
+        },
+      });
+  }
+
+  // El motivo lo pone el back ('Cuota'): registrar_pago_completo completa primero la seña si falta
+  private guardarPagoTransferencia(fecha: string): void
+  {
+    const comprobante = this.comprobantePago();
+
+    if (!comprobante.archivo)
+    {
+      this.notificaciones.error({ title: 'Falta el comprobante', description: 'Subí el comprobante de la transferencia.' });
+      return;
+    }
+
+    if (comprobante.verificando)
+    {
+      this.notificaciones.error({ title: 'Verificando comprobante', description: 'Esperá a que se terminen de leer los datos del comprobante.' });
+      return;
+    }
+
+    if (!comprobante.entidadPago)
+    {
+      this.notificaciones.error({ title: 'Falta la entidad de pago', description: 'Indicá desde dónde se hizo la transferencia.' });
+      return;
+    }
+
+    if (!comprobante.datos)
+    {
+      this.notificaciones.error({ title: 'Faltan datos del comprobante', description: 'No se pudieron verificar los datos del comprobante. Completalos a mano.' });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('comprobante', comprobante.archivo, comprobante.archivo.name);
+    formData.append('id_pedido', String(this.idPedido));
+    formData.append('monto', String(comprobante.datos.monto));
+    formData.append('fecha', fecha);
+    formData.append('banco', comprobante.datos.banco);
+    formData.append('entidad_pago', comprobante.entidadPago);
+    formData.append('nroTransferencia', comprobante.datos.nro_transferencia);
+
+    this.guardando.set(true);
+
+    this.pagosService.crearPagoTransferencia(formData)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.guardando.set(false);
+          this.notificaciones.success({ title: 'Pago agregado', description: 'La transferencia se registró correctamente.' });
+          this.cerrarFormulario();
+          this.cargarPagos();
+          this.cargarCuotas();
         },
         error: (err: HttpErrorResponse) => {
           this.guardando.set(false);

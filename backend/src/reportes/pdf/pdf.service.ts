@@ -53,6 +53,10 @@ const COLOR_MARCA = '#690446';
 const COLOR_MARCA_SUAVE = '#FBEFF5';
 const COLOR_GRIS_SUAVE = '#F4F4F5';
 
+// Alto reservado arriba de cada hoja del resumen de talles para el encabezado repetido
+// (logo + título + datos del colegio). Si se agregan filas a los datos del colegio, hay que agrandarlo.
+const MARGEN_SUPERIOR_RESUMEN_TALLES = 175;
+
 const logoPath = path.join(__dirname, '..', 'assets', 'logo-crearte.png');
  
 @Injectable()
@@ -560,8 +564,11 @@ export class PdfService
                 ]);
             }
 
-            const datosColegio: Content = {
-                margin: [0, 0, 0, 14],
+            // Encabezado de cada hoja (logo, título y datos del colegio): va en el header del PDF,
+            // así se repite en todas las páginas, incluso si la tabla de un producto ocupa más de una.
+            // Se arma de nuevo en cada página porque pdfmake modifica los objetos que dibuja.
+            const crearDatosColegio = (): Content => ({
+                margin: [0, 12, 0, 0],
                 table: {
                     widths: ['*', '*'],
                     body: filasDatosColegio,
@@ -575,7 +582,7 @@ export class PdfService
                     hLineWidth: () => 0,
                     vLineWidth: () => 0,
                 },
-            };
+            });
 
             const seccionTitulo = (texto: string): Content => ({
                 margin: [0, 16, 0, 8],
@@ -583,19 +590,26 @@ export class PdfService
                 layout: { fillColor: () => COLOR_MARCA, hLineWidth: () => 0, vLineWidth: () => 0, paddingLeft: () => 0, paddingRight: () => 0, paddingTop: () => 0, paddingBottom: () => 0 },
             });
 
-            // Una tabla por prenda real: talle / cantidad / nombres, con las inscripciones
+            // Una hoja por producto: talle / cantidad / nombres, con las inscripciones
             // renderizadas en la tipografía oficial de bordado.
-            const tablasPrendas: Content[] = dto.prendas.flatMap((producto): Content[] => [
+            const tablasPrendas: Content[] = dto.prendas.flatMap((producto, indice): Content[] => [
                 {
-                    margin: [0, 4, 0, 4],
-                    columns: [
-                        { text: producto.nombreProducto, bold: true, fontSize: 11, color: COLOR_MARCA },
-                        { text: `Total: ${producto.total}`, bold: true, fontSize: 9, alignment: 'right', color: COLOR_MARCA },
-                    ],
+                    ...(indice > 0 ? { pageBreak: 'before' as const } : {}),
+                    margin: [0, 0, 0, 8],
+                    table: {
+                        widths: ['*', 'auto'],
+                        body: [[
+                            { text: producto.nombreProducto.toUpperCase(), color: 'white', bold: true, fontSize: 16, margin: [12, 9, 0, 9] },
+                            { text: `Total: ${producto.total}`, color: 'white', bold: true, fontSize: 14, alignment: 'right', margin: [0, 10, 12, 9] },
+                        ]],
+                    },
+                    layout: { fillColor: () => COLOR_MARCA, hLineWidth: () => 0, vLineWidth: () => 0, paddingLeft: () => 0, paddingRight: () => 0, paddingTop: () => 0, paddingBottom: () => 0 },
                 },
                 {
                     table: {
                         headerRows: 1,
+                        // Si la tabla sigue en otra hoja, un talle no se parte a la mitad (quedaría sin su etiqueta)
+                        dontBreakRows: true,
                         widths: [55, 55, '*'],
                         body: [
                             [
@@ -705,7 +719,8 @@ export class PdfService
 
             const docDefinition: TDocumentDefinitions = {
                 pageSize: 'A4',
-                pageMargins: [40, 40, 40, 50],
+                // El margen de arriba deja lugar para el encabezado (header) que se repite en cada hoja
+                pageMargins: [40, MARGEN_SUPERIOR_RESUMEN_TALLES, 40, 50],
                 defaultStyle: { font: 'Roboto', fontSize: 9 },
                 images: imagenes,
                 footer: (currentPage: number, pageCount: number) => ({
@@ -715,28 +730,33 @@ export class PdfService
                         { text: `${currentPage} / ${pageCount}`, fontSize: 7, alignment: 'right', color: '#999999' },
                     ],
                 }),
+                header: (): Content => ({
+                    margin: [40, 30, 40, 0],
+                    stack: [
+                        {
+                            columns: [
+                                { image: 'logoCrearte', width: 110 },
+                                {
+                                    width: '*',
+                                    stack: [
+                                        { text: 'RESUMEN DE TALLES', bold: true, fontSize: 18, color: COLOR_MARCA, alignment: 'right' },
+                                        { text: firmado ? 'Planilla de talles confirmada' : 'Documento de verificación previo a la confirmación', fontSize: 9, alignment: 'right', color: '#777777' },
+                                    ],
+                                    margin: [0, 6, 0, 0],
+                                },
+                            ],
+                        },
+                        { canvas: [{ type: 'line' as const, x1: 0, y1: 8, x2: 515, y2: 8, lineWidth: 1.5, lineColor: COLOR_MARCA }] },
+                        crearDatosColegio(),
+                    ],
+                }),
                 content: [
-                    {
-                        columns: [
-                            { image: 'logoCrearte', width: 110 },
-                            {
-                                width: '*',
-                                stack: [
-                                    { text: 'RESUMEN DE TALLES', bold: true, fontSize: 18, color: COLOR_MARCA, alignment: 'right' },
-                                    { text: firmado ? 'Planilla de talles confirmada' : 'Documento de verificación previo a la confirmación', fontSize: 9, alignment: 'right', color: '#777777' },
-                                ],
-                                margin: [0, 6, 0, 0],
-                            },
-                        ],
-                    },
-                    { canvas: [{ type: 'line' as const, x1: 0, y1: 8, x2: 515, y2: 8, lineWidth: 1.5, lineColor: COLOR_MARCA }] },
+                    ...(tablasPrendas.length > 0
+                        ? tablasPrendas
+                        : [{ text: 'Todavía no hay talles cargados.', italics: true, fontSize: 9, color: '#777777' } as Content]),
 
-                    datosColegio,
-
-                    seccionTitulo('Prendas y talles'),
-                    ...tablasPrendas,
-
-                    seccionTitulo('Combos y productos sueltos'),
+                    // Última hoja: resumen del pedido y, si ya se confirmó, la firma
+                    { ...(seccionTitulo('Combos y productos sueltos') as object), pageBreak: 'before', margin: [0, 0, 0, 8] } as Content,
                     ...tablaCombosYSueltas,
 
                     seccionTitulo('Beneficios del pedido'),

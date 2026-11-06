@@ -56,12 +56,14 @@
 }
 
 .carga-totales__item {
+  align-items: baseline;
   background-color: var(--color-primary-100);
-  border: 1px solid var(--color-primary-700);
+  border: 2px solid var(--color-primary-700);
   border-radius: var(--radius-lg);
   color: var(--color-primary-700);
-  font-size: var(--font-size-sm);
-  padding: var(--space-1) var(--space-3);
+  display: inline-flex;
+  font-size: var(--font-size-lg);
+  padding: var(--space-3) var(--space-5);
   white-space: nowrap;
 }
 
@@ -70,7 +72,26 @@
 }
 
 .carga-totales__numero {
+  font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
+  line-height: 1;
+}
+
+/* Edición: título arriba y, abajo, los totales a la izquierda y los botones a la derecha */
+.carga-header--edicion {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.carga-header--edicion .carga-header__acciones {
+  justify-content: space-between;
+}
+
+.carga-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-left: auto;
 }
 
 .carga-productos {
@@ -164,6 +185,38 @@
   min-height: var(--control-height-sm);
 }
 
+/* Un casillero por prenda para el nombre */
+.carga-ranuras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.carga-tabla td .carga-ranura {
+  flex: 0 0 8.5rem;
+  min-width: 0;
+  text-transform: uppercase;
+  width: 8.5rem;
+}
+
+.carga-ranura::placeholder {
+  text-transform: none;
+}
+
+.carga-ranura--error {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 1px var(--color-danger);
+}
+
+.carga-ranuras__vacio {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.carga-aviso {
+  margin: 0;
+}
+
 .carga-input-cantidad {
   max-width: 8rem;
   text-align: center;
@@ -202,6 +255,8 @@
   .carga-header { justify-content: stretch; }
   .carga-header__acciones { justify-content: stretch; width: 100%; }
   .carga-header .ds-button { flex: 1 1 auto; }
+  .carga-botones { width: 100%; }
+  .carga-totales__item { flex: 1 1 auto; justify-content: center; }
   .carga-footer .ds-button { width: 100%; }
   .carga-resumen__iframe { height: 65vh; }
 }

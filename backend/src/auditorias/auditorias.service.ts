@@ -7,11 +7,8 @@ import {
     FiltrosAuditoria, PrendaAuditoria, PresupuestoAuditoria,
 } from './dto/AuditoriaResponse.dto';
 
-// Un cambio cuenta como "después de producción" si el pedido ya se mandó a fábrica
-const ESTADOS_EN_PRODUCCION = ['En producción', 'Listo para entregar', 'Entregado'];
 
-// Talles y diseño solo se auditan con el pedido ya en producción (antes se pueden cambiar libremente).
-// Presupuesto y beneficios se auditan siempre.
+const ESTADOS_EN_PRODUCCION = ['En producción', 'Listo para entregar', 'Entregado'];
 const TIPOS_SOLO_EN_PRODUCCION: TipoAuditoria[] = ['talles', 'disenio'];
 
 @Injectable()
@@ -21,8 +18,6 @@ export class AuditoriasService
 
     constructor(private sb: SupabaseService){}
 
-    // Nunca tira error: el cambio auditado ya se guardó y no tiene que fallar por la auditoría.
-    // Si no se puede registrar queda en el log.
     async registrar(dto: insertarAuditoriaDTO): Promise<void>
     {
         try
@@ -76,8 +71,8 @@ export class AuditoriasService
         return data.nro_fabrica !== null || ESTADOS_EN_PRODUCCION.includes(data.estado_general ?? '');
     }
 
-    //--- Fotos de cómo está el pedido (se guardan antes y después del cambio) ---
-    // Si la foto falla se devuelve null: el cambio se hace igual y la auditoría queda sin ese dato.
+    //Fotospedido (se guardan antes y después del cambio) 
+
 
     async fotoPresupuesto(idPedido: number): Promise<PresupuestoAuditoria | null>
     {
@@ -176,10 +171,6 @@ export class AuditoriasService
         }
     }
 
-    // Talles tal como estaban cuando administración reabrió la planilla (se guardó en la auditoría
-    // de "Edición de talles habilitada"). Sirve de "antes" cuando el cliente termina de editar.
-    // Solo vale si es la última acción de talles: si la planilla se reabrió antes de producción no hay
-    // registro de esa apertura, y no hay que tomar la foto de una edición anterior que ya se cerró.
     async fotoTallesAlHabilitarEdicion(idPedido: number): Promise<PrendaAuditoria[] | null>
     {
         const { data, error } = await this.sb.supabase
@@ -200,8 +191,7 @@ export class AuditoriasService
         return this.parsear(data.dato_anterior) as PrendaAuditoria[] | null;
     }
 
-    //--- Página de auditoría ---
-
+    //auditoria pagina
     async listar(filtros: FiltrosAuditoria): Promise<AuditoriaPaginaDTO>
     {
         let query = this.sb.supabase
@@ -209,7 +199,7 @@ export class AuditoriasService
         .select(`id, created_at, tabla, accion, dato_anterior, dato_nuevo, despues_produccion, id_pedido,
             usuarios(nombre, apellido),
             clientes(usuario),
-            pedidos!inner(nro_fabrica, grupos!inner(promo, colegios!inner(nombre)))`, { count: 'exact' })
+            pedidos!inner(nro_fabrica, grupos!inner(id,promo, colegios!inner(nombre)))`, { count: 'exact' })
         .in('tabla', TIPOS_PAGINA_AUDITORIA.map(t => TABLAS_AUDITORIA[t]))
         // Talles y diseño solo interesan con el pedido en producción
         .or(`despues_produccion.eq.true,tabla.not.in.(${TIPOS_SOLO_EN_PRODUCCION.map(t => TABLAS_AUDITORIA[t]).join(',')})`)
@@ -228,6 +218,10 @@ export class AuditoriasService
         {
             query = query.ilike('pedidos.grupos.colegios.nombre', `%${filtros.busqueda}%`);
         }
+        if(filtros.fechaDesde)
+        {
+            query = query.gte('created_at', filtros.fechaDesde);
+        }
 
         const { data, error, count } = await query.range(filtros.rangoDesde, filtros.rangoHasta);
 
@@ -242,6 +236,7 @@ export class AuditoriasService
             tipo: this.tipoDeTabla(fila.tabla),
             accion: fila.accion,
             idPedido: fila.id_pedido!,
+            idGrupo: fila.pedidos.grupos.id,
             colegio: fila.pedidos.grupos.colegios.nombre,
             promo: fila.pedidos.grupos.promo,
             nroFabrica: fila.pedidos.nro_fabrica,
@@ -257,8 +252,6 @@ export class AuditoriasService
         return { registros, total: count ?? registros.length };
     }
 
-    // Quién canceló el pedido y cuándo (para la ficha del cliente). null si no hay registro,
-    // por ejemplo en pedidos cancelados antes de que se auditara la cancelación.
     async obtenerCancelacion(idPedido: number): Promise<CancelacionPedidoDTO | null>
     {
         const { data, error } = await this.sb.supabase
@@ -288,8 +281,6 @@ export class AuditoriasService
         };
     }
 
-    // URL para bajar la versión anterior o nueva de un boceto/firmado auditado.
-    // Por eso al reemplazar un diseño ya no se borra el archivo viejo de Storage.
     async crearUrlArchivo(idAuditoria: number, version: 'anterior' | 'nuevo'): Promise<{ url: string }>
     {
         const { data, error } = await this.sb.supabase

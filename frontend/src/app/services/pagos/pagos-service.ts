@@ -45,6 +45,12 @@ export class PagosService
     return this.http.post(`${environment.apiUrl}/pagos/`, dto);
   }
 
+  // Transferencia cargada por un empleado: el FormData lleva el archivo 'comprobante' y los datos del pago
+  crearPagoTransferencia(formData: FormData)
+  {
+    return this.http.post(`${environment.apiUrl}/pagos/comprobante`, formData);
+  }
+
   eliminarPago(idPago:number)
   {
     return this.http.delete(`${environment.apiUrl}/pagos/${idPago}`);

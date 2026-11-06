@@ -1,0 +1,25 @@
+:host {
+  display: block;
+}
+
+.home-portada {
+  display: block;
+  /* 4.5rem = alto de la barra superior del shell (4rem en celular) */
+  height: calc(100dvh - 4.5rem);
+  overflow: hidden;
+}
+
+.home-portada img {
+  display: block;
+  height: 100%;
+  /* Llena el espacio sin deformarse; si la pantalla tiene otra proporción se recortan los bordes */
+  object-fit: cover;
+  object-position: center;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .home-portada {
+    height: calc(100dvh - 4rem);
+  }
+}

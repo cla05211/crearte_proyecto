@@ -40,7 +40,7 @@
       }
     </section>
   } @else {
-    <header class="carga-header">
+    <header class="carga-header carga-header--edicion">
       <h2 class="ds-heading-3">Elegí el talle, la cantidad y los nombres de cada prenda</h2>
       <div class="carga-header__acciones">
         @if (totalesPorProducto().length > 0) {
@@ -53,16 +53,33 @@
             }
           </ul>
         }
-        <button
-          type="button"
-          class="ds-button ds-button--secondary"
-          [disabled]="generandoResumen() || guardando()"
-          (click)="verTallesCargados()"
-        >
-          {{ guardando() ? 'Guardando...' : (generandoResumen() ? 'Generando...' : '¡Talles Cargados!') }}
-        </button>
+        @if (productosConTalles().length > 0) {
+          <div class="carga-botones">
+            <button
+              type="button"
+              class="ds-button ds-button--secondary"
+              [disabled]="guardando() || generandoResumen()"
+              (click)="guardarProgreso()"
+            >
+              {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+            </button>
+            <button
+              type="button"
+              class="ds-button"
+              [disabled]="generandoResumen() || guardando()"
+              (click)="verTallesCargados()"
+            >
+              {{ generandoResumen() ? 'Generando...' : 'Confirmar Planilla Final' }}
+            </button>
+          </div>
+        }
       </div>
     </header>
+
+    <p class="ds-alert carga-aviso">
+      Escribí un nombre o apodo por casillero, de hasta {{ largoMaximoNombre }} caracteres. Si lleva más de una palabra, se separa con un punto:
+      por ejemplo <strong>PROFE.CLAU</strong> (los espacios se cambian solos por puntos). Los casilleros vacíos van sin nombre.
+    </p>
 
     @if (productosConTalles().length === 0) {
       <p class="ds-text-muted">Este pedido todavía no tiene productos cargados.</p>
@@ -115,14 +132,24 @@
                           />
                         </td>
                         <td>
-                          <input
-                            type="text"
-                            class="ds-input"
-                            placeholder="Separá cada nombre con un espacio"
-                            [attr.aria-label]="'Nombres para ' + producto.nombreProducto + ' talle ' + talle"
-                            [value]="valor(clave(producto.idProductoOriginal, talle))"
-                            (input)="onInputNombres($event, clave(producto.idProductoOriginal, talle))"
-                          />
+                          @if (ranuras(clave(producto.idProductoOriginal, talle)).length > 0) {
+                            <div class="carga-ranuras">
+                              @for (nombre of ranuras(clave(producto.idProductoOriginal, talle)); track $index) {
+                                <input
+                                  type="text"
+                                  class="ds-input carga-ranura"
+                                  [class.carga-ranura--error]="esRanuraExcedida(clave(producto.idProductoOriginal, talle), $index) || nombreLargo(nombre)"
+                                  placeholder="Nombre {{ $index + 1 }}"
+                                  [attr.maxlength]="largoMaximoNombre"
+                                  [attr.aria-label]="'Nombre ' + ($index + 1) + ' de ' + producto.nombreProducto + ' talle ' + talle"
+                                  [value]="nombre"
+                                  (input)="onInputNombre($event, clave(producto.idProductoOriginal, talle), $index)"
+                                />
+                              }
+                            </div>
+                          } @else {
+                            <span class="carga-ranuras__vacio">Ingresá la cantidad</span>
+                          }
                         </td>
                         <td class="carga-tabla__cantidad">{{ cantidadSinInscripcion(clave(producto.idProductoOriginal, talle)) }}</td>
                         <td
@@ -140,16 +167,6 @@
         }
       </div>
 
-      <footer class="carga-footer">
-        <button
-          type="button"
-          class="ds-button ds-button--large"
-          [disabled]="guardando()"
-          (click)="guardarProgreso()"
-        >
-          {{ guardando() ? 'Guardando...' : 'Guardar Progreso' }}
-        </button>
-      </footer>
     }
   }
 </main>

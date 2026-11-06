@@ -185,3 +185,90 @@
 .cc-summary__cancelado {
   align-self: center;
 }
+
+/* Forma de pago en "Agregar pago" (mismo estilo que las opciones del modal de cancelar pedido) */
+.cc-tipo-pago {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.cc-tipo-pago__opciones {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.cc-tipo-pago__opcion {
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 1;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+}
+
+.cc-tipo-pago__opcion.activa {
+  background: var(--color-primary-100);
+  border-color: var(--color-primary-600);
+}
+
+.cc-tipo-pago__opcion input {
+  accent-color: var(--color-primary-700);
+}
+
+/* Selector de comprobante (igual que en el portal de clientes) */
+.resource-upload {
+  align-content: start;
+  position: relative;
+}
+
+.resource-upload .file-input-hidden {
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
+}
+
+.file-picker-button {
+  background: var(--color-primary-100);
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-primary-700);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  justify-self: start;
+  padding: var(--space-2) var(--space-3);
+}
+
+.file-list {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+}
+
+.file-list li {
+  align-items: center;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  gap: var(--space-2);
+  justify-content: space-between;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+}
+
+.file-list__name {
+  color: var(--color-text-strong);
+  font-size: var(--font-size-sm);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

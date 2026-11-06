@@ -19,5 +19,11 @@ export class Novedades {
     {
         return this.http.get<NovedadDTO[]>(`${environment.apiUrl}/novedades/produccion`);
     }
+
+    // Presupuestos/planes modificados en los últimos días (sale de la auditoría)
+    obtenerNovedadesModificaciones()
+    {
+        return this.http.get<NovedadDTO[]>(`${environment.apiUrl}/novedades/modificaciones`);
+    }
     
 }

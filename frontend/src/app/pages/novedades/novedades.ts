@@ -6,11 +6,11 @@ import { NovedadDTO } from '../../services/novedades/Novedad.dto';
 import { PermisosService } from '../../services/permisos/permisos';
 import { NotificationService } from '../../shared/notifications/notification.service';
 
-interface DiaVentas
+interface DiaNovedades
 {
   titulo: string;
   fecha: Date;
-  ventas: NovedadDTO[];
+  items: NovedadDTO[];
 }
 
 @Component({
@@ -32,39 +32,15 @@ export class Novedades implements OnInit
   readonly produccion = signal<NovedadDTO[] | null>(null);
   readonly cargandoVentas = signal(false);
   readonly cargandoProduccion = signal(false);
+  readonly modificaciones = signal<NovedadDTO[] | null>(null);
+  readonly cargandoModificaciones = signal(false);
 
   // Una tarjeta por día: hoy + los 2 días hábiles anteriores (mismo criterio que el back).
-  // Ej: un lunes se ve lunes, viernes y jueves. Dentro de cada día, la venta más reciente va arriba.
-  readonly ventasPorDia = computed<DiaVentas[]>(() => {
-    const hoy = this.inicioDelDia(new Date());
-    const dias: DiaVentas[] = [];
+  readonly ventasPorDia = computed(() => this.agruparPorDia(this.ventas()));
+  readonly modificacionesPorDia = computed(() => this.agruparPorDia(this.modificaciones()));
 
-    const fecha = new Date(hoy);
-    dias.push(this.crearDia(fecha, hoy));
-    while (dias.length < 3)
-    {
-      fecha.setDate(fecha.getDate() - 1);
-      if (fecha.getDay() !== 0 && fecha.getDay() !== 6) dias.push(this.crearDia(fecha, hoy));
-    }
-
-    for (const venta of this.ventas() ?? [])
-    {
-      if (!venta.fecha) continue;
-      const diaVenta = this.inicioDelDia(new Date(venta.fecha));
-      dias.find((dia) => dia.fecha.getTime() === diaVenta.getTime())?.ventas.push(venta);
-    }
-
-    for (const dia of dias)
-    {
-      dia.ventas.sort((a, b) => new Date(b.fecha!).getTime() - new Date(a.fecha!).getTime());
-    }
-
-    return dias;
-  });
-
-  readonly totalVentas = computed(() =>
-    this.ventasPorDia().reduce((acumulador, dia) => acumulador + dia.ventas.length, 0),
-  );
+  readonly totalVentas = computed(() => this.contar(this.ventasPorDia()));
+  readonly totalModificaciones = computed(() => this.contar(this.modificacionesPorDia()));
 
   readonly produccionOrdenada = computed(() =>
     [...(this.produccion() ?? [])].sort((a, b) => a.colegio.localeCompare(b.colegio, 'es')),
@@ -72,7 +48,11 @@ export class Novedades implements OnInit
 
   ngOnInit(): void
   {
-    if (this.puedeVerVentas) this.traerVentas();
+    if (this.puedeVerVentas)
+    {
+      this.traerVentas();
+      this.traerModificaciones();
+    }
     if (this.puedeVerProduccion) this.traerProduccion();
   }
 
@@ -88,6 +68,24 @@ export class Novedades implements OnInit
         this.cargandoVentas.set(false);
         this.notificaciones.error({
           title: 'No se pudieron cargar las ventas recientes',
+          description: 'Intentá nuevamente en unos minutos.',
+        });
+      },
+    });
+  }
+
+  traerModificaciones(): void
+  {
+    this.cargandoModificaciones.set(true);
+    this.novedadesService.obtenerNovedadesModificaciones().subscribe({
+      next: (modificaciones) => {
+        this.modificaciones.set(modificaciones);
+        this.cargandoModificaciones.set(false);
+      },
+      error: () => {
+        this.cargandoModificaciones.set(false);
+        this.notificaciones.error({
+          title: 'No se pudieron cargar los presupuestos modificados',
           description: 'Intentá nuevamente en unos minutos.',
         });
       },
@@ -112,8 +110,43 @@ export class Novedades implements OnInit
     });
   }
 
+  // Hoy + los 2 días hábiles anteriores. Ej: un lunes se ve lunes, viernes y jueves.
+  // Dentro de cada día, lo más reciente va arriba.
+  private agruparPorDia(novedades: NovedadDTO[] | null): DiaNovedades[]
+  {
+    const hoy = this.inicioDelDia(new Date());
+    const dias: DiaNovedades[] = [];
+
+    const fecha = new Date(hoy);
+    dias.push(this.crearDia(fecha, hoy));
+    while (dias.length < 3)
+    {
+      fecha.setDate(fecha.getDate() - 1);
+      if (fecha.getDay() !== 0 && fecha.getDay() !== 6) dias.push(this.crearDia(fecha, hoy));
+    }
+
+    for (const novedad of novedades ?? [])
+    {
+      if (!novedad.fecha) continue;
+      const dia = this.inicioDelDia(new Date(novedad.fecha));
+      dias.find((d) => d.fecha.getTime() === dia.getTime())?.items.push(novedad);
+    }
+
+    for (const dia of dias)
+    {
+      dia.items.sort((a, b) => new Date(b.fecha!).getTime() - new Date(a.fecha!).getTime());
+    }
+
+    return dias;
+  }
+
+  private contar(dias: DiaNovedades[]): number
+  {
+    return dias.reduce((acumulador, dia) => acumulador + dia.items.length, 0);
+  }
+
   // "Hoy", "Ayer" o el nombre del día ("Viernes") cuando no es consecutivo
-  private crearDia(fecha: Date, hoy: Date): DiaVentas
+  private crearDia(fecha: Date, hoy: Date): DiaNovedades
   {
     const diferenciaDias = Math.round((hoy.getTime() - fecha.getTime()) / 86_400_000);
     let titulo: string;
@@ -125,7 +158,7 @@ export class Novedades implements OnInit
       titulo = nombreDia.charAt(0).toUpperCase() + nombreDia.slice(1);
     }
 
-    return { titulo, fecha: new Date(fecha), ventas: [] };
+    return { titulo, fecha: new Date(fecha), items: [] };
   }
 
   private inicioDelDia(fecha: Date): Date

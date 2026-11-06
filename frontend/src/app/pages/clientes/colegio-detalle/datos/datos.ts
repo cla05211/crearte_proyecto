@@ -108,7 +108,7 @@ export class Datos implements OnInit
 
   puedeCancelarPedido(): boolean
   {
-    return this.permisosService.tienePermiso('modificar_pedidos') && this.idPedido() !== null && !this.pedidoCancelado();
+    return this.permisosService.tienePermiso('cancelar_pedido') && this.idPedido() !== null && !this.pedidoCancelado();
   }
 
   abrirModalCancelar(): void

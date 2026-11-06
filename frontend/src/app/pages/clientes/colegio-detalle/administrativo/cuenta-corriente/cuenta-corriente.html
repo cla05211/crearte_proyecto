@@ -191,26 +191,160 @@
       <header class="cc-modal__header">
         <div>
           <span class="ds-eyebrow">Cuenta corriente</span>
-          <h2 id="new-payment-title" class="ds-heading-2">Agregar pago en efectivo</h2>
+          <h2 id="new-payment-title" class="ds-heading-2">Agregar pago</h2>
         </div>
         <button class="close-button" type="button" (click)="cerrarFormulario()" aria-label="Cerrar">×</button>
       </header>
 
       <div class="cc-modal__content">
-        <label class="ds-field">
-          <span class="ds-label">Fecha</span>
-          <input class="ds-input" type="date" [(ngModel)]="formularioPago.fecha" />
-        </label>
+        <fieldset class="cc-tipo-pago">
+          <legend class="ds-label">Forma de pago</legend>
+          <div class="cc-tipo-pago__opciones">
+            <label class="cc-tipo-pago__opcion" [class.activa]="tipoPago() === 'Efectivo'">
+              <input type="radio" name="tipo-pago" [checked]="tipoPago() === 'Efectivo'" (change)="elegirTipoPago('Efectivo')" />
+              Efectivo
+            </label>
+            <label class="cc-tipo-pago__opcion" [class.activa]="tipoPago() === 'Transferencia'">
+              <input type="radio" name="tipo-pago" [checked]="tipoPago() === 'Transferencia'" (change)="elegirTipoPago('Transferencia')" />
+              Transferencia
+            </label>
+          </div>
+        </fieldset>
 
-        <label class="ds-field">
-          <span class="ds-label">Monto</span>
-          <input class="ds-input" type="number" min="0" step="0.01" [(ngModel)]="formularioPago.monto" />
-        </label>
+        @if (tipoPago() === 'Efectivo') {
+          <label class="ds-field">
+            <span class="ds-label">Fecha</span>
+            <input class="ds-input" type="date" [(ngModel)]="formularioPago.fecha" />
+          </label>
+
+          <label class="ds-field">
+            <span class="ds-label">Monto</span>
+            <input class="ds-input" type="number" min="0" step="0.01" [(ngModel)]="formularioPago.monto" />
+          </label>
+        } @else {
+          <div class="ds-field resource-upload">
+            <span class="ds-label">Comprobante de transferencia *</span>
+            <input
+              class="file-input-hidden"
+              type="file"
+              accept="image/*,application/pdf"
+              #archivoComprobanteInput
+              (change)="seleccionarArchivoComprobante($event)" />
+            @if (comprobantePago().archivo; as archivo) {
+              <ul class="file-list">
+                <li>
+                  <span class="file-list__name">{{ archivo.name }}</span>
+                  <button type="button" class="ds-button ds-button--ghost ds-button--small" (click)="quitarArchivoComprobante()">
+                    Quitar
+                  </button>
+                </li>
+              </ul>
+            } @else {
+              <button type="button" class="file-picker-button" (click)="archivoComprobanteInput.click()">
+                Elegir archivo
+              </button>
+            }
+          </div>
+
+          @if (comprobantePago().archivo) {
+            <label class="ds-field">
+              <span class="ds-label">Entidad de pago *</span>
+              <span class="ds-text-muted">Banco o billetera desde la que el cliente hizo la transferencia</span>
+              <select
+                class="ds-select"
+                [ngModel]="comprobantePago().entidadPagoPersonalizada ? 'Otra' : comprobantePago().entidadPago"
+                (ngModelChange)="actualizarEntidadComprobante($any($event))"
+              >
+                <option value="">Seleccioná una entidad</option>
+                @for (entidad of entidadesPago; track entidad) {
+                  <option [value]="entidad">{{ entidad }}</option>
+                }
+              </select>
+            </label>
+
+            @if (comprobantePago().entidadPagoPersonalizada) {
+              <label class="ds-field">
+                <span class="ds-label">Especificá la entidad de pago *</span>
+                <input
+                  class="ds-input"
+                  type="text"
+                  [ngModel]="comprobantePago().entidadPago"
+                  (ngModelChange)="actualizarEntidadPagoPersonalizada($any($event))" />
+              </label>
+            }
+
+            @if (comprobantePago().verificando) {
+              <span class="ds-text-muted">Verificando comprobante…</span>
+            }
+
+            @if (comprobantePago().requiereIngresoManual) {
+              @if (comprobantePago().error) {
+                <span class="ds-alert ds-alert--danger">{{ comprobantePago().error }}</span>
+              }
+              <label class="ds-field">
+                <span class="ds-label">Nro. de transferencia *</span>
+                <input
+                  class="ds-input"
+                  type="text"
+                  [ngModel]="comprobantePago().manualNroTransferencia"
+                  (ngModelChange)="actualizarDatoManualComprobante('nro_transferencia', $any($event))" />
+              </label>
+              <label class="ds-field">
+                <span class="ds-label">Monto *</span>
+                <input
+                  class="ds-input"
+                  type="number"
+                  min="0"
+                  [ngModel]="comprobantePago().manualMonto"
+                  (ngModelChange)="actualizarDatoManualComprobante('monto', $any($event))" />
+              </label>
+              <label class="ds-field">
+                <span class="ds-label">Banco *</span>
+                <span class="ds-text-muted">Cuenta de Crearte a la que llegó el pago</span>
+                <select
+                  class="ds-select"
+                  [ngModel]="comprobantePago().manualBanco"
+                  (ngModelChange)="actualizarDatoManualComprobante('banco', $any($event))"
+                >
+                  <option value="">Seleccioná un banco</option>
+                  @for (banco of bancosComprobante; track banco) {
+                    <option [value]="banco">{{ banco }}</option>
+                  }
+                </select>
+              </label>
+            }
+
+            @if (comprobantePago().datos; as datos) {
+              <div class="cc-summary cc-summary--compact">
+                <div class="cc-summary__item">
+                  <span>Banco{{ comprobantePago().requiereIngresoManual ? '' : ' detectado' }}</span>
+                  <strong>{{ datos.banco }}</strong>
+                </div>
+                <span class="cc-summary__separator" aria-hidden="true">·</span>
+                <div class="cc-summary__item">
+                  <span>Nro. comprobante{{ comprobantePago().requiereIngresoManual ? '' : ' detectado' }}</span>
+                  <strong>{{ datos.nro_transferencia }}</strong>
+                </div>
+                <span class="cc-summary__separator" aria-hidden="true">·</span>
+                <div class="cc-summary__item">
+                  <span>Monto{{ comprobantePago().requiereIngresoManual ? '' : ' detectado' }}</span>
+                  <strong>{{ datos.monto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+                </div>
+              </div>
+            }
+          }
+
+          <label class="ds-field">
+            <span class="ds-label">Fecha del pago *</span>
+            <input class="ds-input" type="date" [(ngModel)]="formularioPago.fecha" />
+            <span class="ds-text-muted">La fecha que figura en el comprobante, no la de hoy.</span>
+          </label>
+        }
       </div>
 
       <footer class="cc-modal__actions">
         <button type="button" class="ds-button ds-button--secondary" (click)="cerrarFormulario()">Cancelar</button>
-        <button type="button" class="ds-button" [disabled]="guardando()" (click)="guardarPago()">
+        <button type="button" class="ds-button" [disabled]="guardando() || comprobantePago().verificando" (click)="guardarPago()">
           {{ guardando() ? 'Guardando…' : 'Guardar pago' }}
         </button>
       </footer>

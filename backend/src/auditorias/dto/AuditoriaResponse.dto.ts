@@ -72,8 +72,6 @@ export interface CancelacionPedidoDTO
     banco: string | null;
 }
 
-// --- Respuesta de la página de auditoría ---
-
 export interface AuditoriaRegistroDTO
 {
     id: number;
@@ -81,6 +79,7 @@ export interface AuditoriaRegistroDTO
     tipo: TipoAuditoria;
     accion: string;
     idPedido: number;
+    idGrupo:number,
     colegio: string;
     promo: number | null;
     nroFabrica: number | null;
@@ -97,11 +96,12 @@ export interface AuditoriaPaginaDTO
     total: number;
 }
 
-export interface FiltrosAuditoria
+export class FiltrosAuditoria
 {
-    rangoDesde: number;
-    rangoHasta: number;
+    rangoDesde!: number;
+    rangoHasta!: number;
     tipo?: TipoAuditoria;
     busqueda?: string;
     idPedido?: number;
+    fechaDesde?: string;
 }

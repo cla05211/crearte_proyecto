@@ -1,0 +1,118 @@
+:host {
+  display: block;
+}
+
+.inicio-page {
+  background: var(--color-primary-100);
+  min-height: 100%;
+  padding: clamp(2rem, 5vw, 4.5rem) var(--space-6);
+}
+
+.inicio-container {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.inicio-header {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.inicio-header h1 {
+  margin: 0;
+}
+
+.inicio-header p {
+  margin: 0;
+}
+
+.inicio-accesos {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+}
+
+.inicio-acceso {
+  align-items: center;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-primary-200);
+  border-radius: var(--radius-lg, var(--radius-md));
+  box-shadow: 0 1px 2px rgba(54, 0, 34, 0.06);
+  color: var(--color-text-strong);
+  display: flex;
+  gap: var(--space-4);
+  min-height: 6rem;
+  padding: var(--space-5);
+  text-decoration: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.inicio-acceso:hover {
+  border-color: #690446;
+  box-shadow: 0 6px 18px rgba(54, 0, 34, 0.12);
+  transform: translateY(-2px);
+}
+
+.inicio-acceso:focus-visible {
+  border-color: #690446;
+  box-shadow: 0 0 0 3px rgba(105, 4, 70, 0.3);
+  outline: 0;
+}
+
+.inicio-acceso__icono {
+  align-items: center;
+  background: #690446;
+  border-radius: var(--radius-md);
+  color: #fff;
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 3rem;
+  justify-content: center;
+  width: 3rem;
+}
+
+.inicio-acceso svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.inicio-acceso__icono svg {
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.inicio-acceso__texto {
+  display: grid;
+  flex: 1;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.inicio-acceso__texto strong {
+  font-size: var(--font-size-lg);
+}
+
+.inicio-acceso__texto span {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.inicio-acceso__flecha {
+  color: #690446;
+  flex-shrink: 0;
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+@media (max-width: 600px) {
+  .inicio-page {
+    padding: var(--space-8) var(--space-4);
+  }
+
+  .inicio-accesos {
+    grid-template-columns: 1fr;
+  }
+}

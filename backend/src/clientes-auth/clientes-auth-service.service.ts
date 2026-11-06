@@ -51,7 +51,16 @@ export class ClientesAuthService
             expira_en: (new Date(Date.now() + 1000 * 60 * 60 * 24 * 7)).toISOString(),
         });
 
-        return { token: tokenCrudo, cliente: { id: cliente.id, id_grupo: cliente.id_grupo, usuario: cliente.usuario } };
+        // Nombre del colegio para mostrar en la barra del portal (queda guardado con la sesión del front)
+        const { data: grupo } = await this.sb.supabase
+            .from('grupos')
+            .select('colegios(nombre)')
+            .eq('id', cliente.id_grupo)
+            .maybeSingle();
+
+        const colegio = (grupo?.colegios as { nombre: string | null } | null)?.nombre ?? null;
+
+        return { token: tokenCrudo, cliente: { id: cliente.id, id_grupo: cliente.id_grupo, usuario: cliente.usuario, colegio } };
     }
 
 

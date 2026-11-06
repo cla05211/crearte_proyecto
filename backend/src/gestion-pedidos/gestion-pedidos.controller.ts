@@ -129,7 +129,7 @@ export class GestionPedidosController
     // (un pago negativo, los pagos originales quedan) y cancela los WhatsApp pendientes
     @Patch('cancelar/:id')
     @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('modificar_pedidos')
+    @RequierePermiso('cancelar_pedido')
     async cancelarPedido(@Param('id', ParseIntPipe) idPedido: number, @Body() dto: { motivo: MotivoCancelacion; devolucionPlata: boolean; banco?: string }, @Req() req)
     {
         if (!MOTIVOS_CANCELACION.includes(dto?.motivo))
@@ -150,8 +150,6 @@ export class GestionPedidosController
         await this.gestionService.cancelarPedido(idPedido, dto.motivo, dto.devolucionPlata, { idUsuario: req.usuario.id }, dto.banco?.trim());
     }
 
-    // Quién canceló el pedido y cuándo, para mostrarlo en la ficha del cliente (Datos).
-    // Devuelve null si no hay registro (pedidos cancelados antes de auditar la cancelación).
     @Get('cancelacion/:id')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_clientes_datos')
@@ -160,7 +158,7 @@ export class GestionPedidosController
         return await this.gestionService.obtenerCancelacion(idPedido);
     }
 
-    //--- Auditoría: cambios de presupuesto, beneficios, diseño y talles ---
+    //Auditoria
 
     @Get('auditoria')
     @UseGuards(AuthGuard,PermisosGuard)

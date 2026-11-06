@@ -39,12 +39,12 @@
                     <h3 class="dia-card__titulo">{{ dia.titulo }}</h3>
                     <span class="dia-card__fecha">{{ dia.fecha | date: 'd/M' }}</span>
                   </div>
-                  <span class="dia-card__contador">{{ dia.ventas.length }}</span>
+                  <span class="dia-card__contador">{{ dia.items.length }}</span>
                 </header>
 
-                @if (dia.ventas.length) {
+                @if (dia.items.length) {
                   <ul class="lista-colegios">
-                    @for (venta of dia.ventas; track venta.idGrupo) {
+                    @for (venta of dia.items; track venta.idGrupo) {
                       <li>
                         <a class="link-colegio" [routerLink]="['/clientes', venta.idGrupo]" [title]="'Abrir ficha de ' + venta.colegio">
                           {{ venta.colegio }}
@@ -55,6 +55,62 @@
                   </ul>
                 } @else {
                   <p class="dia-card__vacio">Sin ventas</p>
+                }
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <!-- Presupuestos/planes modificados en los últimos 3 días (sale de la auditoría) -->
+    @if (puedeVerVentas) {
+      <section class="bloque" aria-labelledby="titulo-modificaciones">
+        <div class="bloque__header">
+          <h2 id="titulo-modificaciones" class="ds-heading-2">Presupuestos y beneficios modificados</h2>
+          @if (modificaciones()) {
+            <span class="ds-badge">{{ totalModificaciones() }} {{ totalModificaciones() === 1 ? 'modificación' : 'modificaciones' }}</span>
+          }
+        </div>
+
+        @if (cargandoModificaciones() && !modificaciones()) {
+          <div class="loading-state loading-state--compacto" role="status" aria-live="polite">
+            <span class="loading-state__spinner" aria-hidden="true"></span>
+            <p>Cargando presupuestos modificados…</p>
+          </div>
+        } @else if (modificaciones()) {
+          <div class="dias-grid">
+            @for (dia of modificacionesPorDia(); track dia.titulo) {
+              <article class="ds-card dia-card" [class.dia-card--hoy]="$first">
+                <header class="dia-card__header">
+                  <div>
+                    <h3 class="dia-card__titulo">{{ dia.titulo }}</h3>
+                    <span class="dia-card__fecha">{{ dia.fecha | date: 'd/M' }}</span>
+                  </div>
+                  <span class="dia-card__contador">{{ dia.items.length }}</span>
+                </header>
+
+                @if (dia.items.length) {
+                  <ul class="lista-colegios">
+                    <!-- Un mismo colegio puede aparecer varias veces si se modificó más de una vez -->
+                    @for (modificacion of dia.items; track $index) {
+                      <li>
+                        <div class="modificacion">
+                          <a class="link-colegio" [routerLink]="['/clientes', modificacion.idGrupo, 'presupuesto']" [title]="'Ver presupuesto de ' + modificacion.colegio">
+                            {{ modificacion.colegio }}
+                          </a>
+                          <span class="modificacion__cambios">
+                            @for (cambio of modificacion.cambios ?? []; track cambio) {
+                              <span class="cambio-chip" [attr.data-cambio]="cambio">{{ cambio }}</span>
+                            }
+                          </span>
+                        </div>
+                        <span class="hora">{{ modificacion.fecha | date: 'HH:mm' }}</span>
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <p class="dia-card__vacio">Sin modificaciones</p>
                 }
               </article>
             }

@@ -178,3 +178,27 @@
 @media (max-width: 700px) {
   .novedades-page { padding: var(--space-6) 0; }
 }
+
+/* Presupuestos modificados: qué se cambió */
+.modificacion {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.modificacion__cambios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.cambio-chip {
+  background: var(--color-primary-100);
+  border-radius: var(--radius-full);
+  color: var(--color-primary-700);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+  padding: 0 var(--space-2);
+}
+.cambio-chip[data-cambio='Prendas'] { background: #fff0d9; color: var(--color-warning); }
+.cambio-chip[data-cambio='Beneficios'] { background: #e2f3ea; color: var(--color-success); }
+.cambio-chip[data-cambio='Agregados'] { background: #e3eefa; color: var(--color-info); }

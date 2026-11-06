@@ -49,6 +49,23 @@ export class PagosService
         return data;
     }
 
+    // Grupo del pedido: el documento del comprobante se guarda con su id_grupo
+    async obtenerIdGrupoPedido(idPedido: number): Promise<number>
+    {
+        const { data, error } = await this.sb.supabase
+            .from('pedidos')
+            .select('id_grupo')
+            .eq('id', idPedido)
+            .single();
+
+        if (error || !data?.id_grupo)
+        {
+            throw new BadRequestException('El pedido no existe.');
+        }
+
+        return data.id_grupo;
+    }
+
     async traerPagosPedido(idPedido: number):Promise<PagoResponseDTO[]>
     {
         const { data, error } = await this.sb.supabase
@@ -108,7 +125,10 @@ export class PagosService
         const { data, error } = await this.sb.supabase
         .from('pagos')
         .select('monto')
-        .eq('banco', 'Efectivo');
+        .eq('banco', 'Efectivo')
+        // La devolución en efectivo la cargan a mano como egreso en caja (si no, se descontaría dos veces).
+        // Con .neq solo se perderían también los pagos con motivo null.
+        .or(`motivo.is.null,motivo.neq.${MOTIVO_DEVOLUCION}`);
 
         if (error) 
         {
@@ -512,7 +532,9 @@ export class PagosService
         .select('monto')
         .gte('fecha', primerDia)
         .lt('fecha', primerDiaMesSiguiente)
-        .neq('banco', 'Efectivo');
+        .neq('banco', 'Efectivo')
+        // La devolución por baja no es plata que entró al banco
+        .or(`motivo.is.null,motivo.neq.${MOTIVO_DEVOLUCION}`);
 
         if (error) 
         {
