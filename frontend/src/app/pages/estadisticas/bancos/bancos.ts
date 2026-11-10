@@ -1,7 +1,8 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Estadisticas as EstadisticasService } from '../../../services/estadisticas/estadisticas';
 import { EstadisticasBancosDTO } from '../../../services/estadisticas/dto/estadisticasBancos.dto';
+import { AnioEstadisticas } from '../../../services/estadisticas/anio-estadisticas';
 import { NotificationService } from '../../../shared/notifications/notification.service';
 
 interface FacturacionBanco
@@ -17,12 +18,19 @@ interface FacturacionBanco
   templateUrl: './bancos.html',
   styleUrls: ['../estadisticas-compartido.css', './bancos.css'],
 })
-export class Bancos implements OnInit
+export class Bancos
 {
   private readonly estadisticasService = inject(EstadisticasService);
   private readonly notificaciones = inject(NotificationService);
 
-  readonly anio = new Date().getFullYear();
+  private readonly anioEstadisticas = inject(AnioEstadisticas);
+  readonly anio = this.anioEstadisticas.anio;
+
+  // Cada vez que cambia el año del selector se vuelven a pedir los datos
+  private readonly recargarAlCambiarAnio = effect(() => {
+    this.anio();
+    untracked(() => this.traerEstadisticas());
+  });
 
   readonly datos = signal<EstadisticasBancosDTO | null>(null);
   readonly cargando = signal(false);
@@ -42,15 +50,11 @@ export class Bancos implements OnInit
     ].map((b) => ({ ...b, porcentaje: total ? (b.monto / total) * 100 : 0 }));
   });
 
-  ngOnInit(): void
-  {
-    this.traerEstadisticas();
-  }
 
   traerEstadisticas(): void
   {
     this.cargando.set(true);
-    this.estadisticasService.obtenerEstadisticasBancos().subscribe({
+    this.estadisticasService.obtenerEstadisticasBancos(this.anio()).subscribe({
       next: (datos) => {
         this.datos.set(datos);
         this.cargando.set(false);

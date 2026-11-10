@@ -32,3 +32,15 @@
   .estadisticas-tabs { gap: 0; }
   .estadisticas-tabs a { flex: 1 1 auto; text-align: center; }
 }
+
+/* Encabezado con el selector de año a la derecha */
+.estadisticas-header {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+.estadisticas-anio {
+  min-width: 8rem;
+}

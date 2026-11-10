@@ -28,8 +28,10 @@ export class NotificacionesController
     }
 
     @Patch('fecha-programada/:idPedido')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_clientes_administrativo')
     async modificarFechaProgramada(@Param('idPedido', ParseIntPipe) idPedido:number, @Query('plantilla') plantilla: string)
     {
-        this.notificacionesService.modificarFechaProgramada(idPedido, plantilla)
+        return await this.notificacionesService.modificarFechaProgramada(idPedido, plantilla);
     }
 }

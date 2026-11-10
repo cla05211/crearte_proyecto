@@ -6,6 +6,7 @@ export class MuestrasTablaDTO
     muestra!: MuestrasFisicasResponseDTO;
     colegio!:string;
     nivel!:string;
+    promo!:number | null;
     vendedora!:string;
     planCuotas!:PlanCuotasDTO;
-}
+}

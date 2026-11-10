@@ -36,9 +36,4 @@ export class ClientesAuthController
     {
         return await this.clientesAuth.generarLinkActivacion(idGrupo);
     }
-
-    @Get('test-token/:idGrupo')
-probar(@Param('idGrupo') idGrupo: number) {
-  return this.clientesAuth.generarLinkActivacion(idGrupo);
-}
 }

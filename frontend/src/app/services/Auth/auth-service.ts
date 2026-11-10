@@ -66,17 +66,18 @@ export class AuthService
 
   cerrarSesion()
   {
-    return this.http
-    .post(`${environment.apiUrl}/auth/salir`, {})
-    .pipe(
-      tap(() => {
-        this.permisosService.limpiar();
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('token_refresh');
-        localStorage.removeItem('usuario');
+    // Primero se limpia la sesión local: aunque el backend no responda, el usuario queda deslogueado.
+    // El token se manda explícito para que el backend pueda revocar la sesión en Supabase.
+    const token = localStorage.getItem('access_token');
 
-        this.router.navigate(['/login']);})
-    ).subscribe();
+    this.permisosService.limpiar();
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('token_refresh');
+    localStorage.removeItem('usuario');
+    this.router.navigate(['/login']);
+
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+    this.http.post(`${environment.apiUrl}/auth/salir`, {}, { headers }).subscribe({ error: () => {} });
   }
 
   cargarUsuarioDesdeStorage(): Usuario|null

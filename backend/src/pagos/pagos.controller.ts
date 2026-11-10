@@ -17,6 +17,9 @@ import { PagoDTO } from './dto/pago.dto';
 import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
 import { StorageService } from 'src/storage/storage.service';
 import { DocumentoDTO } from 'src/documentos/dto/documento.dto';
+import { OPCIONES_COMPROBANTE } from 'src/common/limites-archivos';
+import { StaffOClienteGuard } from 'src/auth/guards/staff-o-cliente.guard';
+import { contentDisposition } from 'src/common/content-disposition';
 import { CrearPagoComprobanteDTO } from './dto/crearPagoComprobante.dto';
 
 // Cuentas de la empresa a las que se puede transferir (las mismas que acepta el portal de clientes)
@@ -76,20 +79,13 @@ export class PagosController
         return await this.pagosService.traerIdDocumento(id);
     }
 
-    @Post()
-    @UseGuards(AuthGuard,PermisosGuard)
-    async crearPago(@Body() dto: PagoDTO)
-    {
-        return await this.pagosService.crearPago(dto);
-    }
-
     // Transferencia cargada por un empleado (mismo flujo que POST clientes-portal/pagos):
     // guarda el comprobante, crea el documento y registra el pago en una sola llamada.
     // El motivo va como 'Cuota': registrar_pago_completo completa primero la seña si falta.
     @Post('comprobante')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_clientes_administrativo')
-    @UseInterceptors(FileInterceptor('comprobante'))
+    @UseInterceptors(FileInterceptor('comprobante', OPCIONES_COMPROBANTE))
     async crearPagoTransferencia(@Body() dto: CrearPagoComprobanteDTO, @UploadedFile() archivo: ArchivoSubidoDTO)
     {
         const idPedido = Number(dto?.id_pedido);
@@ -148,7 +144,8 @@ export class PagosController
     }
 
     @Post('ocr')
-    @UseInterceptors(FileInterceptor('comprobante'))
+    @UseGuards(StaffOClienteGuard)
+    @UseInterceptors(FileInterceptor('comprobante', OPCIONES_COMPROBANTE))
     async testOcr(@UploadedFile() file: ArchivoSubidoDTO) 
     {
         return await this.pagosService.comprobarComprobantePago(file.buffer)
@@ -162,7 +159,7 @@ export class PagosController
 
         res.set({
             'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition': `attachment; filename="${dto.nombreHoja || 'reporte'}.xlsx"`,
+            'Content-Disposition': contentDisposition('attachment', `${dto.nombreHoja || 'reporte'}.xlsx`),
         });
         res.send(buffer);
     }
@@ -202,7 +199,7 @@ export class PagosController
 
         res.set({
             'Content-Type': 'application/pdf',
-            'Content-Disposition': `attachment; filename="contrato-${dto.colegioNombre}.pdf"`,
+            'Content-Disposition': contentDisposition('attachment', `contrato-${dto.colegioNombre}.pdf`),
         });
         res.send(buffer);
     }

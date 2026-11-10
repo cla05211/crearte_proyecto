@@ -27,7 +27,14 @@ export class AuthGuard implements CanActivate {
 
     // Agregamos usuario supabase a request
     request.user = data.user;
-    request.usuario = await this.usuariosService.obtenerUsuarioPorIdAuth(data.user.id);
+    const usuario = await this.usuariosService.obtenerUsuarioPorIdAuth(data.user.id).catch(() => null);
+
+    // Un usuario desaprobado o desactivado pierde el acceso en el momento, aunque su token siga vigente
+    if (!usuario || !usuario.aprobado) {
+        throw new UnauthorizedException('Usuario no habilitado');
+    }
+
+    request.usuario = usuario;
     return true;
     }
-}
+}

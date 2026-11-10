@@ -68,7 +68,7 @@ export class Disenio implements OnInit
 
     // ── Previews ──────────────────────────────────────────────────────────
 
-    // La primera vez que se pide la de un boceto viejo, el backend la genera: puede tardar unos segundos
+    // La imagen la genera el empleado al subir el boceto; si no existe, se muestra el ícono
     private cargarPreviews(disenios: DisenioResponseDTO[]): void
     {
         for (const disenio of disenios)

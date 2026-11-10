@@ -1,7 +1,8 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Estadisticas as EstadisticasService } from '../../../services/estadisticas/estadisticas';
 import { EstadisticasProduccionDTO } from '../../../services/estadisticas/dto/estadisticasProduccion.dto';
+import { AnioEstadisticas } from '../../../services/estadisticas/anio-estadisticas';
 import { NotificationService } from '../../../shared/notifications/notification.service';
 
 type TipoPrenda = keyof EstadisticasProduccionDTO['prendas'];
@@ -39,12 +40,19 @@ const PRENDAS: { tipo: TipoPrenda; etiqueta: string }[] = [
   templateUrl: './produccion.html',
   styleUrls: ['../estadisticas-compartido.css', './produccion.css'],
 })
-export class Produccion implements OnInit
+export class Produccion
 {
   private readonly estadisticasService = inject(EstadisticasService);
   private readonly notificaciones = inject(NotificationService);
 
-  readonly anio = new Date().getFullYear();
+  private readonly anioEstadisticas = inject(AnioEstadisticas);
+  readonly anio = this.anioEstadisticas.anio;
+
+  // Cada vez que cambia el año del selector se vuelven a pedir los datos
+  private readonly recargarAlCambiarAnio = effect(() => {
+    this.anio();
+    untracked(() => this.traerEstadisticas());
+  });
   readonly meses = MESES;
 
   // El back ya trae solo los colegios vendidos este año y sin cancelados
@@ -112,15 +120,11 @@ export class Produccion implements OnInit
   readonly banderasProduccion = computed(() => this.colegios().reduce((total, c) => total + c.banderasProduccion, 0));
   readonly banderasBeneficio = computed(() => this.colegios().reduce((total, c) => total + c.banderasBeneficio, 0));
 
-  ngOnInit(): void
-  {
-    this.traerEstadisticas();
-  }
 
   traerEstadisticas(): void
   {
     this.cargando.set(true);
-    this.estadisticasService.obtenerEstadisticasProduccion().subscribe({
+    this.estadisticasService.obtenerEstadisticasProduccion(this.anio()).subscribe({
       next: (datos) => {
         this.datos.set(datos);
         this.cargando.set(false);

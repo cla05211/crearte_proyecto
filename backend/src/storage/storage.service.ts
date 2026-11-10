@@ -145,30 +145,19 @@ export class StorageService {
         return rutaPdf.replace(/\.pdf$/i, '') + '.grande.jpg';
     }
 
-    async descargarDiseno(ruta: string): Promise<Buffer>
+    // upsert: si se vuelve a generar la preview del mismo PDF, pisa la anterior
+    async crearUrlSubidaPreviewDiseno(ruta: string): Promise<string>
     {
         const { data, error } = await this.supabaseService.supabase.storage
             .from(BUCKET_DISENIOS)
-            .download(ruta);
+            .createSignedUploadUrl(ruta, { upsert: true });
 
         if (error)
         {
             throw new InternalServerErrorException(error.message);
         }
 
-        return Buffer.from(await data.arrayBuffer());
-    }
-
-    async subirPreviewDiseno(ruta: string, imagen: Buffer): Promise<void>
-    {
-        const { error } = await this.supabaseService.supabase.storage
-            .from(BUCKET_DISENIOS)
-            .upload(ruta, imagen, { contentType: 'image/jpeg', upsert: true });
-
-        if (error)
-        {
-            throw new InternalServerErrorException(error.message);
-        }
+        return data.signedUrl;
     }
 
     // Sin "download": el navegador la muestra en un <img> en vez de bajarla

@@ -7,6 +7,7 @@ import { ConfirmationService } from '../../services/confirmation/confirmation.se
 import { UsuarioResponse } from '../../services/usuarios/dto/usuarioResponse';
 import { AuthService } from '../../services/Auth/auth-service';
 import { UsuarioResponseConNombreRol } from '../../services/usuarios/dto/usuarioResponseNombreRol';
+import { NotificationService } from '../../shared/notifications/notification.service';
 
 @Component({
   selector: 'app-usuarios',
@@ -18,6 +19,7 @@ export class Usuarios
 {
   usuariosService = inject(UsuarioService);
   confirmationService = inject(ConfirmationService);
+  notificaciones = inject(NotificationService);
   usuarios = signal<UsuarioResponseConNombreRol[]>([]);
   empleados = signal<UsuarioResponseConNombreRol[]>([]);
   sectorSeleccionado = signal('');
@@ -82,13 +84,26 @@ export class Usuarios
 
     try 
     {
-      await firstValueFrom(this.usuariosService.eliminarUsuario(idUsuario));
+      const respuesta = await firstValueFrom(this.usuariosService.eliminarUsuario(idUsuario)) as { desactivado?: boolean } | null;
+
+      if (respuesta?.desactivado)
+      {
+        // Tiene ventas, auditorías u otros registros a su nombre: se desactiva en vez de borrarse
+        this.usuarios.update(lista => lista.map(u => u.id === idUsuario ? { ...u, aprobado: false } : u));
+        this.empleados.update(lista => lista.map(u => u.id === idUsuario ? { ...u, aprobado: false } : u));
+        this.notificaciones.warning({
+          title: 'Usuario desactivado',
+          description: 'Tiene registros a su nombre (ventas, pagos o auditorías), así que se desactivó en lugar de eliminarse. Ya no puede ingresar al sistema.',
+        });
+        return;
+      }
+
       this.usuarios.update(lista => lista.filter(u => u.id !== idUsuario));
       this.empleados.update(lista => lista.filter(u => u.id !== idUsuario));
     }
     catch 
     {
-      console.log("Error");
+      this.notificaciones.error({ title: 'Error', description: 'No se pudo eliminar el usuario.' });
     }
   }
 

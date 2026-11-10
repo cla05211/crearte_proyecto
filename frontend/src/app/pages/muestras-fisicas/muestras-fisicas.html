@@ -5,6 +5,15 @@
         <span class="ds-eyebrow">Producción</span>
         <h1 class="ds-heading-1">Muestras físicas</h1>
       </div>
+      <label class="ds-field filtro-promo">
+        <span class="ds-label">Promo</span>
+        <select class="ds-select" [ngModel]="promoSeleccionada()" (ngModelChange)="cambiarPromo($event)">
+          <option [ngValue]="null">Todas</option>
+          @for (promo of promos; track promo) {
+            <option [ngValue]="promo">{{ promo }}</option>
+          }
+        </select>
+      </label>
     </header>
 
     @if (cargando() && !muestras()) {

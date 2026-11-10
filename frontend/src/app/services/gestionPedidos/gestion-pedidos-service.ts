@@ -73,9 +73,10 @@ export class GestionPedidosService
     return this.http.get<number>(`${environment.apiUrl}/gestion-pedidos/importe/${idPedido}`);
   }
 
-  obtenerDatosPedidosControlTallesDisenio(mes:number, promo:number,busqueda?:string):Observable<ControlTallesDisenioDTO[]>
+  // anio = año de la venta (no la promo)
+  obtenerDatosPedidosControlTallesDisenio(mes:number, anio:number,busqueda?:string):Observable<ControlTallesDisenioDTO[]>
   {
-    let params: any = {mes, promo};
+    let params: any = {mes, anio};
 
     if (busqueda !== undefined) 
     {

@@ -15,19 +15,47 @@ import { ResetearClaveDto } from './dto/resetearClave.dto';
 export class AuthService {
   constructor(private sb: SupabaseService, private usuarioService: UsuariosService, private permisosService: PermisosService, private configService: ConfigService) {}
 
+  // Roles que no se pueden elegir al registrarse (igual que el filtro del front)
+  private static readonly ROLES_NO_REGISTRABLES = ['Administrador', 'Cliente'];
+
   async registrar(dto: RegistroDto) 
   {
-    var auth_id = await this.guardarAuth(dto);
+    await this.validarRolRegistrable(dto.rol);
+
+    const auth_id = await this.guardarAuth(dto);
 
     const usuarioDto: GuardarUsuarioDTO = {
     nombre: dto.nombre,
     apellido: dto.apellido,
     rol: dto.rol,
     id_auth: auth_id,
-    aprobado: dto.rol == 6,
+    aprobado: false, // Toda cuenta nueva queda pendiente hasta que un administrador la apruebe
     };
-    
-    return await this.usuarioService.guardarUsuario(usuarioDto)
+
+    try
+    {
+      return await this.usuarioService.guardarUsuario(usuarioDto);
+    }
+    catch (error)
+    {
+      // Si no se pudo crear la fila en usuarios, se borra la cuenta de Auth para que pueda volver a registrarse
+      await this.sb.supabase.auth.admin.deleteUser(auth_id);
+      throw error;
+    }
+  }
+
+  private async validarRolRegistrable(rol: number)
+  {
+    const { data, error } = await this.sb.supabase
+      .from('roles')
+      .select('nombre_rol')
+      .eq('rol', rol)
+      .maybeSingle();
+
+    if (error || !data || AuthService.ROLES_NO_REGISTRABLES.includes(data.nombre_rol ?? ''))
+    {
+      throw new BadRequestException({ code: 'ROL_INVALIDO', message: 'El rol seleccionado no es válido.' });
+    }
   }
 
     async guardarAuth(dto: RegistroDto): Promise<string>
@@ -68,7 +96,7 @@ export class AuthService {
 
     if(!aprobado)
     {
-        this.sb.supabase.auth.signOut();
+        await this.revocarSesion(data.session.access_token);
         throw new UnauthorizedException({
         code: 'PENDING_APPROVAL',
         message: 'Usuario pendiente de aprobación.',
@@ -81,16 +109,20 @@ export class AuthService {
     return {session: data.session, usuario, permisos};
   }
 
-  async cerrarSesion()
+  // Revoca los refresh tokens del usuario en Supabase: después de esto el token actual sigue
+  // sirviendo hasta que vence (1 h), pero ya no se puede refrescar.
+  async cerrarSesion(accessToken?: string)
   {
-    const { error } = await this.sb.supabase.auth.signOut();
-    if (error) 
+    if (accessToken)
     {
-        throw new BadRequestException({
-        code: 'SIGNOUT_ERROR',
-        message: error.message,
-        });
+      await this.revocarSesion(accessToken);
     }
+  }
+
+  private async revocarSesion(accessToken: string)
+  {
+    // Si el token ya está vencido Supabase devuelve error: no importa, el usuario igual queda afuera
+    await this.sb.supabase.auth.admin.signOut(accessToken).catch(() => undefined);
   }
 
   async comprobarAprobado(authId: string):Promise <boolean>
@@ -122,20 +154,18 @@ export class AuthService {
 
   async resetearClave(dto:ResetearClaveDto)
   {
-    const { error: sessionError } = await this.sb.supabase.auth.setSession({
-      access_token: dto.accessToken,
-      refresh_token: dto.refreshToken
-    });
+    // Se valida el token del link del mail sin guardar la sesión en el cliente compartido del backend
+    // (setSession sobre this.sb.supabase hacía que TODAS las consultas pasaran a usar el token de esta persona).
+    const { data, error: errorUsuario } = await this.sb.supabase.auth.getUser(dto.accessToken);
 
-    if(sessionError)
+    if(errorUsuario || !data.user)
     {
-      throw new BadRequestException(sessionError.message);
+      throw new BadRequestException(errorUsuario?.message ?? 'El enlace no es válido o expiró');
     }
 
-    const { error } =
-      await this.sb.supabase.auth.updateUser({
-        password: dto.clave
-      });
+    const { error } = await this.sb.supabase.auth.admin.updateUserById(data.user.id, {
+      password: dto.clave
+    });
 
     if(error)
     {
@@ -152,6 +182,14 @@ export class AuthService {
 
   if (error || !data.session) {
     throw new UnauthorizedException('No se pudo refrescar la sesión');
+  }
+
+  // Un usuario desaprobado (o desactivado) no puede seguir renovando su sesión
+  const aprobado = await this.comprobarAprobado(data.user!.id).catch(() => false);
+  if (!aprobado)
+  {
+    await this.revocarSesion(data.session.access_token);
+    throw new UnauthorizedException({ code: 'PENDING_APPROVAL', message: 'Usuario no habilitado.' });
   }
 
   return {

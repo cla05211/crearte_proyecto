@@ -11,15 +11,15 @@
     <!-- Totales: 1 (total del año), 2 (promos) y 3 (promedio de egresados) -->
     <div class="kpis-grid">
       <div class="ds-card kpi-card">
-        <span class="ds-label">Colegios vendidos en {{ anio }}</span>
+        <span class="ds-label">Colegios vendidos en {{ anio() }}</span>
         <strong class="kpi-valor">{{ totalAnio() }}</strong>
       </div>
       <div class="ds-card kpi-card">
-        <span class="ds-label">Promo {{ promoActual }}</span>
+        <span class="ds-label">Promo {{ promoActual() }}</span>
         <strong class="kpi-valor">{{ cantidadPromoActual() }}</strong>
       </div>
       <div class="ds-card kpi-card">
-        <span class="ds-label">Promo {{ promoSiguiente }}</span>
+        <span class="ds-label">Promo {{ promoSiguiente() }}</span>
         <strong class="kpi-valor">{{ cantidadPromoSiguiente() }}</strong>
       </div>
       <div class="ds-card kpi-card">
@@ -40,7 +40,7 @@
       <section class="ds-card panel">
         <header class="panel__header">
           <h2 class="ds-heading-3">Colegios vendidos por mes</h2>
-          <span class="ds-text-muted">Enero a diciembre {{ anio }}</span>
+          <span class="ds-text-muted">Enero a diciembre {{ anio() }}</span>
         </header>
 
         <div class="grafico-meses">
@@ -60,7 +60,7 @@
       <section class="ds-card panel">
         <header class="panel__header">
           <h2 class="ds-heading-3">Colegios vendidos por nivel</h2>
-          <span class="ds-text-muted">{{ anio }} · {{ totalFiltrado() }} {{ totalFiltrado() === 1 ? 'colegio' : 'colegios' }}</span>
+          <span class="ds-text-muted">{{ anio() }} · {{ totalFiltrado() }} {{ totalFiltrado() === 1 ? 'colegio' : 'colegios' }}</span>
         </header>
 
         <div class="filtros">
@@ -107,7 +107,7 @@
     <section class="ds-card panel">
       <header class="panel__header">
         <h2 class="ds-heading-3">Colegios vendidos por vendedora</h2>
-        <span class="ds-text-muted">Enero a diciembre {{ anio }}</span>
+        <span class="ds-text-muted">Enero a diciembre {{ anio() }}</span>
       </header>
 
       @if (!ventasPorVendedora().length) {
@@ -153,7 +153,7 @@
     <section class="ds-card panel">
       <header class="panel__header">
         <h2 class="ds-heading-3">Pedidos cancelados</h2>
-        <span class="ds-text-muted">Vendidos en {{ anio }} o de las promos {{ promoActual }} y {{ promoSiguiente }}</span>
+        <span class="ds-text-muted">Vendidos en {{ anio() }} o de las promos {{ promoActual() }} y {{ promoSiguiente() }}</span>
       </header>
 
       @if (!cancelados().length) {

@@ -14,18 +14,23 @@ export class UsuariosService {
 
     async guardarUsuario(dto: GuardarUsuarioDTO)
     {
-        const resultado = await this.sb.supabase
+        const { error } = await this.sb.supabase
             .from('usuarios')
             .insert(dto);
 
-        return resultado;
+        if (error)
+        {
+            throw new InternalServerErrorException('No se pudo guardar el usuario');
+        }
+
+        return { mensaje: 'Usuario registrado' };
     }
 
     async obtenerUsuarioPorIdAuth(idAuth: string)
     {
         const { data, error } = await this.sb.supabase
             .from('usuarios')
-            .select('id, nombre, apellido, rol')
+            .select('id, nombre, apellido, rol, aprobado')
             .eq('id_auth', idAuth)
             .single();
 
@@ -117,6 +122,13 @@ export class UsuariosService {
 
         if (errorDelete) 
         {
+            // 23503 = tiene ventas, auditorías u otros registros que lo referencian: se desactiva en vez de borrarse
+            if (errorDelete.code === '23503')
+            {
+                await this.modificarAprobado(id, false);
+                return { desactivado: true };
+            }
+
             throw new InternalServerErrorException('No se pudo eliminar el usuario');
         }
 
@@ -146,4 +158,4 @@ export class UsuariosService {
 
         return data;
     }
-}
+}

@@ -36,6 +36,8 @@ import { ControlProduccionDTO, EstadoPrenda } from './dto/ControlProduccionDTO';
 import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
 import { IDS_BUZO, IDS_CAMPERA, IDS_CHOMBA, IDS_REMERA } from 'src/productos/ids-prendas';
 import { ControlBanderasDTO, EstadoBocetoBandera, ModificarBanderaDTO, OrigenBandera } from './dto/ControlBanderasDTO';
+import { limpiarBusqueda } from 'src/common/busqueda';
+import { inicioDiaArgentina } from 'src/common/fechas';
 import { ESTADO_PEDIDO_CANCELADO, MotivoCancelacion } from 'src/pedidos/pedidos.service';
 
 const PANTALONES = [72];
@@ -107,7 +109,7 @@ export class GestionPedidosService
             beneficios_pedido(id_beneficio, cantidad, beneficios(beneficio, id_producto)),
             grupos!inner(
                 *,padres_responsables(nombre,apellido,principal),
-                colegios(*)
+                colegios!inner(*)
             ),
             productos_pedidos(*),
             agregados_globales_pedido(*, agregados(agregado, precio, individual)),
@@ -115,9 +117,11 @@ export class GestionPedidosService
         `)
         .order("id", { ascending: false });
 
-        if(busqueda)
+        // colegios tiene que ser !inner: si no, el filtro solo vacía el colegio embebido y vuelven todos los pedidos
+        const textoBusqueda = limpiarBusqueda(busqueda);
+        if(textoBusqueda)
         {
-            query = query.or(`nombre.ilike.%${busqueda}%,localidad.ilike.%${busqueda}%`, { referencedTable: "grupos.colegios" });
+            query = query.or(`nombre.ilike.%${textoBusqueda}%,localidad.ilike.%${textoBusqueda}%`, { referencedTable: "grupos.colegios" });
         }
         if(promo)
         {
@@ -299,10 +303,12 @@ export class GestionPedidosService
         return presupuestoPedido;
     }
 
-    async obtenerDatosPedidosControlTallesDisenio(mes:number, promo:number,busqueda?:string): Promise<ControlTallesDisenioDTO[]>
+    // anio = año en que se hizo la venta (no la promo). El mes se corta a la medianoche de Argentina:
+    // con new Date(anio, mes) el servidor (en UTC) pasaba las ventas del último día después de las 21 h al mes siguiente.
+    async obtenerDatosPedidosControlTallesDisenio(mes:number, anio:number,busqueda?:string): Promise<ControlTallesDisenioDTO[]>
     {
-        const primerDiaMes = new Date(promo, mes - 1, 1);
-        const primerDiaMesSiguiente = new Date(primerDiaMes.getFullYear(),primerDiaMes.getMonth() + 1,1);
+        const desde = inicioDiaArgentina(anio, mes, 1);
+        const hasta = mes === 12 ? inicioDiaArgentina(anio + 1, 1, 1) : inicioDiaArgentina(anio, mes + 1, 1);
 
         let query = this.sb.supabase
         .from("pedidos")
@@ -322,13 +328,13 @@ export class GestionPedidosService
         .eq("pagos.motivo", "Seña")
         // Los pedidos cancelados no siguen con talles ni diseño
         .or(`estado_general.is.null,estado_general.neq.${ESTADO_PEDIDO_CANCELADO}`)
-        .gte("grupos.created_at", primerDiaMes.toISOString())
-        .lt("grupos.created_at", primerDiaMesSiguiente.toISOString())
+        .gte("grupos.created_at", desde)
+        .lt("grupos.created_at", hasta)
         .order("id", { ascending: false });
 
         if(busqueda)
         {
-            query = query.or(`nombre.ilike.%${busqueda}%`, { referencedTable: "grupos.colegios" });
+            query = query.or(`nombre.ilike.%${limpiarBusqueda(busqueda)}%`, { referencedTable: "grupos.colegios" });
         }
 
         const { data, error } = await query;

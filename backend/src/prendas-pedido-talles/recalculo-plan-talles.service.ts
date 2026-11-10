@@ -32,7 +32,8 @@ export class RecalculoPlanTallesService
         const productos = await Promise.all(productosFinales.map(async producto =>
         {
             const cantidadTramo = productosFinalesTotales.find(p => p.idProducto === producto.idProducto)?.cantidadPedida ?? producto.cantidadPedida;
-            const precios = await this.productosService.obtenerPreciosId(producto.idProducto, nroCuotas, Math.max(cantidadTramo, producto.cantidadPedida));
+            // con_senia distingue planes con la misma cantidad de cuotas (con y sin seña)
+            const precios = await this.productosService.obtenerPreciosId(producto.idProducto, nroCuotas, Math.max(cantidadTramo, producto.cantidadPedida), presupuesto.pedido.con_senia);
             const anterior = presupuesto.productosPedido.find(p => p.id_producto_original === producto.idProducto);
             const descripcion = anterior?.descripcion ?? producto.nombreProducto;
 

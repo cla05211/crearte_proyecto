@@ -8,6 +8,7 @@ import { grupoDatosClienteResponse } from './dto/grupoClienteDatosPage.dto';
 import { AuthService } from 'src/auth/auth.service';
 import { colegioDeudorDTO } from './dto/colegioDeudor.dto';
 
+import { traerTodasLasFilas } from 'src/common/traer-todas-las-filas';
 import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
 
 @Injectable()
@@ -241,7 +242,8 @@ export class GruposService
 
         // cuotasVencidas: solo las vencidas sin pagar.
         // Sin !inner en las cuotas: un grupo que solo debe la seña (todavía sin cuotas vencidas) también tiene que venir.
-        const { data, error } = await this.sb.supabase
+        // Se trae de a bloques: con más de 1000 colegios, una sola consulta cortaría la lista en silencio
+        const data = await traerTodasLasFilas((desde, hasta) => this.sb.supabase
         .from("grupos")
         .select(`id, created_at, colegios(nombre),
             pedidos!inner(nro_fabrica, senia_total, con_senia,
@@ -253,12 +255,10 @@ export class GruposService
         .or('estado_general.is.null,estado_general.neq.Cancelado', { referencedTable: 'pedidos' })
         .neq('pedidos.cuotasVencidas.estado', 'Pagada')
         .lt('pedidos.cuotasVencidas.fecha_vencimiento', fechaHoy)
-        .eq('pedidos.pagos.motivo', 'Seña');
-
-        if (error) 
-        {
-            throw new BadRequestException(error.message);
-        }
+        .eq('pedidos.pagos.motivo', 'Seña')
+        .order('id')
+        .range(desde, hasta))
+        .catch((error: Error) => { throw new BadRequestException(error.message); });
 
         const colegiosDeudores: colegioDeudorDTO[] = [];
 

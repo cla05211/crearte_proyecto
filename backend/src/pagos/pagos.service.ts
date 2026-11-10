@@ -14,6 +14,7 @@ import { DocumentosService } from 'src/documentos/documentos.service';
 import { GenerarReciboDTO } from 'src/reportes/pdf/dto/generarRecibo.dto';
 import { DetalleCuotaPago } from './dto/detalleCuotaPago.dto';
 import { FiltrosPagosBancoDTO } from './dto/filtrosPagosBanco.dto';
+import { sumarEnBase } from 'src/common/sumar-en-base';
 import { ResumenPagosBancoDTO } from './dto/resumenPagosBanco.dto';
 
 // Pago negativo que se carga al cancelar un pedido con devolución de la plata
@@ -120,27 +121,8 @@ export class PagosService
 
     async obtenerTotalIngresosEfectivo():Promise<number>
     {
-        let total = 0;
-
-        const { data, error } = await this.sb.supabase
-        .from('pagos')
-        .select('monto')
-        .eq('banco', 'Efectivo')
-        // La devolución en efectivo la cargan a mano como egreso en caja (si no, se descontaría dos veces).
-        // Con .neq solo se perderían también los pagos con motivo null.
-        .or(`motivo.is.null,motivo.neq.${MOTIVO_DEVOLUCION}`);
-
-        if (error) 
-        {
-            throw new Error(error.message);
-        }    
-
-        if(data)
-        {    
-            total = data.reduce((total, pago) => total + (pago.monto ?? 0), 0);
-        }
-        
-        return total;          
+        // La devolución en efectivo la cargan a mano como egreso en caja (si no, se descontaría dos veces)
+        return await sumarEnBase(this.sb.supabase, 'sumar_pagos', { p_bancos: ['Efectivo'], p_excluir_devolucion: true });
     }
 
     async modificarEnviadoBanco(dto: ModificarPago)
@@ -516,7 +498,6 @@ export class PagosService
 
     async traerMontoTotalMes(fechaHoy:Date):Promise<number>
     {
-        let total = 0;
         // El mes se determina en hora argentina (no en la del servidor, que suele ser UTC)
         const [anio, mes] = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit' })
             .format(fechaHoy)
@@ -527,40 +508,37 @@ export class PagosService
         const primerDia = `${anio}-${String(mes).padStart(2, '0')}-01`;
         const primerDiaMesSiguiente = `${anioSiguiente}-${String(mesSiguiente).padStart(2, '0')}-01`;
 
-        const { data, error } = await this.sb.supabase
-        .from('pagos')
-        .select('monto')
-        .gte('fecha', primerDia)
-        .lt('fecha', primerDiaMesSiguiente)
-        .neq('banco', 'Efectivo')
         // La devolución por baja no es plata que entró al banco
-        .or(`motivo.is.null,motivo.neq.${MOTIVO_DEVOLUCION}`);
-
-        if (error) 
-        {
-            throw new Error(error.message);
-        }    
-
-        if(data)
-        {    
-            total = data.reduce((total, pago) => total + (pago.monto ?? 0), 0);
-        }
-        
-        return total;  
+        return await sumarEnBase(this.sb.supabase, 'sumar_pagos', {
+            p_excluir_bancos: ['Efectivo'],
+            p_desde: primerDia,
+            p_hasta: primerDiaMesSiguiente,
+            p_excluir_devolucion: true,
+        });
     }
 
+    // Una transferencia que cubrió seña + cuotas se guarda en varias filas con el mismo comprobante:
+    // se borran todas, si no queda la mitad del pago aplicada.
     async eliminarPago(idPago:number)
     {
-        const { data, error } = await this.sb.supabase.rpc(
-            'eliminar_pago_completo',
-            {p_id_pago: idPago}
-        );
+        const ids = await this.obtenerIdsMismoComprobante(idPago);
+        let resultado: unknown = null;
 
-        if (error)
+        for (const id of ids)
         {
-            throw new BadRequestException(error.message);
+            const { data, error } = await this.sb.supabase.rpc(
+                'eliminar_pago_completo',
+                {p_id_pago: id}
+            );
+
+            if (error)
+            {
+                throw new BadRequestException(error.message);
+            }
+            resultado = data;
         }
-        return data;        
+
+        return resultado;
     }
 
     // Baja de un colegio: un pago negativo que contrarresta todo lo pagado (los pagos originales quedan).

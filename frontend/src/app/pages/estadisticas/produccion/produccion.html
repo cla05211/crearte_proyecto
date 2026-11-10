@@ -11,7 +11,7 @@
     <!-- Totales del año -->
     <div class="kpis-grid">
       <div class="ds-card kpi-card">
-        <span class="ds-label">Colegios vendidos en {{ anio }}</span>
+        <span class="ds-label">Colegios vendidos en {{ anio() }}</span>
         <strong class="kpi-valor">{{ totalVendidos() }}</strong>
       </div>
       <div class="ds-card kpi-card">
@@ -33,7 +33,7 @@
       </div>
     </div>
     <p class="nota">
-      Colegios vendidos en {{ anio }}, sin cancelados, agrupados por mes de venta.
+      Colegios vendidos en {{ anio() }}, sin cancelados, agrupados por mes de venta.
       Las prendas cuentan solo los pedidos que ya están en producción.
     </p>
 
@@ -41,7 +41,7 @@
     <section class="ds-card panel">
       <header class="panel__header">
         <h2 class="ds-heading-3">Enviados a producción por mes</h2>
-        <span class="ds-text-muted">De los colegios vendidos en cada mes de {{ anio }}</span>
+        <span class="ds-text-muted">De los colegios vendidos en cada mes de {{ anio() }}</span>
       </header>
 
       <div class="grafico-meses">

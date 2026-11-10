@@ -10,6 +10,7 @@ import { ConfirmationService } from '../../../../services/confirmation/confirmat
 import { ExtraDTO, ExtrasService } from '../../../../services/extras/extras-service';
 import { DatePipe } from '@angular/common';
 import { VisorBoceto } from '../../../../shared/visor-boceto/visor-boceto';
+import { generarImagenesBoceto } from '../../../../shared/preview-boceto/generar-preview-boceto';
 
 const PREFIJO_TIPO = 'Disenio ';
 const TIPO_PRENDAS = 'Disenio Prendas';
@@ -65,6 +66,8 @@ export class TallesDisenio implements OnInit
     readonly ranurasNuevas = signal<string[]>([]);
 
     readonly subida = signal<{ tipo: string; progreso: number } | null>(null);
+    // Documentos a los que se les está generando la vista previa (en el navegador)
+    readonly generandoPreview = signal<ReadonlySet<number>>(new Set());
     readonly descargandoTipo = signal<string | null>(null);
     readonly subiendoFirmadoTipo = signal<string | null>(null);
     readonly descargandoFirmadoTipo = signal<string | null>(null);
@@ -144,7 +147,68 @@ export class TallesDisenio implements OnInit
         {
             firstValueFrom(this.diseniosService.obtenerUrlPreview(this.idGrupo, disenio.id))
                 .then(imagenes => this.guardarPreview(disenio.id, imagenes))
-                .catch(() => this.guardarPreview(disenio.id, null));
+                // Si se está generando en este momento, no se pisa: la generación guarda la imagen al terminar
+                .catch(() => { if (!this.generandoPreview().has(disenio.id)) this.guardarPreview(disenio.id, null); });
+        }
+    }
+
+    // Dibuja la primera página del PDF en el navegador y sube las dos imágenes a Supabase.
+    // Si falla, el boceto igual queda guardado: solo se ve el ícono y se puede reintentar con "Generar vista previa".
+    private async generarYSubirPreview(idDocumento: number, pdf: Blob): Promise<void>
+    {
+        this.generandoPreview.update(actuales => new Set(actuales).add(idDocumento));
+
+        try
+        {
+            const [imagenes, urls] = await Promise.all([
+                generarImagenesBoceto(pdf),
+                firstValueFrom(this.diseniosService.pedirUrlsSubidaPreview(this.idGrupo, idDocumento)),
+            ]);
+
+            await Promise.all([
+                firstValueFrom(this.diseniosService.subirImagenAUrlFirmada(urls.preview, imagenes.preview)),
+                firstValueFrom(this.diseniosService.subirImagenAUrlFirmada(urls.grande, imagenes.grande)),
+            ]);
+
+            const nuevas = await firstValueFrom(this.diseniosService.obtenerUrlPreview(this.idGrupo, idDocumento));
+            this.guardarPreview(idDocumento, nuevas);
+        }
+        catch
+        {
+            this.guardarPreview(idDocumento, null);
+            this.notificaciones.warning({
+                title: 'Sin vista previa',
+                description: 'El PDF se guardó, pero no se pudo generar la imagen para verlo en pantalla. Probá con "Generar vista previa".',
+            });
+        }
+        finally
+        {
+            this.generandoPreview.update(actuales => { const copia = new Set(actuales); copia.delete(idDocumento); return copia; });
+        }
+    }
+
+    // Para bocetos que quedaron sin vista previa (subidos antes de este cambio, o si falló al subir):
+    // se baja el PDF a la compu y se genera igual que al subirlo
+    async generarPreviewFaltante(fila: FilaDisenio): Promise<void>
+    {
+        if (!fila.documento) return;
+
+        const idDocumento = fila.documento.id;
+        this.generandoPreview.update(actuales => new Set(actuales).add(idDocumento));
+
+        try
+        {
+            const { url } = await firstValueFrom(this.diseniosService.obtenerUrlDescarga(this.idGrupo, idDocumento, fila.etiqueta));
+            const respuesta = await fetch(url);
+
+            if (!respuesta.ok) throw new Error();
+
+            await this.generarYSubirPreview(idDocumento, await respuesta.blob());
+        }
+        catch
+        {
+            this.generandoPreview.update(actuales => { const copia = new Set(actuales); copia.delete(idDocumento); return copia; });
+            this.notificaciones.error({ title: 'Error', description: 'No se pudo bajar el PDF para generar la vista previa.' });
         }
     }
 
@@ -228,7 +292,7 @@ export class TallesDisenio implements OnInit
             ),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
-            next: () => {
+            next: async ({ idDocumento }) => {
                 this.subida.set(null);
                 this.ranurasNuevas.update(ranuras => ranuras.filter(t => t !== tipo));
                 this.notificaciones.success({
@@ -236,6 +300,9 @@ export class TallesDisenio implements OnInit
                     description: `Se guardó el PDF de "${this.armarFila(tipo, null).etiqueta}".`,
                 });
                 this.cargarDisenios();
+
+                // La vista previa se arma con el archivo que ya está en la compu (no hace falta bajarlo)
+                await this.generarYSubirPreview(idDocumento, archivo);
             },
             error: (err) => {
                 this.subida.set(null);

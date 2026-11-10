@@ -8,7 +8,8 @@ import { environment } from '../environments/environment';
 
 let refrescandoToken = false;
 
-const tokenRefrescado$ = new BehaviorSubject<string | null>(null);
+// null = refresco en curso, false = el refresco falló (los requests en espera reciben el error)
+const tokenRefrescado$ = new BehaviorSubject<string | null | false>(null);
 
 // Rutas que hablan con la sesión de CLIENTE (token opaco en sesiones_clientes),
 // nunca con la sesión de staff (Supabase Auth). Si agregás un controller de
@@ -24,8 +25,11 @@ const tokenRefrescado$ = new BehaviorSubject<string | null>(null);
 // el link de activación desde Clientes → Datos), así que llevan token de staff.
 const esRutaStaffEnClientesAuth = (url: string): boolean => url.includes('/clientes-auth/grupos/');
 
+// /pagos/ocr lo usan staff (Ventas) y clientes (portal): el backend acepta cualquiera de las dos sesiones.
+// Si hay sesión de staff se usa esa; si no, la del cliente.
 const esRutaCliente = (url: string): boolean =>
-  (url.includes('/clientes-auth') && !esRutaStaffEnClientesAuth(url)) || url.includes('/clientes-portal') || url.includes('/pagos/ocr');
+  (url.includes('/clientes-auth') && !esRutaStaffEnClientesAuth(url)) || url.includes('/clientes-portal') ||
+  (url.includes('/pagos/ocr') && !localStorage.getItem('access_token'));
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
     if (!req.url.startsWith(environment.apiUrl))
@@ -94,6 +98,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           }),
           catchError((errRefresh) => {
             refrescandoToken = false;
+            tokenRefrescado$.next(false);
             authService.cerrarSesion();
             return throwError(() => errRefresh);
           })
@@ -105,6 +110,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           filter(token => token !== null),
           take(1),
           switchMap(nuevoToken => {
+            if (nuevoToken === false)
+            {
+              return throwError(() => error);
+            }
+
             const reqConTokenNuevo = req.clone({
               setHeaders: { Authorization: `Bearer ${nuevoToken}` }
             });

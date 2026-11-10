@@ -10,9 +10,9 @@ export class PermisosGuard implements CanActivate
 
     async canActivate(context: ExecutionContext): Promise<boolean> 
     {
-        const permisoRequerido = this.reflector.get<string>(PERMISO_KEY, context.getHandler());
+        const permisosRequeridos = this.reflector.get<string[]>(PERMISO_KEY, context.getHandler());
 
-        if(!permisoRequerido)
+        if(!permisosRequeridos?.length)
         {
             return true; 
         }
@@ -25,7 +25,9 @@ export class PermisosGuard implements CanActivate
             throw new ForbiddenException('No se pudo determinar el usuario');
         }
 
-        const tienePermiso = await this.permisosService.tienePermiso(usuario.rol, permisoRequerido);
+        // Alcanza con tener uno de los permisos indicados en @RequierePermiso
+        const permisosRol = await this.permisosService.obtenerPermisosRol(usuario.rol);
+        const tienePermiso = permisosRequeridos.some(permiso => permisosRol.includes(permiso));
 
         if(!tienePermiso)
         {
@@ -34,4 +36,4 @@ export class PermisosGuard implements CanActivate
 
         return true;
     }
-}
+}

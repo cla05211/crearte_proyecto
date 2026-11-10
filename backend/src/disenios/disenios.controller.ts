@@ -50,7 +50,7 @@ export class DiseniosController
         return await this.diseniosService.crearUrlDescarga(idGrupo, idDocumento, nombre || 'disenio');
     }
 
-    // Imagen del boceto (primera página en JPG); si no existe todavía, se genera en el momento
+    // Imagen del boceto (primera página en JPG); 404 si todavía no tiene
     @Get(':idGrupo/:idDocumento/url-preview')
     @UseGuards(AuthGuard, PermisosGuard)
     @RequierePermiso('ver_clientes_talles_disenio')
@@ -96,6 +96,18 @@ export class DiseniosController
     async modificarEdicionTalles(@Param('idGrupo', ParseIntPipe) idGrupo: number, @Query('habilitada', ParseBoolPipe) habilitada: boolean, @Req() req)
     {
         return await this.diseniosService.modificarEdicionTalles(idGrupo, habilitada, req.usuario.id);
+    }
+
+    // URLs firmadas para subir la preview que genera el navegador (después de subir o reemplazar el PDF)
+    @Post(':idGrupo/:idDocumento/url-subida-preview')
+    @UseGuards(AuthGuard, PermisosGuard)
+    @RequierePermiso('ver_clientes_talles_disenio')
+    async crearUrlsSubidaPreview(
+        @Param('idGrupo', ParseIntPipe) idGrupo: number,
+        @Param('idDocumento', ParseIntPipe) idDocumento: number,
+    )
+    {
+        return await this.diseniosService.urlsSubidaPreview(idGrupo, idDocumento);
     }
 
     @Post('url-subida')

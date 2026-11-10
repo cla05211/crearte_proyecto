@@ -11,9 +11,10 @@ export class UsuariosController
 {
     constructor(private usuariosService: UsuariosService){}
 
+    // ver_nombres_usuarios: para pantallas que solo necesitan la lista de nombres (ej. diseñadoras en Talles y diseño, Banderas)
     @Get('')
     @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('ver_usuarios')
+    @RequierePermiso('ver_usuarios', 'ver_nombres_usuarios')
     async obtenerUsuarios(@Query('rol') rol?: number) 
     {
         return this.usuariosService.obtenerUsuarios(rol);

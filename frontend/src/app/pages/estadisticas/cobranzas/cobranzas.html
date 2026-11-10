@@ -11,19 +11,19 @@
     <!-- Totales -->
     <div class="kpis-grid">
       <div class="ds-card kpi-card">
-        <span class="ds-label">Facturación {{ anio }}</span>
+        <span class="ds-label">Facturación {{ anio() }}</span>
         <strong class="kpi-valor">{{ facturacionTotal() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
         <span class="kpi-detalle">Colegios vendidos en el año</span>
       </div>
       <div class="ds-card kpi-card">
-        <span class="ds-label">Deuda a cobrar {{ anio }}</span>
+        <span class="ds-label">Deuda a cobrar {{ anio() }}</span>
         <strong class="kpi-valor">{{ deudaAnio() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
         <span class="kpi-detalle">Lo que vence de enero a diciembre</span>
       </div>
       <div class="ds-card kpi-card">
         <span class="ds-label">Ya vencido sin cobrar</span>
         <strong class="kpi-valor kpi-valor--alerta">{{ deudaVencidaAnio() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
-        <span class="kpi-detalle">Meses de {{ anio }} que ya pasaron</span>
+        <span class="kpi-detalle">Meses de {{ anio() }} que ya pasaron</span>
       </div>
       @if (deudaAnterior()) {
         <div class="ds-card kpi-card">
@@ -38,7 +38,7 @@
     <section class="ds-card panel">
       <header class="panel__header">
         <h2 class="ds-heading-3">Deuda a cobrar por mes</h2>
-        <span class="ds-text-muted">Según el vencimiento de cada cuota · enero a diciembre {{ anio }}</span>
+        <span class="ds-text-muted">Según el vencimiento de cada cuota · enero a diciembre {{ anio() }}</span>
       </header>
 
       <div class="grafico-meses">

@@ -13,24 +13,24 @@ export class Estadisticas
 {
     private readonly http = inject(HttpClient);
 
-    obtenerEstadisticasVentas()
+    obtenerEstadisticasVentas(anio: number)
     {
-        return this.http.get<EstadisticasVentasDTO[]>(`${environment.apiUrl}/estadisticas/ventas`);
+        return this.http.get<EstadisticasVentasDTO[]>(`${environment.apiUrl}/estadisticas/ventas`, { params: { anio } });
     }
     
-    obtenerEstadisticasProduccion()
+    obtenerEstadisticasProduccion(anio: number)
     {
-        return this.http.get<EstadisticasProduccionDTO[]>(`${environment.apiUrl}/estadisticas/produccion`);
+        return this.http.get<EstadisticasProduccionDTO[]>(`${environment.apiUrl}/estadisticas/produccion`, { params: { anio } });
     }
 
-    obtenerEstadisticasBancos()
+    obtenerEstadisticasBancos(anio: number)
     {
-        return this.http.get<EstadisticasBancosDTO>(`${environment.apiUrl}/estadisticas/bancos`);
+        return this.http.get<EstadisticasBancosDTO>(`${environment.apiUrl}/estadisticas/bancos`, { params: { anio } });
     }
 
-    obtenerEstadisticasCobranzas()
+    obtenerEstadisticasCobranzas(anio: number)
     {
-        return this.http.get<EstadisticasCobranzasDTO[]>(`${environment.apiUrl}/estadisticas/cobranzas`);
+        return this.http.get<EstadisticasCobranzasDTO[]>(`${environment.apiUrl}/estadisticas/cobranzas`, { params: { anio } });
     }
 
 }

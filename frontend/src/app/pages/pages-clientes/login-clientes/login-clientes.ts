@@ -85,6 +85,13 @@ export class LoginClientes implements OnInit
                         description: 'Todavía no creaste tu contraseña. Usá el link que te enviamos por WhatsApp.',
                     });
                 }
+                else if (code === 'PEDIDO_CANCELADO')
+                {
+                    this.notificaciones.warning({
+                        title: 'Pedido cancelado',
+                        description: 'El pedido de tu colegio fue cancelado, por eso el portal ya no está disponible.',
+                    });
+                }
                 else if (code === 'INVALID_CREDENTIALS')
                 {
                     this.notificaciones.warning({

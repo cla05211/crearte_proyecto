@@ -121,7 +121,7 @@
                       <td data-label="Importe">{{ cuota.importe | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                       <td data-label="Cubierto">{{ cuota.monto_cubierto | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                       <td data-label="Estado">
-                        <span class="ds-badge" [class]="claseBadgeEstado(cuota.estado)">{{ cuota.estado }}</span>
+                        <span class="ds-badge" [class]="claseBadgeEstado(estadoCuota(cuota))">{{ estadoCuota(cuota) }}</span>
                       </td>
                     </tr>
                   }

@@ -6,6 +6,9 @@ import { EstadisticasProduccionDTO } from './dto/estadisticasProduccion.dto';
 import { IDS_BUZO, IDS_CAMPERA, IDS_CHOMBA, IDS_REMERA } from 'src/productos/ids-prendas';
 import { EstadisticasBancosDTO } from './dto/estadisticasBancos.dto';
 import { EstadisticasCobranzasDTO } from './dto/estadisticasCobranzas.dto';
+import { traerTodasLasFilas } from 'src/common/traer-todas-las-filas';
+import { sumarEnBase } from 'src/common/sumar-en-base';
+import { anioOActual, hoyArgentina, inicioDiaArgentina } from 'src/common/fechas';
 import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
 
 @Injectable()
@@ -13,11 +16,14 @@ export class EstadisticasService {
     
     constructor(private sb: SupabaseService){}
 
-    async obtenerEstadisticasVentas(): Promise<EstadisticasVentasDTO[]>
+    async obtenerEstadisticasVentas(anioPedido?: number): Promise<EstadisticasVentasDTO[]>
     {
-        const anio = new Date().getFullYear()
+        const anio = anioOActual(anioPedido);
+        const desde = inicioDiaArgentina(anio, 1, 1);
+        const hasta = inicioDiaArgentina(anio + 1, 1, 1);
 
-        const {data, error} = await this.sb.supabase
+        // De a bloques: con más de 1000 colegios en el año, una sola consulta cortaría en silencio
+        const data = await traerTodasLasFilas((rangoDesde, rangoHasta) => this.sb.supabase
         .from("grupos")
         .select(`
             id,created_at,nivel,promo,
@@ -27,12 +33,10 @@ export class EstadisticasService {
             productos_pedidos(id_producto_original,cantidad)
             )
         `)
-        .or(`and(created_at.gte.${anio}-01-01,created_at.lt.${anio + 1}-01-01),promo.in.(${anio},${anio + 1})`);
-        
-        if (error)
-        {
-            throw new BadRequestException(error.message);
-        }
+        .or(`and(created_at.gte.${desde},created_at.lt.${hasta}),promo.in.(${anio},${anio + 1})`)
+        .order('id')
+        .range(rangoDesde, rangoHasta))
+        .catch((error: Error) => { throw new BadRequestException(error.message); });
 
         const datos: EstadisticasVentasDTO[] = data.map(g => (
         {
@@ -52,7 +56,7 @@ export class EstadisticasService {
         return datos;
     }
 
-    async obtenerEstadisticasProduccion(): Promise<EstadisticasProduccionDTO[]>
+    async obtenerEstadisticasProduccion(anioPedido?: number): Promise<EstadisticasProduccionDTO[]>
     {
         const IDS_PRENDA = {
             buzos: IDS_BUZO,
@@ -63,9 +67,9 @@ export class EstadisticasService {
         };
         const ESTADOS_EN_PRODUCCION = ['En producción', 'Listo para entregar', 'Entregado'];
 
-        const anio = new Date().getFullYear();
+        const anio = anioOActual(anioPedido);
 
-        const { data, error } = await this.sb.supabase
+        const data = await traerTodasLasFilas((rangoDesde, rangoHasta) => this.sb.supabase
         .from("grupos")
         .select(`
             created_at,
@@ -74,15 +78,13 @@ export class EstadisticasService {
                 banderas_pedido(origen,enviado_produccion)
             )
         `)
-        .gte('created_at', `${anio}-01-01`)
-        .lt('created_at', `${anio + 1}-01-01`)
+        .gte('created_at', inicioDiaArgentina(anio, 1, 1))
+        .lt('created_at', inicioDiaArgentina(anio + 1, 1, 1))
         // Los cancelados no cuentan como vendidos (con !inner, el grupo queda afuera)
-        .or(`estado_general.is.null,estado_general.neq.${ESTADO_PEDIDO_CANCELADO}`, { referencedTable: 'pedidos' });
-
-        if (error)
-        {
-            throw new BadRequestException(error.message);
-        }
+        .or(`estado_general.is.null,estado_general.neq.${ESTADO_PEDIDO_CANCELADO}`, { referencedTable: 'pedidos' })
+        .order('id')
+        .range(rangoDesde, rangoHasta))
+        .catch((error: Error) => { throw new BadRequestException(error.message); });
 
         return data.map(g =>
         {
@@ -106,33 +108,24 @@ export class EstadisticasService {
         });
     }
 
-    async obtenerEstadisticasBancos():Promise<EstadisticasBancosDTO>
+    // Se suma en la base: con más de 1000 pagos en el año, traerlos y sumarlos acá daba un total incompleto.
+    // La devolución por baja sí cuenta en estadísticas (igual que antes).
+    async obtenerEstadisticasBancos(anioPedido?: number):Promise<EstadisticasBancosDTO>
     {
-        const anio = new Date().getFullYear()
+        const anio = anioOActual(anioPedido);
+        const rango = { p_desde: `${anio}-01-01`, p_hasta: `${anio + 1}-01-01`, p_excluir_devolucion: false };
 
-        const { data, error } = await this.sb.supabase
-        .from("pagos")
-        .select(`monto, banco,fecha`)
-        .in("banco", ["COMAFI", "Santander"])
-        .gte("fecha", `${anio}-01-01`)
-        .lt("fecha", `${anio + 1}-01-01`);
+        const [facturacionCOMAFI, facturacionSantander] = await Promise.all([
+            sumarEnBase(this.sb.supabase, 'sumar_pagos', { ...rango, p_bancos: ['COMAFI'] }),
+            sumarEnBase(this.sb.supabase, 'sumar_pagos', { ...rango, p_bancos: ['Santander'] }),
+        ]).catch((error: Error) => { throw new BadRequestException(error.message); });
 
-        if (error)
-        {
-            throw new BadRequestException(error.message);
-        }
-
-        const datos: EstadisticasBancosDTO = {
-            facturacionCOMAFI: data.filter(p => p.banco == "COMAFI").reduce((total, p) => total + (p.monto ?? 0), 0),
-            facturacionSantander: data.filter(p => p.banco == "Santander").reduce((total, p) => total + (p.monto ?? 0), 0),
-        };
-
-        return datos
+        return { facturacionCOMAFI, facturacionSantander };
     }
 
-    async obtenerEstadisticasCobranzas(): Promise<EstadisticasCobranzasDTO[]>
+    async obtenerEstadisticasCobranzas(anioPedido?: number): Promise<EstadisticasCobranzasDTO[]>
     {
-        const anio = new Date().getFullYear();
+        const anio = anioOActual(anioPedido);
 
         const { data, error } = await this.sb.supabase
         .from("grupos")
@@ -154,8 +147,10 @@ export class EstadisticasService {
         {
             const pedido = g.pedidos[0];
             const fechaVenta = g.created_at ?? '';
+            // Día de la venta en Argentina (created_at está en UTC: una venta del 31/12 a la noche caía en el año siguiente)
+            const diaVentaAR = g.created_at ? hoyArgentina(new Date(`${g.created_at}Z`)) : '';
             const cancelado = pedido.estado_general === ESTADO_PEDIDO_CANCELADO;
-            const vendidoEsteAnio = fechaVenta.startsWith(`${anio}-`);
+            const vendidoEsteAnio = diaVentaAR.startsWith(`${anio}-`);
 
             const deudaPorMes: number[] = new Array(12).fill(0);
             let deudaAnterior = 0;
@@ -166,7 +161,7 @@ export class EstadisticasService {
                 // La seña se paga el día de la venta: si falta, se cuenta en el mes en que se vendió
                 const deudaSenia = this.calcularDeudaSenia(pedido.senia_total, pedido.productos_pedidos, pedido.pagos);
                 const deudas = [
-                    { fecha: fechaVenta, monto: deudaSenia },
+                    { fecha: diaVentaAR, monto: deudaSenia },
                     ...pedido.cuotas.map(c => ({ fecha: c.fecha_vencimiento ?? '', monto: this.calcularDeudaCuota(c) })),
                 ];
 

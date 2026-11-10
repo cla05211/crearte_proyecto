@@ -342,3 +342,15 @@ svg {
     padding-top: var(--space-3);
   }
 }
+
+/* Bocetos sin imagen (subidos antes de que la preview se generara en el navegador) */
+.td-generar-preview {
+  background: none;
+  border: 0;
+  color: var(--color-primary-700, var(--color-primary));
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8125rem;
+  padding: 0;
+  text-decoration: underline;
+}

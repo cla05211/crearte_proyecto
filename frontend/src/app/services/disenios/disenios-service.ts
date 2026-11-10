@@ -76,6 +76,18 @@ export class DiseniosService
         });
     }
 
+    // URLs firmadas para subir las dos imágenes de preview del boceto actual de ese diseño
+    pedirUrlsSubidaPreview(idGrupo: number, idDocumento: number)
+    {
+        return this.http.post<{ preview: string; grande: string }>(
+            `${environment.apiUrl}/disenios/${idGrupo}/${idDocumento}/url-subida-preview`, null);
+    }
+
+    subirImagenAUrlFirmada(signedUrl: string, imagen: Blob)
+    {
+        return this.http.put(signedUrl, imagen, { headers: { 'Content-Type': 'image/jpeg' } });
+    }
+
     confirmar(idGrupo: number, tipo: string, ruta: string)
     {
         return this.http.post<{ idDocumento: number }>(

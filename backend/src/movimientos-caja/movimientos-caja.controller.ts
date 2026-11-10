@@ -12,7 +12,7 @@ export class MovimientosCajaController
     constructor(private movimientosCajaService: MovimientosCajaService){}
 
     @Post('')
-    @UseGuards(AuthGuard)
+    @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_caja')
     async agregarMovimiento(@Body() dto: MovimientoCajaDTO):Promise<number>
     {

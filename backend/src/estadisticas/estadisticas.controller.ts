@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { EstadisticasService } from './estadisticas.service';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -16,32 +16,32 @@ export class EstadisticasController
     @Get('ventas')
     @UseGuards(AuthGuard, PermisosGuard)
     @RequierePermiso('ver_estadisticas')
-    async obtenerEstadisticasVentas():Promise<EstadisticasVentasDTO[]>
+    async obtenerEstadisticasVentas(@Query('anio') anio?: string):Promise<EstadisticasVentasDTO[]>
     {
-        return await this.estadisticasSerivce.obtenerEstadisticasVentas();
+        return await this.estadisticasSerivce.obtenerEstadisticasVentas(anio ? Number(anio) : undefined);
     }
     
     @Get('produccion')
     @UseGuards(AuthGuard, PermisosGuard)
     @RequierePermiso('ver_estadisticas')
-    async obtenerEstadisticaProduccion():Promise<EstadisticasProduccionDTO[]>
+    async obtenerEstadisticaProduccion(@Query('anio') anio?: string):Promise<EstadisticasProduccionDTO[]>
     {
-        return await this.estadisticasSerivce.obtenerEstadisticasProduccion();
+        return await this.estadisticasSerivce.obtenerEstadisticasProduccion(anio ? Number(anio) : undefined);
     }
 
     @Get('bancos')
     @UseGuards(AuthGuard, PermisosGuard)
     @RequierePermiso('ver_estadisticas')
-    async obtenerEstadisticasBancos():Promise<EstadisticasBancosDTO>
+    async obtenerEstadisticasBancos(@Query('anio') anio?: string):Promise<EstadisticasBancosDTO>
     {
-        return await this.estadisticasSerivce.obtenerEstadisticasBancos();
+        return await this.estadisticasSerivce.obtenerEstadisticasBancos(anio ? Number(anio) : undefined);
     }
 
     @Get('cobranzas')
     @UseGuards(AuthGuard, PermisosGuard)
     @RequierePermiso('ver_estadisticas')
-    async obtenerEstadisticasCobranzas():Promise<EstadisticasCobranzasDTO[]>
+    async obtenerEstadisticasCobranzas(@Query('anio') anio?: string):Promise<EstadisticasCobranzasDTO[]>
     {
-        return await this.estadisticasSerivce.obtenerEstadisticasCobranzas();
+        return await this.estadisticasSerivce.obtenerEstadisticasCobranzas(anio ? Number(anio) : undefined);
     }
 }

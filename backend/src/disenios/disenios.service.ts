@@ -1,6 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { StorageService } from 'src/storage/storage.service';
-import { PreviewPdfService } from 'src/storage/preview-pdf.service';
 import { DocumentosService } from 'src/documentos/documentos.service';
 import { ResumenTallesService } from 'src/resumen-talles/resumen-talles.service';
 import { PedidosService } from 'src/pedidos/pedidos.service';
@@ -30,7 +29,6 @@ export class DiseniosService
 
     constructor(
         private storageService: StorageService,
-        private previewPdfService: PreviewPdfService,
         private documentosService: DocumentosService,
         private resumenTallesService: ResumenTallesService,
         private pedidosService: PedidosService,
@@ -92,8 +90,6 @@ export class DiseniosService
             datoNuevo: this.fotoDisenio(tipo, 'disenios', dto.ruta),
         });
 
-        this.generarPreviewEnSegundoPlano(dto.ruta);
-
         return { idDocumento };
     }
 
@@ -119,8 +115,6 @@ export class DiseniosService
             datoNuevo: this.fotoDisenio(disenio.tipo!, 'disenios', dto.ruta),
         });
 
-        this.generarPreviewEnSegundoPlano(dto.ruta);
-
         return { idDocumento: dto.idDocumento };
     }
 
@@ -141,7 +135,8 @@ export class DiseniosService
     }
 
     // URLs de las imágenes del boceto (primera página en JPG): "url" chica para miniaturas, "urlGrande" para el visor.
-    // Si todavía no existen (bocetos subidos antes de esto, o falló al subir) se generan en el momento.
+    // Las imágenes las genera el navegador de quien sube el boceto (ver urlsSubidaPreview): el backend no abre
+    // los PDF, que pesan ~90 MB y podían dejar sin memoria al servidor. Si no existen, 404 y el front muestra el ícono.
     async crearUrlPreview(idGrupo: number, idDocumento: number): Promise<{ url: string; urlGrande: string }>
     {
         await this.obtenerDisenioDelGrupo(idGrupo, idDocumento);
@@ -149,10 +144,9 @@ export class DiseniosService
         const rutaPreview = this.storageService.rutaPreviewDiseno(rutaPdf);
         const rutaGrande = this.storageService.rutaGrandeDiseno(rutaPdf);
 
-        // Se mira la grande: las primeras previews se generaron solo en chico
         if (!(await this.storageService.existeDiseno(rutaGrande)))
         {
-            await this.generarPreview(rutaPdf);
+            throw new NotFoundException('Este boceto todavía no tiene vista previa.');
         }
 
         const [url, urlGrande] = await Promise.all([
@@ -163,40 +157,19 @@ export class DiseniosService
         return { url, urlGrande };
     }
 
-    // Generaciones en curso por PDF: los bocetos pesan mucho, así que si se pide la misma
-    // mientras se está generando (ej: recién subido y alguien ya abre la pantalla) se espera la que ya arrancó.
-    private readonly generando = new Map<string, Promise<void>>();
-
-    private generarPreview(rutaPdf: string): Promise<void>
+    // URLs firmadas para que el navegador suba las dos imágenes del boceto actual del diseño.
+    // Las rutas salen del PDF guardado (12/abc.pdf -> 12/abc.preview.jpg y 12/abc.grande.jpg), no las elige el front.
+    async urlsSubidaPreview(idGrupo: number, idDocumento: number): Promise<{ preview: string; grande: string }>
     {
-        let tarea = this.generando.get(rutaPdf);
+        await this.obtenerDisenioDelGrupo(idGrupo, idDocumento);
+        const rutaPdf = await this.obtenerRutaDelGrupo(idGrupo, idDocumento);
 
-        if (!tarea)
-        {
-            tarea = this.generarYSubir(rutaPdf).finally(() => this.generando.delete(rutaPdf));
-            this.generando.set(rutaPdf, tarea);
-        }
-
-        return tarea;
-    }
-
-    private async generarYSubir(rutaPdf: string): Promise<void>
-    {
-        const pdf = await this.storageService.descargarDiseno(rutaPdf);
-        const { preview, grande } = await this.previewPdfService.generarImagenes(pdf);
-
-        await Promise.all([
-            this.storageService.subirPreviewDiseno(this.storageService.rutaPreviewDiseno(rutaPdf), preview),
-            this.storageService.subirPreviewDiseno(this.storageService.rutaGrandeDiseno(rutaPdf), grande),
+        const [preview, grande] = await Promise.all([
+            this.storageService.crearUrlSubidaPreviewDiseno(this.storageService.rutaPreviewDiseno(rutaPdf)),
+            this.storageService.crearUrlSubidaPreviewDiseno(this.storageService.rutaGrandeDiseno(rutaPdf)),
         ]);
-    }
 
-    // Al subir/reemplazar no se espera: la respuesta vuelve enseguida y si falla no rompe la subida
-    // (se vuelve a intentar la primera vez que alguien la pida).
-    private generarPreviewEnSegundoPlano(rutaPdf: string): void
-    {
-        this.generarPreview(rutaPdf).catch(error =>
-            this.logger.warn(`No se pudo generar la preview de ${rutaPdf}: ${error?.message ?? error}`));
+        return { preview, grande };
     }
 
     // URL para descargar el boceto firmado de un diseño ('Firma ' + tipo)

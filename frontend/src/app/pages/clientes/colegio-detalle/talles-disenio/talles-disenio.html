@@ -65,7 +65,7 @@
                     [attr.aria-label]="'Ver ' + fila.etiqueta + ' en grande'" title="Ver en grande">
               <img [src]="preview.url" [alt]="'Boceto del ' + fila.etiqueta" loading="lazy" (error)="marcarPreviewRota(fila.documento!.id)" />
             </button>
-          } @else if (fila.documento && preview === undefined) {
+          } @else if (fila.documento && (preview === undefined || generandoPreview().has(fila.documento.id))) {
             <span class="td-miniatura td-miniatura--cargando" role="status" aria-label="Cargando imagen del diseño"></span>
           } @else {
             <span class="td-fila__icono" aria-hidden="true">
@@ -88,8 +88,13 @@
               <span class="td-fila__estado">
                 {{ subida()!.progreso < 100 ? 'Subiendo… ' + subida()!.progreso + '%' : 'Guardando…' }}
               </span>
+            } @else if (fila.documento && generandoPreview().has(fila.documento.id)) {
+              <span class="td-fila__estado">Generando vista previa…</span>
             } @else if (fila.documento) {
               <span class="ds-badge">PDF cargado</span>
+              @if (preview === null) {
+                <button type="button" class="td-generar-preview" (click)="generarPreviewFaltante(fila)">Generar vista previa</button>
+              }
             } @else {
               <span class="td-fila__estado">Sin archivo</span>
             }

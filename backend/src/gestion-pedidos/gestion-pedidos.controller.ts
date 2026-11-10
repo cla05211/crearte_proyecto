@@ -51,9 +51,9 @@ export class GestionPedidosController
     @Get ('control-talles-disenio')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_talles_disenio')
-    async obtenerDatosPedidosControlTallesDisenio(@Query('promo', ParseIntPipe) promo: number, @Query('mes', ParseIntPipe) mes: number, @Query('busqueda') busqueda?: string)
+    async obtenerDatosPedidosControlTallesDisenio(@Query('anio', ParseIntPipe) anio: number, @Query('mes', ParseIntPipe) mes: number, @Query('busqueda') busqueda?: string)
     {
-        return await this.gestionService.obtenerDatosPedidosControlTallesDisenio(mes,promo,busqueda);
+        return await this.gestionService.obtenerDatosPedidosControlTallesDisenio(mes,anio,busqueda);
     }
 
     @Get ('control-produccion')

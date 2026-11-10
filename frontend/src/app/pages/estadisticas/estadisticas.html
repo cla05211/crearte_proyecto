@@ -1,8 +1,18 @@
 <main class="estadisticas-page">
   <section class="ds-container estadisticas-container">
     <header class="estadisticas-header">
-      <span class="ds-eyebrow">Administración</span>
-      <h1 class="ds-heading-1">Estadísticas</h1>
+      <div>
+        <span class="ds-eyebrow">Administración</span>
+        <h1 class="ds-heading-1">Estadísticas</h1>
+      </div>
+      <label class="ds-field estadisticas-anio">
+        <span class="ds-label">Año</span>
+        <select class="ds-select" [ngModel]="anioEstadisticas.anio()" (ngModelChange)="anioEstadisticas.anio.set($event)">
+          @for (anio of anioEstadisticas.aniosDisponibles; track anio) {
+            <option [ngValue]="anio">{{ anio }}</option>
+          }
+        </select>
+      </label>
     </header>
 
     <!-- Para sumar una ventana nueva: agregar el link acá y la ruta hija en app.routes.ts -->

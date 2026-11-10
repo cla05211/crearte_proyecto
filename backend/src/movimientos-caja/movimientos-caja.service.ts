@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { MovimientoCajaDTO } from './dto/movimientoCaja.dto';
+import { limpiarBusqueda } from 'src/common/busqueda';
+import { sumarEnBase } from 'src/common/sumar-en-base';
 import { MovimientoCajaResponseDTO } from './dto/movimientoCajaResponse.dto';
 
 @Injectable()
@@ -60,7 +62,7 @@ export class MovimientosCajaService
 
         if(busqueda)
         {
-            query = query.or(`categoria.ilike.%${busqueda}%,descripcion.ilike.%${busqueda}%`);
+            query = query.or(`categoria.ilike.%${limpiarBusqueda(busqueda)}%,descripcion.ilike.%${limpiarBusqueda(busqueda)}%`);
         }
 
         if(tipo)
@@ -85,45 +87,11 @@ export class MovimientosCajaService
 
     async obtenerTotalIngresos():Promise<number>
     {
-        let total = 0;
-
-        const { data, error } = await this.sb.supabase
-        .from('movimientos_caja')
-        .select('monto')
-        .eq('tipo', 'ingreso');
-
-        if (error) 
-        {
-            throw new Error(error.message);
-        }    
-
-        if(data)
-        {    
-            total = data.reduce((total, pago) => total + (pago.monto ?? 0), 0);
-        }
-        
-        return total;          
+        return await sumarEnBase(this.sb.supabase, 'sumar_movimientos_caja', { p_tipo: 'ingreso' });
     }
 
     async obtenerTotalEgresos():Promise<number>
     {
-        let total = 0;
-
-        const { data, error } = await this.sb.supabase
-        .from('movimientos_caja')
-        .select('monto')
-        .eq('tipo', 'egreso');
-
-        if (error) 
-        {
-            throw new Error(error.message);
-        }    
-
-        if(data)
-        {    
-            total = data.reduce((total, pago) => total + (pago.monto ?? 0), 0);
-        }
-        
-        return total;          
+        return await sumarEnBase(this.sb.supabase, 'sumar_movimientos_caja', { p_tipo: 'egreso' });
     }
 }

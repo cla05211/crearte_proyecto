@@ -8,19 +8,29 @@ export class MuestrasFisicasService
 {
     constructor(private sb: SupabaseService){}
 
-    async traerMuestras(): Promise<MuestrasTablaDTO[]>
+    // Solo pedidos que todavía no se entregaron (la tabla crece con cada venta); filtro opcional por promo
+    async traerMuestras(promo?: number): Promise<MuestrasTablaDTO[]>
     {
-        const { data, error } = await this.sb.supabase
+        let query = this.sb.supabase
             .from('muestras_fisicas')
             .select(`id, id_pedido, estado, muestras, envio, fecha_entrega, fecha_devolucion,
                 pedido:pedidos!inner(
-                    con_senia,
+                    con_senia, estado_general,
                     vendedora:usuarios!pedidos_id_vendedora_fkey ( nombre ),
-                    grupo:grupos ( nivel, colegio:colegios ( nombre ) ),
+                    grupo:grupos!inner ( nivel, promo, colegio:colegios ( nombre ) ),
                     cuotas ( numero )
                 )
             `)
+            // estado_general puede ser null en pedidos viejos
+            .or('estado_general.is.null,estado_general.neq.Entregado', { referencedTable: 'pedido' })
             .order('id', { ascending: false });
+
+        if (promo)
+        {
+            query = query.eq('pedido.grupo.promo', promo);
+        }
+
+        const { data, error } = await query;
 
         if (error) 
         {
@@ -31,6 +41,7 @@ export class MuestrasFisicasService
             muestra: {id: d.id, id_pedido: d.id_pedido, estado: d.estado, muestras: d.muestras, fecha_entrega: d.fecha_entrega, fecha_devolucion: d.fecha_devolucion, envio: d.envio},
             colegio: d.pedido.grupo.colegio.nombre,
             nivel: d.pedido.grupo.nivel!,
+            promo: d.pedido.grupo.promo,
             vendedora: d.pedido.vendedora?.nombre!,
             planCuotas: {nroCuotas: d.pedido.cuotas.length, conSenia: d.pedido.con_senia}
         }))

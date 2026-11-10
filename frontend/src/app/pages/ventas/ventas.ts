@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { forkJoin, Observable, of, Subject } from 'rxjs';
+import { forkJoin, Observable, of, Subject, throwError } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 import { CrearPedidoDTO } from '../../services/gestionPedidos/dto/crearPedidoPost.dto';
 import { PedidoResponseVentas } from '../../services/gestionPedidos/dto/PedidoResponseVentas.dto';
@@ -29,6 +29,7 @@ import { CrearCuotasDTO } from '../../services/cuotas/dto/crearCuotas.dto';
 import { PagosService } from '../../services/pagos/pagos-service';
 import { PagoResponseDTO } from '../../services/pagos/dto/pagoResponse.dto';
 import { PagoComprobanteDatosDTO } from '../../services/pagos/dto/pagoComprobanteDatos.dto';
+import { telefonoValido } from '../../utils/telefono';
 import { clavePlan, etiquetaPlan, PlanCuotas, planDesdeClave, planesConActual } from '../../services/cuotas/plan-cuotas';
 
 interface ProductoCarrito {
@@ -585,6 +586,13 @@ export class Ventas implements OnInit {
     return this.totalComprobantesSenia() + efectivo;
   }
 
+  telefonoValido = telefonoValido;
+
+  // Lo pagado en la venta no puede superar la seña: el excedente quedaría guardado como seña y no cubriría la cuota 1
+  seniaExcedida(): boolean {
+    return this.totalSeniaIngresada() > this.totalSenia() + 0.5;
+  }
+
   actualizarMontoSeniaPagado(valor: number): void {
     this.pago.montoSeniaPagado = valor;
   }
@@ -790,11 +798,11 @@ export class Ventas implements OnInit {
           },
         });
       },
-      error: () => {
+      error: (err: Error) => {
         this.guardando.set(false);
         this.notificaciones.error({
           title: 'Error al subir archivos',
-          description: 'No se pudieron subir los archivos adjuntos. Intentá nuevamente.',
+          description: `${err?.message ?? 'No se pudieron subir los archivos adjuntos.'} La venta no se guardó: intentá nuevamente.`,
         });
       },
     });
@@ -812,10 +820,8 @@ export class Ventas implements OnInit {
         carpetaGuardado: "senias"
       }).pipe(
         map(({ ruta }) => ruta),
-        catchError((err) => {
-          console.error(`Error subiendo recurso ${index + 1}:`, err);
-          return of(''); 
-        }),
+        // Si falla un comprobante no se guarda la venta: quedaría el pago de seña sin comprobante
+        catchError(() => throwError(() => new Error(`No se pudo subir el comprobante "${archivo.name}".`))),
     ));
 
     const subidasRecursos= this.archivosRecursosAdicionales.map((archivo, index) =>
@@ -828,10 +834,7 @@ export class Ventas implements OnInit {
         carpetaGuardado: "recursos_adicionales"
       }).pipe(
         map(({ ruta }) => ruta),
-        catchError((err) => {
-          console.error(`Error subiendo recurso ${index + 1}:`, err);
-          return of('');
-        }),
+        catchError(() => throwError(() => new Error(`No se pudo subir el archivo "${archivo.name}".`))),
     ));
 
     const urlsSenia$ =subidasSenia.length > 0? forkJoin(subidasSenia): of<string[]>([]);
@@ -947,12 +950,13 @@ export class Ventas implements OnInit {
   private validarHasta(paso: number): boolean {
     const validadores: Record<number, () => boolean> = {
       1: () => Boolean(this.colegio.nombre && this.colegio.localidad && this.colegio.provincia && this.grupo.orientacion && this.grupo.turno && this.grupo.nivel && Number(this.grupo.cantidad_egresados) > 0),
-      2: () =>this.grupo.nivel !== 'Secundaria' ||this.alumnosResponsables.every((alumno) =>Boolean(alumno.nombre && alumno.apellido && alumno.telefono)),
-      3: () => this.padresResponsables.every((padre) => Boolean(padre.nombre && padre.apellido && padre.telefono && padre.dni)),
+      2: () =>this.grupo.nivel !== 'Secundaria' ||this.alumnosResponsables.every((alumno) =>Boolean(alumno.nombre && alumno.apellido && telefonoValido(alumno.telefono))),
+      3: () => this.padresResponsables.every((padre) => Boolean(padre.nombre && padre.apellido && telefonoValido(padre.telefono) && padre.dni)),
       4: () => this.carrito().length > 0,
       5: () => Boolean(this.detallePedido.talles),
       6: () => {
         if (!this.pago.fechaSenia || !this.pago.fechaPrimeraCuota) return false;
+        if (this.seniaExcedida()) return false;
         if (this.pago.pagadaEfectivo && this.montoSeniaPagadoEfectivo() <= 0) return false;
         if (this.archivosSenia.length > 0) {
           const comprobantes = this.comprobantesSenia();
@@ -966,7 +970,13 @@ export class Ventas implements OnInit {
     };
     for (let indice = 1; indice <= paso; indice += 1) {
       if (!validadores[indice]()) {
-        this.error.set(`Completá los campos requeridos del paso ${indice}.`);
+        this.error.set(
+          indice === 6 && this.seniaExcedida()
+            ? 'El monto pagado supera el total de la seña. Corregí los montos de los comprobantes o del efectivo.'
+            : (indice === 2 || indice === 3)
+              ? `Completá los campos requeridos del paso ${indice}. Los teléfonos van con código de área, sin 0 ni 15 (10 números, ej. 11 2345-6789).`
+              : `Completá los campos requeridos del paso ${indice}.`,
+        );
         return false;
       }
     }

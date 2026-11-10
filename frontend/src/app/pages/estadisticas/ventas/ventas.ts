@@ -1,8 +1,9 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Estadisticas as EstadisticasService } from '../../../services/estadisticas/estadisticas';
 import { EstadisticasVentasDTO } from '../../../services/estadisticas/dto/estadisticasVentas.dto';
+import { AnioEstadisticas } from '../../../services/estadisticas/anio-estadisticas';
 import { NotificationService } from '../../../shared/notifications/notification.service';
 
 interface VentasVendedora
@@ -28,15 +29,22 @@ const NIVELES = ['Jardin', 'Primaria', 'Secundaria'];
   templateUrl: './ventas.html',
   styleUrls: ['../estadisticas-compartido.css', './ventas.css'],
 })
-export class Ventas implements OnInit
+export class Ventas
 {
   private readonly estadisticasService = inject(EstadisticasService);
   private readonly notificaciones = inject(NotificationService);
 
   // Tienen que coincidir con lo que calcula el back: promo actual = año en curso, siguiente = año que viene
-  readonly anio = new Date().getFullYear();
-  readonly promoActual = this.anio;
-  readonly promoSiguiente = this.anio + 1;
+  private readonly anioEstadisticas = inject(AnioEstadisticas);
+  readonly anio = this.anioEstadisticas.anio;
+
+  // Cada vez que cambia el año del selector se vuelven a pedir los datos
+  private readonly recargarAlCambiarAnio = effect(() => {
+    this.anio();
+    untracked(() => this.traerEstadisticas());
+  });
+  readonly promoActual = computed(() => this.anio());
+  readonly promoSiguiente = computed(() => this.anio() + 1);
 
   readonly datos = signal<EstadisticasVentasDTO[] | null>(null);
   readonly cargando = signal(false);
@@ -95,8 +103,8 @@ export class Ventas implements OnInit
 
   //--- 2) Promo actual y siguiente (sin importar el año de venta) ---
 
-  readonly cantidadPromoActual = computed(() => this.vigentes().filter((d) => d.promo === this.promoActual).length);
-  readonly cantidadPromoSiguiente = computed(() => this.vigentes().filter((d) => d.promo === this.promoSiguiente).length);
+  readonly cantidadPromoActual = computed(() => this.vigentes().filter((d) => d.promo === this.promoActual()).length);
+  readonly cantidadPromoSiguiente = computed(() => this.vigentes().filter((d) => d.promo === this.promoSiguiente()).length);
 
   //--- 3) Promedio de egresados ---
 
@@ -153,15 +161,11 @@ export class Ventas implements OnInit
       .sort((a, b) => b.fechaVenta.localeCompare(a.fechaVenta)),
   );
 
-  ngOnInit(): void
-  {
-    this.traerEstadisticas();
-  }
 
   traerEstadisticas(): void
   {
     this.cargando.set(true);
-    this.estadisticasService.obtenerEstadisticasVentas().subscribe({
+    this.estadisticasService.obtenerEstadisticasVentas(this.anio()).subscribe({
       next: (datos) => {
         this.datos.set(datos);
         this.cargando.set(false);
@@ -195,7 +199,9 @@ export class Ventas implements OnInit
 
   private esDelAnio(fecha: string): boolean
   {
-    return Boolean(fecha) && new Date(fecha).getFullYear() === this.anio;
+    // created_at viene en UTC sin zona: se agrega la Z para que el navegador lo pase bien a hora local
+    const conZona = /Z$|[+-]\d\d:?\d\d$/.test(fecha) ? fecha : `${fecha}Z`;
+    return Boolean(fecha) && new Date(conZona).getFullYear() === this.anio();
   }
 
   private valoresUnicos(valores: string[]): string[]

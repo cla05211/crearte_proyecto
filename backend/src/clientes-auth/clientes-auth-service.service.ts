@@ -42,6 +42,17 @@ export class ClientesAuthService
             throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Credenciales inválidas.' });
         }
 
+        const { count: cancelados } = await this.sb.supabase
+            .from('pedidos')
+            .select('id', { count: 'exact', head: true })
+            .eq('id_grupo', cliente.id_grupo)
+            .eq('estado_general', 'Cancelado');
+
+        if (cancelados)
+        {
+            throw new UnauthorizedException({ code: 'PEDIDO_CANCELADO', message: 'El pedido de este colegio fue cancelado.' });
+        }
+
         const tokenCrudo = randomBytes(32).toString('hex');
         const tokenHash = hashearToken(tokenCrudo);
 

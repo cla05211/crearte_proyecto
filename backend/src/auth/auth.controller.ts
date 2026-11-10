@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {LoginDto} from './dto/login.dto';
 import { RegistroDto } from './dto/registro.dto';
@@ -24,9 +24,9 @@ export class AuthController
     }
 
     @Post('salir')
-    async cerrarSesion()
+    async cerrarSesion(@Headers('authorization') authorization?: string)
     {
-        return await this.auth.cerrarSesion();
+        return await this.auth.cerrarSesion(authorization?.split(' ')[1]);
     }
 
     @Get('perfil')

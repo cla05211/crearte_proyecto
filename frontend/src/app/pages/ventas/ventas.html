@@ -291,7 +291,7 @@
                     ><input class="ds-input" [(ngModel)]="alumno.apellido" /></label
                   ><label class="ds-field"
                     ><span class="ds-label">Nro. de teléfono *</span
-                    ><input class="ds-input" [(ngModel)]="alumno.telefono"
+                    ><input class="ds-input" [(ngModel)]="alumno.telefono" placeholder="Ej. 11 2345-6789 (sin 0 ni 15)" [attr.aria-invalid]="alumno.telefono && !telefonoValido(alumno.telefono) ? 'true' : null"
                   /></label>
                 </fieldset>
               }
@@ -311,7 +311,7 @@
                     ><input class="ds-input" [(ngModel)]="padre.apellido" /></label
                   ><label class="ds-field"
                     ><span class="ds-label">Nro. de teléfono *</span
-                    ><input class="ds-input" [(ngModel)]="padre.telefono" /></label
+                    ><input class="ds-input" [(ngModel)]="padre.telefono" placeholder="Ej. 11 2345-6789 (sin 0 ni 15)" [attr.aria-invalid]="padre.telefono && !telefonoValido(padre.telefono) ? 'true' : null" /></label
                   ><label class="ds-field"
                     ><span class="ds-label">DNI *</span
                     ><input class="ds-input" [(ngModel)]="padre.dni"
@@ -776,6 +776,14 @@
                     >Falta de seña
                     <strong>{{
                       totalSenia() - totalSeniaIngresada() | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
+                    }}</strong></span
+                  >
+                }
+                @if (seniaExcedida()) {
+                  <span style="color: var(--color-danger)"
+                    >Pagado de más
+                    <strong>{{
+                      totalSeniaIngresada() - totalSenia() | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
                     }}</strong></span
                   >
                 }

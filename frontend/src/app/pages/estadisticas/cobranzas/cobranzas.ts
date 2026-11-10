@@ -1,7 +1,8 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { Estadisticas as EstadisticasService } from '../../../services/estadisticas/estadisticas';
 import { EstadisticasCobranzasDTO } from '../../../services/estadisticas/dto/estadisticasCobranzas.dto';
+import { AnioEstadisticas } from '../../../services/estadisticas/anio-estadisticas';
 import { NotificationService } from '../../../shared/notifications/notification.service';
 
 interface MesDeuda
@@ -20,12 +21,19 @@ const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'O
   templateUrl: './cobranzas.html',
   styleUrls: ['../estadisticas-compartido.css', './cobranzas.css'],
 })
-export class Cobranzas implements OnInit
+export class Cobranzas
 {
   private readonly estadisticasService = inject(EstadisticasService);
   private readonly notificaciones = inject(NotificationService);
 
-  readonly anio = new Date().getFullYear();
+  private readonly anioEstadisticas = inject(AnioEstadisticas);
+  readonly anio = this.anioEstadisticas.anio;
+
+  // Cada vez que cambia el año del selector se vuelven a pedir los datos
+  private readonly recargarAlCambiarAnio = effect(() => {
+    this.anio();
+    untracked(() => this.traerEstadisticas());
+  });
   private readonly mesActual = new Date().getMonth();
   readonly meses = MESES;
 
@@ -68,15 +76,11 @@ export class Cobranzas implements OnInit
 
   readonly deudaAnterior = computed(() => this.colegios().reduce((total, c) => total + c.deudaAnterior, 0));
 
-  ngOnInit(): void
-  {
-    this.traerEstadisticas();
-  }
 
   traerEstadisticas(): void
   {
     this.cargando.set(true);
-    this.estadisticasService.obtenerEstadisticasCobranzas().subscribe({
+    this.estadisticasService.obtenerEstadisticasCobranzas(this.anio()).subscribe({
       next: (datos) => {
         this.datos.set(datos);
         this.cargando.set(false);

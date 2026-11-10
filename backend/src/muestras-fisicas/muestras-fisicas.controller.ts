@@ -12,9 +12,9 @@ export class MuestrasFisicasController
     @Get('')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_tabla_muestras_fisicas')
-    async traerMuestrasTabla()
+    async traerMuestrasTabla(@Query('promo') promo?: string)
     {
-        return this.muestrasFisicasService.traerMuestras();
+        return this.muestrasFisicasService.traerMuestras(promo ? Number(promo) : undefined);
     }
 
     @Patch('muestras/:id')

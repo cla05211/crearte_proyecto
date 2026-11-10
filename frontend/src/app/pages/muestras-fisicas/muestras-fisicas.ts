@@ -32,6 +32,11 @@ export class MuestrasFisicas implements OnInit
   readonly cargando = signal(false);
   readonly pestania = signal<Pestania>('activas');
 
+  // Filtro por promo (null = todas). Se listan solo pedidos que todavía no se entregaron.
+  private readonly anioActual = new Date().getFullYear();
+  readonly promos = Array.from({ length: 4 }, (_, i) => this.anioActual - 1 + i);
+  readonly promoSeleccionada = signal<number | null>(null);
+
   // Fecha que se está editando cuando estaba vacía (se muestra "-" hasta que se hace clic)
   readonly edicionFecha = signal<{ id: number; campo: CampoFecha } | null>(null);
 
@@ -75,10 +80,16 @@ export class MuestrasFisicas implements OnInit
     this.traerMuestras();
   }
 
+  cambiarPromo(promo: number | null): void
+  {
+    this.promoSeleccionada.set(promo);
+    this.traerMuestras();
+  }
+
   traerMuestras(): void
   {
     this.cargando.set(true);
-    this.muestrasService.traerMuestrasTabla().subscribe({
+    this.muestrasService.traerMuestrasTabla(this.promoSeleccionada()).subscribe({
       next: (muestras) => {
         this.muestras.set(muestras);
         this.cargando.set(false);

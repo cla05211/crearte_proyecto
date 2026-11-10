@@ -346,11 +346,28 @@ export class CuentaCorriente implements OnInit
     return this.cuotasIguales() && motivo === 'Seña' ? 'Cuota 1' : motivo;
   }
 
+  // Mismo criterio que la cuenta corriente de administración: la seña vence el día de la venta,
+  // así que si falta pagar algo ya está adeudada
   estadoSenia(): string
   {
     if (this.seniaFaltante() <= 0) return 'Pagada';
-    if (this.seniaPagada() > 0) return 'Parcial';
-    return 'Pendiente';
+    return 'Adeudada';
+  }
+
+  // Fecha de hoy en Argentina ('YYYY-MM-DD'), para comparar con los vencimientos
+  private readonly hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+
+  // Estado que se muestra (igual que en administración): una cuota vencida sin pagar, aunque esté parcial, es Adeudada.
+  // Es solo visual: en la base el estado no cambia.
+  estadoCuota(cuota: CuotaResponseDTO): string
+  {
+    if (cuota.estado === 'Pagada' || !cuota.fecha_vencimiento)
+    {
+      return cuota.estado;
+    }
+
+    const vencida = String(cuota.fecha_vencimiento).slice(0, 10) < this.hoy;
+    return vencida ? 'Adeudada' : cuota.estado;
   }
 
   // El "Agregar" de cuenta corriente ahora sube un comprobante de

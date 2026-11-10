@@ -26,6 +26,7 @@ import { DiseniosService } from 'src/disenios/disenios.service';
 import { DiseniosGrupoResponseDTO } from 'src/disenios/dto/DisenioResponseDTO';
 import { RecalculoPlanTallesService } from 'src/prendas-pedido-talles/recalculo-plan-talles.service';
 import { AuditoriasService } from 'src/auditorias/auditorias.service';
+import { OPCIONES_COMPROBANTE, OPCIONES_FIRMA } from 'src/common/limites-archivos';
 import { ACCIONES_AUDITORIA } from 'src/auditorias/dto/insertarAuditoria.dto';
 
 
@@ -243,7 +244,7 @@ export class ClientesPortalController
     }
 
     @Post('firmar-contrato')
-    @UseInterceptors(FileInterceptor('firma'))
+    @UseInterceptors(FileInterceptor('firma', OPCIONES_FIRMA))
     async firmarContrato(@Req() req, @UploadedFile() firma: ArchivoSubidoDTO, @Body('idPadre', ParseIntPipe) idPadre: number)
     {
         const idGrupo = req.cliente.id_grupo;
@@ -292,7 +293,7 @@ export class ClientesPortalController
     }
     
     @Post('pagos')
-    @UseInterceptors(FileInterceptor('comprobante'))
+    @UseInterceptors(FileInterceptor('comprobante', OPCIONES_COMPROBANTE))
     async crearPago(@Req() req, @Body() dtoPago: CrearPagoClienteDto, @UploadedFile() archivo: ArchivoSubidoDTO)
     {
         const idPedido = await this.obtenerIdPedidoCliente(req);
@@ -338,7 +339,7 @@ export class ClientesPortalController
     }
 
     @Post('confirmar-talles')
-    @UseInterceptors(FileInterceptor('firma'))
+    @UseInterceptors(FileInterceptor('firma', OPCIONES_FIRMA))
     async confirmarTalles(@Req() req, @UploadedFile() firma: ArchivoSubidoDTO)
     {
         const idGrupo = req.cliente.id_grupo;
@@ -349,6 +350,27 @@ export class ClientesPortalController
             throw new BadRequestException('Falta la firma o no es una imagen PNG.');
         }
 
+        // Evita que un doble clic (o dos pestañas) confirme y recalcule el plan dos veces en paralelo
+        if (ClientesPortalController.confirmandoTalles.has(idPedido))
+        {
+            throw new ConflictException('Los talles de este pedido se están confirmando.');
+        }
+        ClientesPortalController.confirmandoTalles.add(idPedido);
+
+        try
+        {
+            return await this.confirmarTallesPedido(req, idGrupo, idPedido, firma);
+        }
+        finally
+        {
+            ClientesPortalController.confirmandoTalles.delete(idPedido);
+        }
+    }
+
+    private static readonly confirmandoTalles = new Set<number>();
+
+    private async confirmarTallesPedido(req, idGrupo: number, idPedido: number, firma: ArchivoSubidoDTO)
+    {
         if (await this.tallesConfirmados(idGrupo))
         {
             throw new ConflictException('Los talles de este pedido ya fueron confirmados.');

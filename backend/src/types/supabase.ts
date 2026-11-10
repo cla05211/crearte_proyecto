@@ -1277,6 +1277,17 @@ export type Database = {
         Returns: number
       }
       registrar_pago_completo: { Args: { p_pago: Json }; Returns: number }
+      sumar_movimientos_caja: { Args: { p_tipo: string }; Returns: number }
+      sumar_pagos: {
+        Args: {
+          p_bancos?: string[]
+          p_desde?: string
+          p_excluir_bancos?: string[]
+          p_excluir_devolucion?: boolean
+          p_hasta?: string
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

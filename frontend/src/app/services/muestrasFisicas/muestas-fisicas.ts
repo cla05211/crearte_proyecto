@@ -11,9 +11,10 @@ export class MuestasFisicas
 {
     http = inject(HttpClient);  
 
-    traerMuestrasTabla(): Observable<MuestrasTablaDTO[]>
+    traerMuestrasTabla(promo?: number | null): Observable<MuestrasTablaDTO[]>
     {
-        return this.http.get<MuestrasTablaDTO[]>(`${environment.apiUrl}/muestras-fisicas`);
+        const params: Record<string, number> = promo ? { promo } : {};
+        return this.http.get<MuestrasTablaDTO[]>(`${environment.apiUrl}/muestras-fisicas`, { params });
     }
     
     modificarMuestras(idMuestra: number, muestras: string): Observable<void>
