@@ -12,7 +12,6 @@ interface AccesoPortal {
   icono: string[];
 }
 
-// Inicio del portal: los accesos a cada página (antes estaban en la barra lateral del shell)
 @Component({
   selector: 'app-portal-cliente',
   imports: [RouterLink, NgTemplateOutlet],
@@ -23,7 +22,6 @@ export class PortalCliente implements OnInit
 {
   private readonly clientesPortalService = inject(ClientesPortalService);
 
-  // "Contrato" aparece recién cuando el pedido tiene fecha de entrega aproximada
   readonly contratoDisponible = signal(false);
 
   readonly accesos: AccesoPortal[] = [
@@ -48,7 +46,7 @@ export class PortalCliente implements OnInit
     {
       ruta: '/disenio',
       titulo: 'Diseño',
-      descripcion: 'Mirá y descargá los bocetos del buzo.',
+      descripcion: 'Mirá y descargá el boceto del buzo.',
       icono: ['M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.5 0-1-.8-1.4-.8-2.3 0-.9.7-1.7 1.7-1.7H17a4 4 0 0 0 4-4c0-4.7-4-8.5-9-8.5z', 'M7.5 11h.01', 'M10 7.5h.01', 'M14.5 7.5h.01'],
     },
   ];
