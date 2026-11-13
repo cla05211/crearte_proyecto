@@ -1,3 +1,4 @@
+import { CuotasService } from '../../../../services/cuotas/cuotas-service';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CurrencyPipe } from '@angular/common';
@@ -19,7 +20,8 @@ import { PermisosService } from '../../../../services/permisos/permisos';
 import { BeneficioResponseDTO } from '../../../../services/gestionPedidos/dto/BeneficioResponse.dto';
 import { BeneficioPedidoPostDTO, cantidadSinCargo, formatearBeneficios } from '../../../../services/gestionPedidos/dto/BeneficioPedido.dto';
 import { ModificarPlanPedidoDTO } from '../../../../services/gestionPedidos/dto/modficaciones/ModificarPlanPedido';
-import { clavePlan, etiquetaPlan, PlanCuotas, planDesdeClave, planesConActual } from '../../../../services/cuotas/plan-cuotas';
+import { clavePlan, CuotaParaMostrar, cuotasParaMostrar, cuotasTodasIguales, etiquetaPlan, pagosDelPlan, parteAgregadoGlobal, PlanCuotas, planDesdeClave, planesConActual, preciosConAgregados } from '../../../../services/cuotas/plan-cuotas';
+import { AgregadoProductoPedidoDTO } from '../../../../services/productosPedidos/dto/AgregadoProductoPedido.dto';
 
 const SEPARADOR_AGREGADOS = ' · Agregado: ';
 
@@ -29,6 +31,9 @@ interface AgregadoConPrecio
   nombre: string;
   cuotaIndividual: number;
   cuotaGrupal: number;
+  // En cuotas iguales el agregado también va en la seña (la seña es la cuota 1)
+  seniaIndividual: number;
+  seniaGrupal: number;
 }
 
 interface ProductoPedidoConPrecios
@@ -56,6 +61,8 @@ interface ProductoCarrito
   valorSenia: number;
   valorCuota: number;
   agregados: number[];
+  // id del agregado -> precio cobrado (total por prenda)
+  preciosAgregados: Record<number, number>;
 }
 
 interface BeneficioSeleccionado
@@ -74,6 +81,7 @@ interface BeneficioSeleccionado
 export class Presupuesto implements OnInit
 {
   private readonly gestionPedidosService = inject(GestionPedidosService);
+  private readonly cuotasService = inject(CuotasService);
   private readonly productosService = inject(ProductosService);
   private readonly gruposService = inject(GruposService);
   private readonly notificaciones = inject(NotificationService);
@@ -139,12 +147,27 @@ export class Presupuesto implements OnInit
   readonly productoCalculadoPlan = signal<ProductoCarrito | null>(null);
   readonly guardandoPlan = signal(false);
   readonly indiceEdicionProductoPlan = signal<number | null>(null);
+
+  // Cuotas reales del pedido (lo que se cobra): pueden no coincidir con el precio de lista del plan,
+  // por ejemplo si la seña quedó fija al cambiar de plan o se pagaron cuotas antes de un cambio
+  readonly cuotasReales = signal<CuotaParaMostrar[]>([]);
+  readonly cuotasRealesIguales = computed(() => cuotasTodasIguales(this.cuotasReales()));
+
+
+  // Contadores para ignorar respuestas de precio viejas (llegan desordenadas si se cambian opciones rápido)
+  private solicitudCalculoPlan = 0;
+  private solicitudRecalculoPlan = 0;
   productoEnEdicionPlan = this.crearProductoEnEdicionPlan();
   banderaSeleccionadaPlan = false;
 
-  readonly totalSenia = computed(() =>
-    this.productosConPrecios().reduce((total, producto) => total + producto.valorSeniaGrupal, 0),
-  );
+  readonly totalSenia = computed(() => {
+    const productos = this.productosConPrecios().reduce(
+      (total, producto) =>
+        total + producto.valorSeniaGrupal + producto.agregados.reduce((totalAgregados, agregado) => totalAgregados + agregado.seniaGrupal, 0),
+      0,
+    );
+    return productos + this.agregadosGlobalesConPrecios().reduce((total, agregado) => total + agregado.seniaGrupal, 0);
+  });
 
   // Seña acordada: queda fija desde la primera modificación del plan (aunque cambien los productos)
   readonly seniaAcordada = computed(() => this.presupuestoGrupo()?.pedido.senia_total ?? this.totalSenia());
@@ -159,9 +182,14 @@ export class Presupuesto implements OnInit
     return productos + agregadosGlobales;
   });
 
-  readonly totalSeniaIndividual = computed(() =>
-    this.productosConPrecios().reduce((total, producto) => total + producto.valorSeniaIndividual, 0),
-  );
+  readonly totalSeniaIndividual = computed(() => {
+    const productos = this.productosConPrecios().reduce(
+      (total, producto) =>
+        total + producto.valorSeniaIndividual + producto.agregados.reduce((totalAgregados, agregado) => totalAgregados + agregado.seniaIndividual, 0),
+      0,
+    );
+    return productos + this.agregadosGlobalesConPrecios().reduce((total, agregado) => total + agregado.seniaIndividual, 0);
+  });
 
   readonly totalCuotaIndividual = computed(() => {
     const productos = this.productosConPrecios().reduce(
@@ -239,6 +267,7 @@ export class Presupuesto implements OnInit
           this.presupuestoGrupo.set(presupuesto);
           this.cargando.set(false);
           this.traerPreciosProductos(presupuesto, idGrupo);
+          this.traerCuotasReales(presupuesto.pedido.id, presupuesto.pedido.con_senia);
         },
         error: () => {
           this.cargando.set(false);
@@ -267,13 +296,13 @@ export class Presupuesto implements OnInit
 
           this.productosConPrecios.set(
             presupuesto.productosPedido.map((producto) =>
-              this.combinarProductoConPrecios(producto, presupuesto.nroCuotas, agregadosIndividuales),
+              this.combinarProductoConPrecios(producto, presupuesto.nroCuotas, presupuesto.pedido.con_senia, agregadosIndividuales),
             ),
           );
 
           this.agregadosGlobalesConPrecios.set(
             presupuesto.agregadosGlobales.map((agregado) =>
-              this.combinarAgregadoGlobalConPrecios(agregado, presupuesto.nroCuotas, cantidadEgresados),
+              this.combinarAgregadoGlobalConPrecios(agregado, presupuesto.nroCuotas, presupuesto.pedido.con_senia, cantidadEgresados),
             ),
           );
 
@@ -289,24 +318,36 @@ export class Presupuesto implements OnInit
   private combinarProductoConPrecios(
     producto: ProductoPedidoResponseConNombreOriginalDTO,
     nroCuotas: number,
+    conSenia: boolean,
     agregadosIndividuales: AgregadoDBDTO[],
   ): ProductoPedidoConPrecios
   {
     const [descripcionBase, ...nombresAgregados] = (producto.descripcion ?? '').split(SEPARADOR_AGREGADOS);
 
-    const agregados: AgregadoConPrecio[] = agregadosIndividuales
-      .filter((agregado) => nombresAgregados.includes(agregado.agregado))
-      .map((agregado) => ({
-        id: agregado.id,
-        nombre: agregado.agregado,
-        cuotaIndividual: agregado.precio / nroCuotas,
-        cuotaGrupal: (agregado.precio * producto.cantidad) / nroCuotas,
-      }));
+    // Agregados con el precio que se cobró; los pedidos viejos solo los tienen en la descripción (precio del catálogo)
+    const cobrados = producto.agregados?.length
+      ? producto.agregados.map((agregado) => ({ id: agregado.id_agregado, nombre: agregado.agregado, precio: Number(agregado.precio) }))
+      : agregadosIndividuales
+          .filter((agregado) => nombresAgregados.includes(agregado.agregado))
+          .map((agregado) => ({ id: agregado.id, nombre: agregado.agregado, precio: Number(agregado.precio) }));
+
+    // Con seña se reparten en las cuotas; en cuotas iguales, entre la seña y las cuotas
+    const pagos = pagosDelPlan(nroCuotas, conSenia) || 1;
+    const agregados: AgregadoConPrecio[] = cobrados.map((agregado) => ({
+      id: agregado.id,
+      nombre: agregado.nombre,
+      cuotaIndividual: agregado.precio / pagos,
+      cuotaGrupal: (agregado.precio * producto.cantidad) / pagos,
+      seniaIndividual: conSenia ? 0 : agregado.precio / pagos,
+      seniaGrupal: conSenia ? 0 : (agregado.precio * producto.cantidad) / pagos,
+    }));
 
     // Se usan los valores guardados del pedido (lo que realmente se cobra), no la lista de precios actual.
-    // valor_cuota ya incluye los agregados individuales: se descuentan para mostrarlos en su propia fila.
+    // valor_cuota (y en cuotas iguales también valor_senia) ya incluyen los agregados: se descuentan para mostrarlos en su fila.
     const cuotaAgregados = agregados.reduce((total, agregado) => total + agregado.cuotaIndividual, 0);
+    const seniaAgregados = agregados.reduce((total, agregado) => total + agregado.seniaIndividual, 0);
     const valorCuotaBase = Number(producto.valor_cuota) - cuotaAgregados;
+    const valorSeniaBase = Number(producto.valor_senia) - seniaAgregados;
 
     return {
       id: producto.id,
@@ -314,28 +355,43 @@ export class Presupuesto implements OnInit
       nombreProductoOriginal: producto.nombreProductoOriginal,
       descripcion: descripcionBase || null,
       cantidad: producto.cantidad,
-      valorSeniaIndividual: Number(producto.valor_senia),
-      valorSeniaGrupal: Number(producto.valor_senia) * producto.cantidad,
+      valorSeniaIndividual: valorSeniaBase,
+      valorSeniaGrupal: valorSeniaBase * producto.cantidad,
       valorCuotaIndividual: valorCuotaBase,
       valorCuotaGrupal: valorCuotaBase * producto.cantidad,
       agregados,
     };
   }
 
+  private traerCuotasReales(idPedido: number, conSenia: boolean): void
+  {
+    this.cuotasService.traerCuotasIdPedido(idPedido)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cuotas) => this.cuotasReales.set(cuotasParaMostrar(cuotas, conSenia)),
+        error: () => this.cuotasReales.set([]),
+      });
+  }
+
   private combinarAgregadoGlobalConPrecios(
     agregado: AgregadoGlobalPedidoResponseDTO,
     nroCuotas: number,
+    conSenia: boolean,
     cantidadEgresados: number,
   ): AgregadoConPrecio
   {
-    const precioGrupal = agregado.precio;
+    const precioGrupal = Number(agregado.precio);
     const precioIndividual = cantidadEgresados > 0 ? precioGrupal / cantidadEgresados : 0;
+    const grupal = parteAgregadoGlobal(precioGrupal, nroCuotas, conSenia);
+    const individual = parteAgregadoGlobal(precioIndividual, nroCuotas, conSenia);
 
     return {
       id: agregado.id,
       nombre: agregado.agregado,
-      cuotaIndividual: precioIndividual / nroCuotas,
-      cuotaGrupal: precioGrupal / nroCuotas,
+      cuotaIndividual: individual.cuota,
+      cuotaGrupal: grupal.cuota,
+      seniaIndividual: individual.senia,
+      seniaGrupal: grupal.senia,
     };
   }
 
@@ -514,10 +570,23 @@ export class Presupuesto implements OnInit
 
   private productoPedidoAProductoCarrito(producto: ProductoPedidoResponseConNombreOriginalDTO, cuotas: number, conSenia: boolean): ProductoCarrito
   {
-    const [, ...nombresExtras] = producto.descripcion.split(SEPARADOR_AGREGADOS);
-    const agregados = this.agregadosIndividuales()
-      .filter((extra) => nombresExtras.includes(extra.agregado))
-      .map((extra) => extra.id);
+    // Agregados guardados con su precio; los pedidos viejos solo los tienen en la descripción (se toma el precio del catálogo)
+    const guardados = producto.agregados ?? [];
+    let agregados: number[];
+    let preciosAgregados: Record<number, number>;
+    if (guardados.length)
+    {
+      agregados = guardados.map((agregado) => agregado.id_agregado);
+      preciosAgregados = Object.fromEntries(guardados.map((agregado) => [agregado.id_agregado, Number(agregado.precio)]));
+    }
+    else
+    {
+      const [, ...nombresExtras] = producto.descripcion.split(SEPARADOR_AGREGADOS);
+      agregados = this.agregadosIndividuales()
+        .filter((extra) => nombresExtras.includes(extra.agregado))
+        .map((extra) => extra.id);
+      preciosAgregados = this.preciosAgregados(agregados);
+    }
 
     return {
       idProducto: producto.id_producto_original,
@@ -529,7 +598,33 @@ export class Presupuesto implements OnInit
       valorSenia: producto.valor_senia,
       valorCuota: producto.valor_cuota,
       agregados,
+      preciosAgregados,
     };
+  }
+
+  // Precio cobrado de cada agregado individual: el guardado (previos) o, si se agrega ahora, el del catálogo
+  private preciosAgregados(ids: number[], previos: Record<number, number> = {}): Record<number, number>
+  {
+    const precios: Record<number, number> = {};
+    for (const id of ids)
+    {
+      precios[id] = previos[id] ?? Number(this.agregadosIndividuales().find((agregado) => agregado.id === id)?.precio ?? 0);
+    }
+    return precios;
+  }
+
+  private costoAgregados(producto: { agregados: number[]; preciosAgregados: Record<number, number> }): number
+  {
+    return producto.agregados.reduce((total, id) => total + Number(producto.preciosAgregados[id] ?? 0), 0);
+  }
+
+  private agregadosAPost(producto: ProductoCarrito): AgregadoProductoPedidoDTO[]
+  {
+    return producto.agregados.map((id) => ({
+      id_agregado: id,
+      agregado: this.agregadosIndividuales().find((agregado) => agregado.id === id)?.agregado ?? '',
+      precio: Number(producto.preciosAgregados[id] ?? 0),
+    }));
   }
 
   abrirEdicionPlan(): void
@@ -585,22 +680,20 @@ export class Presupuesto implements OnInit
         )
         .pipe(
           map((precio) => {
-            const costoExtras = this.agregadosIndividuales()
-              .filter((extra) => producto.agregados.includes(extra.id))
-              .reduce((total, extra) => total + extra.precio, 0);
+            const costoExtras = this.costoAgregados(producto);
             return {
               ...producto,
               cuotas: nuevasCuotas,
               conSenia: plan.conSenia,
-              valorSenia: precio.valor_senia,
-              valorCuota: precio.valor_cuota + costoExtras / nuevasCuotas,
+              ...preciosConAgregados(precio, costoExtras, nuevasCuotas, plan.conSenia),
             };
           }),
         ),
     );
 
+    const solicitud = ++this.solicitudRecalculoPlan;
     forkJoin(recalculos).subscribe({
-      next: (actualizados) => this.carritoEdicionPlan.set(actualizados),
+      next: (actualizados) => { if (solicitud === this.solicitudRecalculoPlan) this.carritoEdicionPlan.set(actualizados); },
       error: () =>
         this.notificaciones.error({
           title: 'No se pudo recalcular',
@@ -634,11 +727,18 @@ export class Presupuesto implements OnInit
     }
 
     const cantidadTramo = Number(cantidad) + this.sinCargoProducto(Number(idProducto));
+    // Solo vale la respuesta del último cálculo pedido (las viejas se ignoran)
+    const solicitud = ++this.solicitudCalculoPlan;
     this.productosService.obtenerPrecioBeneficioProducto(idProducto, cuotas, cantidadTramo, conSenia).subscribe({
       next: (precio) => {
+        if (solicitud !== this.solicitudCalculoPlan) return;
         const producto = this.productosParaElegir().find((item) => item.id_producto === idProducto);
         const extras = this.agregadosIndividuales().filter((item) => agregados.includes(item.id));
-        const costoExtras = extras.reduce((total, item) => total + item.precio, 0);
+        // Si se está editando una línea que ya existía, sus agregados conservan el precio cobrado
+        const indiceEdicion = this.indiceEdicionProductoPlan();
+        const previos = indiceEdicion !== null ? this.carritoEdicionPlan()[indiceEdicion]?.preciosAgregados : undefined;
+        const preciosAgregados = this.preciosAgregados(agregados, previos);
+        const costoExtras = this.costoAgregados({ agregados, preciosAgregados });
         const nombresExtras = extras.map((item) => item.agregado);
         this.productoCalculadoPlan.set({
           idProducto,
@@ -647,12 +747,13 @@ export class Presupuesto implements OnInit
           cantidad,
           cuotas,
           conSenia,
-          valorSenia: precio.valor_senia,
-          valorCuota: precio.valor_cuota + costoExtras / cuotas,
+          ...preciosConAgregados(precio, costoExtras, cuotas, conSenia),
           agregados,
+          preciosAgregados,
         });
       },
       error: () => {
+        if (solicitud !== this.solicitudCalculoPlan) return;
         this.productoCalculadoPlan.set(null);
         this.notificaciones.error({
           title: 'No se pudo calcular el precio',
@@ -730,9 +831,28 @@ export class Presupuesto implements OnInit
     return etiquetaPlan(plan.cuotas, plan.conSenia) + (activo ? '' : ' (desactivado)');
   }
 
+  // Si el pedido ya tenía la bandera se mantiene el precio con que se cobró; si se agrega ahora, va el del catálogo
+  precioBanderaPlan(): number
+  {
+    const bandera = this.bandera();
+    if (!bandera) return 0;
+    const guardada = this.presupuestoGrupo()?.agregadosGlobales.find((agregado) => agregado.id_agregado === bandera.id);
+    return guardada ? Number(guardada.precio) : Number(bandera.precio);
+  }
+
   totalSeniaPlan(): number
   {
-    return this.carritoEdicionPlan().reduce((total, producto) => total + producto.valorSenia * producto.cantidad, 0);
+    const productos = this.carritoEdicionPlan().reduce((total, producto) => total + producto.valorSenia * producto.cantidad, 0);
+    // En pesos enteros, igual que la guarda modificar_plan_pedido
+    return Math.round(productos + this.parteBanderaPlan().senia);
+  }
+
+  // Parte de la bandera en la seña y en cada cuota del plan elegido (en cuotas iguales también va en la seña)
+  private parteBanderaPlan(): { cuota: number; senia: number }
+  {
+    const cuotas = this.cuotasPlanSeleccionadas();
+    if (!this.banderaSeleccionadaPlan || !this.bandera() || !cuotas) return { cuota: 0, senia: 0 };
+    return parteAgregadoGlobal(this.precioBanderaPlan(), cuotas, this.conSeniaPlanSeleccionada());
   }
 
   totalCuotasPlanSinDescuento(): number
@@ -741,10 +861,8 @@ export class Presupuesto implements OnInit
       (total, producto) => total + producto.valorCuota * producto.cantidad,
       0,
     );
-    // La bandera se cobra una vez, dividida entre las cuotas
-    const cuotas = this.cuotasPlanSeleccionadas();
-    const bandera = this.banderaSeleccionadaPlan && cuotas ? (this.bandera()?.precio ?? 0) / cuotas : 0;
-    return productos + bandera;
+    // La bandera se cobra una vez, repartida entre los pagos del plan
+    return productos + this.parteBanderaPlan().cuota;
   }
 
   descuentoCuotasPlan(): number
@@ -777,9 +895,10 @@ export class Presupuesto implements OnInit
         valor_senia: producto.valorSenia,
         valor_cuota: producto.valorCuota,
         cantidad: producto.cantidad,
+        agregados: this.agregadosAPost(producto),
       })),
       agregadosGlobales:
-        this.banderaSeleccionadaPlan && this.bandera() ? [{ id_agregado: this.bandera()!.id }] : [],
+        this.banderaSeleccionadaPlan && this.bandera() ? [{ id_agregado: this.bandera()!.id, precio: this.precioBanderaPlan() }] : [],
       nueva_cantidad_cuotas: this.cuotasPlanSeleccionadas(),
       valor_cuota_nuevo: this.totalCuotasPlan(),
       valor_senia_nuevo: this.totalSeniaPlan(),

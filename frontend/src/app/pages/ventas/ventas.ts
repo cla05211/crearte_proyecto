@@ -30,7 +30,8 @@ import { PagosService } from '../../services/pagos/pagos-service';
 import { PagoResponseDTO } from '../../services/pagos/dto/pagoResponse.dto';
 import { PagoComprobanteDatosDTO } from '../../services/pagos/dto/pagoComprobanteDatos.dto';
 import { telefonoValido } from '../../utils/telefono';
-import { clavePlan, etiquetaPlan, PlanCuotas, planDesdeClave, planesConActual } from '../../services/cuotas/plan-cuotas';
+import { clavePlan, etiquetaPlan, parteAgregadoGlobal, PlanCuotas, planDesdeClave, planesConActual, preciosConAgregados } from '../../services/cuotas/plan-cuotas';
+import { AgregadoProductoPedidoDTO } from '../../services/productosPedidos/dto/AgregadoProductoPedido.dto';
 
 interface ProductoCarrito {
   idProducto: number;
@@ -42,6 +43,8 @@ interface ProductoCarrito {
   valorSenia: number;
   valorCuota: number;
   agregados: number[];
+  // id del agregado -> precio cobrado (total por prenda)
+  preciosAgregados: Record<number, number>;
 }
 
 interface BeneficioSeleccionado {
@@ -167,6 +170,12 @@ export class Ventas implements OnInit {
   readonly productoCalculadoPlan = signal<ProductoCarrito | null>(null);
   readonly guardandoPlan = signal(false);
   readonly indiceEdicionProductoPlan = signal<number | null>(null);
+
+  // Contadores para ignorar respuestas de precio viejas (llegan desordenadas si se cambian opciones rápido)
+  private solicitudCalculoAlta = 0;
+  private solicitudRecalculoAlta = 0;
+  private solicitudCalculoPlan = 0;
+  private solicitudRecalculoPlan = 0;
   productoEnEdicionPlan = this.crearProductoEnEdicionPlan();
   banderaSeleccionadaPlan = false;
 
@@ -423,13 +432,17 @@ export class Ventas implements OnInit {
 
     // El tramo de precio se elige contando las prendas sin cargo (son gratis pero cuentan en cantidad).
     const cantidadTramo = Number(cantidad) + cantidadSinCargo(this.beneficiosSeleccionados(), Number(idProducto));
+    // Solo vale la respuesta del último cálculo pedido: si llega una vieja (ej. se tildaron agregados rápido), se ignora
+    const solicitud = ++this.solicitudCalculoAlta;
     this.productosService.obtenerPrecioBeneficioProducto(idProducto, cuotas, cantidadTramo, conSenia).subscribe({
       next: (precio) => {
+        if (solicitud !== this.solicitudCalculoAlta) return;
         const producto = this.productosParaElegir().find(
           (item) => item.id_producto === idProducto,
         );
         const extras = this.agregadosIndividuales().filter((item) => agregados.includes(item.id));
-        const costoExtras = extras.reduce((total, item) => total + item.precio, 0);
+        const preciosAgregados = this.preciosAgregados(agregados);
+        const costoExtras = this.costoAgregados({ agregados, preciosAgregados });
         const nombresExtras = extras.map((item) => item.agregado);
         this.productoCalculado.set({
           idProducto,
@@ -440,12 +453,13 @@ export class Ventas implements OnInit {
           cantidad,
           cuotas,
           conSenia,
-          valorSenia: precio.valor_senia,
-          valorCuota: precio.valor_cuota + costoExtras / cuotas,
+          ...preciosConAgregados(precio, costoExtras, cuotas, conSenia),
           agregados,
+          preciosAgregados,
         });
       },
       error: () => {
+        if (solicitud !== this.solicitudCalculoAlta) return;
         this.productoCalculado.set(null);
         this.error.set('No se pudo calcular el precio del producto seleccionado.');
       },
@@ -487,20 +501,18 @@ export class Ventas implements OnInit {
         )
         .pipe(
           map((precio) => {
-            const costoExtras = this.agregadosIndividuales()
-              .filter((extra) => producto.agregados.includes(extra.id))
-              .reduce((total, extra) => total + extra.precio, 0);
+            const costoExtras = this.costoAgregados(producto);
             return {
               ...producto,
-              valorSenia: precio.valor_senia,
-              valorCuota: precio.valor_cuota + costoExtras / producto.cuotas,
+              ...preciosConAgregados(precio, costoExtras, producto.cuotas, producto.conSenia),
             };
           }),
         ),
     );
 
+    const solicitud = ++this.solicitudRecalculoAlta;
     forkJoin(recalculos).subscribe({
-      next: (actualizados) => this.carrito.set(actualizados),
+      next: (actualizados) => { if (solicitud === this.solicitudRecalculoAlta) this.carrito.set(actualizados); },
       error: () =>
         this.notificaciones.error({
           title: 'No se pudo recalcular',
@@ -563,10 +575,19 @@ export class Ventas implements OnInit {
   }
 
   totalSenia(): number {
-    return this.carrito().reduce(
+    const productos = this.carrito().reduce(
       (total, producto) => total + producto.valorSenia * producto.cantidad,
       0,
     );
+    // En pesos enteros, igual que se guarda (crear_pedido_completo): así lo que se paga coincide con la seña
+    return Math.round(productos + this.parteBanderaAlta().senia);
+  }
+
+  // Parte de la bandera en la seña y en cada cuota (en cuotas iguales también va en la seña)
+  private parteBanderaAlta(): { cuota: number; senia: number } {
+    const plan = this.carrito()[0];
+    if (!this.banderaSeleccionada || !plan) return { cuota: 0, senia: 0 };
+    return parteAgregadoGlobal(this.bandera()?.precio ?? 0, plan.cuotas, plan.conSenia);
   }
 
   totalComprobantesSenia(): number {
@@ -1014,6 +1035,8 @@ export class Ventas implements OnInit {
         estado_talles: '',
         estado_boceto: '',
         con_senia: this.carrito()[0]?.conSenia ?? false,
+        // Seña acordada: en cuotas iguales incluye la parte de la bandera, que no está en los productos
+        senia_total: this.totalSenia(),
       },
       productosPedidoDTO: this.carrito().map((producto, indice) => ({
         id_pedido: idPedido,
@@ -1022,9 +1045,10 @@ export class Ventas implements OnInit {
         valor_senia: producto.valorSenia,
         valor_cuota: producto.valorCuota,
         cantidad: producto.cantidad,
+        agregados: this.agregadosAPost(producto),
       })),
       agregadosGlobalesDTO:
-        this.banderaSeleccionada && this.bandera() ? [{ id_agregado: this.bandera()!.id }] : [],
+        this.banderaSeleccionada && this.bandera() ? [{ id_agregado: this.bandera()!.id, precio: this.bandera()!.precio }] : [],
       beneficiosDTO: this.beneficiosAPost(this.beneficiosSeleccionados()),
       padresResponsablesDTO: this.padresResponsables.map((padre) => ({
         ...padre,
@@ -1082,10 +1106,8 @@ export class Ventas implements OnInit {
       (total, producto) => total + producto.valorCuota * producto.cantidad,
       0,
     );
-    // La bandera se cobra una vez, dividida entre las cuotas
-    const cuotas = this.carrito()[0]?.cuotas ?? 0;
-    const bandera = this.banderaSeleccionada && cuotas ? (this.bandera()?.precio ?? 0) / cuotas : 0;
-    return productos + bandera;
+    // La bandera se cobra una vez, repartida entre los pagos del plan
+    return productos + this.parteBanderaAlta().cuota;
   }
 
   private obtenerUsuario(): Usuario | null {
@@ -1291,22 +1313,20 @@ export class Ventas implements OnInit {
         )
         .pipe(
           map((precio) => {
-            const costoExtras = this.agregadosIndividuales()
-              .filter((extra) => producto.agregados.includes(extra.id))
-              .reduce((total, extra) => total + extra.precio, 0);
+            const costoExtras = this.costoAgregados(producto);
             return {
               ...producto,
               cuotas: nuevasCuotas,
               conSenia: plan.conSenia,
-              valorSenia: precio.valor_senia,
-              valorCuota: precio.valor_cuota + costoExtras / nuevasCuotas,
+              ...preciosConAgregados(precio, costoExtras, nuevasCuotas, plan.conSenia),
             };
           }),
         ),
     );
 
+    const solicitud = ++this.solicitudRecalculoPlan;
     forkJoin(recalculos).subscribe({
-      next: (actualizados) => this.carritoEdicionPlan.set(actualizados),
+      next: (actualizados) => { if (solicitud === this.solicitudRecalculoPlan) this.carritoEdicionPlan.set(actualizados); },
       error: () =>
         this.notificaciones.error({
           title: 'No se pudo recalcular',
@@ -1336,11 +1356,18 @@ export class Ventas implements OnInit {
     }
 
     const cantidadTramo = Number(cantidad) + cantidadSinCargo(this.edicionPlan()?.beneficios, Number(idProducto));
+    // Solo vale la respuesta del último cálculo pedido (las viejas se ignoran)
+    const solicitud = ++this.solicitudCalculoPlan;
     this.productosService.obtenerPrecioBeneficioProducto(idProducto, cuotas, cantidadTramo, conSenia).subscribe({
       next: (precio) => {
+        if (solicitud !== this.solicitudCalculoPlan) return;
         const producto = this.productosParaElegir().find((item) => item.id_producto === idProducto);
         const extras = this.agregadosIndividuales().filter((item) => agregados.includes(item.id));
-        const costoExtras = extras.reduce((total, item) => total + item.precio, 0);
+        // Si se está editando una línea que ya existía, sus agregados conservan el precio cobrado
+        const indiceEdicion = this.indiceEdicionProductoPlan();
+        const previos = indiceEdicion !== null ? this.carritoEdicionPlan()[indiceEdicion]?.preciosAgregados : undefined;
+        const preciosAgregados = this.preciosAgregados(agregados, previos);
+        const costoExtras = this.costoAgregados({ agregados, preciosAgregados });
         const nombresExtras = extras.map((item) => item.agregado);
         this.productoCalculadoPlan.set({
           idProducto,
@@ -1349,12 +1376,13 @@ export class Ventas implements OnInit {
           cantidad,
           cuotas,
           conSenia,
-          valorSenia: precio.valor_senia,
-          valorCuota: precio.valor_cuota + costoExtras / cuotas,
+          ...preciosConAgregados(precio, costoExtras, cuotas, conSenia),
           agregados,
+          preciosAgregados,
         });
       },
       error: () => {
+        if (solicitud !== this.solicitudCalculoPlan) return;
         this.productoCalculadoPlan.set(null);
         this.error.set('No se pudo calcular el precio del producto seleccionado.');
       },
@@ -1407,8 +1435,25 @@ export class Ventas implements OnInit {
       .join(', ');
   }
 
+  // Si el pedido ya tenía la bandera se mantiene el precio con que se cobró; si se agrega ahora, va el del catálogo
+  precioBanderaPlan(): number {
+    const bandera = this.bandera();
+    if (!bandera) return 0;
+    const guardada = this.edicionPlan()?.agregadosGlobalesDTO.find((agregado) => agregado.id_agregado === bandera.id);
+    return guardada ? Number(guardada.precio) : Number(bandera.precio);
+  }
+
   totalSeniaPlan(): number {
-    return this.carritoEdicionPlan().reduce((total, producto) => total + producto.valorSenia * producto.cantidad, 0);
+    const productos = this.carritoEdicionPlan().reduce((total, producto) => total + producto.valorSenia * producto.cantidad, 0);
+    // En pesos enteros, igual que la guarda modificar_plan_pedido
+    return Math.round(productos + this.parteBanderaPlan().senia);
+  }
+
+  // Parte de la bandera en la seña y en cada cuota del plan elegido (en cuotas iguales también va en la seña)
+  private parteBanderaPlan(): { cuota: number; senia: number } {
+    const cuotas = this.cuotasPlanSeleccionadas();
+    if (!this.banderaSeleccionadaPlan || !this.bandera() || !cuotas) return { cuota: 0, senia: 0 };
+    return parteAgregadoGlobal(this.precioBanderaPlan(), cuotas, this.conSeniaPlanSeleccionada());
   }
 
   totalCuotasPlanSinDescuento(): number {
@@ -1416,10 +1461,8 @@ export class Ventas implements OnInit {
       (total, producto) => total + producto.valorCuota * producto.cantidad,
       0,
     );
-    // La bandera se cobra una vez, dividida entre las cuotas
-    const cuotas = this.cuotasPlanSeleccionadas();
-    const bandera = this.banderaSeleccionadaPlan && cuotas ? (this.bandera()?.precio ?? 0) / cuotas : 0;
-    return productos + bandera;
+    // La bandera se cobra una vez, repartida entre los pagos del plan
+    return productos + this.parteBanderaPlan().cuota;
   }
 
   descuentoCuotasPlan(): number {
@@ -1449,9 +1492,10 @@ export class Ventas implements OnInit {
         valor_senia: producto.valorSenia,
         valor_cuota: producto.valorCuota,
         cantidad: producto.cantidad,
+        agregados: this.agregadosAPost(producto),
       })),
       agregadosGlobales:
-        this.banderaSeleccionadaPlan && this.bandera() ? [{ id_agregado: this.bandera()!.id }] : [],
+        this.banderaSeleccionadaPlan && this.bandera() ? [{ id_agregado: this.bandera()!.id, precio: this.precioBanderaPlan() }] : [],
       nueva_cantidad_cuotas: this.cuotasPlanSeleccionadas(),
       valor_cuota_nuevo: this.totalCuotasPlan(),
       valor_senia_nuevo: this.totalSeniaPlan(),
@@ -1477,10 +1521,23 @@ export class Ventas implements OnInit {
   }
 
   private productoPedidoAProductoCarrito(producto: ProductoPedidoDTO, cuotas: number, conSenia: boolean): ProductoCarrito {
-    const [, ...nombresExtras] = producto.descripcion.split(' · Agregado: ');
-    const agregados = this.agregadosIndividuales()
-      .filter((extra) => nombresExtras.includes(extra.agregado))
-      .map((extra) => extra.id);
+    // Agregados guardados con su precio; los pedidos viejos solo los tienen en la descripción (se toma el precio del catálogo)
+    const guardados = producto.agregados ?? [];
+    let agregados: number[];
+    let preciosAgregados: Record<number, number>;
+    if (guardados.length)
+    {
+      agregados = guardados.map((agregado) => agregado.id_agregado);
+      preciosAgregados = Object.fromEntries(guardados.map((agregado) => [agregado.id_agregado, Number(agregado.precio)]));
+    }
+    else
+    {
+      const [, ...nombresExtras] = producto.descripcion.split(' · Agregado: ');
+      agregados = this.agregadosIndividuales()
+        .filter((extra) => nombresExtras.includes(extra.agregado))
+        .map((extra) => extra.id);
+      preciosAgregados = this.preciosAgregados(agregados);
+    }
 
     return {
       idProducto: producto.id_producto_original,
@@ -1492,7 +1549,33 @@ export class Ventas implements OnInit {
       valorSenia: producto.valor_senia,
       valorCuota: producto.valor_cuota,
       agregados,
+      preciosAgregados,
     };
+  }
+
+  // Precio cobrado de cada agregado individual: el guardado (previos) o, si se agrega ahora, el del catálogo
+  private preciosAgregados(ids: number[], previos: Record<number, number> = {}): Record<number, number>
+  {
+    const precios: Record<number, number> = {};
+    for (const id of ids)
+    {
+      precios[id] = previos[id] ?? Number(this.agregadosIndividuales().find((agregado) => agregado.id === id)?.precio ?? 0);
+    }
+    return precios;
+  }
+
+  private costoAgregados(producto: { agregados: number[]; preciosAgregados: Record<number, number> }): number
+  {
+    return producto.agregados.reduce((total, id) => total + Number(producto.preciosAgregados[id] ?? 0), 0);
+  }
+
+  private agregadosAPost(producto: ProductoCarrito): AgregadoProductoPedidoDTO[]
+  {
+    return producto.agregados.map((id) => ({
+      id_agregado: id,
+      agregado: this.agregadosIndividuales().find((agregado) => agregado.id === id)?.agregado ?? '',
+      precio: Number(producto.preciosAgregados[id] ?? 0),
+    }));
   }
 
 }

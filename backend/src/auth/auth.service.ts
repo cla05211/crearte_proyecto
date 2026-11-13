@@ -66,6 +66,7 @@ export class AuthService {
           switch (error.code) 
           {
             case 'user_already_exists':
+            case 'email_exists': // auth.admin.createUser devuelve este código (no 'user_already_exists')
               throw new ConflictException({
                   code: 'USER_ALREADY_EXISTS',
                   message: 'Ya existe una cuenta registrada con ese correo.',

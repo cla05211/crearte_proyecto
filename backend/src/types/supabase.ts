@@ -40,16 +40,19 @@ export type Database = {
           id: number
           id_agregado: number | null
           id_pedido: number | null
+          precio: number
         }
         Insert: {
           id?: number
           id_agregado?: number | null
           id_pedido?: number | null
+          precio: number
         }
         Update: {
           id?: number
           id_agregado?: number | null
           id_pedido?: number | null
+          precio?: number
         }
         Relationships: [
           {
@@ -1037,6 +1040,7 @@ export type Database = {
       }
       productos_pedidos: {
         Row: {
+          agregados: Json
           cantidad: number
           descripcion: string | null
           id: number
@@ -1046,6 +1050,7 @@ export type Database = {
           valor_senia: number
         }
         Insert: {
+          agregados?: Json
           cantidad: number
           descripcion?: string | null
           id?: number
@@ -1055,6 +1060,7 @@ export type Database = {
           valor_senia: number
         }
         Update: {
+          agregados?: Json
           cantidad?: number
           descripcion?: string | null
           id?: number

@@ -119,6 +119,23 @@
 .product-list__item.is-active { background: var(--color-surface); border-color: var(--color-border); box-shadow: var(--shadow-sm); color: var(--color-primary-700); }
 .product-list__item:focus-visible { box-shadow: var(--focus-ring); outline: 0; }
 
+.product-list__separator {
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-1);
+  text-transform: uppercase;
+}
+
+/* Agregados */
+.extras-table { min-width: 28rem; }
+.extras-table td { vertical-align: middle; }
+.extras-table .price-cell { max-width: 12rem; }
+.extras-table__type { white-space: nowrap; }
+
 .prices-panel { min-width: 0; }
 .prices-panel__header { margin-bottom: var(--space-5); }
 .prices-panel__header p { margin: var(--space-2) 0 0; }

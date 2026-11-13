@@ -43,7 +43,80 @@
               {{ grupo.titulo }}
             </button>
           }
+
+          <span class="product-list__separator">Otros</span>
+          <button
+            type="button"
+            class="product-list__item"
+            [class.is-active]="verAgregados()"
+            [attr.aria-pressed]="verAgregados()"
+            (click)="seleccionarGrupo(claveAgregados)"
+          >
+            Agregados
+          </button>
         </aside>
+
+        @if (verAgregados()) {
+
+          <!-- ─────────── Agregados ─────────── -->
+          <section class="ds-card prices-panel">
+            <header class="prices-panel__header">
+              <div>
+                <h2 class="ds-heading-2">Agregados</h2>
+                <p class="ds-text-muted">
+                  Los agregados por prenda se suman al precio de cada prenda que los lleva. Los globales se cobran una sola vez por pedido.
+                </p>
+              </div>
+            </header>
+
+            @if (cargandoAgregados() && agregados().length === 0) {
+              <p class="ds-text-muted">Cargando agregados…</p>
+            } @else if (errorAgregados()) {
+              <div class="ds-alert ds-alert--danger products-empty">
+                {{ errorAgregados() }}
+                <button type="button" class="ds-button ds-button--small ds-button--secondary" (click)="cargarAgregados()">Reintentar</button>
+              </div>
+            } @else if (agregados().length === 0) {
+              <p class="ds-text-muted">No hay agregados cargados.</p>
+            } @else {
+              <div class="ds-table-wrapper">
+                <table class="ds-table prices-table extras-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Agregado</th>
+                      <th scope="col">Se cobra</th>
+                      <th scope="col">Precio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (agregado of agregadosOrdenados(); track agregado.id) {
+                      <tr>
+                        <th scope="row" class="prices-table__plan">{{ agregado.agregado }}</th>
+                        <td class="extras-table__type">
+                          <span class="ds-badge">{{ agregado.individual ? 'Por prenda' : 'Una vez por pedido' }}</span>
+                        </td>
+                        <td>
+                          <div class="price-cell" [class.is-modified]="agregadoModificado(agregado)">
+                            <span class="price-input__box" [class.is-invalid]="agregadoModificado(agregado) && !(precioAgregado(agregado)! > 0)">
+                              <span aria-hidden="true">$</span>
+                              <input
+                                type="number" min="0" step="1" inputmode="numeric"
+                                [attr.aria-label]="'Precio ' + agregado.agregado"
+                                [ngModel]="precioAgregado(agregado)"
+                                (ngModelChange)="editarPrecioAgregado(agregado, $event)"
+                              />
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </section>
+
+        } @else {
 
         <section class="ds-card prices-panel">
           <header class="prices-panel__header">
@@ -154,6 +227,8 @@
             </div>
           }
         </section>
+
+        }
       </div>
 
       @if (cantidadCambios() > 0) {

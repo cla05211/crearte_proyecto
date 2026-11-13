@@ -1,3 +1,4 @@
+import { AgregadoProductoPedidoDTO } from 'src/productos-pedido/dto/AgregadoProductoPedido.dto';
 import { Injectable, Logger } from '@nestjs/common';
 import { ColegiosService } from 'src/colegios/colegios.service';
 import { CrearPedidoDTO } from './dto/crearPedido.dto';
@@ -139,13 +140,13 @@ export class GestionPedidosService
             colegioDTO: pedido.grupos.colegios,
             grupoDTO: pedido.grupos,
             pedidoDTO: pedido,
-            productosPedidoDTO: pedido.productos_pedidos,
+            productosPedidoDTO: pedido.productos_pedidos.map(p => ({ ...p, agregados: (p.agregados ?? []) as unknown as AgregadoProductoPedidoDTO[] })),
             agregadosGlobalesDTO: pedido.agregados_globales_pedido.map((a: any): AgregadoGlobalPedidoResponseDTO => ({
                 id: a.id,
                 id_pedido: a.id_pedido,
                 id_agregado: a.id_agregado,
                 agregado: a.agregados?.agregado,
-                precio: a.agregados?.precio,
+                precio: Number(a.precio),
                 individual: a.agregados?.individual,
             })),
             nroCuotas: pedido.cuotas.length,

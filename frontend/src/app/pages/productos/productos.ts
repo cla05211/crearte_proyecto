@@ -8,9 +8,15 @@ import { AgregarPlanDTO } from '../../services/productos/dto/AgregarPlanDTO';
 import { etiquetaPlan } from '../../services/cuotas/plan-cuotas';
 import { NotificationService } from '../../shared/notifications/notification.service';
 import { ConfirmationService } from '../../services/confirmation/confirmation.service';
+import { Agregados } from '../../services/agregados/agregados';
+import { AgregadoDTO } from '../../services/agregados/dto/Agregado.dto';
+import { ModificarAgregadoPrecioDTO } from '../../services/agregados/dto/ModificarAgregadoPrecio.dto';
 
 type Pestania = 'precios' | 'planes';
 type PrecioFila = ProductoConPrecioResponseDTO;
+
+// Clave del ítem "Agregados" en la lista lateral de Precios (no es un grupo de productos)
+const CLAVE_AGREGADOS = 'agregados';
 
 interface Plan
 {
@@ -74,9 +80,11 @@ export class Productos implements OnInit
   private readonly productosService = inject(ProductosService);
   private readonly notificaciones = inject(NotificationService);
   private readonly confirmacion = inject(ConfirmationService);
+  private readonly agregadosService = inject(Agregados);
 
   readonly familias = FAMILIAS;
   readonly etiquetaTramo = ETIQUETA_TRAMO;
+  readonly claveAgregados = CLAVE_AGREGADOS;
 
   pestania = signal<Pestania>('precios');
   cargando = signal(true);
@@ -155,7 +163,9 @@ export class Productos implements OnInit
   });
 
   cambios = signal(new Map<number, CambioPrecio>());   // id de fila -> valores editados
-  readonly cantidadCambios = computed(() => this.cambios().size);
+  // Cuenta los cambios de productos y de agregados: solo uno de los dos puede tener cambios a la vez,
+  // porque para cambiar de ítem en la lista hay que guardar o descartar
+  readonly cantidadCambios = computed(() => this.cambios().size + this.cambiosAgregados().size);
   guardandoPrecios = signal(false);
 
   // Diferencias de cada producto del grupo con el de referencia:
@@ -189,7 +199,22 @@ export class Productos implements OnInit
   igualando = signal(false);
 
   readonly cambiosInvalidos = computed(() =>
-    [...this.cambios().values()].some(c => !this.esPrecioValido(c.valorCuota) || !this.esPrecioValido(c.valorSenia)));
+    [...this.cambios().values()].some(c => !this.esPrecioValido(c.valorCuota) || !this.esPrecioValido(c.valorSenia))
+    || [...this.cambiosAgregados().values()].some(precio => !this.esPrecioValido(precio)));
+
+  // ───────────────────────── Agregados ─────────────────────────
+
+  agregados = signal<AgregadoDTO[]>([]);
+  cargandoAgregados = signal(true);
+  errorAgregados = signal('');
+  cambiosAgregados = signal(new Map<number, number | null>());   // id de agregado -> precio editado
+
+  readonly verAgregados = computed(() => this.grupoSeleccionado() === CLAVE_AGREGADOS);
+  readonly tituloSeleccion = computed(() => this.verAgregados() ? 'Agregados' : (this.grupoActual()?.titulo ?? ''));
+
+  // Primero los que se cobran por prenda, después los globales (una vez por pedido)
+  readonly agregadosOrdenados = computed(() =>
+    [...this.agregados()].sort((a, b) => Number(b.individual) - Number(a.individual) || a.agregado.localeCompare(b.agregado)));
 
   async igualarPrecios(): Promise<void>
   {
@@ -292,6 +317,26 @@ export class Productos implements OnInit
   ngOnInit(): void
   {
     this.cargarPrecios();
+    this.cargarAgregados();
+  }
+
+  cargarAgregados(): void
+  {
+    this.cargandoAgregados.set(true);
+    this.errorAgregados.set('');
+    this.agregadosService.obtenerAgregados().subscribe({
+      next: (agregados) =>
+      {
+        this.agregados.set(agregados);
+        this.cargandoAgregados.set(false);
+      },
+      error: (err) =>
+      {
+        console.error(err);
+        this.errorAgregados.set('No se pudieron cargar los agregados.');
+        this.cargandoAgregados.set(false);
+      },
+    });
   }
 
   cargarPrecios(): void
@@ -302,7 +347,7 @@ export class Productos implements OnInit
       next: (precios) =>
       {
         this.precios.set(precios);
-        if (this.grupoActual() === null && this.grupos().length)
+        if (!this.verAgregados() && this.grupoActual() === null && this.grupos().length)
           this.grupoSeleccionado.set(this.grupos()[0].clave);
         this.cargando.set(false);
       },
@@ -380,10 +425,17 @@ export class Productos implements OnInit
   descartarCambios(): void
   {
     this.cambios.set(new Map());
+    this.cambiosAgregados.set(new Map());
   }
 
   guardarPrecios(): void
   {
+    if (this.verAgregados())
+    {
+      this.guardarAgregados();
+      return;
+    }
+
     const grupo = this.grupoActual();
     if (!grupo || this.cantidadCambios() === 0 || this.cambiosInvalidos()) return;
 
@@ -439,10 +491,61 @@ export class Productos implements OnInit
     if (this.cantidadCambios() === 0) return true;
     const confirmar = await this.confirmacion.confirm({
       title: 'Hay cambios sin guardar',
-      description: `Modificaste ${this.cantidadCambios()} precio${this.cantidadCambios() === 1 ? '' : 's'} de ${this.grupoActual()?.titulo ?? ''}. Si seguís, se descartan.`,
+      description: `Modificaste ${this.cantidadCambios()} precio${this.cantidadCambios() === 1 ? '' : 's'} de ${this.tituloSeleccion()}. Si seguís, se descartan.`,
     });
     if (confirmar) this.descartarCambios();
     return confirmar;
+  }
+
+  // ───────────────────────── Agregados: edición ─────────────────────────
+
+  precioAgregado(agregado: AgregadoDTO): number | null
+  {
+    const cambios = this.cambiosAgregados();
+    return cambios.has(agregado.id) ? cambios.get(agregado.id)! : agregado.precio;
+  }
+
+  agregadoModificado(agregado: AgregadoDTO): boolean
+  {
+    return this.cambiosAgregados().has(agregado.id);
+  }
+
+  editarPrecioAgregado(agregado: AgregadoDTO, valor: number | null): void
+  {
+    this.cambiosAgregados.update(mapa =>
+    {
+      const nuevo = new Map(mapa);
+      // Si vuelve al precio original deja de contar como cambio
+      if (valor !== null && Number(valor) === Number(agregado.precio)) nuevo.delete(agregado.id);
+      else nuevo.set(agregado.id, valor);
+      return nuevo;
+    });
+  }
+
+  private guardarAgregados(): void
+  {
+    if (this.cambiosAgregados().size === 0 || this.cambiosInvalidos()) return;
+
+    const dto: ModificarAgregadoPrecioDTO[] = [...this.cambiosAgregados().entries()]
+      .map(([id, precio]) => ({ id, precio: Number(precio) }));
+
+    this.guardandoPrecios.set(true);
+    this.agregadosService.modificarPrecios(dto).subscribe({
+      next: () =>
+      {
+        this.notificaciones.success({ title: 'Precios actualizados', description: 'Se guardaron los precios de los agregados.' });
+        this.descartarCambios();
+        this.guardandoPrecios.set(false);
+        this.cargarAgregados();
+      },
+      error: (err) =>
+      {
+        console.error(err);
+        this.notificaciones.error({ title: 'No se pudieron guardar los precios', description: err?.error?.message ?? 'Probá de nuevo en unos minutos.' });
+        this.guardandoPrecios.set(false);
+        this.cargarAgregados();
+      },
+    });
   }
 
   // ───────────────────────── Planes: activar / desactivar ─────────────────────────

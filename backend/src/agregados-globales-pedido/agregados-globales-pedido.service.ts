@@ -24,7 +24,8 @@ export class AgregadosGlobalesPedidoService
             id_pedido: a.id_pedido!,
             id_agregado: a.id_agregado!,
             agregado: a.agregados!.agregado!,
-            precio: a.agregados!.precio!,
+            // Precio guardado en el pedido (el que se cobró), no el del catálogo actual
+            precio: Number(a.precio),
             individual: a.agregados!.individual!,
         }));
 

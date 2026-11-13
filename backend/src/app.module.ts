@@ -70,12 +70,13 @@ import { EstadisticasModule } from './estadisticas/estadisticas.module';
 import { NovedadesService } from './novedades/novedades.service';
 import { NovedadesController } from './novedades/novedades.controller';
 import { NovedadesModule } from './novedades/novedades.module';
+import { AgregadosModule } from './agregados/agregados.module';
 
 
 @Module({
   imports: [ConfigModule.forRoot({
       isGlobal: true,
-    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, ClientesPortalModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule, MovimientosCajaModule, GruposModule, AgregadosGlobalesPedidoModule, ClientesAuthModule, PrendasPedidoTallesModule, BeneficiosPedidoModule, MuestrasFisicasModule, WatsappModule, NotificacionesModule, ContratosModule, DiseniosModule, ExtrasModule, AlumnoResponsableModule, EstadisticasModule, NovedadesModule],
+    }), SupabaseModule, AuthModule, UsuariosModule, RolesModule, ClientesPortalModule, PermisosModule, PedidosModule, GestionPedidosModule, ProductosModule, CuotasModule, BeneficiosModule, StorageModule, AuditoriasModule, ProductosPedidoModule, PagosModule, OcrModule, PadreResponsableModule, DocumentosModule, MovimientosCajaModule, GruposModule, AgregadosGlobalesPedidoModule, ClientesAuthModule, PrendasPedidoTallesModule, BeneficiosPedidoModule, MuestrasFisicasModule, WatsappModule, NotificacionesModule, ContratosModule, DiseniosModule, ExtrasModule, AlumnoResponsableModule, EstadisticasModule, NovedadesModule, AgregadosModule],
   controllers: [AppController, RolesController, PedidosController, CuotasController, DocumentosController, MovimientosCajaController, GruposController, MuestrasFisicasController, EstadisticasController, NovedadesController],
   providers: [AppService, RolesService, PermisosService, PedidosService, GestionPedidosService, ColegiosService, GruposService,
      ProductosPedidoService, PadreResponsableService, AlumnoResponsableService, PagosService, CuentaCorrienteService, 

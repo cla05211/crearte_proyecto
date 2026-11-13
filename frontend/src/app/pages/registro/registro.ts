@@ -120,9 +120,10 @@ export class Registro {
                 }
                 else
                 {
+                    console.error('Error en registro:', err?.error);
                     this.notificaciones.warning({
                     title: 'Error',
-                    description: 'Lo sentimos, ha ocurrido un error inesperado.',
+                    description: err?.error?.message ?? 'Lo sentimos, ha ocurrido un error inesperado.',
                     });
                 }
             }

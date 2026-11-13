@@ -1,3 +1,5 @@
+import { Json } from 'src/types/supabase';
+import { AgregadoProductoPedidoDTO } from './dto/AgregadoProductoPedido.dto';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { BadRequestException } from '@nestjs/common';
@@ -22,7 +24,7 @@ export class ProductosPedidoService
 
         const { data, error } = await this.sb.supabase
         .from('productos_pedidos')
-        .insert(pedidosDtos)
+        .insert(pedidosDtos.map(p => ({ ...p, agregados: (p.agregados ?? []) as unknown as Json })))
         .select();
 
         if (error) 
@@ -121,6 +123,7 @@ export class ProductosPedidoService
             valor_senia: p.valor_senia,
             valor_cuota: p.valor_cuota,
             cantidad: p.cantidad,
+            agregados: (p.agregados ?? []) as unknown as AgregadoProductoPedidoDTO[],
             nombreProductoOriginal: p.productos.nombre,
         }));
 

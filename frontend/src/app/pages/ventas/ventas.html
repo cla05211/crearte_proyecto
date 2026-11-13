@@ -781,10 +781,13 @@
                 }
                 @if (seniaExcedida()) {
                   <span style="color: var(--color-danger)"
-                    >Pagado de más
+                    >Supera la seña en
                     <strong>{{
                       totalSeniaIngresada() - totalSenia() | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
                     }}</strong></span
+                  >
+                  <span style="color: var(--color-danger)"
+                    >En la venta no se puede pagar más que la seña: corregí el monto. Lo que sobre se carga después como pago en la cuenta corriente.</span
                   >
                 }
                 <span
@@ -834,7 +837,7 @@
             <button
               type="button"
               class="ds-button"
-              [disabled]="guardando()"
+              [disabled]="guardando() || seniaExcedida()"
               (click)="guardarVenta()"
             >
               {{ guardando() ? 'Guardando…' : 'Guardar venta' }}

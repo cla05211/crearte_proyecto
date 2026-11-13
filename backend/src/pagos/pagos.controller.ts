@@ -79,6 +79,16 @@ export class PagosController
         return await this.pagosService.traerIdDocumento(id);
     }
 
+    // Pago cargado por un empleado sin comprobante (efectivo, pagar seña / cuota desde la cuenta corriente).
+    // Lo usa el front (PagosService.crearPago); se había quitado en 6aad204 y la cuenta corriente quedaba sin poder registrar pagos.
+    @Post()
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_clientes_administrativo')
+    async crearPago(@Body() dto: PagoDTO)
+    {
+        return await this.pagosService.crearPago(dto);
+    }
+
     // Transferencia cargada por un empleado (mismo flujo que POST clientes-portal/pagos):
     // guarda el comprobante, crea el documento y registra el pago en una sola llamada.
     // El motivo va como 'Cuota': registrar_pago_completo completa primero la seña si falta.

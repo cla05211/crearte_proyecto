@@ -5,7 +5,7 @@ import { presupuestoPedidoClientesPage } from '../../../services/gestionPedidos/
 import { ClientesPortalService } from '../../../services/clientes-portal/clientes-portal-service';
 import { NotificationService } from '../../../shared/notifications/notification.service';
 import { cantidadSinCargo, formatearBeneficios } from '../../../services/gestionPedidos/dto/BeneficioPedido.dto';
-import { etiquetaPlan } from '../../../services/cuotas/plan-cuotas';
+import { CuotaParaMostrar, cuotasParaMostrar, cuotasTodasIguales, etiquetaPlan, parteAgregadoGlobal } from '../../../services/cuotas/plan-cuotas';
 
 interface ProductoPedidoConTotales
 {
@@ -26,6 +26,9 @@ interface AgregadoGlobalConCuota
   nombre: string;
   cuotaIndividual: number;
   cuotaGrupal: number;
+  // En cuotas iguales la bandera también va en la seña (la seña es la cuota 1)
+  seniaIndividual: number;
+  seniaGrupal: number;
 }
 
 @Component({
@@ -41,6 +44,12 @@ export class Presupuesto implements OnInit
   private readonly destroyRef = inject(DestroyRef);
 
   readonly presupuestoGrupo = signal<presupuestoPedidoClientesPage | null>(null);
+
+  // Cuotas reales del pedido (lo que se cobra): pueden no coincidir con el precio de lista del plan,
+  // por ejemplo si la seña quedó fija al cambiar de plan o se pagaron cuotas antes de un cambio
+  readonly cuotasReales = signal<CuotaParaMostrar[]>([]);
+  readonly cuotasRealesIguales = computed(() => cuotasTodasIguales(this.cuotasReales()));
+
   readonly cargando = signal(false);
 
   readonly beneficioPedido = computed(() => formatearBeneficios(this.presupuestoGrupo()?.beneficios));
@@ -71,21 +80,28 @@ export class Presupuesto implements OnInit
     if (!presupuesto) return [];
 
     const nroCuotas = presupuesto.nroCuotas || 1;
+    const conSenia = presupuesto.pedido.con_senia;
     const cantidadEgresados = presupuesto.cantidadEgresados;
 
+    // Con seña se reparte en las cuotas; en cuotas iguales, entre la seña y las cuotas
     return presupuesto.agregadosGlobales.map((agregado) => {
-      const precioIndividual = cantidadEgresados > 0 ? agregado.precio / cantidadEgresados : 0;
+      const precioIndividual = cantidadEgresados > 0 ? Number(agregado.precio) / cantidadEgresados : 0;
+      const grupal = parteAgregadoGlobal(Number(agregado.precio), nroCuotas, conSenia);
+      const individual = parteAgregadoGlobal(precioIndividual, nroCuotas, conSenia);
       return {
         id: agregado.id,
         nombre: agregado.agregado,
-        cuotaIndividual: precioIndividual / nroCuotas,
-        cuotaGrupal: agregado.precio / nroCuotas,
+        cuotaIndividual: individual.cuota,
+        cuotaGrupal: grupal.cuota,
+        seniaIndividual: individual.senia,
+        seniaGrupal: grupal.senia,
       };
     });
   });
 
   readonly totalSenia = computed(() =>
-    this.productosConTotales().reduce((total, producto) => total + producto.valorSeniaGrupal, 0),
+    this.productosConTotales().reduce((total, producto) => total + producto.valorSeniaGrupal, 0)
+    + this.agregadosGlobalesConCuota().reduce((total, agregado) => total + agregado.seniaGrupal, 0),
   );
 
   // Seña acordada: queda fija desde la primera modificación del plan (aunque cambien los productos)
@@ -98,7 +114,8 @@ export class Presupuesto implements OnInit
   });
 
   readonly totalSeniaIndividual = computed(() =>
-    this.productosConTotales().reduce((total, producto) => total + producto.valorSeniaIndividual, 0),
+    this.productosConTotales().reduce((total, producto) => total + producto.valorSeniaIndividual, 0)
+    + this.agregadosGlobalesConCuota().reduce((total, agregado) => total + agregado.seniaIndividual, 0),
   );
 
   readonly totalCuotaIndividual = computed(() => {
@@ -132,6 +149,16 @@ export class Presupuesto implements OnInit
     this.traerPresupuestoGrupo();
   }
 
+  private traerCuotasReales(conSenia: boolean): void
+  {
+    this.portalClienteService.obtenerCuotas()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cuotas) => this.cuotasReales.set(cuotasParaMostrar(cuotas, conSenia)),
+        error: () => this.cuotasReales.set([]),
+      });
+  }
+
   traerPresupuestoGrupo(): void
   {
     this.cargando.set(true);
@@ -142,6 +169,7 @@ export class Presupuesto implements OnInit
         next: (presupuesto) => {
           this.presupuestoGrupo.set(presupuesto);
           this.cargando.set(false);
+          this.traerCuotasReales(presupuesto.pedido.con_senia);
         },
         error: () => {
           this.cargando.set(false);
