@@ -30,7 +30,7 @@ import { PagosService } from '../../services/pagos/pagos-service';
 import { PagoResponseDTO } from '../../services/pagos/dto/pagoResponse.dto';
 import { PagoComprobanteDatosDTO } from '../../services/pagos/dto/pagoComprobanteDatos.dto';
 import { telefonoValido } from '../../utils/telefono';
-import { clavePlan, etiquetaPlan, parteAgregadoGlobal, PlanCuotas, planDesdeClave, planesConActual, preciosConAgregados } from '../../services/cuotas/plan-cuotas';
+import { clavePlan, descuentoHermanos, etiquetaPlan, parteAgregadoGlobal, PlanCuotas, planDesdeClave, planesConActual, preciosConAgregados } from '../../services/cuotas/plan-cuotas';
 import { AgregadoProductoPedidoDTO } from '../../services/productosPedidos/dto/AgregadoProductoPedido.dto';
 
 interface ProductoCarrito {
@@ -580,7 +580,13 @@ export class Ventas implements OnInit {
       0,
     );
     // En pesos enteros, igual que se guarda (crear_pedido_completo): así lo que se paga coincide con la seña
-    return Math.round(productos + this.parteBanderaAlta().senia);
+    return Math.round(productos + this.parteBanderaAlta().senia - this.descuentoSenia());
+  }
+
+  // Descuento hermanos sobre la seña (sin bandera)
+  descuentoSenia(): number {
+    const productos = this.carrito().reduce((total, producto) => total + producto.valorSenia * producto.cantidad, 0);
+    return descuentoHermanos(productos, Number(this.grupo.cantidad_egresados), Number(this.detallePedido.porcentaje_descuento_hermanos), Number(this.detallePedido.cantidad_hermanos));
   }
 
   // Parte de la bandera en la seña y en cada cuota (en cuotas iguales también va en la seña)
@@ -618,10 +624,10 @@ export class Ventas implements OnInit {
     this.pago.montoSeniaPagado = valor;
   }
 
+  // Descuento hermanos sobre la cuota: % por hermano sobre la cuota de un egresado (sin bandera)
   descuentoCuotas(): number {
-    const porcentaje = Number(this.detallePedido.porcentaje_descuento_hermanos) || 0;
-    const hermanos = Number(this.detallePedido.cantidad_hermanos) || 0;
-    return this.totalCuotasSinDescuento() * (porcentaje / 100) * hermanos;
+    const sinBandera = this.totalCuotasSinDescuento() - this.parteBanderaAlta().cuota;
+    return descuentoHermanos(sinBandera, Number(this.grupo.cantidad_egresados), Number(this.detallePedido.porcentaje_descuento_hermanos), Number(this.detallePedido.cantidad_hermanos));
   }
 
   totalCuotas(): number {
@@ -1446,7 +1452,25 @@ export class Ventas implements OnInit {
   totalSeniaPlan(): number {
     const productos = this.carritoEdicionPlan().reduce((total, producto) => total + producto.valorSenia * producto.cantidad, 0);
     // En pesos enteros, igual que la guarda modificar_plan_pedido
-    return Math.round(productos + this.parteBanderaPlan().senia);
+    return Math.round(productos + this.parteBanderaPlan().senia - this.descuentoSeniaPlan());
+  }
+
+  // Egresados, % y hermanos del pedido en edición (los originales de la venta)
+  private datosDescuentoPlan(): { egresados: number; porcentaje: number; hermanos: number } | null {
+    const venta = this.edicionPlan();
+    if (!venta) return null;
+    return {
+      egresados: Number(venta.grupoDTO?.cantidad_egresados) || 0,
+      porcentaje: Number(venta.pedidoDTO.porcentaje_descuento_hermanos) || 0,
+      hermanos: Number(venta.pedidoDTO.cantidad_hermanos) || 0,
+    };
+  }
+
+  descuentoSeniaPlan(): number {
+    const datos = this.datosDescuentoPlan();
+    if (!datos) return 0;
+    const productos = this.carritoEdicionPlan().reduce((total, producto) => total + producto.valorSenia * producto.cantidad, 0);
+    return descuentoHermanos(productos, datos.egresados, datos.porcentaje, datos.hermanos);
   }
 
   // Parte de la bandera en la seña y en cada cuota del plan elegido (en cuotas iguales también va en la seña)
@@ -1466,11 +1490,10 @@ export class Ventas implements OnInit {
   }
 
   descuentoCuotasPlan(): number {
-    const venta = this.edicionPlan();
-    if (!venta) return 0;
-    const porcentaje = Number(venta.pedidoDTO.porcentaje_descuento_hermanos) || 0;
-    const hermanos = Number(venta.pedidoDTO.cantidad_hermanos) || 0;
-    return this.totalCuotasPlanSinDescuento() * (porcentaje / 100) * hermanos;
+    const datos = this.datosDescuentoPlan();
+    if (!datos) return 0;
+    const sinBandera = this.totalCuotasPlanSinDescuento() - this.parteBanderaPlan().cuota;
+    return descuentoHermanos(sinBandera, datos.egresados, datos.porcentaje, datos.hermanos);
   }
 
   totalCuotasPlan(): number {

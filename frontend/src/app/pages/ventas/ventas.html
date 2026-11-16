@@ -809,9 +809,19 @@
                     }}</strong></span
                   >
                 }
+                @if (descuentoSenia()) {
+                  <span
+                    >Descuento hermanos (seña)
+                    <strong
+                      >-{{
+                        descuentoSenia() | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
+                      }}</strong
+                    ></span
+                  >
+                }
                 @if (descuentoCuotas()) {
                   <span
-                    >Descuento hermanos
+                    >Descuento hermanos (cuota)
                     <strong
                       >-{{
                         descuentoCuotas() | currency: 'ARS' : 'symbol-narrow' : '1.0-0'
@@ -1096,9 +1106,15 @@
               >Total por cuota
               <strong>{{ totalCuotasPlan() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong></span
             >
+            @if (descuentoSeniaPlan()) {
+              <span
+                >Descuento hermanos (seña)
+                <strong>-{{ descuentoSeniaPlan() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong></span
+              >
+            }
             @if (descuentoCuotasPlan()) {
               <span
-                >Descuento hermanos
+                >Descuento hermanos (cuota)
                 <strong>-{{ descuentoCuotasPlan() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong></span
               >
             }

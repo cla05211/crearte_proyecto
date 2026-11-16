@@ -71,6 +71,27 @@ export type Database = {
           },
         ]
       }
+      agregados_historial: {
+        Row: {
+          id: number
+          id_agregado: number
+          precio: number | null
+          vigente_desde: string
+        }
+        Insert: {
+          id?: never
+          id_agregado: number
+          precio?: number | null
+          vigente_desde?: string
+        }
+        Update: {
+          id?: never
+          id_agregado?: number
+          precio?: number | null
+          vigente_desde?: string
+        }
+        Relationships: []
+      }
       alumnos_responsables: {
         Row: {
           apellido: string | null
@@ -891,7 +912,7 @@ export type Database = {
       precios_productos: {
         Row: {
           activo: boolean
-          beneficio: string | null
+          beneficios: Json
           cantidad_desde: number
           cantidad_hasta: number
           con_senia: boolean
@@ -903,7 +924,7 @@ export type Database = {
         }
         Insert: {
           activo?: boolean
-          beneficio?: string | null
+          beneficios?: Json
           cantidad_desde: number
           cantidad_hasta: number
           con_senia: boolean
@@ -915,7 +936,7 @@ export type Database = {
         }
         Update: {
           activo?: boolean
-          beneficio?: string | null
+          beneficios?: Json
           cantidad_desde?: number
           cantidad_hasta?: number
           con_senia?: boolean
@@ -934,6 +955,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      precios_productos_historial: {
+        Row: {
+          beneficios: Json
+          cantidad_desde: number
+          cantidad_hasta: number
+          con_senia: boolean
+          cuotas: number
+          id: number
+          id_precio_producto: number
+          id_producto: number
+          valor_cuota: number
+          valor_senia: number
+          vigente_desde: string
+        }
+        Insert: {
+          beneficios?: Json
+          cantidad_desde: number
+          cantidad_hasta: number
+          con_senia: boolean
+          cuotas: number
+          id?: never
+          id_precio_producto: number
+          id_producto: number
+          valor_cuota: number
+          valor_senia: number
+          vigente_desde?: string
+        }
+        Update: {
+          beneficios?: Json
+          cantidad_desde?: number
+          cantidad_hasta?: number
+          con_senia?: boolean
+          cuotas?: number
+          id?: never
+          id_precio_producto?: number
+          id_producto?: number
+          valor_cuota?: number
+          valor_senia?: number
+          vigente_desde?: string
+        }
+        Relationships: []
       }
       prendas_pedido: {
         Row: {
@@ -1263,6 +1326,23 @@ export type Database = {
       }
     }
     Functions: {
+      agregados_en_fecha: {
+        Args: { p_fecha: string }
+        Returns: {
+          agregado: string
+          id: number
+          individual: boolean
+          precio: number
+        }[]
+      }
+      beneficios_tramo_en_fecha: {
+        Args: { p_cantidad: number; p_fecha: string; p_id_producto: number }
+        Returns: {
+          beneficios: Json
+          cantidad_desde: number
+          cantidad_hasta: number
+        }[]
+      }
       crear_pedido_completo: { Args: { payload: Json }; Returns: Json }
       eliminar_pago_completo: { Args: { p_id_pago: number }; Returns: number }
       enviar_pedido_a_fabrica: {
@@ -1277,10 +1357,35 @@ export type Database = {
         Args: { p_beneficios: Json; p_id_pedido: number }
         Returns: undefined
       }
+      modificar_beneficios_producto: {
+        Args: { p_id_producto: number; p_tramos: Json }
+        Returns: number
+      }
       modificar_plan_pedido: { Args: { payload: Json }; Returns: Json }
+      modificar_plan_y_beneficios_pedido: {
+        Args: { payload: Json }
+        Returns: Json
+      }
       modificar_precios_producto: {
         Args: { p_id_producto: number; p_precios: Json }
         Returns: number
+      }
+      precio_agregado_en_fecha: {
+        Args: { p_fecha: string; p_id_agregado: number }
+        Returns: number
+      }
+      precio_producto_en_fecha: {
+        Args: {
+          p_cantidad: number
+          p_con_senia?: boolean
+          p_cuotas: number
+          p_fecha: string
+          p_id_producto: number
+        }
+        Returns: {
+          valor_cuota: number
+          valor_senia: number
+        }[]
       }
       registrar_pago_completo: { Args: { p_pago: Json }; Returns: number }
       sumar_movimientos_caja: { Args: { p_tipo: string }; Returns: number }

@@ -75,7 +75,6 @@ export class GruposService
         return gruposClientes;
     }
 
-    // Contador "Colegios" de la página Clientes: mismos filtros que el listado
     async contarGruposClientePage(esFabrica:boolean, busqueda?:string, mes?: number, anio?: number): Promise<number>
     {
         const { count, error } = await this.consultaGruposClientes(true, esFabrica, busqueda, mes, anio);
@@ -88,9 +87,7 @@ export class GruposService
         return count ?? 0;
     }
 
-    // Listado de Clientes. Período por fecha de venta (created_at del grupo) en hora de Argentina:
-    // con año y mes, ese mes; solo año, el año entero; sin año, sin filtro de fecha.
-    // Si hay búsqueda, el período no se aplica: el colegio se busca en todas las fechas.
+
     private consultaGruposClientes(soloContar: boolean, esFabrica: boolean, busqueda?: string, mes?: number, anio?: number)
     {
         let query = this.sb.supabase
@@ -170,7 +167,6 @@ export class GruposService
 
         if (errAlumnos) throw new Error(errAlumnos.message);
 
-        // Usuario del portal de clientes (la contraseña no se devuelve nunca)
         const { data: cliente, error: errCliente } = await this.sb.supabase
             .from("clientes")
             .select('usuario')
@@ -216,7 +212,7 @@ export class GruposService
         return secundaria;
     }
 
-    // Marca el contrato del grupo como firmado (lo usa el recordatorio de contrato para cancelarse).
+    // Marca el contrato del grupo como firmado 
     async marcarContratoFirmado(idGrupo: number, fechaFirma: string)
     {
         const { data: existente, error: errorBusqueda } = await this.sb.supabase
@@ -240,9 +236,7 @@ export class GruposService
     {
         const fechaHoy = this.fechaArgentina(new Date());
 
-        // cuotasVencidas: solo las vencidas sin pagar.
-        // Sin !inner en las cuotas: un grupo que solo debe la seña (todavía sin cuotas vencidas) también tiene que venir.
-        // Se trae de a bloques: con más de 1000 colegios, una sola consulta cortaría la lista en silencio
+
         const data = await traerTodasLasFilas((desde, hasta) => this.sb.supabase
         .from("grupos")
         .select(`id, created_at, colegios(nombre),
@@ -251,7 +245,6 @@ export class GruposService
                 productos_pedidos(valor_senia,cantidad),
                 pagos(monto,motivo)),
             padres_responsables(nombre,apellido,telefono,principal)`)
-        // Los colegios dados de baja no son deudores (estado_general puede ser null en pedidos viejos)
         .or('estado_general.is.null,estado_general.neq.Cancelado', { referencedTable: 'pedidos' })
         .neq('pedidos.cuotasVencidas.estado', 'Pagada')
         .lt('pedidos.cuotasVencidas.fecha_vencimiento', fechaHoy)

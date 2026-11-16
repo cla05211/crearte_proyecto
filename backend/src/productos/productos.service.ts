@@ -11,6 +11,8 @@ import { ProductoPreciosDTO } from './dto/ProductoPrecios.dto';
 import { ModificarProductoPreciosDTO } from './dto/ModificarProductoPrecios.dto';
 import { error } from 'console';
 import { AgregarPlanDTO } from './dto/AgregarPlanDTO';
+import { BeneficioTramoDTO, TramoBeneficiosDTO, TramoConBeneficiosDTO } from './dto/BeneficioTramo.dto';
+import { Json } from 'src/types/supabase';
 
 @Injectable()
 export class ProductosService 
@@ -40,7 +42,7 @@ export class ProductosService
             activo: p.activo,
             valor_senia: p.valor_senia,
             valor_cuota: p.valor_cuota,
-            beneficio: p.beneficio,
+            beneficios: (p.beneficios ?? []) as unknown as BeneficioTramoDTO[],
             nombre: p.productos.nombre,
             descripcion: p.productos.descripcion
         }));
@@ -74,7 +76,7 @@ export class ProductosService
             activo: data.activo,
             valor_senia: data.valor_senia,
             valor_cuota: data.valor_cuota,
-            beneficio: data.beneficio,
+            beneficios: (data.beneficios ?? []) as unknown as BeneficioTramoDTO[],
             nombre: data.productos.nombre,
             descripcion: data.productos.descripcion,
         };
@@ -82,37 +84,65 @@ export class ProductosService
         return producto;
     }
 
-    // conSenia es opcional mientras el front mande solo la cantidad de cuotas.
-    // Sin él, si hay dos planes con las mismas cuotas (con y sin seña), .single() falla.
-    async obtenerPreciosId(id_producto:number, nroCuotas: number, cantidad:number, conSenia?: boolean):Promise<ProductoPreciosDTO>
+    async obtenerPreciosId(id_producto:number, nroCuotas: number, cantidad:number, fecha:string, conSenia?: boolean):Promise<ProductoPreciosDTO>
     {
-        let consulta = this.sb.supabase
-        .from("precios_productos")
-        .select(`valor_cuota, valor_senia`)
-        .eq('id_producto', id_producto)
-        .eq('cuotas', nroCuotas)
-        .lte('cantidad_desde', cantidad)
-        .gte('cantidad_hasta', cantidad);
+        const { data, error } = await this.sb.supabase
+            .rpc('precio_producto_en_fecha', {
+                p_id_producto: id_producto,
+                p_cuotas: nroCuotas,
+                p_cantidad: cantidad,
+                p_fecha: fecha,
+                p_con_senia: conSenia
+            })
+            .maybeSingle();
 
-        if (conSenia !== undefined) consulta = consulta.eq('con_senia', conSenia);
-
-        const { data, error } = await consulta.single();
-
-        if (error) {
-            throw new Error(error.message);
+        if (error)
+        {
+            throw new BadRequestException(error.message);
         }
 
-        const producto: ProductoPreciosDTO = {
-            valor_senia: data.valor_senia,
-            valor_cuota: data.valor_cuota,
-        };
+        if (!data)
+        {
+            throw new BadRequestException('No hay precio para ese producto, plan y cantidad');
+        }
 
-        return producto;
+        return { valor_senia: Number(data.valor_senia), valor_cuota: Number(data.valor_cuota) };
     }
 
 
-    async obtenerAgregados():Promise<AgregadoDBDTO[]>
+    // Fecha de venta del pedido (created_at del grupo, hay un pedido por grupo).
+    // Con esta fecha se buscan los precios del historial al recalcular o editar un presupuesto.
+    async obtenerFechaVentaGrupo(idGrupo: number): Promise<string>
     {
+        const { data, error } = await this.sb.supabase
+            .from('grupos')
+            .select('created_at')
+            .eq('id', idGrupo)
+            .single();
+
+        if (error || !data?.created_at)
+        {
+            throw new BadRequestException(error?.message ?? 'No se encontró la fecha de venta del grupo');
+        }
+
+        return data.created_at;
+    }
+
+    // Sin fecha: catálogo actual (Ventas). Con fecha: precios vigentes en esa fecha (historial).
+    async obtenerAgregados(fecha?: string):Promise<AgregadoDBDTO[]>
+    {
+        if (fecha)
+        {
+            const { data, error } = await this.sb.supabase.rpc('agregados_en_fecha', { p_fecha: fecha });
+
+            if (error)
+            {
+                throw new BadRequestException(error.message);
+            }
+
+            return data.map(a => ({ id: a.id, agregado: a.agregado, precio: Number(a.precio ?? 0), individual: a.individual }));
+        }
+
         const { data, error } = await this.sb.supabase
             .from('agregados')
             .select('*')
@@ -145,7 +175,6 @@ export class ProductosService
             cuotas: producto.cuotas,
             valor_senia: producto.valor_senia,
             valor_cuota: producto.valor_cuota,
-            beneficio: producto.beneficio,
             con_senia: producto.senia
         })
         .select(`
@@ -168,7 +197,7 @@ export class ProductosService
         activo: dataProductoPrecio!.activo,
         valor_senia: dataProductoPrecio!.valor_senia,
         valor_cuota: dataProductoPrecio!.valor_cuota,
-        beneficio: dataProductoPrecio!.beneficio,
+        beneficios: (dataProductoPrecio!.beneficios ?? []) as unknown as BeneficioTramoDTO[],
         nombre: dataProductoPrecio!.productos.nombre,
         descripcion: dataProductoPrecio!.productos.descripcion,
         };
@@ -191,13 +220,32 @@ export class ProductosService
         return data as AgregadoDBDTO;
     }
 
-    // No filtra por activo: también se usa al recalcular pedidos que ya tienen un plan desactivado.
-    // conSenia es opcional (ver obtenerPreciosId).
-    async obtenerPreciosBeneficios(producto: number, cantidad:number, cuotas:number, conSenia?: boolean): Promise<PreciosBeneficiosResponseDTO | null>
+    // Sin fecha: catálogo actual (Ventas). Con fecha: precios vigentes en esa fecha (edición de presupuesto).
+    async obtenerPreciosBeneficios(producto: number, cantidad:number, cuotas:number, conSenia?: boolean, fecha?: string): Promise<PreciosBeneficiosResponseDTO | null>
     {
+        if (fecha)
+        {
+            const { data, error } = await this.sb.supabase
+                .rpc('precio_producto_en_fecha', {
+                    p_id_producto: producto,
+                    p_cuotas: cuotas,
+                    p_cantidad: cantidad,
+                    p_fecha: fecha,
+                    p_con_senia: conSenia
+                })
+                .maybeSingle();
+
+            if (error)
+            {
+                throw new BadRequestException(error.message);
+            }
+
+            return data ? { valor_senia: Number(data.valor_senia), valor_cuota: Number(data.valor_cuota) } : null;
+        }
+
         let consulta = this.sb.supabase
         .from('precios_productos')
-        .select('valor_senia, valor_cuota, beneficio')
+        .select('valor_senia, valor_cuota')
         .eq('cuotas', cuotas)
         .eq('id_producto', producto)
         .lte('cantidad_desde', cantidad)
@@ -291,6 +339,23 @@ export class ProductosService
         }
 
 
+        const { data: filasExistentes, error: errorExistentes } = await this.sb.supabase
+        .from('precios_productos')
+        .select('id_producto, cantidad_desde, cantidad_hasta, beneficios')
+        .order('id');
+
+        if (errorExistentes)
+        {
+            throw new BadRequestException(errorExistentes.message);
+        }
+
+        const beneficiosExistentes = new Map<string, Json>();
+        for (const f of filasExistentes)
+        {
+            const clave = `${f.id_producto}-${f.cantidad_desde}-${f.cantidad_hasta}`;
+            if (!beneficiosExistentes.has(clave)) beneficiosExistentes.set(clave, f.beneficios);
+        }
+
         const fila = (idProducto: number, desde: number, hasta: number, cuota: number, senia?: number) => ({
             id_producto: idProducto,
             cantidad_desde: desde,
@@ -300,7 +365,8 @@ export class ProductosService
             valor_senia: conSenia && senia != null ? senia : cuota,
             con_senia: conSenia,
             activo: true,
-            beneficio: null,
+            // Los beneficios no dependen del plan: se copian de las filas que ya tiene el producto en ese tramo
+            beneficios: (beneficiosExistentes.get(`${idProducto}-${desde}-${hasta}`) ?? []) as unknown as Json,
         });
 
         const porTramos = (idProducto: number, cuotas: number[], senias: (number | undefined)[]) => [
@@ -349,4 +415,66 @@ export class ProductosService
         }
     }
 
+
+    //Beneficios por tramo
+
+    // Guarda los beneficios de cada tramo del producto en todas sus filas (todos los planes)
+    async modificarBeneficiosProducto(idProducto: number, tramos: TramoBeneficiosDTO[]): Promise<number>
+    {
+        const { data, error } = await this.sb.supabase.rpc('modificar_beneficios_producto', {
+            p_id_producto: idProducto,
+            p_tramos: tramos as unknown as Json,
+        });
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        return data as number;
+    }
+
+    // Tramo de una cantidad y sus beneficios (con nombre), vigentes en una fecha. null si el producto no tiene precios.
+    async obtenerTramoBeneficios(idProducto: number, cantidad: number, fecha: string): Promise<TramoConBeneficiosDTO | null>
+    {
+        const { data, error } = await this.sb.supabase
+            .rpc('beneficios_tramo_en_fecha', { p_id_producto: idProducto, p_cantidad: cantidad, p_fecha: fecha })
+            .maybeSingle();
+
+        if (error)
+        {
+            throw new BadRequestException(error.message);
+        }
+
+        if (!data) return null;
+
+        const lista = (data.beneficios ?? []) as unknown as BeneficioTramoDTO[];
+        const catalogo = new Map<number, { beneficio: string | null; id_producto: number | null }>();
+
+        if (lista.length)
+        {
+            const { data: beneficios, error: errorBeneficios } = await this.sb.supabase
+                .from('beneficios')
+                .select('id, beneficio, id_producto')
+                .in('id', lista.map(b => b.id_beneficio));
+
+            if (errorBeneficios)
+            {
+                throw new BadRequestException(errorBeneficios.message);
+            }
+
+            beneficios.forEach(b => catalogo.set(b.id, b));
+        }
+
+        return {
+            cantidad_desde: data.cantidad_desde,
+            cantidad_hasta: data.cantidad_hasta,
+            beneficios: lista.map(b => ({
+                id_beneficio: Number(b.id_beneficio),
+                cantidad: Number(b.cantidad),
+                beneficio: catalogo.get(Number(b.id_beneficio))?.beneficio ?? '',
+                id_producto: catalogo.get(Number(b.id_beneficio))?.id_producto ?? null,
+            })),
+        };
+    }
 }

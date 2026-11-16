@@ -165,9 +165,12 @@ export class GestionPedidosService
     async modificarPlanPedido(dto: ModificarPlanPedidoDTO, autor: AutorAuditoria, accion: string = ACCIONES_AUDITORIA.PLAN_MODIFICADO)
     {
         const presupuestoAnterior = await this.auditoriaService.fotoPresupuesto(dto.id_pedido);
+        const cambiaBeneficios = dto.beneficios !== undefined;
+        const beneficiosAnteriores = cambiaBeneficios ? await this.auditoriaService.fotoBeneficios(dto.id_pedido) : null;
 
+        // Con beneficios, plan y beneficios se guardan en la misma transacción
         const { data, error } = await this.sb.supabase.rpc(
-            'modificar_plan_pedido',
+            cambiaBeneficios ? 'modificar_plan_y_beneficios_pedido' : 'modificar_plan_pedido',
             { payload: dto as unknown as Json }
         );
 
@@ -185,6 +188,19 @@ export class GestionPedidosService
             datoNuevo: await this.auditoriaService.fotoPresupuesto(dto.id_pedido),
             omitirSiNoCambia: true,
         });
+
+        if (cambiaBeneficios)
+        {
+            await this.auditoriaService.registrar({
+                tipo: 'beneficios',
+                accion: ACCIONES_AUDITORIA.BENEFICIOS_CAMBIADOS_POR_TRAMO,
+                idPedido: dto.id_pedido,
+                autor,
+                datoAnterior: beneficiosAnteriores,
+                datoNuevo: await this.auditoriaService.fotoBeneficios(dto.id_pedido),
+                omitirSiNoCambia: true,
+            });
+        }
 
         return data;
     }
@@ -287,7 +303,8 @@ export class GestionPedidosService
         const productosPedido: ProductoPedidoResponseConNombreOriginalDTO[] = await this.productosPedido.traerProductosPedidoConNombreProducto(pedido.id);
         const agregadosGlobales: AgregadoGlobalPedidoResponseDTO[] = await this.agregadosGlobalesPedido.obtenerPorPedido(pedido.id);
         const cuotas: number = ((await this.cuotas.traerCuotasPorIdPedido(pedido.id)).length);
-        const cantidadEgresados: number = agregadosGlobales.length ? (await this.grupos.traerCantidadEgresados(idGrupo)) ?? 0 : 0;
+        // Se usa para la bandera individual y para el descuento por hermanos
+        const cantidadEgresados: number = (await this.grupos.traerCantidadEgresados(idGrupo)) ?? 0;
         const beneficios: BeneficioPedidoDTO[] = await this.beneficiosPedidoService.traerBeneficiosPedido(pedido.id);
 
 

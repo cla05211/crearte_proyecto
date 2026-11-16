@@ -52,10 +52,12 @@ const LEYENDA_SENIA =
 const COLOR_MARCA = '#690446';
 const COLOR_MARCA_SUAVE = '#FBEFF5';
 const COLOR_GRIS_SUAVE = '#F4F4F5';
+// Cartel de prendas sin nombre en el resumen de talles
+const COLOR_SIN_NOMBRE = '#E5202B';
 
 // Alto reservado arriba de cada hoja del resumen de talles para el encabezado repetido
 // (logo + título + datos del colegio). Si se agregan filas a los datos del colegio, hay que agrandarlo.
-const MARGEN_SUPERIOR_RESUMEN_TALLES = 175;
+const MARGEN_SUPERIOR_RESUMEN_TALLES = 195;
 
 const logoPath = path.join(__dirname, '..', 'assets', 'logo-crearte.png');
  
@@ -586,9 +588,34 @@ export class PdfService
 
             const seccionTitulo = (texto: string): Content => ({
                 margin: [0, 16, 0, 8],
-                table: { widths: ['*'], body: [[{ text: texto.toUpperCase(), color: 'white', bold: true, fontSize: 10, margin: [10, 5, 0, 5] }]] },
+                table: { widths: ['*'], body: [[{ text: texto.toUpperCase(), color: 'white', bold: true, fontSize: 13, margin: [10, 5, 0, 5] }]] },
                 layout: { fillColor: () => COLOR_MARCA, hLineWidth: () => 0, vLineWidth: () => 0, paddingLeft: () => 0, paddingRight: () => 0, paddingTop: () => 0, paddingBottom: () => 0 },
             });
+
+            // Nombres del talle en la tipografía de bordado y, si algunas prendas quedaron sin nombre (filas sin
+            // inscripción), un cartel rojo con cuántas son.
+            const celdaInscripciones = (inscripciones: string[], cantidad: number): Content =>
+            {
+                const sinNombre = cantidad - inscripciones.length;
+                const contenido: Content[] = [];
+                if (inscripciones.length > 0)
+                {
+                    contenido.push({ text: inscripciones.join('   '), font: 'CollegeBlock', fontSize: 14 });
+                }
+                // Si ninguna prenda del talle tiene nombre no hace falta el cartel (se muestra '-')
+                if (sinNombre > 0 && inscripciones.length > 0)
+                {
+                    contenido.push({
+                        margin: [0, 6, 0, 0],
+                        table: { body: [[{
+                            text: `${sinNombre} ${sinNombre === 1 ? 'PRENDA' : 'PRENDAS'} SIN NOMBRE`,
+                            font: 'CollegeBlock', fontSize: 14, color: 'white', fillColor: COLOR_SIN_NOMBRE, margin: [8, 2, 8, 2],
+                        }]] },
+                        layout: { hLineWidth: () => 0, vLineWidth: () => 0 },
+                    });
+                }
+                return contenido.length > 0 ? { stack: contenido } : { text: '-', fontSize: 12 };
+            };
 
             // Una hoja por producto: talle / cantidad / nombres, con las inscripciones
             // renderizadas en la tipografía oficial de bordado.
@@ -599,8 +626,8 @@ export class PdfService
                     table: {
                         widths: ['*', 'auto'],
                         body: [[
-                            { text: producto.nombreProducto.toUpperCase(), color: 'white', bold: true, fontSize: 16, margin: [12, 9, 0, 9] },
-                            { text: `Total: ${producto.total}`, color: 'white', bold: true, fontSize: 14, alignment: 'right', margin: [0, 10, 12, 9] },
+                            { text: producto.nombreProducto.toUpperCase(), color: 'white', bold: true, fontSize: 19, margin: [12, 9, 0, 9] },
+                            { text: `Total: ${producto.total}`, color: 'white', bold: true, fontSize: 17, alignment: 'right', margin: [0, 10, 12, 9] },
                         ]],
                     },
                     layout: { fillColor: () => COLOR_MARCA, hLineWidth: () => 0, vLineWidth: () => 0, paddingLeft: () => 0, paddingRight: () => 0, paddingTop: () => 0, paddingBottom: () => 0 },
@@ -610,22 +637,23 @@ export class PdfService
                         headerRows: 1,
                         // Si la tabla sigue en otra hoja, un talle no se parte a la mitad (quedaría sin su etiqueta)
                         dontBreakRows: true,
-                        widths: [55, 55, '*'],
+                        widths: [65, 55, '*'],
                         body: [
                             [
-                                { text: 'Talle', bold: true, fontSize: 8, color: 'white' },
-                                { text: 'Cant.', bold: true, fontSize: 8, color: 'white' },
-                                { text: 'Nombres o apodos', bold: true, fontSize: 8, color: 'white' },
+                                { text: 'Talle', bold: true, fontSize: 11, color: 'white' },
+                                { text: 'Cant.', bold: true, fontSize: 11, color: 'white' },
+                                { text: 'Nombres o apodos', bold: true, fontSize: 11, color: 'white' },
                             ],
-                            ...producto.talles.map((t, i): any[] => [
-                                { text: t.talle, bold: true, fontSize: 9 },
-                                { text: String(t.cantidad), fontSize: 9 },
-                                { text: t.inscripciones.length > 0 ? t.inscripciones.join('   ') : '-', font: t.inscripciones.length > 0 ? 'CollegeBlock' : 'Roboto', fontSize: t.inscripciones.length > 0 ? 11 : 9 },
+                            ...producto.talles.map((t): any[] => [
+                                { text: t.talle, bold: true, fontSize: 20 },
+                                { text: String(t.cantidad), fontSize: 20 },
+                                celdaInscripciones(t.inscripciones, t.cantidad),
                             ]),
                         ],
                     },
                     layout: {
-                        fillColor: (rowIndex: number) => (rowIndex === 0 ? COLOR_MARCA : (rowIndex % 2 === 0 ? COLOR_GRIS_SUAVE : null)),
+                        // Sin filas grises: el fondo de la fila tapaba el cartel rojo de prendas sin nombre (tabla anidada)
+                        fillColor: (rowIndex: number) => (rowIndex === 0 ? COLOR_MARCA : null),
                         hLineWidth: () => 0.5,
                         vLineWidth: () => 0,
                         hLineColor: () => '#E2E2E2',
@@ -640,14 +668,14 @@ export class PdfService
 
             // Combos y productos sueltos, tal como quedaron definidos en productos_pedidos.
             const filasCombos: any[] = dto.combos.map(combo => [
-                { text: combo.nombreCombo, bold: true, fontSize: 9 },
-                { text: combo.componentes.map(c => c.nombre).join(' + '), fontSize: 8, color: '#555555' },
-                { text: String(combo.cantidad), fontSize: 9, alignment: 'center' },
+                { text: combo.nombreCombo, bold: true, fontSize: 12 },
+                { text: combo.componentes.map(c => c.nombre).join(' + '), fontSize: 11, color: '#555555' },
+                { text: String(combo.cantidad), fontSize: 12, alignment: 'center' },
             ]);
             const filasSueltas: any[] = dto.sueltas.map(suelto => [
-                { text: suelto.nombre, bold: true, fontSize: 9 },
-                { text: 'Producto individual', fontSize: 8, color: '#555555' },
-                { text: String(suelto.cantidad), fontSize: 9, alignment: 'center' },
+                { text: suelto.nombre, bold: true, fontSize: 12 },
+                { text: 'Producto individual', fontSize: 11, color: '#555555' },
+                { text: String(suelto.cantidad), fontSize: 12, alignment: 'center' },
             ]);
 
             const tablaCombosYSueltas: Content[] = (filasCombos.length + filasSueltas.length) > 0 ? [{
@@ -656,9 +684,9 @@ export class PdfService
                     widths: ['*', '*', 60],
                     body: [
                         [
-                            { text: 'Producto', bold: true, fontSize: 8, color: 'white' },
-                            { text: 'Detalle', bold: true, fontSize: 8, color: 'white' },
-                            { text: 'Cant.', bold: true, fontSize: 8, color: 'white', alignment: 'center' },
+                            { text: 'Producto', bold: true, fontSize: 11, color: 'white' },
+                            { text: 'Detalle', bold: true, fontSize: 11, color: 'white' },
+                            { text: 'Cant.', bold: true, fontSize: 11, color: 'white', alignment: 'center' },
                         ],
                         ...filasCombos,
                         ...filasSueltas,
@@ -674,11 +702,11 @@ export class PdfService
                     paddingTop: () => 4,
                     paddingBottom: () => 4,
                 },
-            }] : [{ text: 'No hay productos cargados en el pedido.', italics: true, fontSize: 9, color: '#777777' }];
+            }] : [{ text: 'No hay productos cargados en el pedido.', italics: true, fontSize: 12, color: '#777777' }];
 
             const beneficiosContent: Content[] = dto.beneficios.length > 0
-                ? [{ ul: dto.beneficios, fontSize: 9, margin: [0, 0, 0, 0] }]
-                : [{ text: 'No hay beneficios ni bonificaciones aplicados a este pedido.', italics: true, fontSize: 9, color: '#777777' }];
+                ? [{ ul: dto.beneficios, fontSize: 12, margin: [0, 0, 0, 0] }]
+                : [{ text: 'No hay beneficios ni bonificaciones aplicados a este pedido.', italics: true, fontSize: 12, color: '#777777' }];
 
             // Si el cliente ya firmó, la firma va al final del documento y los textos
             // dejan de decir que es un resumen previo a la confirmación.
@@ -696,7 +724,7 @@ export class PdfService
                     {
                         unbreakable: true,
                         stack: [
-                            { text: 'Con esta firma se confirma la planilla de talles detallada en este documento. Una vez confirmada no se podrán realizar más modificaciones.', fontSize: 9, alignment: 'justify', margin: [0, 0, 0, 10] },
+                            { text: 'Con esta firma se confirma la planilla de talles detallada en este documento. Una vez confirmada no se podrán realizar más modificaciones.', fontSize: 12, alignment: 'justify', margin: [0, 0, 0, 10] },
                             {
                                 columns: [
                                     {
@@ -704,9 +732,9 @@ export class PdfService
                                         stack: [
                                             { image: 'firmaCliente', width: 180, alignment: 'center' },
                                             { canvas: [{ type: 'line' as const, x1: 0, y1: 2, x2: 200, y2: 2, lineWidth: 0.8, lineColor: '#555555' }] },
-                                            { text: 'Firma', bold: true, fontSize: 8, alignment: 'center', margin: [0, 4, 0, 0] },
-                                            ...(dto.padreResponsable ? [{ text: `Aclaración: ${dto.padreResponsable}`, fontSize: 8, alignment: 'center' as const }] : []),
-                                            ...(fecha ? [{ text: `Fecha: ${fecha}`, fontSize: 8, alignment: 'center' as const }] : []),
+                                            { text: 'Firma', bold: true, fontSize: 11, alignment: 'center', margin: [0, 4, 0, 0] },
+                                            ...(dto.padreResponsable ? [{ text: `Aclaración: ${dto.padreResponsable}`, fontSize: 11, alignment: 'center' as const }] : []),
+                                            ...(fecha ? [{ text: `Fecha: ${fecha}`, fontSize: 11, alignment: 'center' as const }] : []),
                                         ],
                                     },
                                     { width: '*', text: '' },
@@ -721,7 +749,7 @@ export class PdfService
                 pageSize: 'A4',
                 // El margen de arriba deja lugar para el encabezado (header) que se repite en cada hoja
                 pageMargins: [40, MARGEN_SUPERIOR_RESUMEN_TALLES, 40, 50],
-                defaultStyle: { font: 'Roboto', fontSize: 9 },
+                defaultStyle: { font: 'Roboto', fontSize: 12 },
                 images: imagenes,
                 footer: (currentPage: number, pageCount: number) => ({
                     margin: [40, 0, 40, 20],
@@ -740,7 +768,7 @@ export class PdfService
                                     width: '*',
                                     stack: [
                                         { text: 'RESUMEN DE TALLES', bold: true, fontSize: 18, color: COLOR_MARCA, alignment: 'right' },
-                                        { text: firmado ? 'Planilla de talles confirmada' : 'Documento de verificación previo a la confirmación', fontSize: 9, alignment: 'right', color: '#777777' },
+                                        { text: firmado ? 'Planilla de talles confirmada' : 'Documento de verificación previo a la confirmación', fontSize: 11, alignment: 'right', color: '#777777' },
                                     ],
                                     margin: [0, 6, 0, 0],
                                 },
@@ -753,7 +781,7 @@ export class PdfService
                 content: [
                     ...(tablasPrendas.length > 0
                         ? tablasPrendas
-                        : [{ text: 'Todavía no hay talles cargados.', italics: true, fontSize: 9, color: '#777777' } as Content]),
+                        : [{ text: 'Todavía no hay talles cargados.', italics: true, fontSize: 12, color: '#777777' } as Content]),
 
                     // Última hoja: resumen del pedido y, si ya se confirmó, la firma
                     { ...(seccionTitulo('Combos y productos sueltos') as object), pageBreak: 'before', margin: [0, 0, 0, 8] } as Content,

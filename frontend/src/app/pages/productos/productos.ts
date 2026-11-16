@@ -1,6 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 import { ProductosService } from '../../services/productos/productos-service';
 import { ProductoConPrecioResponseDTO } from '../../services/productos/dto/ProductoConPrecioResponse';
 import { ModificarProductoPreciosDTO } from '../../services/productos/dto/ModificarProductoPrecios.dto';
@@ -11,6 +11,9 @@ import { ConfirmationService } from '../../services/confirmation/confirmation.se
 import { Agregados } from '../../services/agregados/agregados';
 import { AgregadoDTO } from '../../services/agregados/dto/Agregado.dto';
 import { ModificarAgregadoPrecioDTO } from '../../services/agregados/dto/ModificarAgregadoPrecio.dto';
+import { GestionPedidosService } from '../../services/gestionPedidos/gestion-pedidos-service';
+import { BeneficioResponseDTO } from '../../services/gestionPedidos/dto/BeneficioResponse.dto';
+import { BeneficioTramoDTO, TramoBeneficiosDTO } from '../../services/productos/dto/BeneficioTramo.dto';
 
 type Pestania = 'precios' | 'planes';
 type PrecioFila = ProductoConPrecioResponseDTO;
@@ -60,6 +63,21 @@ const FAMILIAS: Familia[] = [
   { clave: 'Joggin', titulo: 'Pantalón jogging', detalle: '', ids: [72], tramos: TRAMOS },
 ];
 
+// Productos con beneficios por tramo (campera, buzo, combos y campera universitaria). Mismos ids que
+// IDS_CON_BENEFICIOS_TRAMO del back: si en la carga de talles ninguno mantiene el tramo de la venta, el pedido
+// recibe los beneficios del tramo nuevo. Los productos de un mismo grupo (pestaña) comparten beneficios.
+const IDS_CON_BENEFICIOS_TRAMO = [63, 64, 67, 68, 69, 70, 71];
+// El primer tramo de precios arranca en 1, pero sus beneficios valen desde esta cantidad (CANTIDAD_MINIMA_BENEFICIOS del back)
+const CANTIDAD_MINIMA_BENEFICIOS = 20;
+
+// Tramo cuyos beneficios se están editando
+interface TramoEnEdicion
+{
+  desde: number;
+  hasta: number;
+  etiqueta: string;
+}
+
 // Productos que se editan juntos en la pestaña Precios (una familia, o un producto suelto)
 interface GrupoPrecio
 {
@@ -81,6 +99,7 @@ export class Productos implements OnInit
   private readonly notificaciones = inject(NotificationService);
   private readonly confirmacion = inject(ConfirmationService);
   private readonly agregadosService = inject(Agregados);
+  private readonly gestionPedidosService = inject(GestionPedidosService);
 
   readonly familias = FAMILIAS;
   readonly etiquetaTramo = ETIQUETA_TRAMO;
@@ -165,7 +184,7 @@ export class Productos implements OnInit
   cambios = signal(new Map<number, CambioPrecio>());   // id de fila -> valores editados
   // Cuenta los cambios de productos y de agregados: solo uno de los dos puede tener cambios a la vez,
   // porque para cambiar de ítem en la lista hay que guardar o descartar
-  readonly cantidadCambios = computed(() => this.cambios().size + this.cambiosAgregados().size);
+  readonly cantidadCambios = computed(() => this.cambios().size + this.cambiosAgregados().size + this.cambiosBeneficios().size);
   guardandoPrecios = signal(false);
 
   // Diferencias de cada producto del grupo con el de referencia:
@@ -201,6 +220,41 @@ export class Productos implements OnInit
   readonly cambiosInvalidos = computed(() =>
     [...this.cambios().values()].some(c => !this.esPrecioValido(c.valorCuota) || !this.esPrecioValido(c.valorSenia))
     || [...this.cambiosAgregados().values()].some(precio => !this.esPrecioValido(precio)));
+
+  // ───────────────────────── Beneficios por tramo ─────────────────────────
+
+  catalogoBeneficios = signal<BeneficioResponseDTO[]>([]);
+  // "desde-hasta" -> beneficios editados del grupo actual (se guardan en todos sus productos y planes).
+  // Al cambiar de grupo hay que guardar o descartar, así que siempre son del grupo que se ve.
+  cambiosBeneficios = signal(new Map<string, BeneficioTramoDTO[]>());
+  tramoBeneficios = signal<TramoEnEdicion | null>(null);
+  nuevoBeneficioId = signal<number | null>(null);
+  nuevoBeneficioCantidad = signal<number | null>(1);
+
+  // El grupo tiene beneficios si alguno de sus productos los tiene (en la práctica, todo el grupo o nada)
+  readonly grupoConBeneficios = computed(() =>
+    (this.grupoActual()?.ids ?? []).some(id => IDS_CON_BENEFICIOS_TRAMO.includes(id)));
+
+  readonly beneficiosTramoActual = computed(() =>
+  {
+    const tramo = this.tramoBeneficios();
+    return tramo ? this.beneficiosTramo(tramo.desde, tramo.hasta) : [];
+  });
+
+  // Productos del grupo con beneficios distintos al de referencia (al guardar se igualan)
+  readonly beneficiosDesparejos = computed(() =>
+  {
+    const grupo = this.grupoActual();
+    if (!grupo || grupo.ids.length < 2) return [];
+    const referencia = this.filasProducto(grupo.ids[0]);
+    return grupo.ids.slice(1)
+      .filter(id => this.filasProducto(id).some(f =>
+      {
+        const ref = referencia.find(r => r.cantidad_desde === f.cantidad_desde && r.cantidad_hasta === f.cantidad_hasta);
+        return ref && !this.mismosBeneficios(f.beneficios ?? [], ref.beneficios ?? []);
+      }))
+      .map(id => grupo.nombres[grupo.ids.indexOf(id)]);
+  });
 
   // ───────────────────────── Agregados ─────────────────────────
 
@@ -318,6 +372,15 @@ export class Productos implements OnInit
   {
     this.cargarPrecios();
     this.cargarAgregados();
+    this.cargarCatalogoBeneficios();
+  }
+
+  cargarCatalogoBeneficios(): void
+  {
+    this.gestionPedidosService.obtenerBeneficios().subscribe({
+      next: (beneficios) => this.catalogoBeneficios.set(beneficios),
+      error: (err) => console.error(err),
+    });
   }
 
   cargarAgregados(): void
@@ -426,6 +489,8 @@ export class Productos implements OnInit
   {
     this.cambios.set(new Map());
     this.cambiosAgregados.set(new Map());
+    this.cambiosBeneficios.set(new Map());
+    this.tramoBeneficios.set(null);
   }
 
   guardarPrecios(): void
@@ -455,11 +520,18 @@ export class Productos implements OnInit
       return { idProducto, dto: this.armarDtoCambios(filas, cambiosProducto) };
     }).filter(p => p.dto.length > 0);
 
+    // Precios y beneficios se guardan juntos (forkJoin de una lista vacía no emite, por eso se arma una sola lista)
+    const guardados: Observable<number>[] = [
+      ...pedidos.map(p => this.productosService.modificarPreciosProducto(p.idProducto, p.dto)),
+      ...this.pedidosBeneficios(),
+    ];
+    if (!guardados.length) return;
+
     this.guardandoPrecios.set(true);
-    forkJoin(pedidos.map(p => this.productosService.modificarPreciosProducto(p.idProducto, p.dto))).subscribe({
+    forkJoin(guardados).subscribe({
       next: () =>
       {
-        this.notificaciones.success({ title: 'Precios actualizados', description: `Se guardaron los cambios de ${grupo.titulo}.` });
+        this.notificaciones.success({ title: 'Cambios guardados', description: `Se guardaron los cambios de ${grupo.titulo}.` });
         this.descartarCambios();
         this.guardandoPrecios.set(false);
         this.cargarPrecios();
@@ -467,7 +539,7 @@ export class Productos implements OnInit
       error: (err) =>
       {
         console.error(err);
-        this.notificaciones.error({ title: 'No se pudieron guardar los precios', description: err?.error?.message ?? 'Probá de nuevo en unos minutos.' });
+        this.notificaciones.error({ title: 'No se pudieron guardar los cambios', description: err?.error?.message ?? 'Probá de nuevo en unos minutos.' });
         this.guardandoPrecios.set(false);
         this.cargarPrecios();   // por si se guardó un producto del grupo y otro no
       },
@@ -491,10 +563,126 @@ export class Productos implements OnInit
     if (this.cantidadCambios() === 0) return true;
     const confirmar = await this.confirmacion.confirm({
       title: 'Hay cambios sin guardar',
-      description: `Modificaste ${this.cantidadCambios()} precio${this.cantidadCambios() === 1 ? '' : 's'} de ${this.tituloSeleccion()}. Si seguís, se descartan.`,
+      description: `Tenés ${this.cantidadCambios()} cambio${this.cantidadCambios() === 1 ? '' : 's'} sin guardar en ${this.tituloSeleccion()}. Si seguís, se descartan.`,
     });
     if (confirmar) this.descartarCambios();
     return confirmar;
+  }
+
+  // ───────────────────────── Beneficios por tramo: edición ─────────────────────────
+
+  // Beneficios del grupo en un tramo: los editados, o los guardados del producto de referencia
+  // (iguales en todos los planes y en todos los productos del grupo: se toma una fila)
+  beneficiosTramo(desde: number, hasta: number): BeneficioTramoDTO[]
+  {
+    const cambio = this.cambiosBeneficios().get(this.claveTramo(desde, hasta));
+    if (cambio) return cambio;
+    return this.filaReferenciaTramo(desde, hasta)?.beneficios ?? [];
+  }
+
+  tramoBeneficiosModificado(desde: number, hasta: number): boolean
+  {
+    return this.cambiosBeneficios().has(this.claveTramo(desde, hasta));
+  }
+
+  nombreBeneficio(idBeneficio: number): string
+  {
+    return this.catalogoBeneficios().find(b => b.id === idBeneficio)?.beneficio ?? `Beneficio ${idBeneficio}`;
+  }
+
+  // En beneficios el primer tramo se muestra desde el mínimo (ej. "20 a 25" en vez de "Hasta 25")
+  etiquetaTramoBeneficios(tramo: { desde: number; hasta: number }): string
+  {
+    return this.etiquetaRango(Math.max(tramo.desde, CANTIDAD_MINIMA_BENEFICIOS), tramo.hasta);
+  }
+
+  editarBeneficios(tramo: { desde: number; hasta: number }): void
+  {
+    this.tramoBeneficios.set({ desde: tramo.desde, hasta: tramo.hasta, etiqueta: this.etiquetaTramoBeneficios(tramo) });
+    this.nuevoBeneficioId.set(null);
+    this.nuevoBeneficioCantidad.set(1);
+  }
+
+  cerrarEdicionBeneficios(): void
+  {
+    this.tramoBeneficios.set(null);
+  }
+
+  agregarBeneficioTramo(): void
+  {
+    const tramo = this.tramoBeneficios();
+    const id = Number(this.nuevoBeneficioId());
+    const cantidad = Number(this.nuevoBeneficioCantidad());
+    if (!tramo || !id || !Number.isInteger(cantidad) || cantidad < 1) return;
+
+    // Si el beneficio ya está en el tramo se suman las cantidades
+    const actuales = this.beneficiosTramo(tramo.desde, tramo.hasta);
+    const existente = actuales.find(b => b.id_beneficio === id);
+    const nuevos = existente
+      ? actuales.map(b => b.id_beneficio === id ? { ...b, cantidad: b.cantidad + cantidad } : b)
+      : [...actuales, { id_beneficio: id, cantidad }];
+
+    this.registrarCambioBeneficios(tramo, nuevos);
+    this.nuevoBeneficioId.set(null);
+    this.nuevoBeneficioCantidad.set(1);
+  }
+
+  quitarBeneficioTramo(idBeneficio: number): void
+  {
+    const tramo = this.tramoBeneficios();
+    if (!tramo) return;
+    this.registrarCambioBeneficios(tramo, this.beneficiosTramo(tramo.desde, tramo.hasta).filter(b => b.id_beneficio !== idBeneficio));
+  }
+
+  private registrarCambioBeneficios(tramo: TramoEnEdicion, beneficios: BeneficioTramoDTO[]): void
+  {
+    const clave = this.claveTramo(tramo.desde, tramo.hasta);
+    const originales = this.filaReferenciaTramo(tramo.desde, tramo.hasta)?.beneficios ?? [];
+
+    this.cambiosBeneficios.update(mapa =>
+    {
+      const nuevo = new Map(mapa);
+      // Si vuelve a lo guardado deja de contar como cambio
+      if (this.mismosBeneficios(beneficios, originales)) nuevo.delete(clave);
+      else nuevo.set(clave, beneficios);
+      return nuevo;
+    });
+  }
+
+  // Un PATCH por producto del grupo, todos con los mismos tramos: el grupo comparte beneficios
+  private pedidosBeneficios(): Observable<number>[]
+  {
+    const grupo = this.grupoActual();
+    if (!grupo || this.cambiosBeneficios().size === 0) return [];
+
+    const tramos: TramoBeneficiosDTO[] = [...this.cambiosBeneficios().entries()].map(([clave, beneficios]) =>
+    {
+      const [desde, hasta] = clave.split('-').map(Number);
+      return { cantidad_desde: desde, cantidad_hasta: hasta, beneficios };
+    });
+
+    return grupo.ids
+      .filter(id => IDS_CON_BENEFICIOS_TRAMO.includes(id))
+      .map(idProducto => this.productosService.modificarBeneficiosProducto(idProducto, tramos));
+  }
+
+  private filaReferenciaTramo(desde: number, hasta: number): PrecioFila | undefined
+  {
+    return this.filasProducto(this.idReferencia()).find(f => f.cantidad_desde === desde && f.cantidad_hasta === hasta);
+  }
+
+  private mismosBeneficios(a: BeneficioTramoDTO[], b: BeneficioTramoDTO[]): boolean
+  {
+    const normalizar = (lista: BeneficioTramoDTO[]) => [...lista]
+      .map(x => `${x.id_beneficio}:${x.cantidad}`)
+      .sort()
+      .join('|');
+    return normalizar(a) === normalizar(b);
+  }
+
+  private claveTramo(desde: number, hasta: number): string
+  {
+    return `${desde}-${hasta}`;
   }
 
   // ───────────────────────── Agregados: edición ─────────────────────────

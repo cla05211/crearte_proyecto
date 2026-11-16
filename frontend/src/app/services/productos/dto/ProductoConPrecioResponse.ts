@@ -1,3 +1,5 @@
+import { BeneficioTramoDTO } from './BeneficioTramo.dto';
+
 export interface ProductoConPrecioResponseDTO
 {
     id: number;               // id de la fila en precios_productos (lo usa modificar precios)
@@ -9,7 +11,7 @@ export interface ProductoConPrecioResponseDTO
     activo: boolean;
     valor_senia: number;
     valor_cuota: number;
-    beneficio:string | null;
+    beneficios: BeneficioTramoDTO[];
     nombre: string;
     descripcion:string;
 }

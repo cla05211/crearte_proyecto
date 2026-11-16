@@ -59,6 +59,16 @@ export function preciosConAgregados(
   };
 }
 
+// Descuento por hermanos: cada hermano tiene el porcentaje sobre lo que paga un egresado,
+// calculado como total grupal sin la bandera / cantidad de egresados (grupos.cantidad_egresados).
+// Se usa igual para la cuota y para la seña. Mismo criterio en el backend (recálculo por talles).
+export function descuentoHermanos(totalSinBandera: number, egresados: number, porcentaje: number, hermanos: number): number
+{
+  const cantidadEgresados = Number(egresados) || 0;
+  if (!cantidadEgresados) return 0;
+  return (Number(totalSinBandera) / cantidadEgresados) * ((Number(porcentaje) || 0) / 100) * (Number(hermanos) || 0);
+}
+
 // Parte de un agregado global (bandera, precio total del pedido) en cada cuota y en la seña
 export function parteAgregadoGlobal(precio: number, cuotas: number, conSenia: boolean): { cuota: number; senia: number }
 {

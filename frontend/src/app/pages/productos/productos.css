@@ -470,6 +470,35 @@
 
 .family__tramo { color: var(--color-text-strong); font-size: var(--font-size-sm); }
 
+/* ═══════════ Beneficios por cantidad ═══════════ */
+
+.benefits { margin-top: var(--space-6); display: grid; gap: var(--space-3); }
+.benefits__title { margin: 0; font-size: var(--font-size-lg); color: var(--color-text-strong); }
+
+.benefits-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+}
+.benefits-cell.is-modified { background: #fff0d9; }
+
+.benefits-editor {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border, #e2e2e2);
+  border-radius: var(--radius-md);
+}
+.benefits-editor__header { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); }
+.benefits-editor__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+.benefits-editor__list li { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); }
+.benefits-editor__add { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.benefits-editor__add select { flex: 1 1 14rem; }
+.benefits-editor__qty { width: 6rem; }
+
 /* ═══════════ Responsive ═══════════ */
 
 @media (max-width: 900px) {

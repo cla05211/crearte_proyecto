@@ -118,12 +118,12 @@
                 }
               </tbody>
               <tfoot>
-                @if (descuentoHermanos()) {
+                @if (descuentoHermanos() || descuentoHermanosSenia()) {
                   <tr>
-                    <td data-label="Producto">Descuento hermanos</td>
+                    <td data-label="Producto">Descuento hermanos <span class="ds-text-muted">(por hermano en las columnas individuales)</span></td>
                     <td data-label="Cantidad"></td>
-                    <td data-label="Seña individual"></td>
-                    <td data-label="Seña grupal"></td>
+                    <td data-label="Seña individual">@if (descuentoHermanosSeniaIndividual()) { -{{ descuentoHermanosSeniaIndividual() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }} }</td>
+                    <td data-label="Seña grupal">@if (descuentoHermanosSenia()) { -{{ descuentoHermanosSenia() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }} }</td>
                     <td data-label="Cuota individual">-{{ descuentoHermanosIndividual() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                     <td data-label="Cuota grupal">-{{ descuentoHermanos() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                   </tr>
@@ -132,8 +132,8 @@
                   <td data-label="Producto">Total</td>
                   <td data-label="Cantidad"></td>
                   <td data-label="Seña individual">{{ totalSeniaIndividual() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
-                  <td data-label="Seña grupal">{{ totalSenia() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
-                  <td data-label="Cuota individual">{{ totalCuotaIndividualFinal() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Seña grupal">{{ totalSeniaFinal() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td data-label="Cuota individual">{{ totalCuotaIndividual() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                   <td data-label="Cuota grupal">{{ totalCuotaFinal() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</td>
                 </tr>
               </tfoot>
@@ -413,8 +413,11 @@
         <div class="totals-card">
           <span>Seña total <strong>{{ totalSeniaPlan() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong></span>
           <span>Total por cuota <strong>{{ totalCuotasPlan() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong></span>
+          @if (descuentoSeniaPlan()) {
+            <span>Descuento hermanos (seña) <strong>-{{ descuentoSeniaPlan() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong></span>
+          }
           @if (descuentoCuotasPlan()) {
-            <span>Descuento hermanos <strong>-{{ descuentoCuotasPlan() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong></span>
+            <span>Descuento hermanos (cuota) <strong>-{{ descuentoCuotasPlan() | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong></span>
           }
         </div>
       </div>

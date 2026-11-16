@@ -19,6 +19,7 @@ export const ACCIONES_AUDITORIA = {
     PLAN_MODIFICADO: 'Plan modificado',
     PLAN_RECALCULADO_TALLES: 'Plan recalculado por talles',
     BENEFICIOS_MODIFICADOS: 'Beneficios modificados',
+    BENEFICIOS_CAMBIADOS_POR_TRAMO: 'Beneficios cambiados por bajar de cantidad',
     BOCETO_SUBIDO: 'Boceto subido',
     BOCETO_REEMPLAZADO: 'Boceto reemplazado',
     FIRMADO_SUBIDO: 'Firmado subido',

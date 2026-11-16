@@ -237,12 +237,11 @@ export class PedidosService
         }
     }
 
-    // Estado de producción de una categoría de prendas del pedido (control de fábrica)
     async modificarEstadoPrenda(idPedido: number, prenda: CategoriaPrenda, nuevoEstado: EstadoPrendaGuardado)
     {
         const { error } = await this.sb.supabase
         .from("pedidos")
-        // La clave calculada se tipa como string; el cast la acota a las columnas de estado
+
         .update({ [COLUMNA_ESTADO_PRENDA[prenda]]: nuevoEstado } as Partial<Record<ColumnaEstadoPrenda, EstadoPrendaGuardado>>)
         .eq("id", idPedido);
 
@@ -287,7 +286,7 @@ export class PedidosService
         return bandera;
     }
 
-    //La diferencia de esta con determinar es que determinas le mandas el pedido y consulta database. Esta le mandas ya con los datos
+    
     tieneBandera(beneficios: { id_beneficio: number }[], agregados: { id_agregado: number|null }[]): boolean
     {
         const ID_BENEFICIO_BANDERA = 1;

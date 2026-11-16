@@ -12,4 +12,6 @@ export class ModificarPlanPedidoDTO
     valor_senia_nuevo!: number;
     // Tipo del plan elegido. Si no viene (recálculo por talles) se conserva el del pedido.
     con_senia?: boolean;
+    // Beneficios nuevos del pedido (recálculo por talles cuando bajan de tramo). Si no viene, no se tocan.
+    beneficios?: { id_beneficio: number; cantidad: number }[];
 }

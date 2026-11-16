@@ -1,3 +1,4 @@
+import { TramoBeneficiosDTO } from './dto/BeneficioTramo.dto';
 import { PlanDisponibleDTO } from './dto/PlanDisponible.dto';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
@@ -24,9 +25,12 @@ export class ProductosService
         return this.http.get<ProductoConPrecioResponseDTO[]>(`${environment.apiUrl}/productos`);
     }
 
-    obtenerAgregados(): Observable<AgregadoDBDTO[]>
+    // idGrupo: precios vigentes a la fecha de venta de ese grupo (presupuesto). Sin él, catálogo actual (ventas).
+    obtenerAgregados(idGrupo?: number): Observable<AgregadoDBDTO[]>
     {
-        return this.http.get<AgregadoDBDTO[]>(`${environment.apiUrl}/productos/agregados`);
+        const params: Record<string, number> = {};
+        if (idGrupo) params['idGrupo'] = idGrupo;
+        return this.http.get<AgregadoDBDTO[]>(`${environment.apiUrl}/productos/agregados`, { params });
     }   
 
     obtenerPreciosProducto(idProducto:number, nroCuotas:number, cantidad:number, conSenia?: boolean): Observable<ProductoPreciosDTO>
@@ -62,17 +66,12 @@ export class ProductosService
     }
 
     // conSenia distingue dos planes con la misma cantidad de cuotas (con y sin seña)
-    obtenerPrecioBeneficioProducto(producto: number, cuotas:number, cantidad:number, conSenia: boolean)
+    // idGrupo: precios vigentes a la fecha de venta de ese grupo (presupuesto). Sin él, catálogo actual (ventas).
+    obtenerPrecioBeneficioProducto(producto: number, cuotas:number, cantidad:number, conSenia: boolean, idGrupo?: number)
     {
-        return this.http.get<PreciosBeneficiosResponseDTO>(`${environment.apiUrl}/productos/precio-beneficio`,{
-            params:
-            {
-                idProducto: producto,
-                cantidad: cantidad,
-                cuotas: cuotas,
-                conSenia: conSenia
-            }
-        });
+        const params: Record<string, number | boolean> = { idProducto: producto, cantidad: cantidad, cuotas: cuotas, conSenia: conSenia };
+        if (idGrupo) params['idGrupo'] = idGrupo;
+        return this.http.get<PreciosBeneficiosResponseDTO>(`${environment.apiUrl}/productos/precio-beneficio`, { params });
     }
 
     obtenerPlanesDisponibles(): Observable<PlanDisponibleDTO[]>
@@ -85,6 +84,12 @@ export class ProductosService
     modificarPreciosProducto(idProducto:number, dto:ModificarProductoPreciosDTO[]): Observable<number>
     {
         return this.http.patch<number>(`${environment.apiUrl}/productos/precios`,dto,{params:{idProducto}});
+    }
+
+    // Beneficios por tramo de un producto: se guardan en todos sus planes
+    modificarBeneficiosProducto(idProducto: number, tramos: TramoBeneficiosDTO[]): Observable<number>
+    {
+        return this.http.patch<number>(`${environment.apiUrl}/productos/beneficios`, tramos, { params: { idProducto } });
     }
 
     activarPlan(cuotas:number,senia:boolean,activo:boolean)

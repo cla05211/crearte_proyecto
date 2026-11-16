@@ -20,7 +20,7 @@ import { PermisosService } from '../../../../services/permisos/permisos';
 import { BeneficioResponseDTO } from '../../../../services/gestionPedidos/dto/BeneficioResponse.dto';
 import { BeneficioPedidoPostDTO, cantidadSinCargo, formatearBeneficios } from '../../../../services/gestionPedidos/dto/BeneficioPedido.dto';
 import { ModificarPlanPedidoDTO } from '../../../../services/gestionPedidos/dto/modficaciones/ModificarPlanPedido';
-import { clavePlan, CuotaParaMostrar, cuotasParaMostrar, cuotasTodasIguales, etiquetaPlan, pagosDelPlan, parteAgregadoGlobal, PlanCuotas, planDesdeClave, planesConActual, preciosConAgregados } from '../../../../services/cuotas/plan-cuotas';
+import { clavePlan, CuotaParaMostrar, descuentoHermanos, cuotasParaMostrar, cuotasTodasIguales, etiquetaPlan, pagosDelPlan, parteAgregadoGlobal, PlanCuotas, planDesdeClave, planesConActual, preciosConAgregados } from '../../../../services/cuotas/plan-cuotas';
 import { AgregadoProductoPedidoDTO } from '../../../../services/productosPedidos/dto/AgregadoProductoPedido.dto';
 
 const SEPARADOR_AGREGADOS = ' · Agregado: ';
@@ -170,7 +170,7 @@ export class Presupuesto implements OnInit
   });
 
   // Seña acordada: queda fija desde la primera modificación del plan (aunque cambien los productos)
-  readonly seniaAcordada = computed(() => this.presupuestoGrupo()?.pedido.senia_total ?? this.totalSenia());
+  readonly seniaAcordada = computed(() => this.presupuestoGrupo()?.pedido.senia_total ?? this.totalSeniaFinal());
 
   readonly totalCuota = computed(() => {
     const productos = this.productosConPrecios().reduce(
@@ -201,18 +201,26 @@ export class Presupuesto implements OnInit
     return productos + agregadosGlobales;
   });
 
-  // Descuento por hermanos: se aplica sobre el total de cuotas (mismo criterio que Ventas y el recálculo por talles)
-  readonly factorDescuentoHermanos = computed(() => {
-    const pedido = this.presupuestoGrupo()?.pedido;
-    const porcentaje = Number(pedido?.porcentaje_descuento_hermanos) || 0;
-    const hermanos = Number(pedido?.cantidad_hermanos) || 0;
-    return (porcentaje / 100) * hermanos;
-  });
+  // Descuento por hermanos: cada hermano tiene el % sobre lo que paga un egresado (total grupal sin bandera /
+  // cantidad de egresados), en la cuota y en la seña. Mismo criterio que Ventas y el recálculo por talles.
+  private descuentoSobre(totalSinBandera: number): number
+  {
+    const presupuesto = this.presupuestoGrupo();
+    if (!presupuesto) return 0;
+    return descuentoHermanos(totalSinBandera, presupuesto.cantidadEgresados, Number(presupuesto.pedido.porcentaje_descuento_hermanos), Number(presupuesto.pedido.cantidad_hermanos));
+  }
 
-  readonly descuentoHermanos = computed(() => this.totalCuota() * this.factorDescuentoHermanos());
-  readonly descuentoHermanosIndividual = computed(() => this.totalCuotaIndividual() * this.factorDescuentoHermanos());
+  private readonly hermanos = computed(() => Number(this.presupuestoGrupo()?.pedido.cantidad_hermanos) || 0);
+
+  readonly descuentoHermanos = computed(() =>
+    this.descuentoSobre(this.totalCuota() - this.agregadosGlobalesConPrecios().reduce((total, agregado) => total + agregado.cuotaGrupal, 0)));
+  readonly descuentoHermanosSenia = computed(() =>
+    this.descuentoSobre(this.totalSenia() - this.agregadosGlobalesConPrecios().reduce((total, agregado) => total + agregado.seniaGrupal, 0)));
+  // Lo que se le descuenta a cada hermano (el total individual no cambia: el resto de los egresados paga completo)
+  readonly descuentoHermanosIndividual = computed(() => this.hermanos() ? this.descuentoHermanos() / this.hermanos() : 0);
+  readonly descuentoHermanosSeniaIndividual = computed(() => this.hermanos() ? this.descuentoHermanosSenia() / this.hermanos() : 0);
   readonly totalCuotaFinal = computed(() => this.totalCuota() - this.descuentoHermanos());
-  readonly totalCuotaIndividualFinal = computed(() => this.totalCuotaIndividual() - this.descuentoHermanosIndividual());
+  readonly totalSeniaFinal = computed(() => this.totalSenia() - this.descuentoHermanosSenia());
 
   readonly etiquetaPlanCuotas = computed(() => {
     const presupuesto = this.presupuestoGrupo();
@@ -254,9 +262,13 @@ export class Presupuesto implements OnInit
     });
   }
 
+  // Grupo del presupuesto: los precios se piden a la fecha de venta del grupo, no al catálogo actual
+  private idGrupo = 0;
+
   traerPresupuestoGrupo(): void
   {
     const idGrupo = Number(this.route.parent?.snapshot.paramMap.get('id'));
+    this.idGrupo = idGrupo;
 
     this.cargando.set(true);
 
@@ -280,7 +292,7 @@ export class Presupuesto implements OnInit
   {
     this.cargandoPrecios.set(true);
 
-    const agregadosDisponibles$ = this.productosService.obtenerAgregados();
+    const agregadosDisponibles$ = this.productosService.obtenerAgregados(idGrupo);
 
     const cantidadEgresados$ = presupuesto.agregadosGlobales.length
       ? this.gruposService.obtenerCantidadEgresados(idGrupo)
@@ -677,6 +689,7 @@ export class Presupuesto implements OnInit
           nuevasCuotas,
           producto.cantidad + this.sinCargoProducto(producto.idProducto),
           plan.conSenia,
+          this.idGrupo,
         )
         .pipe(
           map((precio) => {
@@ -729,7 +742,7 @@ export class Presupuesto implements OnInit
     const cantidadTramo = Number(cantidad) + this.sinCargoProducto(Number(idProducto));
     // Solo vale la respuesta del último cálculo pedido (las viejas se ignoran)
     const solicitud = ++this.solicitudCalculoPlan;
-    this.productosService.obtenerPrecioBeneficioProducto(idProducto, cuotas, cantidadTramo, conSenia).subscribe({
+    this.productosService.obtenerPrecioBeneficioProducto(idProducto, cuotas, cantidadTramo, conSenia, this.idGrupo).subscribe({
       next: (precio) => {
         if (solicitud !== this.solicitudCalculoPlan) return;
         const producto = this.productosParaElegir().find((item) => item.id_producto === idProducto);
@@ -844,7 +857,13 @@ export class Presupuesto implements OnInit
   {
     const productos = this.carritoEdicionPlan().reduce((total, producto) => total + producto.valorSenia * producto.cantidad, 0);
     // En pesos enteros, igual que la guarda modificar_plan_pedido
-    return Math.round(productos + this.parteBanderaPlan().senia);
+    return Math.round(productos + this.parteBanderaPlan().senia - this.descuentoSeniaPlan());
+  }
+
+  descuentoSeniaPlan(): number
+  {
+    const productos = this.carritoEdicionPlan().reduce((total, producto) => total + producto.valorSenia * producto.cantidad, 0);
+    return this.descuentoSobre(productos);
   }
 
   // Parte de la bandera en la seña y en cada cuota del plan elegido (en cuotas iguales también va en la seña)
@@ -867,11 +886,7 @@ export class Presupuesto implements OnInit
 
   descuentoCuotasPlan(): number
   {
-    const presupuesto = this.presupuestoGrupo();
-    if (!presupuesto) return 0;
-    const porcentaje = Number(presupuesto.pedido.porcentaje_descuento_hermanos) || 0;
-    const hermanos = Number(presupuesto.pedido.cantidad_hermanos) || 0;
-    return this.totalCuotasPlanSinDescuento() * (porcentaje / 100) * hermanos;
+    return this.descuentoSobre(this.totalCuotasPlanSinDescuento() - this.parteBanderaPlan().cuota);
   }
 
   totalCuotasPlan(): number

@@ -7,6 +7,7 @@ import { ProductoPostDTO } from './dto/ProductoPOST.dto';
 import { AgregadoPostDTO } from './dto/AgregadoPost.dto';
 import { ModificarProductoPreciosDTO } from './dto/ModificarProductoPrecios.dto';
 import { AgregarPlanDTO } from './dto/AgregarPlanDTO';
+import { TramoBeneficiosDTO } from './dto/BeneficioTramo.dto';
 
 @Controller('productos')
 export class ProductosController 
@@ -22,24 +23,28 @@ export class ProductosController
 
     @Get('/agregados')
     @UseGuards(AuthGuard,PermisosGuard)
-    async obtenerAgregados(@Req() req: any) 
+    // idGrupo opcional: con él, los precios vigentes a la fecha de venta del grupo (edición de presupuesto)
+    async obtenerAgregados(@Query('idGrupo', new ParseIntPipe({ optional: true })) idGrupo?: number) 
     {
-        return await this.productosService.obtenerAgregados();
+        const fecha = idGrupo ? await this.productosService.obtenerFechaVentaGrupo(idGrupo) : undefined;
+        return await this.productosService.obtenerAgregados(fecha);
     }  
 
     @Get('/precio-beneficio')
     @UseGuards(AuthGuard,PermisosGuard)
-    async obtenerPrecioBeneficio(@Query('idProducto', ParseIntPipe) idProducto: number, @Query('cantidad', ParseIntPipe) cantidad: number, @Query('cuotas',ParseIntPipe) cuotas: number, @Query('conSenia', new ParseBoolPipe({ optional: true })) conSenia?: boolean) 
+    // idGrupo opcional: con él, los precios vigentes a la fecha de venta del grupo (edición de presupuesto)
+    async obtenerPrecioBeneficio(@Query('idProducto', ParseIntPipe) idProducto: number, @Query('cantidad', ParseIntPipe) cantidad: number, @Query('cuotas',ParseIntPipe) cuotas: number, @Query('conSenia', new ParseBoolPipe({ optional: true })) conSenia?: boolean, @Query('idGrupo', new ParseIntPipe({ optional: true })) idGrupo?: number) 
     {
-        return await this.productosService.obtenerPreciosBeneficios(idProducto, cantidad, cuotas, conSenia);
+        const fecha = idGrupo ? await this.productosService.obtenerFechaVentaGrupo(idGrupo) : undefined;
+        return await this.productosService.obtenerPreciosBeneficios(idProducto, cantidad, cuotas, conSenia, fecha);
     }  
 
     @Get('precios')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_clientes_presupuesto')
-    async obtenerPreciosId(@Query('idProducto', ParseIntPipe) idProducto: number, @Query('cuotas', ParseIntPipe) cuotas: number, @Query('cantidad', ParseIntPipe) cantidad: number, @Query('conSenia', new ParseBoolPipe({ optional: true })) conSenia?: boolean)
+    async obtenerPreciosId(@Query('idProducto', ParseIntPipe) idProducto: number, @Query('cuotas', ParseIntPipe) cuotas: number, @Query('cantidad', ParseIntPipe) cantidad: number, @Query('fecha') fecha: string,@Query('conSenia', new ParseBoolPipe({ optional: true })) conSenia?: boolean)
     {
-        return await this.productosService.obtenerPreciosId(idProducto, cuotas, cantidad, conSenia);
+        return await this.productosService.obtenerPreciosId(idProducto, cuotas, cantidad,fecha, conSenia);
     }
 
     @Post ('')
@@ -75,6 +80,15 @@ export class ProductosController
         return await this.productosService.modificarPreciosProducto(idProducto,dto)
     }
     
+    // Beneficios de cada tramo del producto (se aplican a todos los planes)
+    @Patch('/beneficios')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_pagina_productos')
+    async modificarBeneficiosProducto(@Query('idProducto', ParseIntPipe) idProducto: number, @Body() dto: TramoBeneficiosDTO[])
+    {
+        return await this.productosService.modificarBeneficiosProducto(idProducto, dto);
+    }
+
     @Patch('/activar-plan')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_pagina_productos')

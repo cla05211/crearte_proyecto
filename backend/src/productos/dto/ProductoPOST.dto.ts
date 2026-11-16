@@ -5,7 +5,6 @@ export class ProductoPostDTO
     cuotas!: number;
     valor_senia!: number;
     valor_cuota!: number;
-    beneficio!:string | null;
     id_producto!: number;
     nombre!: string;
     descripcion!:string;

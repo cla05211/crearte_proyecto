@@ -226,6 +226,84 @@
               </table>
             </div>
           }
+
+          @if (grupoConBeneficios() && tramosProducto().length) {
+            <!-- ─────────── Beneficios por cantidad ─────────── -->
+            <div class="benefits">
+              <h3 class="benefits__title">Beneficios por cantidad</h3>
+
+              @if (beneficiosDesparejos().length) {
+                <div class="ds-alert ds-alert--warning">
+                  {{ beneficiosDesparejos().join(', ') }} tiene{{ beneficiosDesparejos().length === 1 ? '' : 'n' }} beneficios distintos a {{ grupoActual()!.nombres[0] }}.
+                  Al guardar cambios en un rango, ese rango queda igual en todo el grupo.
+                </div>
+              }
+
+              <div class="ds-table-wrapper">
+                <table class="ds-table prices-table">
+                  <thead>
+                    <tr>
+                      @for (tramo of tramosProducto(); track tramo.desde) {
+                        <th scope="col">{{ etiquetaTramoBeneficios(tramo) }}</th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      @for (tramo of tramosProducto(); track tramo.desde) {
+                        <td>
+                          <div class="benefits-cell" [class.is-modified]="tramoBeneficiosModificado(tramo.desde, tramo.hasta)">
+                            @for (b of beneficiosTramo(tramo.desde, tramo.hasta); track b.id_beneficio) {
+                              <span class="ds-badge">{{ b.cantidad }} {{ nombreBeneficio(b.id_beneficio) }}</span>
+                            } @empty {
+                              <span class="prices-table__empty">Sin beneficios</span>
+                            }
+                            <button type="button" class="ds-button ds-button--ghost ds-button--small" (click)="editarBeneficios(tramo)">
+                              Editar
+                            </button>
+                          </div>
+                        </td>
+                      }
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              @if (tramoBeneficios(); as tramo) {
+                <div class="benefits-editor">
+                  <header class="benefits-editor__header">
+                    <strong>{{ grupoActual()?.titulo }} · {{ tramo.etiqueta }}</strong>
+                    <button type="button" class="ds-button ds-button--ghost ds-button--small" (click)="cerrarEdicionBeneficios()">Listo</button>
+                  </header>
+
+                  <ul class="benefits-editor__list">
+                    @for (b of beneficiosTramoActual(); track b.id_beneficio) {
+                      <li>
+                        <span>{{ b.cantidad }} {{ nombreBeneficio(b.id_beneficio) }}</span>
+                        <button type="button" class="ds-button ds-button--ghost ds-button--small" [attr.aria-label]="'Quitar ' + nombreBeneficio(b.id_beneficio)" (click)="quitarBeneficioTramo(b.id_beneficio)">✕</button>
+                      </li>
+                    } @empty {
+                      <li class="ds-text-muted">Este rango no tiene beneficios.</li>
+                    }
+                  </ul>
+
+                  <div class="benefits-editor__add">
+                    <select class="ds-input" aria-label="Beneficio" [ngModel]="nuevoBeneficioId()" (ngModelChange)="nuevoBeneficioId.set($event)">
+                      <option [ngValue]="null" disabled>Elegí un beneficio</option>
+                      @for (b of catalogoBeneficios(); track b.id) {
+                        <option [ngValue]="b.id">{{ b.beneficio }}</option>
+                      }
+                    </select>
+                    <input class="ds-input benefits-editor__qty" type="number" min="1" step="1" aria-label="Cantidad"
+                      [ngModel]="nuevoBeneficioCantidad()" (ngModelChange)="nuevoBeneficioCantidad.set($event)" />
+                    <button type="button" class="ds-button ds-button--small" [disabled]="!nuevoBeneficioId() || !(nuevoBeneficioCantidad()! >= 1)" (click)="agregarBeneficioTramo()">
+                      Agregar
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
         </section>
 
         }
@@ -234,7 +312,7 @@
       @if (cantidadCambios() > 0) {
         <div class="save-bar" role="region" aria-label="Cambios sin guardar">
           <div class="save-bar__info">
-            <strong>{{ cantidadCambios() }} precio{{ cantidadCambios() === 1 ? '' : 's' }} modificado{{ cantidadCambios() === 1 ? '' : 's' }}</strong>
+            <strong>{{ cantidadCambios() }} cambio{{ cantidadCambios() === 1 ? '' : 's' }} sin guardar</strong>
             @if (cambiosInvalidos()) {
               <span class="save-bar__error">Hay precios vacíos o en cero.</span>
             }

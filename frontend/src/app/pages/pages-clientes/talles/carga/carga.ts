@@ -565,11 +565,12 @@ export class Carga implements OnInit, OnDestroy
             // La página de Talles pasa a mostrar solo el PDF firmado (sin pestañas)
             this.tallesConfirmacion.confirmados.set(true);
         }
-        catch
+        catch (err: any)
         {
+            // Si el backend rechazó la confirmación (400/409) se muestra su motivo, no un error de conexión
             this.notificaciones.error({
                 title: 'No se pudieron confirmar los talles',
-                description: 'Revisá tu conexión e intentá de nuevo.',
+                description: err?.error?.message ?? 'Revisá tu conexión e intentá de nuevo.',
             });
         }
         finally
