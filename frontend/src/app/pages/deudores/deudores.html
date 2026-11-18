@@ -43,13 +43,14 @@
         <div class="ds-table-wrapper deudores-table-wrapper">
           <table class="ds-table deudores-table">
             <colgroup>
-              <col style="width: 9%" />
-              <col style="width: 22%" />
-              <col style="width: 13%" />
-              <col style="width: 10%" />
-              <col style="width: 11%" />
+              <col style="width: 8%" />
               <col style="width: 20%" />
-              <col style="width: 15%" />
+              <col style="width: 12%" />
+              <col style="width: 9%" />
+              <col style="width: 10%" />
+              <col style="width: 18%" />
+              <col style="width: 12%" />
+              <col style="width: 11%" />
             </colgroup>
             <thead>
               <tr>
@@ -60,6 +61,7 @@
                 <th>Cuotas adeudadas</th>
                 <th>Padre responsable</th>
                 <th>Contacto</th>
+                <th>Producción</th>
               </tr>
             </thead>
             <tbody>
@@ -85,6 +87,20 @@
                   </td>
                   <td data-label="Padre responsable">{{ deudor.padreResponsable || '-' }}</td>
                   <td data-label="Contacto">{{ deudor.contacto || '-' }}</td>
+                  <td data-label="Producción" class="celda-produccion">
+                    @if (deudor.estadoGeneral === estadoEnProduccion || deudor.estadoGeneral === estadoFrenado) {
+                      @let frenado = deudor.estadoGeneral === estadoFrenado;
+                      <button type="button" class="ds-button ds-button--small"
+                              [class.ds-button--secondary]="frenado"
+                              [disabled]="cambiandoEstado() === deudor.idPedido"
+                              (click)="alternarFrenado(deudor)"
+                              [title]="(frenado ? 'Reanudar la producción de ' : 'Frenar la producción de ') + deudor.colegio">
+                        {{ frenado ? 'Reanudar' : 'Frenar' }}
+                      </button>
+                    } @else {
+                      -
+                    }
+                  </td>
                 </tr>
               }
             </tbody>

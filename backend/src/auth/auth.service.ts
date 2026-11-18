@@ -93,9 +93,10 @@ export class AuthService {
         });
     }
 
-    const aprobado = await this.comprobarAprobado(data.user.id)
+    // Una sola consulta a usuarios: trae los datos y si está aprobado
+    const usuario = await this.usuarioService.obtenerUsuarioPorIdAuth(data.user.id);
 
-    if(!aprobado)
+    if(!usuario.aprobado)
     {
         await this.revocarSesion(data.session.access_token);
         throw new UnauthorizedException({
@@ -103,8 +104,7 @@ export class AuthService {
         message: 'Usuario pendiente de aprobación.',
         });
     }
-    
-    const usuario = await this.usuarioService.obtenerUsuarioPorIdAuth(data.user.id);
+
     const permisos = await this.permisosService.obtenerPermisosRol(usuario.rol!);
 
     return {session: data.session, usuario, permisos};

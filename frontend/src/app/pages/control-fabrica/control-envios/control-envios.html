@@ -8,16 +8,6 @@
   </div>
 } @else if (vista() === 'envios') {
 
-  <div class="kpis-grid kpis-grid--envios">
-    <div class="ds-card kpi-card">
-      <span class="ds-label">Envío por correo</span>
-      <strong class="kpi-valor">{{ pedidosCorreo().length }}</strong>
-    </div>
-    <div class="ds-card kpi-card">
-      <span class="ds-label">Retiro por oficina</span>
-      <strong class="kpi-valor">{{ pedidosRetiro().length }}</strong>
-    </div>
-  </div>
 
   <!-- ── Envío por correo ── -->
   <section class="envios-seccion" aria-labelledby="titulo-correo">
@@ -261,12 +251,7 @@
 } @else {
 
   <!-- ── Pedidos entregados ── -->
-  <div class="kpis-grid">
-    <div class="ds-card kpi-card">
-      <span class="ds-label">Pedidos entregados</span>
-      <strong class="kpi-valor">{{ entregados()?.length ?? 0 }}</strong>
-    </div>
-  </div>
+
 
   @if (!entregados()?.length) {
     <div class="empty-state">

@@ -15,6 +15,8 @@ type Pestania = 'pendientes' | 'enviados' | 'envios' | 'entregados';
 type EstadoPrendaGuardado = 'Ok' | 'Pendiente';
 
 const ESTADO_EN_PRODUCCION = 'En producción';
+// Pausado desde Deudores: para fábrica es igual que "En producción"
+const ESTADO_FRENADO = 'Frenado';
 const ESTADO_ENTREGADO = 'Entregado';
 // Guardado en estado_general: el pedido pasa a las páginas de envío / retiro
 const ESTADO_LISTO_PARA_ENTREGAR = 'Listo para entregar';
@@ -200,7 +202,7 @@ export class ControlFabrica implements OnInit
   estadoPedido(pedido: ControlProduccionDTO): string
   {
     if (pedido.estado_pedido === ESTADO_ENTREGADO) return ESTADO_ENTREGADO;
-    if (pedido.estado_pedido !== ESTADO_EN_PRODUCCION) return pedido.estado_pedido;
+    if (pedido.estado_pedido !== ESTADO_EN_PRODUCCION && pedido.estado_pedido !== ESTADO_FRENADO) return pedido.estado_pedido;
 
     const todasOk = this.columnasPrendas
       .map(columna => pedido[columna.categoria])
@@ -286,7 +288,7 @@ export class ControlFabrica implements OnInit
 
     try
     {
-      const { nroFabrica, whatsappEnviado } = await firstValueFrom(
+      const { nroFabrica } = await firstValueFrom(
         this.gestionPedidosService.enviarPedidoFabrica(pedido.idPedido, mes, anio));
 
       // Deja de estar pendiente: sale de esta pestaña
@@ -294,11 +296,6 @@ export class ControlFabrica implements OnInit
       this.envio.set(null);
 
       this.notificaciones.success({ title: 'Enviado a fábrica', description: `${pedido.colegio} quedó en producción con el pedido N° ${nroFabrica}.` });
-
-      if (!whatsappEnviado)
-      {
-        this.notificaciones.warning({ title: 'WhatsApp no enviado', description: 'El pedido se envió, pero no se pudo mandar el mensaje del contrato al cliente.' });
-      }
     }
     catch (err: any)
     {

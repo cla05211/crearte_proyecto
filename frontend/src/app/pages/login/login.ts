@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import{ FormsModule, FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule, SlicePipe } from '@angular/common';
@@ -21,6 +21,8 @@ export class Login
     faEye = faEye;
     faEyeSlash = faEyeSlash;
     verClave: boolean = false;
+    // Mientras espera la respuesta del login: el botón se deshabilita y muestra "Ingresando…"
+    readonly ingresando = signal(false);
     auth = inject(AuthService)
     router = inject(Router)
     notificaciones = inject(NotificationService)
@@ -53,6 +55,8 @@ export class Login
 
     async iniciarSesion()
     {
+        if (this.ingresando()) return;
+
         if (this.formularioLogin.invalid) 
         {
             this.formularioLogin.markAllAsTouched();
@@ -61,6 +65,7 @@ export class Login
         {
             const correo = String(this.formularioLogin.get('correo')?.value);
             const contraseña = String(this.formularioLogin.get('contraseña')?.value);
+            this.ingresando.set(true);
             try
             {
                 const data:any = await firstValueFrom (this.auth.login(correo,contraseña));
@@ -92,6 +97,10 @@ export class Login
                         description: 'Lo sentimos, ha ocurrido un error inesperado.',
                     });
                 }
+            }
+            finally
+            {
+                this.ingresando.set(false);
             }
         
         }

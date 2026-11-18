@@ -62,8 +62,13 @@
           </div>
         </div>
 
-        <button class="submit-button" type="button" (click)="iniciarSesion()">
-          Ingresar
+        <button class="submit-button" type="button" (click)="iniciarSesion()" [disabled]="ingresando()" [attr.aria-busy]="ingresando()">
+          @if (ingresando()) {
+            <span class="submit-spinner" aria-hidden="true"></span>
+            Ingresando…
+          } @else {
+            Ingresar
+          }
         </button>
 
         <p class="account-prompt">

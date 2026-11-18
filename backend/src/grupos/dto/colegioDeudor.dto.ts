@@ -1,6 +1,8 @@
 export class colegioDeudorDTO
 {
     idGrupo!: number;
+    idPedido!: number;
+    estadoGeneral!: string | null;
     nroFabrica!: number|null;
     colegio!: string;
     nroCuotasAdeudadas!: number;

@@ -7,6 +7,7 @@ import { grupoClientePageResponseDTO } from './dto/grupoClientePage.dto copy';
 import { grupoDatosClienteResponse } from './dto/grupoClienteDatosPage.dto';
 import { AuthService } from 'src/auth/auth.service';
 import { colegioDeudorDTO } from './dto/colegioDeudor.dto';
+import { ESTADO_PEDIDO_EN_PRODUCCION, ESTADO_PEDIDO_FRENADO } from 'src/pedidos/pedidos.service';
 
 import { traerTodasLasFilas } from 'src/common/traer-todas-las-filas';
 import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
@@ -107,7 +108,7 @@ export class GruposService
 
         if(esFabrica)
         {
-            query = query.eq('pedidos.estado_general', 'En producción');
+            query = query.in('pedidos.estado_general', [ESTADO_PEDIDO_EN_PRODUCCION, ESTADO_PEDIDO_FRENADO]);
         }
 
         if (anio && !busqueda)
@@ -240,7 +241,7 @@ export class GruposService
         const data = await traerTodasLasFilas((desde, hasta) => this.sb.supabase
         .from("grupos")
         .select(`id, created_at, colegios(nombre),
-            pedidos!inner(nro_fabrica, senia_total, con_senia,
+            pedidos!inner(id, estado_general, nro_fabrica, senia_total, con_senia,
                 cuotasVencidas:cuotas(importe,monto_cubierto,fecha_vencimiento,estado),
                 productos_pedidos(valor_senia,cantidad),
                 pagos(monto,motivo)),
@@ -279,6 +280,8 @@ export class GruposService
 
             colegiosDeudores.push({
                 idGrupo: g.id,
+                idPedido: pedido.id,
+                estadoGeneral: pedido.estado_general,
                 nroFabrica: pedido.nro_fabrica,
                 colegio: g.colegios.nombre,
                 nroCuotasAdeudadas: cuotasVencidas.length + (deudaSenia > 0 ? 1 : 0),

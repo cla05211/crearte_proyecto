@@ -218,7 +218,7 @@
       <section class="ds-card datos-cancelar">
         <div>
           <h2 class="ds-heading-3">Cancelar pedido</h2>
-          <p class="ds-text-muted">Da de baja al colegio. El pedido pasa a "Cancelado" y se cancelan los mensajes de WhatsApp pendientes.</p>
+          <p class="ds-text-muted">Da de baja al colegio. El pedido pasa a "Cancelado".</p>
         </div>
         <button type="button" class="ds-button datos-cancelar__boton" (click)="abrirModalCancelar()">Cancelar pedido</button>
       </section>
@@ -231,7 +231,7 @@
     <section class="cancelar-dialog ds-card" role="dialog" aria-modal="true" aria-labelledby="cancelar-titulo">
       <div class="cancelar-dialog__contenido">
         <h2 class="ds-heading-3" id="cancelar-titulo">¿Cancelar el pedido de {{ datosColegio()?.grupo?.colegio?.nombre }}?</h2>
-        <p class="ds-text-muted">El colegio queda dado de baja: el pedido pasa a "Cancelado" y se cancelan los mensajes de WhatsApp pendientes. Esto no se puede deshacer.</p>
+        <p class="ds-text-muted">El colegio queda dado de baja: el pedido pasa a "Cancelado". Esto no se puede deshacer.</p>
 
         <label class="ds-field">
           <span class="ds-label">Motivo de la cancelación</span>

@@ -19,11 +19,9 @@ import { AuditoriasService } from 'src/auditorias/auditorias.service';
 import { OcrModule } from 'src/ocr/ocr.module';
 import { AgregadosGlobalesPedidoModule } from 'src/agregados-globales-pedido/agregados-globales-pedido.module';
 import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
-import { NotificacionesService } from 'src/notificaciones/notificaciones.service';
-import { NotificacionesModule } from 'src/notificaciones/notificaciones.module';
 
 @Module({
-  imports: [SupabaseModule, PermisosModule, OcrModule, AgregadosGlobalesPedidoModule, NotificacionesModule],
+  imports: [SupabaseModule, PermisosModule, OcrModule, AgregadosGlobalesPedidoModule],
   controllers: [GestionPedidosController],
   providers: [GestionPedidosService, UsuariosService, ColegiosService,
             GruposService, PedidosService, ProductosPedidoService, PadreResponsableService,

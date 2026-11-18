@@ -2,13 +2,14 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { ACCIONES_AUDITORIA, insertarAuditoriaDTO, TABLAS_AUDITORIA, TIPOS_PAGINA_AUDITORIA, TipoAuditoria } from './dto/insertarAuditoria.dto';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
+import { ESTADO_PEDIDO_EN_PRODUCCION, ESTADO_PEDIDO_FRENADO } from 'src/pedidos/pedidos.service';
 import {
     AuditoriaPaginaDTO, AuditoriaRegistroDTO, BeneficioAuditoria, CancelacionAuditoria, CancelacionPedidoDTO, DatoAuditoria, DisenioAuditoria,
     FiltrosAuditoria, PrendaAuditoria, PresupuestoAuditoria,
 } from './dto/AuditoriaResponse.dto';
 
 
-const ESTADOS_EN_PRODUCCION = ['En producción', 'Listo para entregar', 'Entregado'];
+const ESTADOS_EN_PRODUCCION = [ESTADO_PEDIDO_EN_PRODUCCION, ESTADO_PEDIDO_FRENADO, 'Listo para entregar', 'Entregado'];
 const TIPOS_SOLO_EN_PRODUCCION: TipoAuditoria[] = ['talles', 'disenio'];
 
 @Injectable()

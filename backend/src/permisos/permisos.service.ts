@@ -8,34 +8,18 @@ export class PermisosService
 
     async obtenerPermisosRol(rolNro: number):Promise<string[]>
     {
-        const { data: relaciones, error: errorRelaciones } = await this.sb.supabase
+        // Una sola consulta: roles_permisos con el nombre del permiso embebido (FK permiso_id -> permisos)
+        const { data, error } = await this.sb.supabase
             .from('roles_permisos')
-            .select('permiso_id')
+            .select('permisos(nombre)')
             .eq('rol_nro', rolNro);
 
-        if(errorRelaciones)
+        if(error)
         {
             throw new InternalServerErrorException('No se pudieron conseguir los permisos del rol');
         }
 
-        if(!relaciones || relaciones.length === 0)
-        {
-            return [];
-        }
-
-        const permisoIds = relaciones.map(r => r.permiso_id).filter((id): id is number => id !== null);
-
-        const { data: permisos, error: errorPermisos } = await this.sb.supabase
-            .from('permisos')
-            .select('nombre')
-            .in('id', permisoIds);
-
-        if(errorPermisos)
-        {
-            throw new InternalServerErrorException('No se pudieron conseguir los permisos');
-        }
-
-        return permisos.map(p => p.nombre).filter((nombre): nombre is string => nombre !== null);
+        return (data ?? []).map(r => r.permisos?.nombre).filter((nombre): nombre is string => !!nombre);
     }
 
     async tienePermiso(rolNro: number, permiso: string): Promise<boolean>

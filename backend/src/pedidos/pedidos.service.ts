@@ -5,6 +5,10 @@ import { BadRequestException } from '@nestjs/common';
 import { PedidoDTOResponse } from './dto/pedidoResponse.dto';
 
 export const ESTADO_PEDIDO_CANCELADO = 'Cancelado';
+export const ESTADO_PEDIDO_EN_PRODUCCION = 'En producción';
+// "Frenado" es un pedido en producción que administración pausó (desde Deudores). Es solo visual:
+// en todos lados se trata igual que "En producción".
+export const ESTADO_PEDIDO_FRENADO = 'Frenado';
 // Tiene que coincidir con el check pedidos_motivo_cancelacion_check de la base
 export const MOTIVOS_CANCELACION = ['Pocos egresados', 'Problemas con diseño', 'Problemas con talles', 'Otras cuestiones'] as const;
 export type MotivoCancelacion = (typeof MOTIVOS_CANCELACION)[number];

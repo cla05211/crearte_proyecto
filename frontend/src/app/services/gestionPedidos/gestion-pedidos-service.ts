@@ -92,9 +92,9 @@ export class GestionPedidosService
   }
 
   // Asigna nro de fábrica, fecha de entrega (y última cuota) y pasa el pedido a "En producción"
-  enviarPedidoFabrica(idPedido: number, mesEntrega: number, anioEntrega: number):Observable<{ nroFabrica: number; whatsappEnviado: boolean }>
+  enviarPedidoFabrica(idPedido: number, mesEntrega: number, anioEntrega: number):Observable<{ nroFabrica: number }>
   {
-    return this.http.post<{ nroFabrica: number; whatsappEnviado: boolean }>(
+    return this.http.post<{ nroFabrica: number }>(
       `${environment.apiUrl}/gestion-pedidos/enviar-fabrica/${idPedido}`, { mesEntrega, anioEntrega });
   }
 

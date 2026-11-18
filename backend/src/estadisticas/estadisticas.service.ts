@@ -1,4 +1,4 @@
-import { ESTADO_PEDIDO_CANCELADO } from 'src/pedidos/pedidos.service';
+import { ESTADO_PEDIDO_CANCELADO, ESTADO_PEDIDO_EN_PRODUCCION, ESTADO_PEDIDO_FRENADO } from 'src/pedidos/pedidos.service';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { EstadisticasVentasDTO } from './dto/estadisticasVentas.dto';
 import { SupabaseService } from 'src/supabase/supabase.service';
@@ -65,7 +65,7 @@ export class EstadisticasService {
             chombas: IDS_CHOMBA,
             pantalones: [72],
         };
-        const ESTADOS_EN_PRODUCCION = ['En producción', 'Listo para entregar', 'Entregado'];
+        const ESTADOS_EN_PRODUCCION = [ESTADO_PEDIDO_EN_PRODUCCION, ESTADO_PEDIDO_FRENADO, 'Listo para entregar', 'Entregado'];
 
         const anio = anioOActual(anioPedido);
 

@@ -271,12 +271,37 @@ input:focus {
   transition: background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
 }
 
-.submit-button:hover {
+.submit-button {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.submit-button:disabled {
+  cursor: wait;
+  opacity: 0.8;
+}
+
+.submit-spinner {
+  animation: submit-girar 0.7s linear infinite;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  border-right-color: transparent;
+  height: 16px;
+  width: 16px;
+}
+
+@keyframes submit-girar {
+  to { transform: rotate(360deg); }
+}
+
+.submit-button:hover:not(:disabled) {
   background-color: var(--color-primary-800);
   border-color: var(--color-primary-800);
 }
 
-.submit-button:active {
+.submit-button:active:not(:disabled) {
   transform: translateY(1px);
 }
 

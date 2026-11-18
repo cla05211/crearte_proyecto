@@ -126,7 +126,7 @@ export class GestionPedidosController
     }
 
     // Baja de un colegio: pasa el pedido a "Cancelado", opcionalmente devuelve lo pagado
-    // (un pago negativo, los pagos originales quedan) y cancela los WhatsApp pendientes
+    // (un pago negativo, los pagos originales quedan)
     @Patch('cancelar/:id')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('cancelar_pedido')

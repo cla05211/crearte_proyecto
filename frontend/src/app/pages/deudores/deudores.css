@@ -177,3 +177,7 @@
     grid-template-columns: 1fr;
   }
 }
+
+.deudores-table td.celda-produccion {
+  white-space: nowrap;
+}

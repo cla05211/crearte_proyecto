@@ -95,7 +95,7 @@ export class PedidosController
 
     @Patch('estado-general')
     @UseGuards(AuthGuard,PermisosGuard)
-    @RequierePermiso('ver_control_produccion')
+    @RequierePermiso('ver_control_produccion', 'ver_deudores')
     async modificarEstadoGeneral(@Query('nuevoEstado') nuevoEstado: string, @Query('idPedido', ParseIntPipe) idPedido: number)
     {
         await this.pedidosService.modificarEstadoGeneralPedido(idPedido,nuevoEstado)

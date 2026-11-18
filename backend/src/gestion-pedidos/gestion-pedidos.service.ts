@@ -32,21 +32,20 @@ import { AgregadoGlobalPedidoResponseDTO } from 'src/agregados-globales-pedido/d
 import { ControlTallesDisenioDTO } from './dto/ControlTallesDisenioDTO';
 import { BeneficioPedidoDTO } from 'src/beneficios-pedido/dto/beneficioPedidoDTO';
 import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
-import { NotificacionesService } from 'src/notificaciones/notificaciones.service';
 import { ControlProduccionDTO, EstadoPrenda } from './dto/ControlProduccionDTO';
 import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
 import { IDS_BUZO, IDS_CAMPERA, IDS_CHOMBA, IDS_REMERA } from 'src/productos/ids-prendas';
 import { ControlBanderasDTO, EstadoBocetoBandera, ModificarBanderaDTO, OrigenBandera } from './dto/ControlBanderasDTO';
 import { limpiarBusqueda } from 'src/common/busqueda';
 import { inicioDiaArgentina } from 'src/common/fechas';
-import { ESTADO_PEDIDO_CANCELADO, MotivoCancelacion } from 'src/pedidos/pedidos.service';
+import { ESTADO_PEDIDO_CANCELADO, ESTADO_PEDIDO_EN_PRODUCCION, ESTADO_PEDIDO_FRENADO, MotivoCancelacion } from 'src/pedidos/pedidos.service';
 
 const PANTALONES = [72];
 const ESTADO_TALLES_CONFIRMADO = 'Confirmado';
 const ESTADO_TALLES_CARGANDO = 'Cargando';
 const ESTADO_LISTO_PARA_PRODUCCION = 'Listo para enviar a producción';
 // Pedidos que aparecen en la planilla de banderas
-const ESTADOS_PEDIDO_BANDERAS = [ESTADO_LISTO_PARA_PRODUCCION, 'En producción', 'Listo para entregar', 'Entregado'];
+const ESTADOS_PEDIDO_BANDERAS = [ESTADO_LISTO_PARA_PRODUCCION, ESTADO_PEDIDO_EN_PRODUCCION, ESTADO_PEDIDO_FRENADO, 'Listo para entregar', 'Entregado'];
 const ESTADO_TALLES_NO_ACCEDIO = 'No accedió';
 
 type ProductoPedidoNombre = { productos: { id: number } };
@@ -62,7 +61,7 @@ export class GestionPedidosService
         private documentos:DocumentosService, private pagos:PagosService, private cuentaCorriente: CuentaCorrienteService,
         private cuotas: CuotasService, private sb: SupabaseService, private auditoriaService: AuditoriasService,
         private pedidosService: PedidosService, private agregadosGlobalesPedido: AgregadosGlobalesPedidoService,
-        private beneficiosPedidoService: BeneficiosPedidoService, private notificacionesService: NotificacionesService){}
+        private beneficiosPedidoService: BeneficiosPedidoService){}
 
     async crearPedido(dto:CrearPedidoDTO)
     {
@@ -83,11 +82,6 @@ export class GestionPedidosService
         }
 
         const resultado = data as unknown as { id_pedido: number; usuario: string };
-
-        // Sin await: la venta responde enseguida. El .catch es obligatorio: si las notificaciones
-        // fallan, el error queda en el log en vez de tirar abajo el backend (unhandled rejection).
-        this.notificacionesService.procesarNuevaVenta(resultado.id_pedido)
-            .catch(err => this.logger.error(`Notificaciones del pedido ${resultado.id_pedido}: ${err.message}`));
 
         return { id_pedido: resultado.id_pedido, usuario: resultado.usuario };
     }
@@ -255,8 +249,6 @@ export class GestionPedidosService
             datoAnterior: { estado: pedido.estado_general },
             datoNuevo: { motivo, devolucionPlata, banco: devolucionPlata ? banco ?? null : null },
         });
-
-        await this.notificacionesService.cancelarNotificacionesPedido(idPedido);
     }
 
     //--- Auditoría ---
@@ -413,7 +405,7 @@ export class GestionPedidosService
 
         if(enviadosFabrica)
         {
-            query = query.in("estado_general", ["En producción","Listo para entregar","Entregado"]);
+            query = query.in("estado_general", [ESTADO_PEDIDO_EN_PRODUCCION, ESTADO_PEDIDO_FRENADO, "Listo para entregar", "Entregado"]);
             query = query.gte("fecha_entrega_aproximada", desde);
             query = query.lt("fecha_entrega_aproximada", hasta);
         }
@@ -463,9 +455,8 @@ export class GestionPedidosService
         return estadoGuardado === 'Ok' ? 'Ok' : 'Pendiente';
     }
 
-    // Asigna nro de fábrica, fecha de entrega y vencimiento de la última cuota en una sola transacción (RPC),
-    // y después avisa por wpp que el contrato esta disponible.
-    async enviarPedidoFabrica(idPedido: number, mesEntrega: number, anioEntrega: number): Promise<{ nroFabrica: number; whatsappEnviado: boolean }>
+    // Asigna nro de fábrica, fecha de entrega y vencimiento de la última cuota en una sola transacción (RPC).
+    async enviarPedidoFabrica(idPedido: number, mesEntrega: number, anioEntrega: number): Promise<{ nroFabrica: number }>
     {
         const { data, error } = await this.sb.supabase.rpc('enviar_pedido_a_fabrica', {
             p_id_pedido: idPedido,
@@ -478,19 +469,7 @@ export class GestionPedidosService
             throw new BadRequestException(error.message);
         }
 
-        // Si falla el WhatsApp el pedido ya quedo enviado; solo se informa (la notificacion queda en 'error')
-        let whatsappEnviado = true;
-        try
-        {
-            await this.notificacionesService.enviarMensajeContrato(idPedido);
-        }
-        catch (e)
-        {
-            whatsappEnviado = false;
-            Logger.error(`No se pudo enviar el WhatsApp de contrato del pedido ${idPedido}`, e);
-        }
-
-        return { nroFabrica: data, whatsappEnviado };
+        return { nroFabrica: data };
     }
 
     async obtenerPedidosControlBandera(mes: number, anio:number):Promise<ControlBanderasDTO[]>
