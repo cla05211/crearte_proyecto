@@ -9,6 +9,9 @@
   max-width: min(100%, 100rem);
 }
 
+/* Envíos tiene tablas con muchas columnas: usa todo el ancho de la pantalla */
+.fabrica-container--ancho { max-width: 100%; }
+
 .fabrica-header {
   align-items: flex-end;
   display: flex;
@@ -33,6 +36,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   display: inline-flex;
+  flex-wrap: wrap;
   gap: var(--space-1);
   padding: var(--space-1);
   width: fit-content;

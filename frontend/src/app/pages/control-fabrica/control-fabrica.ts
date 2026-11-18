@@ -7,12 +7,17 @@ import { ControlProduccionDTO, EstadoPrenda } from '../../services/gestionPedido
 import { CategoriaPrenda, PedidosService } from '../../services/pedidos/pedidos-service';
 import { NotificationService } from '../../shared/notifications/notification.service';
 import { ConfirmationService } from '../../services/confirmation/confirmation.service';
+import { GestionEnviosService } from '../../services/gestionEnvios/gestion-envios-service';
+import { ControlEnvios } from './control-envios/control-envios';
 
-type Pestania = 'pendientes' | 'enviados';
+// envios y entregados los maneja ControlEnvios
+type Pestania = 'pendientes' | 'enviados' | 'envios' | 'entregados';
 type EstadoPrendaGuardado = 'Ok' | 'Pendiente';
 
 const ESTADO_EN_PRODUCCION = 'En producción';
 const ESTADO_ENTREGADO = 'Entregado';
+// Guardado en estado_general: el pedido pasa a las páginas de envío / retiro
+const ESTADO_LISTO_PARA_ENTREGAR = 'Listo para entregar';
 
 // Estados que se muestran en "Estado del pedido" (los dos primeros se calculan con las prendas)
 const ESTADO_PENDIENTE_ENTREGA = 'Pendiente de entrega';
@@ -38,7 +43,7 @@ interface EnvioFabrica
 
 @Component({
   selector: 'app-control-fabrica',
-  imports: [FormsModule],
+  imports: [FormsModule, ControlEnvios],
   templateUrl: './control-fabrica.html',
   styleUrl: './control-fabrica.css',
 })
@@ -46,6 +51,7 @@ export class ControlFabrica implements OnInit
 {
   private readonly gestionPedidosService = inject(GestionPedidosService);
   private readonly pedidosService = inject(PedidosService);
+  private readonly enviosService = inject(GestionEnviosService);
   private readonly notificaciones = inject(NotificationService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly destroyRef = inject(DestroyRef);
@@ -80,6 +86,7 @@ export class ControlFabrica implements OnInit
 
   readonly estadoListoEntregar = ESTADO_LISTO_ENTREGAR;
   readonly estadoEntregado = ESTADO_ENTREGADO;
+  readonly estadoListoParaEntregar = ESTADO_LISTO_PARA_ENTREGAR;
 
   // Totales de arriba (en "enviados" son del mes de entrega elegido)
   readonly totalColegios = computed(() => (this.pedidos() ?? []).length);
@@ -99,6 +106,8 @@ export class ControlFabrica implements OnInit
 
   cargarPedidos(): void
   {
+    if (this.esPestaniaEnvios()) return;
+
     this.cargando.set(true);
 
     // En "pendientes" el back ignora mes y año (todavía no tienen fecha de entrega)
@@ -116,6 +125,11 @@ export class ControlFabrica implements OnInit
           this.notificaciones.error({ title: 'Error', description: 'No se pudieron obtener los pedidos.' });
         },
       });
+  }
+
+  esPestaniaEnvios(): boolean
+  {
+    return this.pestania() === 'envios' || this.pestania() === 'entregados';
   }
 
   cambiarPestania(pestania: Pestania): void
@@ -196,13 +210,13 @@ export class ControlFabrica implements OnInit
     return todasOk ? ESTADO_LISTO_ENTREGAR : ESTADO_PENDIENTE_ENTREGA;
   }
 
-  async marcarEntregado(pedido: ControlProduccionDTO, nuevoEstado: string, select: HTMLSelectElement): Promise<void>
+  async marcarListoParaEntregar(pedido: ControlProduccionDTO, nuevoEstado: string, select: HTMLSelectElement): Promise<void>
   {
-    if (nuevoEstado !== ESTADO_ENTREGADO) return;
+    if (nuevoEstado !== ESTADO_LISTO_PARA_ENTREGAR) return;
 
     const confirmado = await this.confirmationService.confirm({
-      title: 'Marcar como entregado',
-      description: `¿Confirmás que el pedido de ${pedido.colegio} fue entregado?`,
+      title: 'Marcar como listo para entregar',
+      description: `¿Confirmás que el pedido de ${pedido.colegio} está listo para entregar? Pasa a la página de envíos.`,
     });
 
     if (!confirmado)
@@ -215,14 +229,15 @@ export class ControlFabrica implements OnInit
 
     try
     {
-      await firstValueFrom(this.pedidosService.modificarEstadoGeneral(ESTADO_ENTREGADO, pedido.idPedido));
-      this.actualizarPedido(pedido.idPedido, { estado_pedido: ESTADO_ENTREGADO });
-      this.notificaciones.success({ title: 'Pedido entregado', description: `${pedido.colegio} quedó como entregado.` });
+      // Cambia el estado y crea la fila de envío (zona sur -> retiro por oficina, el resto -> correo)
+      await firstValueFrom(this.enviosService.marcarListoParaEntregar(pedido.idPedido));
+      this.actualizarPedido(pedido.idPedido, { estado_pedido: ESTADO_LISTO_PARA_ENTREGAR });
+      this.notificaciones.success({ title: 'Pedido listo para entregar', description: `${pedido.colegio} pasó a envíos.` });
     }
     catch
     {
       select.value = ESTADO_LISTO_ENTREGAR;
-      this.notificaciones.error({ title: 'Error', description: 'No se pudo marcar el pedido como entregado.' });
+      this.notificaciones.error({ title: 'Error', description: 'No se pudo marcar el pedido como listo para entregar.' });
     }
     finally
     {

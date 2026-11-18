@@ -1,0 +1,98 @@
+:host {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.kpis-grid--envios { grid-template-columns: repeat(2, minmax(11rem, 14rem)); }
+
+.envios-seccion {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* Fila de título de cada tabla, con el color principal */
+.envios-table thead th.tabla-titulo {
+  background: var(--color-primary-700);
+  color: var(--color-surface);
+  font-size: var(--font-size-base);
+  letter-spacing: 0.02em;
+  padding-block: var(--space-3);
+  text-align: center;
+}
+
+.fila-vacia {
+  color: var(--color-text-muted);
+  padding-block: var(--space-6) !important;
+  text-align: center;
+}
+
+.envios-table { min-width: 62rem; }
+.envios-table--correo { min-width: 88rem; }
+
+/* Celdas más justas que en el resto de Control de fábrica para que entren todas las columnas */
+.envios-table th,
+.envios-table td { padding: var(--space-2); }
+
+.envios-table thead th { white-space: normal; }
+
+.envios-table .estado-select { min-width: 6.5rem; }
+.envios-table--entregados { min-width: 32rem; }
+
+.envios-input {
+  font-size: var(--font-size-sm);
+  min-height: var(--control-height-sm);
+  padding-inline: var(--space-2);
+  width: 6.5rem;
+}
+
+.envios-input--corto { width: 4.5rem; }
+.envios-input--fecha { width: 9.5rem; }
+
+.envios-select {
+  font-size: var(--font-size-sm);
+  min-height: var(--control-height-sm);
+  min-width: 7rem;
+  padding-inline: var(--space-2);
+}
+
+.cotizacion-campo {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.comprobante-acciones {
+  display: inline-flex;
+  gap: var(--space-2);
+}
+
+@media (max-width: 700px) {
+  .kpis-grid--envios { grid-template-columns: 1fr; }
+}
+
+/* ── Colores por opción (data-tono, ver TONOS en control-envios.ts) ── */
+.envios-table [data-tono] {
+  border-color: transparent;
+  font-weight: var(--font-weight-semibold);
+}
+
+.envios-table [data-tono='verde']   { background-color: #e2f3ea; color: var(--color-success); }
+.envios-table [data-tono='rojo']    { background-color: #fbe2eb; color: var(--color-danger); }
+.envios-table [data-tono='naranja'] { background-color: #fff0d9; color: var(--color-warning); }
+.envios-table [data-tono='violeta'] { background-color: var(--color-primary-200); color: var(--color-primary-700); }
+.envios-table [data-tono='gris']    { background-color: #ece8ea; color: var(--color-text-strong); }
+.envios-table [data-tono='azul']    { background-color: #e1ecf6; color: var(--color-info); }
+
+/* Las opciones del desplegable se ven normales, el color es solo del valor elegido */
+.envios-table select[data-tono] option { background-color: var(--color-surface); color: var(--color-text); }
+
+/* Texto centrado también dentro de los selects e inputs de las tablas */
+.envios-table td { text-align: center; }
+
+.envios-table select,
+.envios-table input {
+  text-align: center;
+  text-align-last: center;
+}
+
+.envios-table select option { text-align: left; }

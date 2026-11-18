@@ -1,0 +1,366 @@
+@if (cargando() && !pedidos() && !entregados()) {
+  <div class="loading-state" role="status" aria-live="polite">
+    <span class="loading-state__spinner" aria-hidden="true"></span>
+    <div>
+      <h2>Cargando pedidos</h2>
+      <p>Estamos preparando la información de entregas.</p>
+    </div>
+  </div>
+} @else if (vista() === 'envios') {
+
+  <div class="kpis-grid kpis-grid--envios">
+    <div class="ds-card kpi-card">
+      <span class="ds-label">Envío por correo</span>
+      <strong class="kpi-valor">{{ pedidosCorreo().length }}</strong>
+    </div>
+    <div class="ds-card kpi-card">
+      <span class="ds-label">Retiro por oficina</span>
+      <strong class="kpi-valor">{{ pedidosRetiro().length }}</strong>
+    </div>
+  </div>
+
+  <!-- ── Envío por correo ── -->
+  <section class="envios-seccion" aria-labelledby="titulo-correo">
+      <div class="ds-table-wrapper fabrica-table-wrapper" [class.is-actualizando]="cargando()">
+        <table class="ds-table fabrica-table envios-table envios-table--correo">
+          <thead>
+            <tr>
+              <th id="titulo-correo" class="tabla-titulo" colspan="12">Pedidos con envío por correo</th>
+            </tr>
+            <tr>
+              <th>N° pedido</th>
+              <th>Estado</th>
+              <th>Contrato</th>
+              <th>Pago realizado</th>
+              <th>Envío</th>
+              <th>Cant. bultos</th>
+              <th>Empresa de envío</th>
+              <th>Datos de envío</th>
+              <th>Cotización</th>
+              <th>Comprobante</th>
+              <th>Entregado</th>
+              <th>Mover</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (pedido of pedidosCorreo(); track pedido.idPedido; let par = $even) {
+              <tr [class.fila-par]="par">
+                <td data-label="N° pedido" class="celda-centro nro-pedido">{{ pedido.nroPedido ?? '—' }}</td>
+
+                <td data-label="Estado" class="celda-centro">
+                  <select class="ds-select estado-select" [attr.data-tono]="tono('estado', pedido.estado)"
+                          [disabled]="estaGuardando(pedido, 'estado')"
+                          [ngModel]="pedido.estado" (ngModelChange)="modificarDato(pedido, 'estado', $event)"
+                          [attr.aria-label]="'Estado del pedido ' + pedido.nroPedido">
+                    @for (estado of estados; track estado) {
+                      <option [value]="estado">{{ estado }}</option>
+                    }
+                  </select>
+                </td>
+
+                <td data-label="Contrato" class="celda-centro">
+                  <ng-container *ngTemplateOutlet="contrato; context: { $implicit: pedido.contratoFirmado }" />
+                </td>
+
+                <td data-label="Pago realizado" class="celda-centro">
+                  <select class="ds-select estado-select" [attr.data-tono]="tono('pago', pedido.pagoRealizado)"
+                          [disabled]="estaGuardando(pedido, 'pago_realizado')"
+                          [ngModel]="pedido.pagoRealizado" (ngModelChange)="modificarDato(pedido, 'pago_realizado', $event)"
+                          [attr.aria-label]="'Pago del pedido ' + pedido.nroPedido">
+                    @for (pago of pagosEnvio; track pago) {
+                      <option [value]="pago">{{ pago }}</option>
+                    }
+                  </select>
+                </td>
+
+                <td data-label="Envío" class="celda-centro">
+                  @if (pedido.envioGratis) {
+                    <span class="ds-badge" data-tono="verde">Gratis</span>
+                  } @else {
+                    <span class="ds-badge" data-tono="rojo">Abona envío</span>
+                  }
+                </td>
+
+                <td data-label="Cant. bultos" class="celda-centro">
+                  <input #inputBultos type="number" min="1" step="1" class="ds-input envios-input envios-input--corto"
+                         [disabled]="estaGuardando(pedido, 'cant_bultos')"
+                         [value]="pedido.cantBultos ?? ''" (change)="modificarBultos(pedido, inputBultos.value, inputBultos)"
+                         [attr.aria-label]="'Cantidad de bultos del pedido ' + pedido.nroPedido" />
+                </td>
+
+                <td data-label="Empresa de envío" class="celda-centro">
+                  <select class="ds-select envios-select" [attr.data-tono]="tono('empresa', pedido.empresaEnvio ?? '')"
+                          [disabled]="estaGuardando(pedido, 'empresa_envio')"
+                          [ngModel]="pedido.empresaEnvio ?? ''" (ngModelChange)="modificarEmpresa(pedido, $event)"
+                          [attr.aria-label]="'Empresa de envío del pedido ' + pedido.nroPedido">
+                    <option value="">Sin elegir</option>
+                    @for (empresa of empresas; track empresa) {
+                      <option [value]="empresa">{{ empresa }}</option>
+                    }
+                  </select>
+                </td>
+
+                <td data-label="Datos de envío" class="celda-centro">
+                  <select class="ds-select estado-select" [attr.data-tono]="pedido.datosEnvio ? 'verde' : 'rojo'"
+                          [disabled]="estaGuardando(pedido, 'datos_envio')"
+                          [ngModel]="pedido.datosEnvio" (ngModelChange)="modificarDato(pedido, 'datos_envio', $event)"
+                          [attr.aria-label]="'Datos de envío del pedido ' + pedido.nroPedido">
+                    <option [ngValue]="true">Ok</option>
+                    <option [ngValue]="false">No</option>
+                  </select>
+                </td>
+
+                <td data-label="Cotización" class="celda-centro">
+                  <div class="cotizacion-campo">
+                    <span aria-hidden="true">$</span>
+                    <input #inputCotizacion type="number" min="0" step="1" class="ds-input envios-input"
+                           [disabled]="estaGuardando(pedido, 'cotizacion')"
+                           [value]="pedido.cotizacion ?? ''" (change)="modificarCotizacion(pedido, inputCotizacion.value, inputCotizacion)"
+                           [attr.aria-label]="'Cotización del envío del pedido ' + pedido.nroPedido" />
+                  </div>
+                </td>
+
+                <td data-label="Comprobante" class="celda-centro">
+                  @if (pedido.empresaEnvio !== 'Via cargo') {
+                    <span class="no-lleva">Solo Via cargo</span>
+                  } @else {
+                    <input #inputComprobante type="file" accept="image/*,application/pdf" hidden
+                           (change)="subirComprobante(pedido, $event)" />
+                    <div class="comprobante-acciones">
+                      @if (pedido.idComprobante) {
+                        <button type="button" class="ds-button ds-button--small ds-button--secondary" (click)="verComprobante(pedido)">Ver</button>
+                      }
+                      <button type="button" class="ds-button ds-button--small"
+                              [disabled]="estaGuardando(pedido, 'comprobante')" (click)="inputComprobante.click()">
+                        {{ estaGuardando(pedido, 'comprobante') ? 'Subiendo…' : (pedido.idComprobante ? 'Reemplazar' : 'Subir') }}
+                      </button>
+                    </div>
+                  }
+                </td>
+
+                <td data-label="Entregado" class="celda-centro">
+                  <select #selectEntregado class="ds-select estado-select" data-tono="rojo"
+                          (change)="selectEntregado.value === 'Sí' && abrirEntrega(pedido, selectEntregado)"
+                          [attr.aria-label]="'Entregado pedido ' + pedido.nroPedido">
+                    <option value="No" selected>No</option>
+                    <option value="Sí">Sí</option>
+                  </select>
+                </td>
+
+                <td data-label="Mover" class="celda-centro">
+                  <button type="button" class="ds-button ds-button--small ds-button--secondary"
+                          [disabled]="estaGuardando(pedido, 'forma_entrega')" (click)="moverPedido(pedido)">
+                    Pasar a retiro
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td class="fila-vacia" colspan="12">No hay pedidos para enviar por correo.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+  </section>
+
+  <!-- ── Retiro por oficina ── -->
+  <section class="envios-seccion" aria-labelledby="titulo-retiro">
+      <div class="ds-table-wrapper fabrica-table-wrapper" [class.is-actualizando]="cargando()">
+        <table class="ds-table fabrica-table envios-table">
+          <thead>
+            <tr>
+              <th id="titulo-retiro" class="tabla-titulo" colspan="8">Pedidos con retiro por oficina</th>
+            </tr>
+            <tr>
+              <th>N° pedido</th>
+              <th>Fecha de entrega</th>
+              <th>Estado</th>
+              <th>Contrato</th>
+              <th>Pago realizado</th>
+              <th>Calendario</th>
+              <th>Entregado</th>
+              <th>Mover</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (pedido of pedidosRetiro(); track pedido.idPedido; let par = $even) {
+              <tr [class.fila-par]="par">
+                <td data-label="N° pedido" class="celda-centro nro-pedido">{{ pedido.nroPedido ?? '—' }}</td>
+
+                <td data-label="Fecha de entrega" class="celda-centro">
+                  <input type="date" class="ds-input envios-input envios-input--fecha"
+                         [disabled]="estaGuardando(pedido, 'fecha_entrega')"
+                         [value]="pedido.fechaEntrega ?? ''" (change)="modificarFechaEntrega(pedido, $any($event.target).value)"
+                         [attr.aria-label]="'Fecha de entrega del pedido ' + pedido.nroPedido" />
+                </td>
+
+                <td data-label="Estado" class="celda-centro">
+                  <select class="ds-select estado-select" [attr.data-tono]="tono('estado', pedido.estado)"
+                          [disabled]="estaGuardando(pedido, 'estado')"
+                          [ngModel]="pedido.estado" (ngModelChange)="modificarDato(pedido, 'estado', $event)"
+                          [attr.aria-label]="'Estado del pedido ' + pedido.nroPedido">
+                    @for (estado of estados; track estado) {
+                      <option [value]="estado">{{ estado }}</option>
+                    }
+                  </select>
+                </td>
+
+                <td data-label="Contrato" class="celda-centro">
+                  <ng-container *ngTemplateOutlet="contrato; context: { $implicit: pedido.contratoFirmado }" />
+                </td>
+
+                <td data-label="Pago realizado" class="celda-centro">
+                  <select class="ds-select estado-select" [attr.data-tono]="tono('pago', pedido.pagoRealizado)"
+                          [disabled]="estaGuardando(pedido, 'pago_realizado')"
+                          [ngModel]="pedido.pagoRealizado" (ngModelChange)="modificarDato(pedido, 'pago_realizado', $event)"
+                          [attr.aria-label]="'Pago del pedido ' + pedido.nroPedido">
+                    @for (pago of pagosRetiro; track pago) {
+                      <option [value]="pago">{{ pago }}</option>
+                    }
+                  </select>
+                </td>
+
+                <td data-label="Calendario" class="celda-centro">
+                  <select class="ds-select estado-select" [attr.data-tono]="tono('calendario', pedido.calendario)"
+                          [disabled]="estaGuardando(pedido, 'calendario')"
+                          [ngModel]="pedido.calendario" (ngModelChange)="modificarDato(pedido, 'calendario', $event)"
+                          [attr.aria-label]="'Calendario del pedido ' + pedido.nroPedido">
+                    @for (calendario of calendarios; track calendario) {
+                      <option [value]="calendario">{{ calendario }}</option>
+                    }
+                  </select>
+                </td>
+
+                <td data-label="Entregado" class="celda-centro">
+                  <select #selectEntregadoRetiro class="ds-select estado-select" data-tono="rojo"
+                          (change)="selectEntregadoRetiro.value === 'Sí' && abrirEntrega(pedido, selectEntregadoRetiro)"
+                          [attr.aria-label]="'Entregado pedido ' + pedido.nroPedido">
+                    <option value="No" selected>No</option>
+                    <option value="Sí">Sí</option>
+                  </select>
+                </td>
+
+                <td data-label="Mover" class="celda-centro">
+                  <button type="button" class="ds-button ds-button--small ds-button--secondary"
+                          [disabled]="estaGuardando(pedido, 'forma_entrega')" (click)="moverPedido(pedido)">
+                    Pasar a correo
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td class="fila-vacia" colspan="8">No hay pedidos para retirar por oficina.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+  </section>
+
+} @else {
+
+  <!-- ── Pedidos entregados ── -->
+  <div class="kpis-grid">
+    <div class="ds-card kpi-card">
+      <span class="ds-label">Pedidos entregados</span>
+      <strong class="kpi-valor">{{ entregados()?.length ?? 0 }}</strong>
+    </div>
+  </div>
+
+  @if (!entregados()?.length) {
+    <div class="empty-state">
+      <div class="empty-state__illustration" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </div>
+      <h2>No hay pedidos entregados.</h2>
+      <p>No hay pedidos entregados en el mes y año seleccionados.</p>
+    </div>
+  } @else {
+    <div class="ds-table-wrapper fabrica-table-wrapper" [class.is-actualizando]="cargando()">
+      <table class="ds-table fabrica-table envios-table envios-table--entregados">
+        <thead>
+          <tr>
+            <th class="tabla-titulo" colspan="3">Pedidos entregados</th>
+          </tr>
+          <tr>
+            <th>N° pedido</th>
+            <th>Fecha de entrega</th>
+            <th>Forma de entrega</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (pedido of entregados(); track pedido.idPedido; let par = $even) {
+            <tr [class.fila-par]="par">
+              <td data-label="N° pedido" class="celda-centro nro-pedido">{{ pedido.nroPedido ?? '—' }}</td>
+              <td data-label="Fecha de entrega" class="celda-centro">{{ formatearFecha(pedido.fechaEntrega) }}</td>
+              <td data-label="Forma de entrega" class="celda-centro">
+                <select class="ds-select envios-select" [attr.data-tono]="tono('forma', pedido.formaEntrega)"
+                        [disabled]="guardando() === pedido.idPedido + '-forma_entrega'"
+                        [ngModel]="pedido.formaEntrega" (ngModelChange)="modificarFormaEntregado(pedido, $event)"
+                        [attr.aria-label]="'Forma de entrega del pedido ' + pedido.nroPedido">
+                  @for (forma of formasEntrega; track forma) {
+                    <option [value]="forma">{{ forma === 'Envio' ? 'Envío' : forma }}</option>
+                  }
+                </select>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}
+
+<ng-template #contrato let-firmado>
+  @if (firmado) {
+    <span class="contrato-icono contrato-icono--firmado" title="Contrato firmado" aria-label="Contrato firmado">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+    </span>
+  } @else {
+    <span class="contrato-icono contrato-icono--pendiente" title="Contrato sin firmar" aria-label="Contrato sin firmar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>
+    </span>
+  }
+</ng-template>
+
+@if (entrega(); as entregaActual) {
+  <div class="modal-backdrop" role="presentation">
+    <section class="fabrica-modal" role="dialog" aria-modal="true" aria-labelledby="entrega-title">
+      <header class="fabrica-modal__header">
+        <div>
+          <span class="ds-eyebrow">Pedido {{ entregaActual.pedido.nroPedido ?? '#' + entregaActual.pedido.idPedido }}</span>
+          <h2 id="entrega-title" class="ds-heading-2">Confirmar entrega</h2>
+        </div>
+        <button class="close-button" type="button" [disabled]="confirmandoEntrega()" (click)="cerrarEntrega()" aria-label="Cerrar">×</button>
+      </header>
+
+      <div class="fabrica-modal__content">
+        <p class="ds-text-muted">Al confirmar, el pedido pasa a Pedidos entregados.</p>
+
+        <div class="fecha-entrega-campos">
+          <label class="ds-field">
+            <span class="ds-label">Fecha de entrega</span>
+            <input type="date" class="ds-input" [ngModel]="entregaActual.fecha" (ngModelChange)="actualizarEntrega({ fecha: $event })" />
+          </label>
+
+          <label class="ds-field">
+            <span class="ds-label">Forma de entrega</span>
+            <select class="ds-select" [ngModel]="entregaActual.forma" (ngModelChange)="actualizarEntrega({ forma: $event })">
+              @for (forma of formasEntrega; track forma) {
+                <option [value]="forma">{{ forma === 'Envio' ? 'Envío' : forma }}</option>
+              }
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <footer class="fabrica-modal__actions">
+        <button type="button" class="ds-button ds-button--secondary" [disabled]="confirmandoEntrega()" (click)="cerrarEntrega()">Cancelar</button>
+        <button type="button" class="ds-button" [disabled]="confirmandoEntrega() || !entregaActual.fecha" (click)="confirmarEntrega()">
+          {{ confirmandoEntrega() ? 'Guardando…' : 'Confirmar entrega' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}

@@ -1,16 +1,16 @@
 <main class="fabrica-page">
-  <section class="ds-container fabrica-container">
+  <section class="ds-container fabrica-container" [class.fabrica-container--ancho]="esPestaniaEnvios()">
     <header class="fabrica-header">
       <div>
         <span class="ds-eyebrow">Producción</span>
         <h1 class="ds-heading-1">Control de fábrica</h1>
       </div>
 
-      <!-- Mes y año de la fecha de entrega: solo aplica a los pedidos ya enviados -->
-      @if (pestania() === 'enviados') {
+      <!-- Mes y año: en "enviados" es la entrega aproximada, en "entregados" la fecha en que se entregó -->
+      @if (pestania() === 'enviados' || pestania() === 'entregados') {
         <div class="filtros-bar">
           <label class="ds-field">
-            <span class="ds-label">Mes de entrega</span>
+            <span class="ds-label">{{ pestania() === 'entregados' ? 'Mes entregado' : 'Mes de entrega' }}</span>
             <select class="ds-select" [ngModel]="mesSeleccionado()" (ngModelChange)="cambiarMes($event)">
               @for (mes of meses; track mes.valor) {
                 <option [ngValue]="mes.valor">{{ mes.nombre }}</option>
@@ -32,13 +32,30 @@
     <nav class="fabrica-tabs" aria-label="Pedidos">
       <button type="button" [class.is-active]="pestania() === 'pendientes'" [attr.aria-pressed]="pestania() === 'pendientes'"
               (click)="cambiarPestania('pendientes')">
-        Listos para enviar
+        Listos para enviar a fábrica
       </button>
       <button type="button" [class.is-active]="pestania() === 'enviados'" [attr.aria-pressed]="pestania() === 'enviados'"
               (click)="cambiarPestania('enviados')">
         Enviados a fábrica
       </button>
+      <button type="button" [class.is-active]="pestania() === 'envios'" [attr.aria-pressed]="pestania() === 'envios'"
+              (click)="cambiarPestania('envios')">
+        Envíos
+      </button>
+      <button type="button" [class.is-active]="pestania() === 'entregados'" [attr.aria-pressed]="pestania() === 'entregados'"
+              (click)="cambiarPestania('entregados')">
+        Pedidos entregados
+      </button>
     </nav>
+
+    @if (esPestaniaEnvios()) {
+      <!-- Se recrea al cambiar de pestaña, así cada una carga sus datos -->
+      @if (pestania() === 'envios') {
+        <app-control-envios vista="envios" [mes]="mesSeleccionado()" [anio]="anioSeleccionado()" />
+      } @else {
+        <app-control-envios vista="entregados" [mes]="mesSeleccionado()" [anio]="anioSeleccionado()" />
+      }
+    } @else {
 
     @if (cargando() && !pedidos()) {
       <div class="loading-state" role="status" aria-live="polite">
@@ -72,7 +89,7 @@
           <span></span><span></span><span></span>
         </div>
         @if (pestania() === 'pendientes') {
-          <h2>No hay pedidos listos para enviar.</h2>
+          <h2>No hay pedidos listos para enviar a fábrica.</h2>
           <p>Acá aparecen los colegios con el boceto aprobado y los talles confirmados.</p>
         } @else {
           <h2>No hay pedidos enviados.</h2>
@@ -141,16 +158,16 @@
                   <td data-label="Estado del pedido" class="celda-centro">
                     @let estadoPedidoActual = estadoPedido(pedido);
                     @if (estadoPedidoActual === estadoListoEntregar) {
-                      <!-- Solo cuando está completo se puede pasar a Entregado -->
+                      <!-- Solo cuando está completo se puede pasar a Listo para entregar (va a envíos) -->
                       <select #selectEstado class="ds-select estado-select estado-select--ok"
                               [disabled]="guardando() === pedido.idPedido + '-estado'"
-                              (change)="marcarEntregado(pedido, selectEstado.value, selectEstado)"
+                              (change)="marcarListoParaEntregar(pedido, selectEstado.value, selectEstado)"
                               [attr.aria-label]="'Estado del pedido de ' + pedido.colegio">
                         <option [value]="estadoListoEntregar" selected>{{ estadoListoEntregar }}</option>
-                        <option [value]="estadoEntregado">{{ estadoEntregado }}</option>
+                        <option [value]="estadoListoParaEntregar">{{ estadoListoParaEntregar }}</option>
                       </select>
-                    } @else if (estadoPedidoActual === estadoEntregado) {
-                      <span class="ds-badge ds-badge--success">{{ estadoEntregado }}</span>
+                    } @else if (estadoPedidoActual === estadoEntregado || estadoPedidoActual === estadoListoParaEntregar) {
+                      <span class="ds-badge ds-badge--success">{{ estadoPedidoActual }}</span>
                     } @else {
                       <span class="ds-badge ds-badge--warning">{{ estadoPedidoActual }}</span>
                     }
@@ -182,6 +199,7 @@
         </table>
       </div>
       }
+    }
     }
   </section>
 

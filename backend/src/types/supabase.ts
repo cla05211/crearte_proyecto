@@ -891,6 +891,82 @@ export type Database = {
           },
         ]
       }
+      pedidos_envio: {
+        Row: {
+          calendario: string
+          cant_bultos: number | null
+          cotizacion: number | null
+          created_at: string
+          datos_envio: boolean
+          empresa_envio: string | null
+          entregado: boolean
+          estado: string
+          fecha_entrega: string | null
+          forma_entrega: string
+          id: number
+          id_comprobante: number | null
+          id_movimiento_caja: number | null
+          id_pedido: number
+          pago_realizado: string
+        }
+        Insert: {
+          calendario?: string
+          cant_bultos?: number | null
+          cotizacion?: number | null
+          created_at?: string
+          datos_envio?: boolean
+          empresa_envio?: string | null
+          entregado?: boolean
+          estado?: string
+          fecha_entrega?: string | null
+          forma_entrega: string
+          id?: never
+          id_comprobante?: number | null
+          id_movimiento_caja?: number | null
+          id_pedido: number
+          pago_realizado?: string
+        }
+        Update: {
+          calendario?: string
+          cant_bultos?: number | null
+          cotizacion?: number | null
+          created_at?: string
+          datos_envio?: boolean
+          empresa_envio?: string | null
+          entregado?: boolean
+          estado?: string
+          fecha_entrega?: string | null
+          forma_entrega?: string
+          id?: never
+          id_comprobante?: number | null
+          id_movimiento_caja?: number | null
+          id_pedido?: number
+          pago_realizado?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_envio_id_comprobante_fkey"
+            columns: ["id_comprobante"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_envio_id_movimiento_caja_fkey"
+            columns: ["id_movimiento_caja"]
+            isOneToOne: false
+            referencedRelation: "movimientos_caja"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_envio_id_pedido_fkey"
+            columns: ["id_pedido"]
+            isOneToOne: true
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permisos: {
         Row: {
           descripcion: string | null
