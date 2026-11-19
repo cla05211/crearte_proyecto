@@ -1,26 +1,37 @@
-import { Body, Controller, Get, Param, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { BadRequestException, Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
-import { SubirArchivoStorage } from './dto/SubirArchivoStorage.dto';
+import { SolicitarSubidaStorage } from './dto/SolicitarSubidaStorage.dto';
 import { StorageService } from './storage.service';
-import { OPCIONES_ARCHIVO_GENERAL } from 'src/common/limites-archivos';
-import { ArchivoSubidoDTO } from './dto/ArchivoSubidoDTO';
+import { limpiarNombreArchivo, REGLAS_ARCHIVO_GENERAL, validarTipoArchivo } from 'src/common/archivos-subida';
+
+// Carpetas del bucket "imagenes" a las que se puede subir desde Ventas
+const CARPETAS_PERMITIDAS = ['senias', 'recursos_adicionales'];
 
 @Controller('storage')
 export class StorageController
 {
     constructor(private storageService: StorageService){}
 
-    @Post ('')
+    // Paso 1 de la subida directa: el front pide una URL firmada y sube el archivo con un PUT a Supabase.
+    // Devuelve la ruta, que después viaja en el pedido de la venta (pagos de seña / recursos adicionales).
+    @Post ('url-subida')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('crear_pedido') //POR AHORA
-    @UseInterceptors(FileInterceptor('archivo', OPCIONES_ARCHIVO_GENERAL))
-    async agregarProducto(@UploadedFile() archivo: ArchivoSubidoDTO, @Body() dto: SubirArchivoStorage)
+    async crearUrlSubida(@Body() dto: SolicitarSubidaStorage)
     {
-        const ruta = await this.storageService.guardarImagen(dto, archivo);
-        return {ruta};
+        if (!CARPETAS_PERMITIDAS.includes(dto?.carpetaGuardado))
+        {
+            throw new BadRequestException('Carpeta de guardado no permitida.');
+        }
+
+        validarTipoArchivo(dto.mimetype, REGLAS_ARCHIVO_GENERAL);
+
+        const ruta = `${dto.carpetaGuardado}/${limpiarNombreArchivo(dto.nombreArchivo)}`;
+        const signedUrl = await this.storageService.crearUrlSubidaImagen(ruta);
+
+        return { ruta, signedUrl };
     }
 
     @Get ('')

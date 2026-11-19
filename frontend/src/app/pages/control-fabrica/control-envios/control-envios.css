@@ -96,3 +96,27 @@
 }
 
 .envios-table select option { text-align: left; }
+
+/* Medio de pago del envío gratis (debajo de la cotización) */
+.medio-pago-boton {
+  background: transparent;
+  border: 0;
+  color: var(--color-primary-600);
+  cursor: pointer;
+  display: block;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  margin: 2px auto 0;
+  text-decoration: underline;
+}
+
+.medio-pago-opciones {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr 1fr;
+}
+
+.medio-pago-opcion.is-active {
+  background-color: var(--color-primary-700);
+  color: var(--color-surface);
+}

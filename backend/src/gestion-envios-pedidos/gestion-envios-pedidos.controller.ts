@@ -1,11 +1,8 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { GestionEnviosPedidosService } from './gestion-envios-pedidos.service';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { GestionEnviosPedidosService, MedioPagoEnvio } from './gestion-envios-pedidos.service';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
-import { OPCIONES_COMPROBANTE } from 'src/common/limites-archivos';
-import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
 import { modificarDatoSimpleDto } from './dto/modificarDatoSimpleDto';
 import { confirmarEntregaDto } from './dto/confirmarEntregaDto';
 import { pedidoListoParaEnviarDto } from './dto/traerPedidoEnvioDto';
@@ -55,10 +52,11 @@ export class GestionEnviosPedidosController
     async modificarCotizacion(
         @Param('idPedido', ParseIntPipe) idPedido: number,
         @Body('cotizacion') cotizacion: number | null,
+        @Body('medioPago') medioPago: MedioPagoEnvio | null,
         @Req() req,
     ): Promise<void>
     {
-        await this.gestionEnviosPedidosService.modificarCotizacion(idPedido, cotizacion ?? null, req.usuario.id);
+        await this.gestionEnviosPedidosService.modificarCotizacion(idPedido, cotizacion ?? null, medioPago ?? null, req.usuario.id);
     }
 
     @Patch(':idPedido/entrega')
@@ -69,15 +67,27 @@ export class GestionEnviosPedidosController
         await this.gestionEnviosPedidosService.confirmarEntrega(idPedido, dto);
     }
 
+    // Paso 1: URL firmada para subir el comprobante de Via cargo directo a Supabase
+    @Post(':idPedido/comprobante/url-subida')
+    @UseGuards(AuthGuard, PermisosGuard)
+    @RequierePermiso('ver_control_produccion')
+    async crearUrlSubidaComprobante(
+        @Param('idPedido', ParseIntPipe) idPedido: number,
+        @Body() dto: { nombreArchivo: string; mimetype: string },
+    ): Promise<{ ruta: string; signedUrl: string }>
+    {
+        return await this.gestionEnviosPedidosService.crearUrlSubidaComprobante(idPedido, dto?.nombreArchivo, dto?.mimetype);
+    }
+
+    // Paso 2: el comprobante ya está subido; se valida y se asocia al envío
     @Post(':idPedido/comprobante')
     @UseGuards(AuthGuard, PermisosGuard)
     @RequierePermiso('ver_control_produccion')
-    @UseInterceptors(FileInterceptor('comprobante', OPCIONES_COMPROBANTE))
     async subirComprobante(
         @Param('idPedido', ParseIntPipe) idPedido: number,
-        @UploadedFile() archivo: ArchivoSubidoDTO,
+        @Body('ruta') ruta: string,
     ): Promise<{ idDocumento: number }>
     {
-        return { idDocumento: await this.gestionEnviosPedidosService.subirComprobante(idPedido, archivo) };
+        return { idDocumento: await this.gestionEnviosPedidosService.subirComprobante(idPedido, ruta) };
     }
 }

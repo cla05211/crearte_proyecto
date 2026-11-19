@@ -1,10 +1,9 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { PagosService } from './pagos.service';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
 import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { OcrService } from '../ocr/ocr.service';
 import { ModificarPago } from './dto/modificarBanco.dto';
 import { FiltrosPagosBancoDTO } from './dto/filtrosPagosBanco.dto';
@@ -14,13 +13,14 @@ import { GenerarReciboDTO } from 'src/reportes/pdf/dto/generarRecibo.dto';
 import { GenerarContratoDTO } from 'src/reportes/pdf/dto/generarContrato.dto';
 import { PdfService } from 'src/reportes/pdf/pdf.service';
 import { PagoDTO } from './dto/pago.dto';
-import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
 import { StorageService } from 'src/storage/storage.service';
 import { DocumentoDTO } from 'src/documentos/dto/documento.dto';
-import { OPCIONES_COMPROBANTE } from 'src/common/limites-archivos';
+import { CARPETA_OCR_TEMPORAL, limpiarNombreArchivo, REGLAS_COMPROBANTE, validarPrefijoRuta, validarTipoArchivo } from 'src/common/archivos-subida';
+import { prefijoComprobantePago } from './comprobantes';
+import { randomUUID } from 'crypto';
 import { StaffOClienteGuard } from 'src/auth/guards/staff-o-cliente.guard';
 import { contentDisposition } from 'src/common/content-disposition';
-import { CrearPagoComprobanteDTO } from './dto/crearPagoComprobante.dto';
+import { CrearPagoComprobanteDTO, SolicitarSubidaComprobanteDTO } from './dto/crearPagoComprobante.dto';
 
 // Cuentas de la empresa a las que se puede transferir (las mismas que acepta el portal de clientes)
 const BANCOS_TRANSFERENCIA = ['COMAFI', 'Santander'];
@@ -89,27 +89,44 @@ export class PagosController
         return await this.pagosService.crearPago(dto);
     }
 
-    // Transferencia cargada por un empleado (mismo flujo que POST clientes-portal/pagos):
-    // guarda el comprobante, crea el documento y registra el pago en una sola llamada.
-    // El motivo va como 'Cuota': registrar_pago_completo completa primero la seña si falta.
-    @Post('comprobante')
+    // Paso 1 de la transferencia que carga un empleado: URL firmada para subir el comprobante directo a Supabase
+    @Post('comprobante/url-subida')
     @UseGuards(AuthGuard,PermisosGuard)
     @RequierePermiso('ver_clientes_administrativo')
-    @UseInterceptors(FileInterceptor('comprobante', OPCIONES_COMPROBANTE))
-    async crearPagoTransferencia(@Body() dto: CrearPagoComprobanteDTO, @UploadedFile() archivo: ArchivoSubidoDTO)
+    async crearUrlSubidaComprobante(@Body() dto: SolicitarSubidaComprobanteDTO)
     {
         const idPedido = Number(dto?.id_pedido);
-        const monto = Number(dto?.monto);
-
-        if (!archivo)
-        {
-            throw new BadRequestException('Falta el comprobante de la transferencia.');
-        }
 
         if (!Number.isInteger(idPedido) || idPedido <= 0)
         {
             throw new BadRequestException('Pedido inválido.');
         }
+
+        validarTipoArchivo(dto.mimetype, REGLAS_COMPROBANTE);
+
+        const ruta = `${prefijoComprobantePago(idPedido)}${Date.now()}-${limpiarNombreArchivo(dto.nombreArchivo)}`;
+        const signedUrl = await this.storageService.crearUrlSubidaImagen(ruta);
+
+        return { ruta, signedUrl };
+    }
+
+    // Transferencia cargada por un empleado (mismo flujo que POST clientes-portal/pagos):
+    // el comprobante ya está subido (paso 1); acá se valida, se crea el documento y se registra el pago.
+    // El motivo va como 'Cuota': registrar_pago_completo completa primero la seña si falta.
+    @Post('comprobante')
+    @UseGuards(AuthGuard,PermisosGuard)
+    @RequierePermiso('ver_clientes_administrativo')
+    async crearPagoTransferencia(@Body() dto: CrearPagoComprobanteDTO)
+    {
+        const idPedido = Number(dto?.id_pedido);
+        const monto = Number(dto?.monto);
+
+        if (!Number.isInteger(idPedido) || idPedido <= 0)
+        {
+            throw new BadRequestException('Pedido inválido.');
+        }
+
+        const rutaComprobante = validarPrefijoRuta(dto.ruta, prefijoComprobantePago(idPedido));
 
         if (!Number.isFinite(monto) || monto <= 0)
         {
@@ -126,17 +143,9 @@ export class PagosController
             throw new BadRequestException('Faltan datos de la transferencia.');
         }
 
+        await this.storageService.validarImagenSubida(rutaComprobante, REGLAS_COMPROBANTE);
+
         const idGrupo = await this.pagosService.obtenerIdGrupoPedido(idPedido);
-
-        const nombreArchivo = `comprobante-${idPedido}-${Date.now()}-${archivo.originalname}`
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-zA-Z0-9._-]/g, '-');
-
-        const rutaComprobante = await this.storageService.guardarImagen(
-            { pedidoId: idPedido.toString(), nombreArchivo, carpetaGuardado: 'comprobantes-clientes' },
-            archivo,
-        );
 
         const documentoDTO: DocumentoDTO = { id_grupo: idGrupo, tipo: 'comprobante', archivo_url: rutaComprobante };
 
@@ -153,12 +162,41 @@ export class PagosController
         });
     }
 
+    // Paso 1 del OCR: URL firmada para subir el comprobante a una carpeta temporal.
+    // La usan empleados (Ventas, cuenta corriente) y clientes del portal.
+    @Post('ocr/url-subida')
+    @UseGuards(StaffOClienteGuard)
+    async crearUrlSubidaOcr(@Body('mimetype') mimetype: string)
+    {
+        validarTipoArchivo(mimetype, REGLAS_COMPROBANTE);
+
+        const ruta = `${CARPETA_OCR_TEMPORAL}/${randomUUID()}`;
+        const signedUrl = await this.storageService.crearUrlSubidaImagen(ruta);
+
+        return { ruta, signedUrl };
+    }
+
+    // Paso 2 del OCR: lee el comprobante subido y lo borra (solo se guardaba para leerlo)
     @Post('ocr')
     @UseGuards(StaffOClienteGuard)
-    @UseInterceptors(FileInterceptor('comprobante', OPCIONES_COMPROBANTE))
-    async testOcr(@UploadedFile() file: ArchivoSubidoDTO) 
+    async leerComprobanteOcr(@Body('ruta') ruta: string)
     {
-        return await this.pagosService.comprobarComprobantePago(file.buffer)
+        if (!/^ocr-temporal\/[0-9a-f-]{36}$/.test(ruta ?? ''))
+        {
+            throw new BadRequestException('La ruta del archivo no es válida.');
+        }
+
+        await this.storageService.validarImagenSubida(ruta, REGLAS_COMPROBANTE);
+
+        try
+        {
+            const archivo = await this.storageService.descargarArchivo(ruta);
+            return await this.pagosService.comprobarComprobantePago(archivo);
+        }
+        finally
+        {
+            await this.storageService.eliminarImagen(ruta);
+        }
     }
 
     @Post('excel')

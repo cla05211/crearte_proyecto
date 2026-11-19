@@ -2,6 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { DiseniosGrupoResponseDTO } from './dto/DisenioResponseDTO';
+import { switchMap } from 'rxjs';
+import { StorageService, tipoArchivo, UrlSubida } from '../storage/storage-service';
 
 @Injectable({
   providedIn: 'root',
@@ -9,6 +11,7 @@ import { DiseniosGrupoResponseDTO } from './dto/DisenioResponseDTO';
 export class DiseniosService
 {
     private readonly http = inject(HttpClient);
+    private readonly storageService = inject(StorageService);
 
     listar(idGrupo: number)
     {
@@ -38,11 +41,13 @@ export class DiseniosService
     // Sube el boceto firmado que el cliente mandó por WhatsApp; si ya había uno, lo reemplaza
     subirFirmado(idGrupo: number, idDocumento: number, archivo: File)
     {
-        const formData = new FormData();
-        formData.append('archivo', archivo, archivo.name);
+        // Primero sube el archivo directo a Supabase y después lo asocia al diseño
+        const base = `${environment.apiUrl}/disenios/${idGrupo}/${idDocumento}/firmado`;
+        const pedirUrl = this.http.post<UrlSubida>(`${base}/url-subida`, { mimetype: tipoArchivo(archivo) });
 
-        return this.http.post<{ idDocumento: number }>(
-            `${environment.apiUrl}/disenios/${idGrupo}/${idDocumento}/firmado`, formData);
+        return this.storageService.subirConUrl(pedirUrl, archivo).pipe(
+            switchMap((ruta) => this.http.post<{ idDocumento: number }>(base, { ruta })),
+        );
     }
 
     // Mismo PDF de talles que ve el cliente en el portal, generado en el momento

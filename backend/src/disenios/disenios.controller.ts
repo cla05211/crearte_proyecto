@@ -1,5 +1,4 @@
-import { Body, Controller, Get, Param, ParseBoolPipe, ParseIntPipe, Patch, Post, Query, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Body, Controller, Get, Param, ParseBoolPipe, ParseIntPipe, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
@@ -7,9 +6,6 @@ import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
 import { DiseniosService } from './disenios.service';
 import { SubirDisenioDTO } from './dto/SubirDisenioDTO';
 import { ReemplazarDisenioDTO } from './dto/ReemplazarDisenioDTO';
-import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
-
-const TAMANIO_MAXIMO_FIRMADO = 10 * 1024 * 1024;
 
 @Controller('disenios')
 export class DiseniosController
@@ -75,18 +71,31 @@ export class DiseniosController
     }
 
     // Boceto firmado (JPG) que el cliente devolvió por WhatsApp: llega como multipart en el campo 'archivo'
+    // Paso 1: URL firmada para subir el boceto firmado (JPG/PNG) directo a Supabase
+    @Post(':idGrupo/:idDocumento/firmado/url-subida')
+    @UseGuards(AuthGuard, PermisosGuard)
+    @RequierePermiso('ver_clientes_talles_disenio')
+    async crearUrlSubidaFirmado(
+        @Param('idGrupo', ParseIntPipe) idGrupo: number,
+        @Param('idDocumento', ParseIntPipe) idDocumento: number,
+        @Body('mimetype') mimetype: string,
+    )
+    {
+        return await this.diseniosService.crearUrlSubidaFirmado(idGrupo, idDocumento, mimetype);
+    }
+
+    // Paso 2: el firmado ya está subido; se valida y se asocia al diseño
     @Post(':idGrupo/:idDocumento/firmado')
     @UseGuards(AuthGuard, PermisosGuard)
     @RequierePermiso('ver_clientes_talles_disenio')
-    @UseInterceptors(FileInterceptor('archivo', { limits: { fileSize: TAMANIO_MAXIMO_FIRMADO } }))
     async subirFirmado(
         @Param('idGrupo', ParseIntPipe) idGrupo: number,
         @Param('idDocumento', ParseIntPipe) idDocumento: number,
-        @UploadedFile() archivo: ArchivoSubidoDTO,
+        @Body('ruta') ruta: string,
         @Req() req,
     )
     {
-        return await this.diseniosService.subirFirmado(idGrupo, idDocumento, archivo, req.usuario.id);
+        return await this.diseniosService.subirFirmado(idGrupo, idDocumento, ruta, req.usuario.id);
     }
 
     // Habilita o cierra la edición excepcional de talles ya confirmados

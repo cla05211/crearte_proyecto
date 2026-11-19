@@ -6,7 +6,7 @@ import { PedidosService } from 'src/pedidos/pedidos.service';
 import { SubirDisenioDTO } from './dto/SubirDisenioDTO';
 import { ReemplazarDisenioDTO } from './dto/ReemplazarDisenioDTO';
 import { DisenioResponseDTO, DiseniosGrupoResponseDTO } from './dto/DisenioResponseDTO';
-import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
+import { REGLAS_FIRMADO_DISENIO, validarPrefijoRuta, validarTipoArchivo } from 'src/common/archivos-subida';
 import { RecalculoPlanTallesService } from 'src/prendas-pedido-talles/recalculo-plan-talles.service';
 import { AuditoriasService } from 'src/auditorias/auditorias.service';
 import { ACCIONES_AUDITORIA } from 'src/auditorias/dto/insertarAuditoria.dto';
@@ -320,31 +320,42 @@ export class DiseniosService
         return disenio;
     }
 
-    // El empleado sube el boceto firmado (JPG) que el cliente mandó por WhatsApp.
-    // Si ya había uno, se reemplaza (por si se subió el archivo equivocado).
-    async subirFirmado(idGrupo: number, idDocumento: number, archivo: ArchivoSubidoDTO, idUsuario: number)
+    private prefijoFirmado(idPedido: number, idDocumento: number): string
     {
-        const extension = archivo ? FORMATOS_FIRMADO[archivo.mimetype] : undefined;
+        return `${CARPETA_FIRMADOS}/firmado-${idPedido}-${idDocumento}-`;
+    }
+
+    // Paso 1: URL firmada para que el navegador suba el firmado directo a Supabase
+    async crearUrlSubidaFirmado(idGrupo: number, idDocumento: number, mimetype: string): Promise<{ ruta: string; signedUrl: string }>
+    {
+        const extension = FORMATOS_FIRMADO[validarTipoArchivo(mimetype, REGLAS_FIRMADO_DISENIO)];
 
         if (!extension)
         {
-            throw new BadRequestException('Falta el archivo o no es una imagen JPG.');
+            throw new BadRequestException('El archivo tiene que ser una imagen JPG o PNG.');
         }
 
+        await this.obtenerDisenioDelGrupo(idGrupo, idDocumento);
+        const idPedido = await this.pedidosService.obtenerIdPedidoGrupo(idGrupo);
+
+        const ruta = `${this.prefijoFirmado(idPedido, idDocumento)}${Date.now()}.${extension}`;
+        const signedUrl = await this.storageService.crearUrlSubidaImagen(ruta);
+
+        return { ruta, signedUrl };
+    }
+
+    // Paso 2: el empleado ya subió el boceto firmado (JPG/PNG) que el cliente mandó por WhatsApp.
+    // Si ya había uno, se reemplaza (por si se subió el archivo equivocado).
+    async subirFirmado(idGrupo: number, idDocumento: number, rutaSubida: string, idUsuario: number)
+    {
         const disenio = await this.obtenerDisenioDelGrupo(idGrupo, idDocumento);
         const tipoFirmado = PREFIJO_TIPO_FIRMA + disenio.tipo;
 
         const pedido = await this.pedidosService.obtenerPedidoGrupo(idGrupo);
         const idPedido = pedido.id;
 
-        const rutaFirmado = await this.storageService.guardarImagen(
-            {
-                pedidoId: idPedido.toString(),
-                nombreArchivo: `firmado-${idPedido}-${idDocumento}-${Date.now()}.${extension}`,
-                carpetaGuardado: CARPETA_FIRMADOS,
-            },
-            archivo,
-        );
+        const rutaFirmado = validarPrefijoRuta(rutaSubida, this.prefijoFirmado(idPedido, idDocumento));
+        await this.storageService.validarImagenSubida(rutaFirmado, REGLAS_FIRMADO_DISENIO);
 
         const existente = await this.documentosService.obtenerDocumentoPorTipo(idGrupo, tipoFirmado);
         let idFirmado: number;

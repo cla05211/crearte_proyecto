@@ -33,7 +33,7 @@ interface FormularioMovimiento {
   descripcion: string;
 }
 
-const CATEGORIAS_EGRESO = ['Sueldos', 'Proveedores', 'Envíos', 'Alquileres', 'Gastos Oficina', 'Gastos Fábrica', 'Retiro de caja', 'Otros'];
+const CATEGORIAS_EGRESO = ['Sueldos', 'Proveedores', 'Envíos', 'Envíos Transferencia', 'Alquileres', 'Gastos Oficina', 'Gastos Fábrica', 'Retiro de caja', 'Otros'];
 const CATEGORIAS_INGRESO = ['Ingreso en efectivo', 'Otros'];
 
 @Component({

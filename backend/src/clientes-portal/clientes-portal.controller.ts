@@ -11,7 +11,7 @@ import { DocumentosService } from 'src/documentos/documentos.service';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { StorageService } from 'src/storage/storage.service';
 import { DocumentoDTO } from 'src/documentos/dto/documento.dto';
-import { CrearPagoClienteDto } from './dto/crearPagoCliente.dto';
+import { CrearPagoClienteDto, SolicitarSubidaComprobanteClienteDto } from './dto/crearPagoCliente.dto';
 import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
 import { GruposService } from 'src/grupos/grupos.service';
 import { PrendaPedidoDTO } from 'src/prendas-pedido-talles/dto/PrendasPedido.dto';
@@ -26,7 +26,9 @@ import { DiseniosService } from 'src/disenios/disenios.service';
 import { DiseniosGrupoResponseDTO } from 'src/disenios/dto/DisenioResponseDTO';
 import { RecalculoPlanTallesService } from 'src/prendas-pedido-talles/recalculo-plan-talles.service';
 import { AuditoriasService } from 'src/auditorias/auditorias.service';
-import { OPCIONES_COMPROBANTE, OPCIONES_FIRMA } from 'src/common/limites-archivos';
+import { OPCIONES_FIRMA } from 'src/common/limites-archivos';
+import { limpiarNombreArchivo, REGLAS_COMPROBANTE, validarPrefijoRuta, validarTipoArchivo } from 'src/common/archivos-subida';
+import { prefijoComprobantePago } from 'src/pagos/comprobantes';
 import { ACCIONES_AUDITORIA } from 'src/auditorias/dto/insertarAuditoria.dto';
 
 
@@ -292,22 +294,29 @@ export class ClientesPortalController
         return { todosFirmaron };
     }
     
+    // Paso 1: URL firmada para que el cliente suba su comprobante directo a Supabase
+    @Post('pagos/url-subida')
+    async crearUrlSubidaComprobante(@Req() req, @Body() dto: SolicitarSubidaComprobanteClienteDto)
+    {
+        const idPedido = await this.obtenerIdPedidoCliente(req);
+
+        validarTipoArchivo(dto?.mimetype, REGLAS_COMPROBANTE);
+
+        const ruta = `${prefijoComprobantePago(idPedido)}${Date.now()}-${limpiarNombreArchivo(dto.nombreArchivo)}`;
+        const signedUrl = await this.storageService.crearUrlSubidaImagen(ruta);
+
+        return { ruta, signedUrl };
+    }
+
+    // Paso 2: el comprobante ya está subido; se valida que sea de este pedido y se registra el pago
     @Post('pagos')
-    @UseInterceptors(FileInterceptor('comprobante', OPCIONES_COMPROBANTE))
-    async crearPago(@Req() req, @Body() dtoPago: CrearPagoClienteDto, @UploadedFile() archivo: ArchivoSubidoDTO)
+    async crearPago(@Req() req, @Body() dtoPago: CrearPagoClienteDto)
     {
         const idPedido = await this.obtenerIdPedidoCliente(req);
         const idGrupo = req.cliente.id_grupo;
 
-        const nombreArchivo = `comprobante-${idPedido}-${Date.now()}-${archivo.originalname}`
-            .normalize('NFD')
-            .replace(/[̀-ͯ]/g, '')
-            .replace(/[^a-zA-Z0-9._-]/g, '-');
-
-        const rutaComprobante = await this.storageService.guardarImagen(
-            { pedidoId: idPedido.toString(), nombreArchivo, carpetaGuardado: 'comprobantes-clientes' },
-            archivo,
-        );
+        const rutaComprobante = validarPrefijoRuta(dtoPago?.ruta, prefijoComprobantePago(idPedido));
+        await this.storageService.validarImagenSubida(rutaComprobante, REGLAS_COMPROBANTE);
 
         const documentoDTO: DocumentoDTO = { id_grupo: idGrupo, tipo: 'comprobante', archivo_url: rutaComprobante };
 

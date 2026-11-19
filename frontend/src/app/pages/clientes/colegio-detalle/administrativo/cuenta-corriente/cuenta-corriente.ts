@@ -280,10 +280,7 @@ export class CuentaCorriente implements OnInit
 
   private verificarComprobante(archivo: File): void
   {
-    const formData = new FormData();
-    formData.append('comprobante', archivo, archivo.name);
-
-    this.pagosService.comprobarDatosComprobante(formData)
+    this.pagosService.comprobarDatosComprobante(archivo)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (datos) => {
@@ -615,18 +612,15 @@ export class CuentaCorriente implements OnInit
       return;
     }
 
-    const formData = new FormData();
-    formData.append('comprobante', comprobante.archivo, comprobante.archivo.name);
-    formData.append('id_pedido', String(this.idPedido));
-    formData.append('monto', String(comprobante.datos.monto));
-    formData.append('fecha', fecha);
-    formData.append('banco', comprobante.datos.banco);
-    formData.append('entidad_pago', comprobante.entidadPago);
-    formData.append('nroTransferencia', comprobante.datos.nro_transferencia);
-
     this.guardando.set(true);
 
-    this.pagosService.crearPagoTransferencia(formData)
+    this.pagosService.crearPagoTransferencia(this.idPedido, comprobante.archivo, {
+      monto: Number(comprobante.datos.monto),
+      fecha,
+      banco: comprobante.datos.banco,
+      entidad_pago: comprobante.entidadPago,
+      nroTransferencia: comprobante.datos.nro_transferencia,
+    })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {

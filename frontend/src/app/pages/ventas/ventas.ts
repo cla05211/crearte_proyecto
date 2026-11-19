@@ -692,10 +692,7 @@ export class Ventas implements OnInit {
   }
 
   private verificarComprobante(archivo: File, indice: number): void {
-    const formData = new FormData();
-    formData.append('comprobante', archivo, archivo.name);
-
-    this.pagosService.comprobarDatosComprobante(formData).subscribe({
+    this.pagosService.comprobarDatosComprobante(archivo).subscribe({
       next: (datos) => {
         this.comprobantesSenia.update((comprobantes) =>
           comprobantes.map((c, i) => (i === indice ? { ...c, datos, verificando: false, error: '' } : c)),

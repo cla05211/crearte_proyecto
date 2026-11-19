@@ -3,8 +3,9 @@ import { ResumenPagosBanco } from './dto/resumenPagosBanco.dto';
 import { inject, Injectable } from '@angular/core';
 import { PagoResponseDTO } from './dto/pagoResponse.dto';
 import { environment } from '../../../environments/environment';
-import { Observable } from 'rxjs';
-import { SubirArchivoStorage } from '../storage/dtos/SubirArchivoStorage';
+import { Observable, switchMap } from 'rxjs';
+import { StorageService, tipoArchivo, UrlSubida } from '../storage/storage-service';
+import { DatosPagoTransferencia } from './dto/datosPagoTransferencia.dto';
 import { PagoComprobanteDatosDTO } from './dto/pagoComprobanteDatos.dto';
 import { PagoBancoResponse } from './dto/pagoBancoResponse.dto';
 import { ModificarPago } from './dto/modificarBanco.dto';
@@ -18,6 +19,7 @@ import { PagoDTO } from '../gestionPedidos/dto/pago.dto';
 export class PagosService 
 {
   http = inject(HttpClient);  
+  private storageService = inject(StorageService);
 
   traerPagosIdPedido(idPedido: number): Observable<PagoResponseDTO[]>
   {
@@ -35,9 +37,15 @@ export class PagosService
     return this.http.get<ResumenPagosBanco>(`${environment.apiUrl}/pagos/bancos/${banco}/resumen`, {params: filtros});
   }
 
-  comprobarDatosComprobante(formData: FormData): Observable<PagoComprobanteDatosDTO>
+  // Sube el comprobante a una carpeta temporal y lo lee con OCR (el back lo borra después de leerlo).
+  // Lo usan empleados y clientes del portal.
+  comprobarDatosComprobante(archivo: File): Observable<PagoComprobanteDatosDTO>
   {
-    return this.http.post<PagoComprobanteDatosDTO>(`${environment.apiUrl}/pagos/ocr`, formData);
+    const pedirUrl = this.http.post<UrlSubida>(`${environment.apiUrl}/pagos/ocr/url-subida`, { mimetype: tipoArchivo(archivo) });
+
+    return this.storageService.subirConUrl(pedirUrl, archivo).pipe(
+      switchMap((ruta) => this.http.post<PagoComprobanteDatosDTO>(`${environment.apiUrl}/pagos/ocr`, { ruta })),
+    );
   }
 
   crearPago(dto:PagoDTO)
@@ -45,10 +53,18 @@ export class PagosService
     return this.http.post(`${environment.apiUrl}/pagos/`, dto);
   }
 
-  // Transferencia cargada por un empleado: el FormData lleva el archivo 'comprobante' y los datos del pago
-  crearPagoTransferencia(formData: FormData)
+  // Transferencia cargada por un empleado: primero sube el comprobante directo a Supabase y después registra el pago
+  crearPagoTransferencia(idPedido: number, archivo: File, datos: DatosPagoTransferencia)
   {
-    return this.http.post(`${environment.apiUrl}/pagos/comprobante`, formData);
+    const pedirUrl = this.http.post<UrlSubida>(`${environment.apiUrl}/pagos/comprobante/url-subida`, {
+      id_pedido: idPedido,
+      nombreArchivo: archivo.name,
+      mimetype: tipoArchivo(archivo),
+    });
+
+    return this.storageService.subirConUrl(pedirUrl, archivo).pipe(
+      switchMap((ruta) => this.http.post(`${environment.apiUrl}/pagos/comprobante`, { ...datos, id_pedido: idPedido, ruta })),
+    );
   }
 
   eliminarPago(idPago:number)

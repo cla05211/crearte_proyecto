@@ -102,7 +102,12 @@
                       {{ movimiento.tipo === 'ingreso' ? 'Ingreso' : 'Egreso' }}
                     </span>
                   </td>
-                  <td data-label="Categoría">{{ movimiento.categoria }}</td>
+                  <td data-label="Categoría">
+                    {{ movimiento.categoria }}
+                    @if (movimiento.categoria === 'Envíos Transferencia') {
+                      <span class="ds-badge" title="Se pagó por transferencia: no sale de la caja y no suma en los egresos">No suma</span>
+                    }
+                  </td>
                   <td data-label="Descripción">{{ movimiento.descripcion }}</td>
                   <td data-label="Acciones" class="caja-table__actions-cell">
                     <button

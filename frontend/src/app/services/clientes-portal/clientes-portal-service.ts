@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { PagoResponseDTO } from '../pagos/dto/pagoResponse.dto';
 import { CuotaResponseDTO } from '../cuotas/dto/CuotaResponseDTO';
@@ -9,6 +9,8 @@ import { productosPedidoIdNombreDTO } from '../productosPedidos/dto/ProductoPedi
 import { PrendaPedidoDTO } from './dto/prenda.dto';
 import { PadreResponsableResponseDTO } from '../padreResponsable/dto/padreResponsableResponse.dto';
 import { DiseniosGrupoResponseDTO } from '../disenios/dto/DisenioResponseDTO';
+import { StorageService, tipoArchivo, UrlSubida } from '../storage/storage-service';
+import { DatosPagoTransferencia } from '../pagos/dto/datosPagoTransferencia.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -16,6 +18,7 @@ import { DiseniosGrupoResponseDTO } from '../disenios/dto/DisenioResponseDTO';
 export class ClientesPortalService
 {
   http = inject(HttpClient);
+  private storageService = inject(StorageService);
   private base = `${environment.apiUrl}/clientes-portal`;
 
   obtenerIdPedido(): Observable<number>
@@ -89,9 +92,17 @@ export class ClientesPortalService
     return this.http.get(`${this.base}/tipo-talles`, { responseType: 'text' });
   }
 
-  crearPago(formData: FormData)
+  // Primero sube el comprobante directo a Supabase y después registra el pago con su ruta
+  crearPago(archivo: File, datos: DatosPagoTransferencia & { motivo: string })
   {
-    return this.http.post(`${this.base}/pagos`, formData);
+    const pedirUrl = this.http.post<UrlSubida>(`${this.base}/pagos/url-subida`, {
+      nombreArchivo: archivo.name,
+      mimetype: tipoArchivo(archivo),
+    });
+
+    return this.storageService.subirConUrl(pedirUrl, archivo).pipe(
+      switchMap((ruta) => this.http.post(`${this.base}/pagos`, { ...datos, ruta })),
+    );
   }
 
   obtenerTallesConfirmados(): Observable<boolean>

@@ -108,6 +108,12 @@
                            [value]="pedido.cotizacion ?? ''" (change)="modificarCotizacion(pedido, inputCotizacion.value, inputCotizacion)"
                            [attr.aria-label]="'Cotización del envío del pedido ' + pedido.nroPedido" />
                   </div>
+                  @if (pedido.envioGratis && pedido.medioPagoEnvio) {
+                    <button type="button" class="medio-pago-boton" (click)="cambiarMedioPago(pedido)"
+                            [attr.aria-label]="'Cambiar medio de pago del envío del pedido ' + pedido.nroPedido">
+                      {{ pedido.medioPagoEnvio }}
+                    </button>
+                  }
                 </td>
 
                 <td data-label="Comprobante" class="celda-centro">
@@ -344,6 +350,45 @@
         <button type="button" class="ds-button ds-button--secondary" [disabled]="confirmandoEntrega()" (click)="cerrarEntrega()">Cancelar</button>
         <button type="button" class="ds-button" [disabled]="confirmandoEntrega() || !entregaActual.fecha" (click)="confirmarEntrega()">
           {{ confirmandoEntrega() ? 'Guardando…' : 'Confirmar entrega' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}
+
+
+@if (medioPago(); as pendiente) {
+  <div class="modal-backdrop" role="presentation">
+    <section class="fabrica-modal" role="dialog" aria-modal="true" aria-labelledby="medio-pago-title">
+      <header class="fabrica-modal__header">
+        <div>
+          <span class="ds-eyebrow">Pedido {{ pendiente.pedido.nroPedido ?? '#' + pendiente.pedido.idPedido }}</span>
+          <h2 id="medio-pago-title" class="ds-heading-2">¿Cómo se pagó el envío?</h2>
+        </div>
+        <button class="close-button" type="button" [disabled]="estaGuardando(pendiente.pedido, 'cotizacion')" (click)="cerrarMedioPago()" aria-label="Cerrar">×</button>
+      </header>
+
+      <div class="fabrica-modal__content">
+        <p class="ds-text-muted">
+          El envío es gratis, así que los ${{ pendiente.cotizacion }} se registran en caja.
+          En efectivo suma en los egresos; por transferencia se ve en caja pero no suma.
+        </p>
+
+        <div class="medio-pago-opciones" role="radiogroup" aria-label="Medio de pago del envío">
+          @for (medio of mediosPago; track medio) {
+            <button type="button" class="ds-button ds-button--secondary medio-pago-opcion"
+                    role="radio" [attr.aria-checked]="pendiente.medio === medio"
+                    [class.is-active]="pendiente.medio === medio" (click)="elegirMedioPago(medio)">
+              {{ medio }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <footer class="fabrica-modal__actions">
+        <button type="button" class="ds-button ds-button--secondary" [disabled]="estaGuardando(pendiente.pedido, 'cotizacion')" (click)="cerrarMedioPago()">Cancelar</button>
+        <button type="button" class="ds-button" [disabled]="!pendiente.medio || estaGuardando(pendiente.pedido, 'cotizacion')" (click)="confirmarMedioPago()">
+          {{ estaGuardando(pendiente.pedido, 'cotizacion') ? 'Guardando…' : 'Guardar cotización' }}
         </button>
       </footer>
     </section>

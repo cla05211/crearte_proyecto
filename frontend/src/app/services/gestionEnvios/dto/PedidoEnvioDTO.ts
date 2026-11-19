@@ -5,12 +5,15 @@ export const PAGOS_RETIRO = ['Sí', 'No', 'Efectivo'] as const;
 export const EMPRESAS_ENVIO = ['Via cargo', 'Andreani'] as const;
 export const CALENDARIOS_RETIRO = ['Agendado', 'Pendiente', 'Comisionista'] as const;
 export const FORMAS_ENTREGA = ['Envio', 'Retiro oficina', 'Comisionista'] as const;
+// Cómo se pagó un envío gratis: efectivo suma en los egresos de caja, transferencia se ve pero no suma
+export const MEDIOS_PAGO_ENVIO = ['Efectivo', 'Transferencia'] as const;
 
 export type EstadoEnvio = (typeof ESTADOS_ENVIO)[number];
 export type PagoRealizado = (typeof PAGOS_RETIRO)[number];
 export type EmpresaEnvio = (typeof EMPRESAS_ENVIO)[number];
 export type CalendarioRetiro = (typeof CALENDARIOS_RETIRO)[number];
 export type FormaEntrega = (typeof FORMAS_ENTREGA)[number];
+export type MedioPagoEnvio = (typeof MEDIOS_PAGO_ENVIO)[number];
 
 // Pedidos de las tablas "Envío por correo" (formaEntrega = 'Envio') y "Retiro por oficina" (el resto)
 export interface PedidoEnvioDTO
@@ -23,6 +26,7 @@ export interface PedidoEnvioDTO
     empresaEnvio: EmpresaEnvio | null;
     datosEnvio: boolean;
     cotizacion: number | null;
+    medioPagoEnvio: MedioPagoEnvio | null; // solo envíos gratis con cotización
     idComprobante: number | null;
     calendario: CalendarioRetiro;
     fechaEntrega: string | null;

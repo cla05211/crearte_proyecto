@@ -34,14 +34,11 @@ export class PruebasPagos
       return;
     }
  
-    const formData = new FormData();
-    formData.append('comprobante', archivo, archivo.name);
- 
     this.cargando.set(true);
     this.error.set(null);
     this.resultado.set(null);
  
-    this.pagosService.comprobarDatosComprobante(formData).subscribe({
+    this.pagosService.comprobarDatosComprobante(archivo).subscribe({
       next: (res) => {
         this.resultado.set(res);
         this.cargando.set(false);

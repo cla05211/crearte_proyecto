@@ -17,11 +17,7 @@ const crearOpciones = (maxMb: number, tiposPermitidos: RegExp): MulterOptions =>
     },
 });
 
-// Comprobantes de pago: cualquier imagen (menos SVG) o PDF
-export const OPCIONES_COMPROBANTE = crearOpciones(15, /^(image\/[a-z0-9.+-]+|application\/pdf)$/);
-
-// Firmas dibujadas en el portal (se mandan como PNG)
-export const OPCIONES_FIRMA = crearOpciones(5, /^image\/(png|jpeg)$/);
-
-// Archivos que suben los empleados desde Ventas (recursos adicionales)
-export const OPCIONES_ARCHIVO_GENERAL = crearOpciones(100, /.*/);
+// Firmas dibujadas en el portal (se mandan como PNG; pesan pocos KB).
+// Son el único archivo que sigue pasando por el back: el límite queda bajo los 4.5 MB que acepta una función de Vercel.
+// El resto de los archivos se sube directo a Supabase (ver archivos-subida.ts).
+export const OPCIONES_FIRMA = crearOpciones(4, /^image\/(png|jpeg)$/);

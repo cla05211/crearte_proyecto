@@ -6,7 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { GestionEnviosService } from '../../../services/gestionEnvios/gestion-envios-service';
 import {
   CALENDARIOS_RETIRO, ColumnaDatoSimple, DatosSimplesEnvio, EMPRESAS_ENVIO, ESTADOS_ENVIO, FORMAS_ENTREGA,
-  FormaEntrega, PAGOS_ENVIO, PAGOS_RETIRO, PedidoEntregadoDTO, PedidoEnvioDTO,
+  FormaEntrega, MEDIOS_PAGO_ENVIO, MedioPagoEnvio, PAGOS_ENVIO, PAGOS_RETIRO, PedidoEntregadoDTO, PedidoEnvioDTO,
 } from '../../../services/gestionEnvios/dto/PedidoEnvioDTO';
 import { DocumentosService } from '../../../services/documentos/documentos-service';
 import { StorageService } from '../../../services/storage/storage-service';
@@ -38,6 +38,15 @@ const TONOS: Record<string, Record<string, Tono>> = {
   calendario: { 'Agendado': 'verde', 'Pendiente': 'rojo', 'Comisionista': 'violeta' },
   forma:      { 'Envio': 'azul', 'Retiro oficina': 'violeta', 'Comisionista': 'naranja' },
 };
+
+// Cotización de un envío gratis esperando que elijan efectivo o transferencia
+interface MedioPagoPendiente
+{
+  pedido: PedidoEnvioDTO;
+  cotizacion: number;
+  medio: MedioPagoEnvio | null;
+  input: HTMLInputElement | null; // null cuando solo cambian el medio de una cotización ya guardada
+}
 
 interface EntregaPendiente
 {
@@ -73,6 +82,7 @@ export class ControlEnvios
   readonly guardando = signal<string | null>(null);
 
   readonly entrega = signal<EntregaPendiente | null>(null);
+  readonly medioPago = signal<MedioPagoPendiente | null>(null);
   readonly confirmandoEntrega = signal(false);
 
   readonly estados = ESTADOS_ENVIO;
@@ -81,6 +91,7 @@ export class ControlEnvios
   readonly empresas = EMPRESAS_ENVIO;
   readonly calendarios = CALENDARIOS_RETIRO;
   readonly formasEntrega = FORMAS_ENTREGA;
+  readonly mediosPago = MEDIOS_PAGO_ENVIO;
 
   // Correo: forma 'Envio'. Retiro: 'Retiro oficina' (y 'Comisionista', si quedara alguno sin entregar)
   readonly pedidosCorreo = computed(() => (this.pedidos() ?? []).filter(p => p.formaEntrega === 'Envio'));
@@ -256,7 +267,7 @@ export class ControlEnvios
 
   // ── Cotización ────────────────────────────────────────────────────────
 
-  async modificarCotizacion(pedido: PedidoEnvioDTO, valor: string, input: HTMLInputElement): Promise<void>
+  modificarCotizacion(pedido: PedidoEnvioDTO, valor: string, input: HTMLInputElement): void
   {
     const cotizacion = this.leerNumero(valor);
 
@@ -269,22 +280,75 @@ export class ControlEnvios
 
     if (cotizacion === pedido.cotizacion) return;
 
+    // Envío gratis: antes de guardar se pregunta si se pagó en efectivo o por transferencia
+    if (pedido.envioGratis && cotizacion !== null && cotizacion > 0)
+    {
+      this.medioPago.set({ pedido, cotizacion, medio: null, input });
+      return;
+    }
+
+    this.guardarCotizacion(pedido, cotizacion, null, input);
+  }
+
+  // Para cambiar el medio de pago de una cotización ya cargada
+  cambiarMedioPago(pedido: PedidoEnvioDTO): void
+  {
+    if (pedido.cotizacion === null) return;
+    this.medioPago.set({ pedido, cotizacion: pedido.cotizacion, medio: pedido.medioPagoEnvio, input: null });
+  }
+
+  elegirMedioPago(medio: MedioPagoEnvio): void
+  {
+    this.medioPago.update(pendiente => pendiente ? { ...pendiente, medio } : pendiente);
+  }
+
+  cerrarMedioPago(): void
+  {
+    const pendiente = this.medioPago();
+    if (!pendiente || this.estaGuardando(pendiente.pedido, 'cotizacion')) return;
+
+    // Si cancelan, el input vuelve a la cotización guardada
+    if (pendiente.input) pendiente.input.value = pendiente.pedido.cotizacion?.toString() ?? '';
+    this.medioPago.set(null);
+  }
+
+  async confirmarMedioPago(): Promise<void>
+  {
+    const pendiente = this.medioPago();
+    if (!pendiente?.medio) return;
+
+    const guardado = await this.guardarCotizacion(pendiente.pedido, pendiente.cotizacion, pendiente.medio, pendiente.input);
+    if (guardado) this.medioPago.set(null);
+  }
+
+  private async guardarCotizacion(pedido: PedidoEnvioDTO, cotizacion: number | null, medioPago: MedioPagoEnvio | null, input: HTMLInputElement | null): Promise<boolean>
+  {
     this.guardando.set(`${pedido.idPedido}-cotizacion`);
 
     try
     {
-      await firstValueFrom(this.enviosService.modificarCotizacion(pedido.idPedido, cotizacion));
-      this.actualizarPedido(pedido.idPedido, { cotizacion });
+      await firstValueFrom(this.enviosService.modificarCotizacion(pedido.idPedido, cotizacion, medioPago));
 
-      if (pedido.envioGratis)
+      const tieneEgreso = pedido.envioGratis && cotizacion !== null && cotizacion > 0;
+      this.actualizarPedido(pedido.idPedido, { cotizacion, medioPagoEnvio: tieneEgreso ? medioPago : null });
+
+      if (tieneEgreso)
       {
-        this.notificaciones.success({ title: 'Cotización guardada', description: 'Como el envío es gratis, se actualizó el egreso en caja.' });
+        this.notificaciones.success({
+          title: 'Cotización guardada',
+          description: medioPago === 'Transferencia'
+            ? 'Se registró en caja como envío por transferencia (no suma en los egresos).'
+            : 'Se registró en caja como egreso en efectivo.',
+        });
       }
+
+      return true;
     }
     catch (err: any)
     {
-      input.value = pedido.cotizacion?.toString() ?? '';
+      if (input) input.value = pedido.cotizacion?.toString() ?? '';
       this.mostrarError(err, 'No se pudo guardar la cotización.');
+      return false;
     }
     finally
     {

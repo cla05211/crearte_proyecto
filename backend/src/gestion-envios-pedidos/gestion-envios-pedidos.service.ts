@@ -4,15 +4,26 @@ import { DocumentosService } from 'src/documentos/documentos.service';
 import { MovimientosCajaService } from 'src/movimientos-caja/movimientos-caja.service';
 import { PedidosService } from 'src/pedidos/pedidos.service';
 import { StorageService } from 'src/storage/storage.service';
-import { ArchivoSubidoDTO } from 'src/storage/dto/ArchivoSubidoDTO';
+import { limpiarNombreArchivo, REGLAS_COMPROBANTE, validarPrefijoRuta, validarTipoArchivo } from 'src/common/archivos-subida';
 import { COLUMNAS_DATO_SIMPLE, modificarDatoSimpleDto } from './dto/modificarDatoSimpleDto';
 import { confirmarEntregaDto } from './dto/confirmarEntregaDto';
 import { pedidoListoParaEnviarDto } from './dto/traerPedidoEnvioDto';
 import { pedidoEntregadoDto } from './dto/traerPedidoEntregadoDto';
 
+const CARPETA_COMPROBANTES_ENVIO = 'comprobantes-envios';
 const ESTADO_LISTO_PARA_ENTREGAR = 'Listo para entregar';
 const ESTADO_ENTREGADO = 'Entregado';
 const FORMAS_ENTREGA = ['Envio', 'Retiro oficina', 'Comisionista'];
+
+// Medio con el que se pagó un envío gratis -> categoría del egreso en caja.
+// 'Envíos Transferencia' se muestra en caja pero no suma en los egresos (sumar_movimientos_caja).
+export const MEDIOS_PAGO_ENVIO = ['Efectivo', 'Transferencia'] as const;
+export type MedioPagoEnvio = typeof MEDIOS_PAGO_ENVIO[number];
+
+const CATEGORIA_CAJA: Record<MedioPagoEnvio, string> = {
+    Efectivo: 'Envíos',
+    Transferencia: 'Envíos Transferencia',
+};
 
 @Injectable()
 export class GestionEnviosPedidosService 
@@ -63,6 +74,7 @@ export class GestionEnviosPedidosService
         const { data, error } = await this.sb.supabase
         .from("pedidos_envio")
         .select(`*,
+            movimiento:movimientos_caja(categoria),
             pedido:pedidos!inner(estado_general, fecha_entrega_aproximada, envio_gratis, nro_fabrica,
                 grupo:grupos!inner(id, contratos(firmado)))`)
         .eq("entregado", false)
@@ -83,6 +95,7 @@ export class GestionEnviosPedidosService
             empresaEnvio: p.empresa_envio,
             datosEnvio: p.datos_envio,
             cotizacion: p.cotizacion,
+            medioPagoEnvio: this.medioPagoDeCategoria(p.movimiento?.categoria ?? null),
             idComprobante: p.id_comprobante,
             calendario: p.calendario,
             fechaEntrega: p.fecha_entrega,
@@ -147,14 +160,19 @@ export class GestionEnviosPedidosService
         }
     }
    
-    // Guarda la cotización. Si el envío es gratis la refleja como egreso en caja:
-    // la primera vez lo crea y después lo actualiza (id_movimiento_caja), así no se duplica.
-    // Si se borra la cotización o el envío no es gratis, se borra el egreso.
-    async modificarCotizacion(idPedido: number, cotizacion: number | null, idUsuario: number): Promise<void>
+    // Guarda la cotización. Si el envío es gratis la refleja como egreso en caja, con la categoría según
+    // el medio de pago (efectivo o transferencia): la primera vez lo crea y después lo actualiza
+    // (id_movimiento_caja), así no se duplica. Si se borra la cotización o el envío no es gratis, se borra el egreso.
+    async modificarCotizacion(idPedido: number, cotizacion: number | null, medioPago: MedioPagoEnvio | null, idUsuario: number): Promise<void>
     {
         if (cotizacion !== null && (!Number.isFinite(cotizacion) || cotizacion < 0))
         {
             throw new BadRequestException('La cotización no es válida.');
+        }
+
+        if (medioPago !== null && !MEDIOS_PAGO_ENVIO.includes(medioPago))
+        {
+            throw new BadRequestException('Medio de pago inválido.');
         }
 
         const { data: envio, error } = await this.sb.supabase
@@ -172,11 +190,16 @@ export class GestionEnviosPedidosService
 
         if (envio.pedido.envio_gratis && cotizacion !== null && cotizacion > 0)
         {
+            if (!medioPago)
+            {
+                throw new BadRequestException('Falta indicar si el envío se pagó en efectivo o por transferencia.');
+            }
+
             if (idMovimiento)
             {
                 const { error: errorCaja } = await this.sb.supabase
                 .from("movimientos_caja")
-                .update({ monto: cotizacion })
+                .update({ monto: cotizacion, categoria: CATEGORIA_CAJA[medioPago] })
                 .eq("id", idMovimiento);
 
                 if (errorCaja)
@@ -189,7 +212,7 @@ export class GestionEnviosPedidosService
                 idMovimiento = await this.cajaService.crearMovimiento({
                     fecha: this.fechaArgentina(),
                     monto: cotizacion,
-                    categoria: "Envíos",
+                    categoria: CATEGORIA_CAJA[medioPago],
                     descripcion: `Envío gratis pedido ${envio.pedido.nro_fabrica ?? '#' + idPedido}`,
                     usuario: idUsuario,
                     tipo: "egreso",
@@ -240,13 +263,14 @@ export class GestionEnviosPedidosService
     }
 
     // Sube el comprobante de pago del envío (solo Via cargo: lo exige el check de la tabla)
-    async subirComprobante(idPedido: number, archivo: ArchivoSubidoDTO): Promise<number>
+    private prefijoComprobanteEnvio(idPedido: number): string
     {
-        if (!archivo)
-        {
-            throw new BadRequestException('No se recibió ningún archivo.');
-        }
+        return `${CARPETA_COMPROBANTES_ENVIO}/comprobante-envio-${idPedido}-`;
+    }
 
+    // Solo los envíos por Via cargo llevan comprobante
+    private async obtenerPedidoViaCargo(idPedido: number): Promise<{ id_grupo: number }>
+    {
         const { data: pedido, error } = await this.sb.supabase
         .from("pedidos")
         .select("id_grupo, pedidos_envio!inner(empresa_envio)")
@@ -263,15 +287,28 @@ export class GestionEnviosPedidosService
             throw new BadRequestException('El comprobante solo se carga para envíos por Via cargo.');
         }
 
-        const nombreArchivo = `comprobante-envio-${idPedido}-${Date.now()}-${archivo.originalname}`
-            .normalize('NFD')
-            .replace(/[̀-ͯ]/g, '')
-            .replace(/[^a-zA-Z0-9._-]/g, '-');
+        return pedido;
+    }
 
-        const ruta = await this.storageService.guardarImagen(
-            { pedidoId: idPedido.toString(), nombreArchivo, carpetaGuardado: 'comprobantes-envios' },
-            archivo,
-        );
+    // Paso 1 de la subida directa a Supabase (el archivo no pasa por Nest)
+    async crearUrlSubidaComprobante(idPedido: number, nombreArchivo: string, mimetype: string): Promise<{ ruta: string; signedUrl: string }>
+    {
+        validarTipoArchivo(mimetype, REGLAS_COMPROBANTE);
+        await this.obtenerPedidoViaCargo(idPedido);
+
+        const ruta = `${this.prefijoComprobanteEnvio(idPedido)}${Date.now()}-${limpiarNombreArchivo(nombreArchivo)}`;
+        const signedUrl = await this.storageService.crearUrlSubidaImagen(ruta);
+
+        return { ruta, signedUrl };
+    }
+
+    // Paso 2: el comprobante ya está en Storage; se valida y se asocia al envío
+    async subirComprobante(idPedido: number, rutaSubida: string): Promise<number>
+    {
+        const ruta = validarPrefijoRuta(rutaSubida, this.prefijoComprobanteEnvio(idPedido));
+        const pedido = await this.obtenerPedidoViaCargo(idPedido);
+
+        await this.storageService.validarImagenSubida(ruta, REGLAS_COMPROBANTE);
 
         const [idDocumento] = await this.documentosService.subirDocumento({
             id_grupo: pedido.id_grupo,
@@ -295,6 +332,13 @@ export class GestionEnviosPedidosService
         {
             throw new BadRequestException(error.message);
         }
+    }
+
+    private medioPagoDeCategoria(categoria: string | null): MedioPagoEnvio | null
+    {
+        if (categoria === CATEGORIA_CAJA.Transferencia) return 'Transferencia';
+        if (categoria === CATEGORIA_CAJA.Efectivo) return 'Efectivo';
+        return null;
     }
 
     private fechaArgentina(): string

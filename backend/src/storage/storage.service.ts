@@ -3,6 +3,7 @@ import { SupabaseService } from 'src/supabase/supabase.service';
 import { SubirArchivoStorage } from './dto/SubirArchivoStorage.dto';
 import { ArchivoSubidoDTO } from './dto/ArchivoSubidoDTO';
 import { randomUUID } from 'crypto';
+import { ReglasArchivo } from 'src/common/archivos-subida';
 
 // Tiene que coincidir con el nombre del bucket creado en Supabase
 const BUCKET_DISENIOS = 'disenios';
@@ -59,6 +60,61 @@ export class StorageService {
         }
 
         return data.signedUrl;
+    }
+
+    // URL firmada para que el navegador suba un archivo directo al bucket "imagenes" (sin pasar por Nest)
+    async crearUrlSubidaImagen(ruta: string): Promise<string>
+    {
+        const { data, error } = await this.supabaseService.supabase.storage
+            .from('imagenes')
+            .createSignedUploadUrl(ruta);
+
+        if (error)
+        {
+            throw new InternalServerErrorException(error.message);
+        }
+
+        return data.signedUrl;
+    }
+
+    // Después de una subida directa: revisa en Storage que el archivo exista y que su tipo y tamaño sean válidos.
+    // Si no lo son, lo borra para que no quede un archivo inválido guardado.
+    async validarImagenSubida(ruta: string, reglas: ReglasArchivo): Promise<void>
+    {
+        const separador = ruta.lastIndexOf('/');
+        const carpeta = separador >= 0 ? ruta.slice(0, separador) : '';
+        const nombre = ruta.slice(separador + 1);
+
+        const { data, error } = await this.supabaseService.supabase.storage
+            .from('imagenes')
+            .list(carpeta, { search: nombre });
+
+        if (error)
+        {
+            throw new InternalServerErrorException(error.message);
+        }
+
+        const archivo = data.find(a => a.name === nombre);
+
+        if (!archivo)
+        {
+            throw new BadRequestException('El archivo no se encuentra en Storage. Intentá subirlo de nuevo.');
+        }
+
+        const tamanio = Number(archivo.metadata?.size ?? 0);
+        const tipo = String(archivo.metadata?.mimetype ?? '').toLowerCase();
+
+        if (tamanio > reglas.maxBytes)
+        {
+            await this.eliminarImagen(ruta);
+            throw new BadRequestException({ code: 'ARCHIVO_DEMASIADO_GRANDE', message: 'El archivo supera el tamaño permitido.' });
+        }
+
+        if (!reglas.tipos.test(tipo) || tipo === 'image/svg+xml')
+        {
+            await this.eliminarImagen(ruta);
+            throw new BadRequestException({ code: 'TIPO_ARCHIVO_INVALIDO', message: 'Tipo de archivo no permitido.' });
+        }
     }
 
     async eliminarImagen(ruta: string)
