@@ -1,5 +1,5 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { PadreResponsableDTO } from './dto/padreResponsable.dto';
 import { BadRequestException } from '@nestjs/common';
 import { PadreResponsableResponseDTO } from './dto/padreResponsableResponse.dto';

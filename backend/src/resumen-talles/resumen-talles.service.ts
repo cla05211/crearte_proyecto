@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { GruposService } from 'src/grupos/grupos.service';
-import { GestionPedidosService } from 'src/gestion-pedidos/gestion-pedidos.service';
-import { PrendasPedidoTallesService } from 'src/prendas-pedido-talles/prendas-pedido-talles.service';
-import { DocumentosService } from 'src/documentos/documentos.service';
-import { StorageService } from 'src/storage/storage.service';
-import { PdfService } from 'src/reportes/pdf/pdf.service';
-import { PedidosService } from 'src/pedidos/pedidos.service';
-import { GenerarResumenTallesDTO } from 'src/reportes/pdf/dto/generarResumenTalles.dto';
-import { ProductoPrendasResumenDTO } from 'src/prendas-pedido-talles/dto/ResumenPrendasPedido.dto';
-import { IDS_BUZO, IDS_CAMPERA, IDS_CHOMBA, IDS_REMERA } from 'src/productos/ids-prendas';
+import { GruposService } from '../grupos/grupos.service';
+import { GestionPedidosService } from '../gestion-pedidos/gestion-pedidos.service';
+import { PrendasPedidoTallesService } from '../prendas-pedido-talles/prendas-pedido-talles.service';
+import { DocumentosService } from '../documentos/documentos.service';
+import { StorageService } from '../storage/storage.service';
+import { PdfService } from '../reportes/pdf/pdf.service';
+import { PedidosService } from '../pedidos/pedidos.service';
+import { GenerarResumenTallesDTO } from '../reportes/pdf/dto/generarResumenTalles.dto';
+import { ProductoPrendasResumenDTO } from '../prendas-pedido-talles/dto/ResumenPrendasPedido.dto';
+import { IDS_BUZO, IDS_CAMPERA, IDS_CHOMBA, IDS_REMERA } from '../productos/ids-prendas';
 
 
 export const TIPO_DOCUMENTO_FIRMA_TALLES = 'Firma Talles';

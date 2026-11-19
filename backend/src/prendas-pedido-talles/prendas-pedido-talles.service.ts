@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { PrendaPedidoDTO } from './dto/PrendasPedido.dto';
 import { ProductoPrendasResumenDTO, TalleCantidadResumenDTO } from './dto/ResumenPrendasPedido.dto';
-import { ProductoCantidadDTO } from 'src/productos-pedido/dto/ProductoCantidad.dto';
-import { BeneficioPedidoDTO } from 'src/beneficios-pedido/dto/beneficioPedidoDTO';
+import { ProductoCantidadDTO } from '../productos-pedido/dto/ProductoCantidad.dto';
+import { BeneficioPedidoDTO } from '../beneficios-pedido/dto/beneficioPedidoDTO';
 
 const ID_BANDERA = 73;
 

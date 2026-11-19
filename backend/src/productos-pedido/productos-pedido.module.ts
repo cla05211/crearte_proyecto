@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ProductosPedidoController } from './productos-pedido.controller';
-import { PermisosService } from 'src/permisos/permisos.service';
+import { PermisosService } from '../permisos/permisos.service';
 import { ProductosPedidoService } from './productos-pedido-service.service';
-import { SupabaseModule } from 'src/supabase/supabase.module';
-import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { SupabaseModule } from '../supabase/supabase.module';
+import { UsuariosService } from '../usuarios/usuarios.service';
 
 @Module({
   imports:[SupabaseModule],

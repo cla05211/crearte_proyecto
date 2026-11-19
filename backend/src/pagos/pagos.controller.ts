@@ -1,25 +1,25 @@
 import { BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { PagosService } from './pagos.service';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
-import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { PermisosGuard } from '../permisos/guards/permisos.guard';
+import { RequierePermiso } from '../permisos/requiere_permismos.decorator';
 import { OcrService } from '../ocr/ocr.service';
 import { ModificarPago } from './dto/modificarBanco.dto';
 import { FiltrosPagosBancoDTO } from './dto/filtrosPagosBanco.dto';
-import { GenerarExcelDTO } from 'src/reportes/excel/dto/generarExcel.dto';
-import { ExcelService } from 'src/reportes/excel/excel.service';
-import { GenerarReciboDTO } from 'src/reportes/pdf/dto/generarRecibo.dto';
-import { GenerarContratoDTO } from 'src/reportes/pdf/dto/generarContrato.dto';
-import { PdfService } from 'src/reportes/pdf/pdf.service';
+import { GenerarExcelDTO } from '../reportes/excel/dto/generarExcel.dto';
+import { ExcelService } from '../reportes/excel/excel.service';
+import { GenerarReciboDTO } from '../reportes/pdf/dto/generarRecibo.dto';
+import { GenerarContratoDTO } from '../reportes/pdf/dto/generarContrato.dto';
+import { PdfService } from '../reportes/pdf/pdf.service';
 import { PagoDTO } from './dto/pago.dto';
-import { StorageService } from 'src/storage/storage.service';
-import { DocumentoDTO } from 'src/documentos/dto/documento.dto';
-import { CARPETA_OCR_TEMPORAL, limpiarNombreArchivo, REGLAS_COMPROBANTE, validarPrefijoRuta, validarTipoArchivo } from 'src/common/archivos-subida';
+import { StorageService } from '../storage/storage.service';
+import { DocumentoDTO } from '../documentos/dto/documento.dto';
+import { CARPETA_OCR_TEMPORAL, limpiarNombreArchivo, REGLAS_COMPROBANTE, validarPrefijoRuta, validarTipoArchivo } from '../common/archivos-subida';
 import { prefijoComprobantePago } from './comprobantes';
 import { randomUUID } from 'crypto';
-import { StaffOClienteGuard } from 'src/auth/guards/staff-o-cliente.guard';
-import { contentDisposition } from 'src/common/content-disposition';
+import { StaffOClienteGuard } from '../auth/guards/staff-o-cliente.guard';
+import { contentDisposition } from '../common/content-disposition';
 import { CrearPagoComprobanteDTO, SolicitarSubidaComprobanteDTO } from './dto/crearPagoComprobante.dto';
 
 // Cuentas de la empresa a las que se puede transferir (las mismas que acepta el portal de clientes)

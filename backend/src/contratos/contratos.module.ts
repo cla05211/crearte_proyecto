@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
-import { SupabaseModule } from 'src/supabase/supabase.module';
-import { PermisosModule } from 'src/permisos/permisos.module';
-import { GestionPedidosModule } from 'src/gestion-pedidos/gestion-pedidos.module';
-import { StorageModule } from 'src/storage/storage.module';
-import { ReportesModule } from 'src/reportes/reportes.module';
-import { UsuariosService } from 'src/usuarios/usuarios.service';
-import { GruposService } from 'src/grupos/grupos.service';
-import { CuotasService } from 'src/cuotas/cuotas.service';
-import { DocumentosService } from 'src/documentos/documentos.service';
+import { SupabaseModule } from '../supabase/supabase.module';
+import { PermisosModule } from '../permisos/permisos.module';
+import { GestionPedidosModule } from '../gestion-pedidos/gestion-pedidos.module';
+import { StorageModule } from '../storage/storage.module';
+import { ReportesModule } from '../reportes/reportes.module';
+import { UsuariosService } from '../usuarios/usuarios.service';
+import { GruposService } from '../grupos/grupos.service';
+import { CuotasService } from '../cuotas/cuotas.service';
+import { DocumentosService } from '../documentos/documentos.service';
 import { ContratosController } from './contratos.controller';
 import { ContratosService } from './contratos.service';
 

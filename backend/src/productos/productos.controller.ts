@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
-import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { PermisosGuard } from '../permisos/guards/permisos.guard';
+import { RequierePermiso } from '../permisos/requiere_permismos.decorator';
 import { ProductosService } from './productos.service';
 import { ProductoPostDTO } from './dto/ProductoPOST.dto';
 import { AgregadoPostDTO } from './dto/AgregadoPost.dto';

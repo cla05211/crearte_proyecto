@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { BeneficioPedidoDTO } from './dto/beneficioPedidoDTO';
-import { SupabaseService } from 'src/supabase/supabase.service';
-import { Json } from 'src/types/supabase';
-import { AuditoriasService } from 'src/auditorias/auditorias.service';
-import { ACCIONES_AUDITORIA } from 'src/auditorias/dto/insertarAuditoria.dto';
+import { SupabaseService } from '../supabase/supabase.service';
+import { Json } from '../types/supabase';
+import { AuditoriasService } from '../auditorias/auditorias.service';
+import { ACCIONES_AUDITORIA } from '../auditorias/dto/insertarAuditoria.dto';
 
 @Injectable()
 export class BeneficiosPedidoService 

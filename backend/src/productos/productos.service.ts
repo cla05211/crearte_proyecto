@@ -1,6 +1,6 @@
 import { PlanDisponibleDTO } from './dto/PlanDisponible.dto';
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { ProductoConPrecioResponseDTO} from './dto/ProductoConPrecioResponse.dto';
 import { AgregadoDBDTO } from './dto/Agregado.dto';
 import { ProductoPostDTO } from './dto/ProductoPOST.dto';
@@ -12,7 +12,7 @@ import { ModificarProductoPreciosDTO } from './dto/ModificarProductoPrecios.dto'
 import { error } from 'console';
 import { AgregarPlanDTO } from './dto/AgregarPlanDTO';
 import { BeneficioTramoDTO, TramoBeneficiosDTO, TramoConBeneficiosDTO } from './dto/BeneficioTramo.dto';
-import { Json } from 'src/types/supabase';
+import { Json } from '../types/supabase';
 
 @Injectable()
 export class ProductosService 

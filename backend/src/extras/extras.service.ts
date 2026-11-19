@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { StorageService } from 'src/storage/storage.service';
-import { DocumentosService } from 'src/documentos/documentos.service';
+import { StorageService } from '../storage/storage.service';
+import { DocumentosService } from '../documentos/documentos.service';
 import { ConfirmarExtraDTO, ExtraResponseDTO, PedirUrlSubidaExtraDTO } from './dto/extras.dto';
 
 // Archivos internos del colegio (capturas, PDFs de resguardo). Solo los ven los empleados:

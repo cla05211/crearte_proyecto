@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { SupabaseModule } from 'src/supabase/supabase.module';
-import { PermisosService } from 'src/permisos/permisos.service';
-import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { SupabaseModule } from '../supabase/supabase.module';
+import { PermisosService } from '../permisos/permisos.service';
+import { UsuariosService } from '../usuarios/usuarios.service';
 import { PadreResponsableController } from './padre-responsable.controller';
 import { PadreResponsableService } from './padre-responsable-service.service';
 

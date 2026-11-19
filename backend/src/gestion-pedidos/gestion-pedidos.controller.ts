@@ -1,13 +1,13 @@
 import { BadRequestException, Controller, Post, UseGuards, Body, Get, Patch, Query, ParseIntPipe, Param, ParseBoolPipe, Req } from '@nestjs/common';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
-import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { PermisosGuard } from '../permisos/guards/permisos.guard';
+import { RequierePermiso } from '../permisos/requiere_permismos.decorator';
 import { GestionPedidosService } from './gestion-pedidos.service';
 import { CrearPedidoDTO } from './dto/crearPedido.dto';
 import { ModificarPlanPedidoDTO } from './dto/ModificarPlanPedido';
 import { ESTADOS_BOCETO_BANDERA, ModificarBanderaDTO } from './dto/ControlBanderasDTO';
-import { TIPOS_PAGINA_AUDITORIA, TipoAuditoria } from 'src/auditorias/dto/insertarAuditoria.dto';
-import { MOTIVOS_CANCELACION, MotivoCancelacion } from 'src/pedidos/pedidos.service';
+import { TIPOS_PAGINA_AUDITORIA, TipoAuditoria } from '../auditorias/dto/insertarAuditoria.dto';
+import { MOTIVOS_CANCELACION, MotivoCancelacion } from '../pedidos/pedidos.service';
 
 const TAMANIO_MAXIMO_PAGINA_AUDITORIA = 100;
 

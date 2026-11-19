@@ -1,13 +1,13 @@
-import { AgregadoProductoPedidoDTO } from 'src/productos-pedido/dto/AgregadoProductoPedido.dto';
+import { AgregadoProductoPedidoDTO } from '../productos-pedido/dto/AgregadoProductoPedido.dto';
 import { Injectable } from '@nestjs/common';
-import { GestionPedidosService } from 'src/gestion-pedidos/gestion-pedidos.service';
-import { ProductosService } from 'src/productos/productos.service';
+import { GestionPedidosService } from '../gestion-pedidos/gestion-pedidos.service';
+import { ProductosService } from '../productos/productos.service';
 import { PrendasPedidoTallesService } from './prendas-pedido-talles.service';
-import { ACCIONES_AUDITORIA, AutorAuditoria } from 'src/auditorias/dto/insertarAuditoria.dto';
-import { CANTIDAD_MINIMA_BENEFICIOS, IDS_CON_BENEFICIOS_TRAMO } from 'src/productos/ids-prendas';
-import { BeneficioPedidoDTO } from 'src/beneficios-pedido/dto/beneficioPedidoDTO';
-import { ProductoCantidadDTO } from 'src/productos-pedido/dto/ProductoCantidad.dto';
-import { presupuestoPedidoClientesPage } from 'src/gestion-pedidos/dto/PresupuestoPedidoClientePage.dto';
+import { ACCIONES_AUDITORIA, AutorAuditoria } from '../auditorias/dto/insertarAuditoria.dto';
+import { CANTIDAD_MINIMA_BENEFICIOS, IDS_CON_BENEFICIOS_TRAMO } from '../productos/ids-prendas';
+import { BeneficioPedidoDTO } from '../beneficios-pedido/dto/beneficioPedidoDTO';
+import { ProductoCantidadDTO } from '../productos-pedido/dto/ProductoCantidad.dto';
+import { presupuestoPedidoClientesPage } from '../gestion-pedidos/dto/PresupuestoPedidoClientePage.dto';
 
 // Cambio de beneficios por bajar de tramo: los que tenía el pedido y los que le quedan
 export interface CambioBeneficiosTramo

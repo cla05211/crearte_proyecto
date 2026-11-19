@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { SupabaseModule } from 'src/supabase/supabase.module';
-import { UsuariosModule } from 'src/usuarios/usuarios.module';
-import { PermisosModule } from 'src/permisos/permisos.module';
-import { ClientesService } from 'src/clientes-service/clientes.service';
+import { SupabaseModule } from '../supabase/supabase.module';
+import { UsuariosModule } from '../usuarios/usuarios.module';
+import { PermisosModule } from '../permisos/permisos.module';
+import { ClientesService } from '../clientes-service/clientes.service';
 import { ClientesAuthController } from './clientes-auth.controller';
 import { ClientesAuthService } from './clientes-auth-service.service';
 

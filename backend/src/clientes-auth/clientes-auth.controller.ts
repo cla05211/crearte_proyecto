@@ -2,9 +2,9 @@ import { Body, Controller, Get, Param, ParseIntPipe, Post, UseGuards } from '@ne
 import { ClientesAuthService } from './clientes-auth-service.service';
 import { LoginClienteDto } from './dto/loginCliente.dto';
 import { CrearContrasenaDto } from './dto/crearContrasena.dto';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
-import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { PermisosGuard } from '../permisos/guards/permisos.guard';
+import { RequierePermiso } from '../permisos/requiere_permismos.decorator';
 
 @Controller('clientes-auth')
 export class ClientesAuthController

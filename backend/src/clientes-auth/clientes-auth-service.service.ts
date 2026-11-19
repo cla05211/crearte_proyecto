@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes, createHash } from 'crypto';
-import { ClientesService } from 'src/clientes-service/clientes.service';
+import { ClientesService } from '../clientes-service/clientes.service';
 import * as bcrypt from 'bcrypt';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 
 const DIAS_VIGENCIA_TOKEN_ACTIVACION = 7;
 

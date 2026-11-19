@@ -1,8 +1,8 @@
 import { Controller, Get, Param, ParseIntPipe, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
-import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { PermisosGuard } from '../permisos/guards/permisos.guard';
+import { RequierePermiso } from '../permisos/requiere_permismos.decorator';
 import { ContratosService } from './contratos.service';
 
 @Controller('contratos')

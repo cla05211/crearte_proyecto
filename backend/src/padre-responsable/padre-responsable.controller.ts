@@ -1,7 +1,7 @@
 import { Controller, Get, Injectable, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
-import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { PermisosGuard } from '../permisos/guards/permisos.guard';
+import { RequierePermiso } from '../permisos/requiere_permismos.decorator';
 import { PadreResponsableService } from './padre-responsable-service.service';
 
 @Controller('padre-responsable')

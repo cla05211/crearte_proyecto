@@ -1,5 +1,5 @@
-import { ProductoPedidoDTO } from "src/productos-pedido/dto/ProductoPedido.dto";
-import { AgregadoGlobalPedidoPostDTO } from "src/agregados-globales-pedido/dto/AgregadoGlobalPedidoPost.dto";
+import { ProductoPedidoDTO } from "../../productos-pedido/dto/ProductoPedido.dto";
+import { AgregadoGlobalPedidoPostDTO } from "../../agregados-globales-pedido/dto/AgregadoGlobalPedidoPost.dto";
 
 
 export class ModificarPlanPedidoDTO

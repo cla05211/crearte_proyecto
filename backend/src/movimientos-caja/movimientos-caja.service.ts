@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { MovimientoCajaDTO } from './dto/movimientoCaja.dto';
-import { limpiarBusqueda } from 'src/common/busqueda';
-import { sumarEnBase } from 'src/common/sumar-en-base';
+import { limpiarBusqueda } from '../common/busqueda';
+import { sumarEnBase } from '../common/sumar-en-base';
 import { MovimientoCajaResponseDTO } from './dto/movimientoCajaResponse.dto';
 
 @Injectable()

@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
 import { AgregadosService } from './agregados.service';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
-import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { PermisosGuard } from '../permisos/guards/permisos.guard';
+import { RequierePermiso } from '../permisos/requiere_permismos.decorator';
 import { ModificarAgregadoPrecioDTO } from './dto/ModificarAgregadoPrecio.dto';
 
 @Controller('agregados')

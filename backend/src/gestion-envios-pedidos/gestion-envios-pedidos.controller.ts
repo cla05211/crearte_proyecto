@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { GestionEnviosPedidosService, MedioPagoEnvio } from './gestion-envios-pedidos.service';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
-import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { PermisosGuard } from '../permisos/guards/permisos.guard';
+import { RequierePermiso } from '../permisos/requiere_permismos.decorator';
 import { modificarDatoSimpleDto } from './dto/modificarDatoSimpleDto';
 import { confirmarEntregaDto } from './dto/confirmarEntregaDto';
 import { pedidoListoParaEnviarDto } from './dto/traerPedidoEnvioDto';

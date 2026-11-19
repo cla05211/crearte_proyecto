@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RolesController } from './roles.controller';
-import { SupabaseModule } from 'src/supabase/supabase.module';
+import { SupabaseModule } from '../supabase/supabase.module';
 import { RolesService } from './roles.service';
 
 @Module({

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ColegioDTO } from './dto/Colegio.dto';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { BadRequestException } from '@nestjs/common';
 import { ColegioSBDTO } from './dto/ColegioSB.dto';
 import { count } from 'console';

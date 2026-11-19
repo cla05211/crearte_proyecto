@@ -1,6 +1,6 @@
-import { PadreResponsableDTO } from "src/padre-responsable/dto/padreResponsable.dto";
+import { PadreResponsableDTO } from "../../padre-responsable/dto/padreResponsable.dto";
 import { GrupoDTO } from "./grupo.dto";
-import { alumnoResponsableDTO } from "src/alumno-responsable/dto/alumnoResponsable.dto";
+import { alumnoResponsableDTO } from "../../alumno-responsable/dto/alumnoResponsable.dto";
 import { GrupoConColegioDTO } from "./grupoColegio.dto";
 
 export class grupoDatosClienteResponse

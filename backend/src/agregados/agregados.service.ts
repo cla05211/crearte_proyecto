@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { AgregadoResponseDTO } from './dto/AgregadoResponse.dto';
 import { ModificarAgregadoPrecioDTO } from './dto/ModificarAgregadoPrecio.dto';
 

@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { SubirArchivoStorage } from './dto/SubirArchivoStorage.dto';
 import { ArchivoSubidoDTO } from './dto/ArchivoSubidoDTO';
 import { randomUUID } from 'crypto';
-import { ReglasArchivo } from 'src/common/archivos-subida';
+import { ReglasArchivo } from '../common/archivos-subida';
 
 // Tiene que coincidir con el nombre del bucket creado en Supabase
 const BUCKET_DISENIOS = 'disenios';

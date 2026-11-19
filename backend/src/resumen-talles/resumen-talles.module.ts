@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { SupabaseModule } from 'src/supabase/supabase.module';
-import { GestionPedidosModule } from 'src/gestion-pedidos/gestion-pedidos.module';
-import { StorageModule } from 'src/storage/storage.module';
-import { ReportesModule } from 'src/reportes/reportes.module';
-import { PedidosModule } from 'src/pedidos/pedidos.module';
-import { GruposService } from 'src/grupos/grupos.service';
-import { PrendasPedidoTallesService } from 'src/prendas-pedido-talles/prendas-pedido-talles.service';
-import { DocumentosService } from 'src/documentos/documentos.service';
+import { SupabaseModule } from '../supabase/supabase.module';
+import { GestionPedidosModule } from '../gestion-pedidos/gestion-pedidos.module';
+import { StorageModule } from '../storage/storage.module';
+import { ReportesModule } from '../reportes/reportes.module';
+import { PedidosModule } from '../pedidos/pedidos.module';
+import { GruposService } from '../grupos/grupos.service';
+import { PrendasPedidoTallesService } from '../prendas-pedido-talles/prendas-pedido-talles.service';
+import { DocumentosService } from '../documentos/documentos.service';
 import { ResumenTallesService } from './resumen-talles.service';
 
 @Module({

@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
 import { createHash } from "crypto";
-import { SupabaseService } from "src/supabase/supabase.service";
+import { SupabaseService } from "../../supabase/supabase.service";
 
 @Injectable()
 export class ClienteAuthGuard implements CanActivate {
@@ -39,4 +39,4 @@ export class ClienteAuthGuard implements CanActivate {
     request.cliente = data.clientes;
     return true;
   }
-}
+}

@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { BeneficioResponseDTO } from './dto/beneficioResponse.dto';
-import { Json } from 'src/types/supabase';
+import { Json } from '../types/supabase';
 
 @Injectable()
 export class BeneficiosService 

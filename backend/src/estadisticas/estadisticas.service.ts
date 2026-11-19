@@ -1,15 +1,15 @@
-import { ESTADO_PEDIDO_CANCELADO, ESTADO_PEDIDO_EN_PRODUCCION, ESTADO_PEDIDO_FRENADO } from 'src/pedidos/pedidos.service';
+import { ESTADO_PEDIDO_CANCELADO, ESTADO_PEDIDO_EN_PRODUCCION, ESTADO_PEDIDO_FRENADO } from '../pedidos/pedidos.service';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { EstadisticasVentasDTO } from './dto/estadisticasVentas.dto';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { EstadisticasProduccionDTO } from './dto/estadisticasProduccion.dto';
-import { IDS_BUZO, IDS_CAMPERA, IDS_CHOMBA, IDS_REMERA } from 'src/productos/ids-prendas';
+import { IDS_BUZO, IDS_CAMPERA, IDS_CHOMBA, IDS_REMERA } from '../productos/ids-prendas';
 import { EstadisticasBancosDTO } from './dto/estadisticasBancos.dto';
 import { EstadisticasCobranzasDTO } from './dto/estadisticasCobranzas.dto';
-import { traerTodasLasFilas } from 'src/common/traer-todas-las-filas';
-import { sumarEnBase } from 'src/common/sumar-en-base';
-import { anioOActual, hoyArgentina, inicioDiaArgentina } from 'src/common/fechas';
-import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
+import { traerTodasLasFilas } from '../common/traer-todas-las-filas';
+import { sumarEnBase } from '../common/sumar-en-base';
+import { anioOActual, hoyArgentina, inicioDiaArgentina } from '../common/fechas';
+import { calcularSeniaTotal } from '../pagos/estadoSeña.util';
 
 @Injectable()
 export class EstadisticasService {

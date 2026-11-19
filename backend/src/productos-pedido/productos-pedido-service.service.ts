@@ -1,7 +1,7 @@
-import { Json } from 'src/types/supabase';
+import { Json } from '../types/supabase';
 import { AgregadoProductoPedidoDTO } from './dto/AgregadoProductoPedido.dto';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { BadRequestException } from '@nestjs/common';
 import { ProductoPedidoDTO } from './dto/ProductoPedido.dto';
 import { EliminarProductoPedidoDTO } from './dto/EliminarProductoPedido.dto';
@@ -10,7 +10,7 @@ import { ModificarCantidadProductoPedido } from './dto/ModificarCantidadProducto
 import { ProductoPedidoResponseDTO } from './dto/ProductoPedidoResponse.dto copy';
 import { ProductoPedidoResponseConNombreOriginalDTO } from './dto/ProductoPedidoResponse.dto';
 import { productosPedidoIdNombreDTO } from './dto/productosPedidoPortalClienteDTO';
-import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
+import { calcularSeniaTotal } from '../pagos/estadoSeña.util';
 import { table } from 'console';
 
 @Injectable()

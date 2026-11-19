@@ -1,24 +1,24 @@
 import { Module } from '@nestjs/common';
 import { GestionPedidosController } from './gestion-pedidos.controller';
 import { GestionPedidosService } from './gestion-pedidos.service';
-import { SupabaseModule } from 'src/supabase/supabase.module';
-import { UsuariosService } from 'src/usuarios/usuarios.service';
-import { PermisosModule } from 'src/permisos/permisos.module';
-import { ColegiosService } from 'src/colegios/colegios.service';
-import { GruposService } from 'src/grupos/grupos.service';
-import { PedidosService } from 'src/pedidos/pedidos.service';
-import { ProductosPedidoService } from 'src/productos-pedido/productos-pedido-service.service';
-import { PadreResponsableService } from 'src/padre-responsable/padre-responsable-service.service';
-import { AlumnoResponsableService } from 'src/alumno-responsable/alumno-responsable.service';
-import { PagosService } from 'src/pagos/pagos.service';
-import { DocumentosService } from 'src/documentos/documentos.service';
-import { CuentaCorrienteService } from 'src/cuenta-corriente/CuentaCorriente.service';
-import { CuotasService } from 'src/cuotas/cuotas.service';
-import { SupabaseService } from 'src/supabase/supabase.service';
-import { AuditoriasService } from 'src/auditorias/auditorias.service';
-import { OcrModule } from 'src/ocr/ocr.module';
-import { AgregadosGlobalesPedidoModule } from 'src/agregados-globales-pedido/agregados-globales-pedido.module';
-import { BeneficiosPedidoService } from 'src/beneficios-pedido/beneficios-pedido.service';
+import { SupabaseModule } from '../supabase/supabase.module';
+import { UsuariosService } from '../usuarios/usuarios.service';
+import { PermisosModule } from '../permisos/permisos.module';
+import { ColegiosService } from '../colegios/colegios.service';
+import { GruposService } from '../grupos/grupos.service';
+import { PedidosService } from '../pedidos/pedidos.service';
+import { ProductosPedidoService } from '../productos-pedido/productos-pedido-service.service';
+import { PadreResponsableService } from '../padre-responsable/padre-responsable-service.service';
+import { AlumnoResponsableService } from '../alumno-responsable/alumno-responsable.service';
+import { PagosService } from '../pagos/pagos.service';
+import { DocumentosService } from '../documentos/documentos.service';
+import { CuentaCorrienteService } from '../cuenta-corriente/CuentaCorriente.service';
+import { CuotasService } from '../cuotas/cuotas.service';
+import { SupabaseService } from '../supabase/supabase.service';
+import { AuditoriasService } from '../auditorias/auditorias.service';
+import { OcrModule } from '../ocr/ocr.module';
+import { AgregadosGlobalesPedidoModule } from '../agregados-globales-pedido/agregados-globales-pedido.module';
+import { BeneficiosPedidoService } from '../beneficios-pedido/beneficios-pedido.service';
 
 @Module({
   imports: [SupabaseModule, PermisosModule, OcrModule, AgregadosGlobalesPedidoModule],

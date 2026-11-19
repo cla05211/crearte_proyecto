@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { GrupoDTO } from './dto/grupo.dto';
 import { BadRequestException } from '@nestjs/common';
 import { ConflictException } from '@nestjs/common';
 import { grupoClientePageResponseDTO } from './dto/grupoClientePage.dto copy';
 import { grupoDatosClienteResponse } from './dto/grupoClienteDatosPage.dto';
-import { AuthService } from 'src/auth/auth.service';
+import { AuthService } from '../auth/auth.service';
 import { colegioDeudorDTO } from './dto/colegioDeudor.dto';
-import { ESTADO_PEDIDO_EN_PRODUCCION, ESTADO_PEDIDO_FRENADO } from 'src/pedidos/pedidos.service';
+import { ESTADO_PEDIDO_EN_PRODUCCION, ESTADO_PEDIDO_FRENADO } from '../pedidos/pedidos.service';
 
-import { traerTodasLasFilas } from 'src/common/traer-todas-las-filas';
-import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
+import { traerTodasLasFilas } from '../common/traer-todas-las-filas';
+import { calcularSeniaTotal } from '../pagos/estadoSeña.util';
 
 @Injectable()
 export class GruposService 

@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { BeneficiosController } from './beneficios.controller';
 import { BeneficiosService } from './beneficios.service';
-import { SupabaseService } from 'src/supabase/supabase.service';
-import { PermisosService } from 'src/permisos/permisos.service';
-import { SupabaseModule } from 'src/supabase/supabase.module';
-import { UsuariosModule } from 'src/usuarios/usuarios.module';
+import { SupabaseService } from '../supabase/supabase.service';
+import { PermisosService } from '../permisos/permisos.service';
+import { SupabaseModule } from '../supabase/supabase.module';
+import { UsuariosModule } from '../usuarios/usuarios.module';
 
 @Module({
   imports: [SupabaseModule, BeneficiosModule, UsuariosModule],

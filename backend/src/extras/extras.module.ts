@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { SupabaseModule } from 'src/supabase/supabase.module';
-import { StorageModule } from 'src/storage/storage.module';
-import { DocumentosService } from 'src/documentos/documentos.service';
-import { UsuariosService } from 'src/usuarios/usuarios.service';
-import { PermisosService } from 'src/permisos/permisos.service';
+import { SupabaseModule } from '../supabase/supabase.module';
+import { StorageModule } from '../storage/storage.module';
+import { DocumentosService } from '../documentos/documentos.service';
+import { UsuariosService } from '../usuarios/usuarios.service';
+import { PermisosService } from '../permisos/permisos.service';
 import { ExtrasController } from './extras.controller';
 import { ExtrasService } from './extras.service';
 

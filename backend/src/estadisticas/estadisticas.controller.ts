@@ -1,8 +1,8 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { EstadisticasService } from './estadisticas.service';
-import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
+import { RequierePermiso } from '../permisos/requiere_permismos.decorator';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { PermisosGuard } from '../permisos/guards/permisos.guard';
 import { EstadisticasVentasDTO } from './dto/estadisticasVentas.dto';
 import { EstadisticasProduccionDTO } from './dto/estadisticasProduccion.dto';
 import { EstadisticasBancosDTO } from './dto/estadisticasBancos.dto';

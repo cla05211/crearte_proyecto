@@ -1,4 +1,4 @@
-import { ColegioDTO } from "src/colegios/dto/Colegio.dto";
+import { ColegioDTO } from "../../colegios/dto/Colegio.dto";
 
 export class grupoClientePageResponseDTO
 {

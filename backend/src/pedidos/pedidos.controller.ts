@@ -1,7 +1,7 @@
 import { BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
-import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { PermisosGuard } from '../permisos/guards/permisos.guard';
+import { RequierePermiso } from '../permisos/requiere_permismos.decorator';
 import { CATEGORIAS_PRENDA, ESTADOS_PRENDA, PedidosService } from './pedidos.service';
 import type { CategoriaPrenda, EstadoPrendaGuardado } from './pedidos.service';
 import { PedidoDTOResponse } from './dto/pedidoResponse.dto';

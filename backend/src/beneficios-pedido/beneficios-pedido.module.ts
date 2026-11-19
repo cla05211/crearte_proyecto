@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { BeneficiosPedidoController } from './beneficios-pedido.controller';
-import { SupabaseModule } from 'src/supabase/supabase.module';
-import { UsuariosModule } from 'src/usuarios/usuarios.module';
+import { SupabaseModule } from '../supabase/supabase.module';
+import { UsuariosModule } from '../usuarios/usuarios.module';
 import { BeneficiosPedidoService } from './beneficios-pedido.service';
-import { SupabaseService } from 'src/supabase/supabase.service';
-import { PermisosService } from 'src/permisos/permisos.service';
-import { AuditoriasService } from 'src/auditorias/auditorias.service';
+import { SupabaseService } from '../supabase/supabase.service';
+import { PermisosService } from '../permisos/permisos.service';
+import { AuditoriasService } from '../auditorias/auditorias.service';
 
 @Module({
   imports: [SupabaseModule, BeneficiosPedidoModule, UsuariosModule],

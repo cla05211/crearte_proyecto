@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { RolDto } from './dto/rol.dto';
 import { InternalServerErrorException } from '@nestjs/common';
 

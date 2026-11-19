@@ -1,12 +1,12 @@
 import { Controller, Get, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
-import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { PermisosGuard } from '../permisos/guards/permisos.guard';
+import { RequierePermiso } from '../permisos/requiere_permismos.decorator';
 import { NovedadDTO } from './dto/Novedad.dto';
 import { NovedadesService } from './novedades.service';
-import { AuditoriasService } from 'src/auditorias/auditorias.service';
-import { FiltrosAuditoria } from 'src/auditorias/dto/AuditoriaResponse.dto';
-import { TipoAuditoria } from 'src/auditorias/dto/insertarAuditoria.dto';
+import { AuditoriasService } from '../auditorias/auditorias.service';
+import { FiltrosAuditoria } from '../auditorias/dto/AuditoriaResponse.dto';
+import { TipoAuditoria } from '../auditorias/dto/insertarAuditoria.dto';
 
 @Controller('novedades')
 export class NovedadesController 

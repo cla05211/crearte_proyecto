@@ -1,8 +1,8 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
-import { SupabaseService } from 'src/supabase/supabase.service';
-import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { SupabaseService } from '../../supabase/supabase.service';
+import { UsuariosService } from '../../usuarios/usuarios.service';
 import { AuthGuard } from './auth.guard';
-import { ClienteAuthGuard } from 'src/clientes-auth/guards/clientesAuthGuard';
+import { ClienteAuthGuard } from '../../clientes-auth/guards/clientesAuthGuard';
 
 // Para endpoints que usan tanto empleados como clientes del portal (ej. OCR de comprobantes).
 // Los tokens de staff son JWT de Supabase (tienen puntos); los de cliente son un hex opaco.

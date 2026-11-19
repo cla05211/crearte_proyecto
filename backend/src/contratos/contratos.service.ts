@@ -1,11 +1,11 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { GruposService } from 'src/grupos/grupos.service';
-import { GestionPedidosService } from 'src/gestion-pedidos/gestion-pedidos.service';
-import { CuotasService } from 'src/cuotas/cuotas.service';
-import { DocumentosService } from 'src/documentos/documentos.service';
-import { StorageService } from 'src/storage/storage.service';
-import { PdfService } from 'src/reportes/pdf/pdf.service';
-import { GenerarContratoDTO } from 'src/reportes/pdf/dto/generarContrato.dto';
+import { GruposService } from '../grupos/grupos.service';
+import { GestionPedidosService } from '../gestion-pedidos/gestion-pedidos.service';
+import { CuotasService } from '../cuotas/cuotas.service';
+import { DocumentosService } from '../documentos/documentos.service';
+import { StorageService } from '../storage/storage.service';
+import { PdfService } from '../reportes/pdf/pdf.service';
+import { GenerarContratoDTO } from '../reportes/pdf/dto/generarContrato.dto';
 
 // En el contrato firman como máximo los 3 primeros padres responsables (ordenados por id)
 const CANTIDAD_MAXIMA_FIRMANTES = 3;
@@ -23,7 +23,7 @@ const partesFecha = (fecha: string) =>
 };
 
 // Contrato de venta: lo usan el admin (pagos/contrato) y el portal de clientes, así los dos ven el mismo PDF.
-import { calcularSeniaTotal } from 'src/pagos/estadoSeña.util';
+import { calcularSeniaTotal } from '../pagos/estadoSeña.util';
 
 @Injectable()
 export class ContratosService

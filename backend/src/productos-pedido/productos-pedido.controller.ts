@@ -1,9 +1,9 @@
 import { Body, Post, Controller, Delete, Param, ParseIntPipe, Patch, UseGuards, Get, Query } from '@nestjs/common';
 import { ProductosPedidoService } from './productos-pedido-service.service';
 import { EliminarProductoPedidoDTO } from './dto/EliminarProductoPedido.dto';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
-import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { PermisosGuard } from '../permisos/guards/permisos.guard';
+import { RequierePermiso } from '../permisos/requiere_permismos.decorator';
 import { ModificarDescripcionProductoPedido } from './dto/ModificarDescripcionProductoPedido';
 import { ModificarCantidadProductoPedido } from './dto/ModificarCantidadProductoPedido';
 import { ProductoPedidoDTO } from './dto/ProductoPedido.dto';

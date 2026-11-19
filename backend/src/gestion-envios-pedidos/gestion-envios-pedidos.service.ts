@@ -1,10 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { SupabaseService } from 'src/supabase/supabase.service';
-import { DocumentosService } from 'src/documentos/documentos.service';
-import { MovimientosCajaService } from 'src/movimientos-caja/movimientos-caja.service';
-import { PedidosService } from 'src/pedidos/pedidos.service';
-import { StorageService } from 'src/storage/storage.service';
-import { limpiarNombreArchivo, REGLAS_COMPROBANTE, validarPrefijoRuta, validarTipoArchivo } from 'src/common/archivos-subida';
+import { SupabaseService } from '../supabase/supabase.service';
+import { DocumentosService } from '../documentos/documentos.service';
+import { MovimientosCajaService } from '../movimientos-caja/movimientos-caja.service';
+import { PedidosService } from '../pedidos/pedidos.service';
+import { StorageService } from '../storage/storage.service';
+import { limpiarNombreArchivo, REGLAS_COMPROBANTE, validarPrefijoRuta, validarTipoArchivo } from '../common/archivos-subida';
 import { COLUMNAS_DATO_SIMPLE, modificarDatoSimpleDto } from './dto/modificarDatoSimpleDto';
 import { confirmarEntregaDto } from './dto/confirmarEntregaDto';
 import { pedidoListoParaEnviarDto } from './dto/traerPedidoEnvioDto';

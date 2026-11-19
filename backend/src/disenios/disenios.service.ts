@@ -1,16 +1,16 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { StorageService } from 'src/storage/storage.service';
-import { DocumentosService } from 'src/documentos/documentos.service';
-import { ResumenTallesService } from 'src/resumen-talles/resumen-talles.service';
-import { PedidosService } from 'src/pedidos/pedidos.service';
+import { StorageService } from '../storage/storage.service';
+import { DocumentosService } from '../documentos/documentos.service';
+import { ResumenTallesService } from '../resumen-talles/resumen-talles.service';
+import { PedidosService } from '../pedidos/pedidos.service';
 import { SubirDisenioDTO } from './dto/SubirDisenioDTO';
 import { ReemplazarDisenioDTO } from './dto/ReemplazarDisenioDTO';
 import { DisenioResponseDTO, DiseniosGrupoResponseDTO } from './dto/DisenioResponseDTO';
-import { REGLAS_FIRMADO_DISENIO, validarPrefijoRuta, validarTipoArchivo } from 'src/common/archivos-subida';
-import { RecalculoPlanTallesService } from 'src/prendas-pedido-talles/recalculo-plan-talles.service';
-import { AuditoriasService } from 'src/auditorias/auditorias.service';
-import { ACCIONES_AUDITORIA } from 'src/auditorias/dto/insertarAuditoria.dto';
-import { DisenioAuditoria } from 'src/auditorias/dto/AuditoriaResponse.dto';
+import { REGLAS_FIRMADO_DISENIO, validarPrefijoRuta, validarTipoArchivo } from '../common/archivos-subida';
+import { RecalculoPlanTallesService } from '../prendas-pedido-talles/recalculo-plan-talles.service';
+import { AuditoriasService } from '../auditorias/auditorias.service';
+import { ACCIONES_AUDITORIA } from '../auditorias/dto/insertarAuditoria.dto';
+import { DisenioAuditoria } from '../auditorias/dto/AuditoriaResponse.dto';
 
 export const PREFIJO_TIPO_DISENIO = 'Disenio ';
 // El boceto firmado (JPG que el cliente devuelve por WhatsApp) se guarda en documentos como 'Firma ' + tipo del diseño

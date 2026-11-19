@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { GruposService } from 'src/grupos/grupos.service';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { GruposService } from '../grupos/grupos.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { NovedadDTO } from './dto/Novedad.dto';
-import { AuditoriasService } from 'src/auditorias/auditorias.service';
-import { AuditoriaRegistroDTO, PresupuestoAuditoria } from 'src/auditorias/dto/AuditoriaResponse.dto';
+import { AuditoriasService } from '../auditorias/auditorias.service';
+import { AuditoriaRegistroDTO, PresupuestoAuditoria } from '../auditorias/dto/AuditoriaResponse.dto';
 
 @Injectable()
 export class NovedadesService 

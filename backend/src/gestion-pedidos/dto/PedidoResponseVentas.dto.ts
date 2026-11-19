@@ -1,16 +1,16 @@
-import { alumnoResponsableDTO } from "src/alumno-responsable/dto/alumnoResponsable.dto";
-import { ColegioDTO } from "src/colegios/dto/Colegio.dto";
-import { DocumentoDTO } from "src/documentos/dto/documento.dto";
-import { GrupoDTO } from "src/grupos/dto/grupo.dto";
-import { MovimientoDTO } from "src/cuenta-corriente/dto/movimiento.dto";
-import { PadreResponsableDTO } from "src/padre-responsable/dto/padreResponsable.dto";
-import { PagoDTO } from "src/pagos/dto/pago.dto";
-import { PedidoDTO } from "src/pedidos/dto/pedido.dto";
-import { ProductoPedidoDTO } from "src/productos-pedido/dto/ProductoPedido.dto";
-import { CuotaInicioVentaDTO } from "src/cuotas/dto/cuotaInicioVenta.dto";
-import { AgregadoGlobalPedidoResponseDTO } from "src/agregados-globales-pedido/dto/AgregadoGlobalPedidoResponse.dto";
-import { BeneficioResponseDTO } from "src/beneficios/dto/beneficioResponse.dto";
-import { BeneficioPedidoDTO } from "src/beneficios-pedido/dto/beneficioPedidoDTO";
+import { alumnoResponsableDTO } from "../../alumno-responsable/dto/alumnoResponsable.dto";
+import { ColegioDTO } from "../../colegios/dto/Colegio.dto";
+import { DocumentoDTO } from "../../documentos/dto/documento.dto";
+import { GrupoDTO } from "../../grupos/dto/grupo.dto";
+import { MovimientoDTO } from "../../cuenta-corriente/dto/movimiento.dto";
+import { PadreResponsableDTO } from "../../padre-responsable/dto/padreResponsable.dto";
+import { PagoDTO } from "../../pagos/dto/pago.dto";
+import { PedidoDTO } from "../../pedidos/dto/pedido.dto";
+import { ProductoPedidoDTO } from "../../productos-pedido/dto/ProductoPedido.dto";
+import { CuotaInicioVentaDTO } from "../../cuotas/dto/cuotaInicioVenta.dto";
+import { AgregadoGlobalPedidoResponseDTO } from "../../agregados-globales-pedido/dto/AgregadoGlobalPedidoResponse.dto";
+import { BeneficioResponseDTO } from "../../beneficios/dto/beneficioResponse.dto";
+import { BeneficioPedidoDTO } from "../../beneficios-pedido/dto/beneficioPedidoDTO";
 
 export class PedidoResponseVentas
 {

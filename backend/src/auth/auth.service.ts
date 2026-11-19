@@ -3,11 +3,11 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { SupabaseClient, User } from '@supabase/supabase-js';
 import { BehaviorSubject } from 'rxjs';
 import { RegistroDto } from './dto/registro.dto';
-import { UsuariosService } from 'src/usuarios/usuarios.service';
-import { GuardarUsuarioDTO } from 'src/usuarios/dto/guardarUsuario.dto';
+import { UsuariosService } from '../usuarios/usuarios.service';
+import { GuardarUsuarioDTO } from '../usuarios/dto/guardarUsuario.dto';
 import { UnauthorizedException } from '@nestjs/common';
 import { ConflictException, BadRequestException, HttpException } from '@nestjs/common';
-import { PermisosService } from 'src/permisos/permisos.service';
+import { PermisosService } from '../permisos/permisos.service';
 import { ConfigService } from '@nestjs/config';
 import { ResetearClaveDto } from './dto/resetearClave.dto';
 

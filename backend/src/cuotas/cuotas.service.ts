@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CuotaDTO } from './dto/cuota.dto';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { BadRequestException } from '@nestjs/common';
 import { CuotaResponseDTO } from './dto/cuotaResponse.dto';
 import { CuotaInicioVentaDTO } from './dto/cuotaInicioVenta.dto';

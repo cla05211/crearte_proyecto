@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { PedidoDTO } from './dto/pedido.dto';
 import { BadRequestException } from '@nestjs/common';
 import { PedidoDTOResponse } from './dto/pedidoResponse.dto';

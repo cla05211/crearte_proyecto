@@ -4,7 +4,7 @@ import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { GenerarReciboDTO } from './dto/generarRecibo.dto';
 import { GenerarContratoDTO } from './dto/generarContrato.dto';
 import { GenerarResumenTallesDTO } from './dto/generarResumenTalles.dto';
-import { numeroALetras } from 'src/reportes/excel/nroALetras.util';
+import { numeroALetras } from '../excel/nroALetras.util';
 import * as fs from 'fs'
 
 // Formatea un monto en pesos con el criterio local (2 decimales, separador es-AR).
@@ -71,20 +71,21 @@ export class PdfService
 
     constructor()
     {
-        this.logoBase64 = fs.readFileSync(path.join(__dirname, '..', '..', 'assets', 'logo-crearte.png')).toString('base64');
         const PdfPrinter = require('pdfmake');
-        const carpetaFuentes = path.join(path.dirname(require.resolve('pdfmake/package.json')), 'build', 'fonts', 'Roboto');
+        // Las fuentes están copiadas en src/assets/fonts y cada ruta se escribe completa con __dirname:
+        // así Vercel detecta los archivos al armar la función y los incluye (si se arman con variables, no los ve).
+        // Roboto es la fuente por defecto de pdfmake (copiada de node_modules/pdfmake/build/fonts/Roboto).
+        const carpetaFuentes = path.join(__dirname, '..', '..', 'assets', 'fonts');
         // Fuente oficial de bordado (la misma tipografía con la que se bordan las prendas), usada
         // solo para las inscripciones/nombres en el PDF de resumen de talles.
-        const carpetaFuenteBordado = path.join(__dirname, '..', '..', 'assets', 'fonts');
-        const rutaFuenteBordado = path.join(carpetaFuenteBordado, 'College-Block.otf');
+        const rutaFuenteBordado = path.join(__dirname, '..', '..', 'assets', 'fonts', 'College-Block.otf');
  
         PdfPrinter.fonts = {
             Roboto: {
-                normal: path.join(carpetaFuentes, 'Roboto-Regular.ttf'),
-                bold: path.join(carpetaFuentes, 'Roboto-Medium.ttf'),
-                italics: path.join(carpetaFuentes, 'Roboto-Italic.ttf'),
-                bolditalics: path.join(carpetaFuentes, 'Roboto-MediumItalic.ttf'),
+                normal: path.join(__dirname, '..', '..', 'assets', 'fonts', 'Roboto', 'Roboto-Regular.ttf'),
+                bold: path.join(__dirname, '..', '..', 'assets', 'fonts', 'Roboto', 'Roboto-Medium.ttf'),
+                italics: path.join(__dirname, '..', '..', 'assets', 'fonts', 'Roboto', 'Roboto-Italic.ttf'),
+                bolditalics: path.join(__dirname, '..', '..', 'assets', 'fonts', 'Roboto', 'Roboto-MediumItalic.ttf'),
             },
             CollegeBlock: {
                 normal: rutaFuenteBordado,
@@ -93,13 +94,11 @@ export class PdfService
                 bolditalics: rutaFuenteBordado,
             },
         };
-        PdfPrinter.setLocalAccessPolicy((rutaArchivo: string) => rutaArchivo.startsWith(carpetaFuentes) || rutaArchivo.startsWith(carpetaFuenteBordado));
+        PdfPrinter.setLocalAccessPolicy((rutaArchivo: string) => rutaArchivo.startsWith(carpetaFuentes));
  
         this.printer = PdfPrinter;
-        const rutaLogo = path.join(__dirname, '..', '..', 'assets', 'logo-crearte.png');
-        this.logoBase64 = fs.readFileSync(rutaLogo).toString('base64');
-        const rutaFirmaAdrian = path.join(__dirname, '..', '..', 'assets', 'firma-adrian.png');
-        this.firmaAdrianBase64 = fs.readFileSync(rutaFirmaAdrian).toString('base64');
+        this.logoBase64 = fs.readFileSync(path.join(__dirname, '..', '..', 'assets', 'logo-crearte.png')).toString('base64');
+        this.firmaAdrianBase64 = fs.readFileSync(path.join(__dirname, '..', '..', 'assets', 'firma-adrian.png')).toString('base64');
     }
  
     async generarReciboPago(dto: GenerarReciboDTO): Promise<Buffer>

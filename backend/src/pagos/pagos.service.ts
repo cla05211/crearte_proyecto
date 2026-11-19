@@ -1,20 +1,20 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { BadRequestException } from '@nestjs/common';
 import { PagoDTO } from './dto/pago.dto';
 import { PagoResponseDTO } from './dto/pagoResponse.dto';
-import { OcrService } from 'src/ocr/ocr.service';
+import { OcrService } from '../ocr/ocr.service';
 import { text } from 'stream/consumers';
 import { Console } from 'console';
 import { PagoComprobanteDatosDTO } from './dto/pagoComprobanteDatos.dto';
 import { PagoBancoResponse } from './dto/pagoBancoResponse.dto';
 import { ModificarPago } from './dto/modificarBanco.dto';
-import { CuotasService } from 'src/cuotas/cuotas.service';
-import { DocumentosService } from 'src/documentos/documentos.service';
-import { GenerarReciboDTO } from 'src/reportes/pdf/dto/generarRecibo.dto';
+import { CuotasService } from '../cuotas/cuotas.service';
+import { DocumentosService } from '../documentos/documentos.service';
+import { GenerarReciboDTO } from '../reportes/pdf/dto/generarRecibo.dto';
 import { DetalleCuotaPago } from './dto/detalleCuotaPago.dto';
 import { FiltrosPagosBancoDTO } from './dto/filtrosPagosBanco.dto';
-import { sumarEnBase } from 'src/common/sumar-en-base';
+import { sumarEnBase } from '../common/sumar-en-base';
 import { ResumenPagosBancoDTO } from './dto/resumenPagosBanco.dto';
 
 // Pago negativo que se carga al cancelar un pedido con devolución de la plata

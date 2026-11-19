@@ -1,4 +1,4 @@
-import { DocumentoDTO } from "src/documentos/dto/documento.dto";
+import { DocumentoDTO } from "../../documentos/dto/documento.dto";
 
 export class PagoDTO
 {

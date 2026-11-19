@@ -1,10 +1,10 @@
 import { BadRequestException, Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
-import { PermisosGuard } from 'src/permisos/guards/permisos.guard';
-import { RequierePermiso } from 'src/permisos/requiere_permismos.decorator';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { PermisosGuard } from '../permisos/guards/permisos.guard';
+import { RequierePermiso } from '../permisos/requiere_permismos.decorator';
 import { SolicitarSubidaStorage } from './dto/SolicitarSubidaStorage.dto';
 import { StorageService } from './storage.service';
-import { limpiarNombreArchivo, REGLAS_ARCHIVO_GENERAL, validarTipoArchivo } from 'src/common/archivos-subida';
+import { limpiarNombreArchivo, REGLAS_ARCHIVO_GENERAL, validarTipoArchivo } from '../common/archivos-subida';
 
 // Carpetas del bucket "imagenes" a las que se puede subir desde Ventas
 const CARPETAS_PERMITIDAS = ['senias', 'recursos_adicionales'];

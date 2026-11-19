@@ -1,4 +1,4 @@
-import { PlanCuotasDTO } from "src/cuotas/dto/PlanDeCuotas.dto";
+import { PlanCuotasDTO } from "../../cuotas/dto/PlanDeCuotas.dto";
 import { MuestrasFisicasResponseDTO } from "./MuestrasFisicasResponse.dto";
 
 export class MuestrasTablaDTO
@@ -9,4 +9,4 @@ export class MuestrasTablaDTO
     promo!:number | null;
     vendedora!:string;
     planCuotas!:PlanCuotasDTO;
-}
+}
