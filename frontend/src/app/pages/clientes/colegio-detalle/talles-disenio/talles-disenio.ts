@@ -17,7 +17,7 @@ const TIPO_PRENDAS = 'Disenio Prendas';
 const TIPO_BANDERA = 'Disenio Bandera';
 const TIPOS_FIJOS = [TIPO_PRENDAS, TIPO_BANDERA];
 
-const TAMANIO_MAXIMO_MB = 50;
+const TAMANIO_MAXIMO_MB = 150;
 const TAMANIO_MAXIMO_FIRMADO_MB = 10;
 const FORMATOS_FIRMADO = ['image/jpeg', 'image/png'];
 const LARGO_MAXIMO_NOMBRE = 60;
